@@ -13,7 +13,7 @@
 // path. Knobs and the VU meter are imperative widgets interpolated by node —
 // the meter's per-frame segment updates never touch the template.
 
-import { html } from 'lit-html';
+import { html, nothing } from 'lit-html';
 import { renderElement } from './lit-fragment';
 import type { ChannelStrip } from './fx';
 import { createKnob, type KnobHandle } from './knob';
@@ -39,6 +39,12 @@ export interface MixerColumnDeps {
    *  of the clip they are editing. Optional: the Classic mixer panel does not
    *  own a lane selection. */
   onSelect?:     (trackId: string) => void;
+  /** Fold / unfold this lane's instrument editor, from the column's own toggle
+   *  next to the track name. The grid header's chevron only ever appears on the
+   *  ACTIVE lane, so the mixer is where you can reach any lane's editor. */
+  onToggleSynth?: (trackId: string) => void;
+  /** Whether this lane's editor is currently open — drives the ▾/▸ face. */
+  isSynthOpenFor?: (trackId: string) => boolean;
   registerKnob:  (k: KnobHandle) => void;
   /** Optional undo history deps. When present, knob drags/wheel/dblclick
    *  are bracketed as single undo entries. */
@@ -148,7 +154,18 @@ export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLEl
   // outside the fixed-height 110 px row.
   const col = renderElement(html`
     <div class=${`mix-col ${trackId}`}>
-      <div class="mix-name">${deps.label(trackId)}</div>
+      <div class="mix-name-row">
+        <span class="mix-name">${deps.label(trackId)}</span>
+        ${deps.onToggleSynth
+          ? html`<button
+              class="mix-synth-toggle"
+              title=${deps.isSynthOpenFor?.(trackId)
+                ? 'Collapse this track’s instrument editor'
+                : 'Show this track’s instrument editor'}
+              @click=${() => deps.onToggleSynth!(trackId)}
+            >${deps.isSynthOpenFor?.(trackId) ? '▾' : '▸'}</button>`
+          : nothing}
+      </div>
       <div class="mix-section">
         <div class="mix-sec-label">EQ</div>
         ${knobEl(deps, {

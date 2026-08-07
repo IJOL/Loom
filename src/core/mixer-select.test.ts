@@ -70,6 +70,43 @@ describe('mixer column selection', () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  it('carries a synth fold toggle next to the track name', () => {
+    const onToggleSynth = vi.fn();
+    const col = buildMixerColumn('tb-303-1', makeDeps({ onToggleSynth, isSynthOpenFor: () => true }));
+    document.body.appendChild(col);
+
+    const btn = col.querySelector('.mix-synth-toggle') as HTMLButtonElement;
+    expect(btn, 'the button is there').toBeTruthy();
+    expect(btn.textContent?.trim(), 'open reads as ▾').toBe('▾');
+
+    btn.click();
+    expect(onToggleSynth).toHaveBeenCalledWith('tb-303-1');
+  });
+
+  it('the fold toggle shows ▸ when that lane\'s synth is not open', () => {
+    const col = buildMixerColumn('tb-303-1', makeDeps({ onToggleSynth: () => {}, isSynthOpenFor: () => false }));
+    document.body.appendChild(col);
+    expect((col.querySelector('.mix-synth-toggle') as HTMLElement).textContent?.trim()).toBe('▸');
+  });
+
+  it('the fold toggle does not also select the lane', () => {
+    // It is a button, so the dead-zone rule already excludes it — asserted here
+    // because "one gesture, one effect" is the whole point of that rule.
+    const onSelect = vi.fn();
+    const col = buildMixerColumn('tb-303-1', makeDeps({ onSelect, onToggleSynth: () => {}, isSynthOpenFor: () => false }));
+    document.body.appendChild(col);
+
+    (col.querySelector('.mix-synth-toggle') as HTMLElement).click();
+
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it('omits the toggle when no handler is supplied', () => {
+    const col = buildMixerColumn('tb-303-1', makeDeps());
+    document.body.appendChild(col);
+    expect(col.querySelector('.mix-synth-toggle')).toBeNull();
+  });
+
   it('builds a working column when no onSelect is supplied', () => {
     const col = buildMixerColumn('tb-303-1', makeDeps());
     document.body.appendChild(col);

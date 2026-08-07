@@ -41,6 +41,28 @@
 .mix-col select,
 .mix-col .knob { cursor: default; }
 
+// Track name + its instrument-editor fold toggle, on one line.
+.mix-col .mix-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+.mix-col .mix-synth-toggle {
+  flex: 0 0 auto;
+  padding: 0 2px;
+  line-height: 1;
+  font-size: 9px;
+  background: transparent;
+  border: 1px solid #3a3a3a;
+  border-radius: 2px;
+  color: var(--amber);
+  cursor: pointer;
+}
+.mix-col .mix-synth-toggle:hover { background: #2a2a2a; }
+
 .mix-col .mix-name {
   font-size: 9px;
   letter-spacing: 0.05em;

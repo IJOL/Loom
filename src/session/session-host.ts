@@ -748,6 +748,16 @@ export class SessionHost {
       const col = buildMixerColumn(lane.id, {
         ...this.deps.mixerDeps,
         onSelect: (id) => this.focusLane(id),
+        // On the lane you are already on, the toggle folds and unfolds — the
+        // same thing the header chevron does. On any OTHER lane, "show me this
+        // instrument" is the only reading that means anything, so it selects
+        // that lane and unfolds onto it.
+        onToggleSynth: (id) => {
+          if (this.activeEditLane === id) { this.toggleSynthEditor(); return; }
+          this.synthCollapsed = false;
+          this.focusLane(id);
+        },
+        isSynthOpenFor: (id) => this.activeEditLane === id && !this.synthCollapsed,
       });
       if (lane.id === this.activeEditLane) col.classList.add('session-mixer-col-active');
       row.appendChild(col);
