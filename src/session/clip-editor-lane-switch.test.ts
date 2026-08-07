@@ -26,7 +26,7 @@ vi.mock('./example-loader', async (importOriginal) => ({
 
 import { shouldCloseClipEditorOnLaneSwitch } from './session-host-util';
 import { SessionInspector } from './session-inspector';
-import { showLaneEditor } from './session-host-lane-editor';
+import { focusLaneImpl } from './session-host';
 import type { SessionHost } from './session-host';
 import type { SessionState, SessionClip, SessionLane } from './session';
 import { fakeDestinations } from './fake-destinations';
@@ -189,20 +189,26 @@ describe('SessionInspector.closeIfOtherLane', () => {
   });
 });
 
-// ── The lane-header click path (onEditLane → showLaneEditor) ───────────────
+// ── The lane-header click path (onEditLane → showLaneEditor → focusLaneImpl) ──
+//
+// The seam moved: showLaneEditor is pure painting now, and focusLaneImpl is the
+// one door that decides what happens to the clip editor. The bug this block
+// guards is unchanged — clicking a lane header must not leave the editor on
+// somebody else's clip — so it follows the decision to its new home.
 
 function makeSelf(state: SessionState, insp: SessionInspector): SessionHost {
   return {
     state,
     inspector: insp,
     activeEditLane: 'drums-1',
+    activeSceneIdx: -1,
     synthCollapsed: false,
     renderWithMixer: () => {},
     deps: { onActiveLaneChanged: vi.fn(), showPolyEditor: vi.fn(), setActiveEngineLane: vi.fn() },
   } as unknown as SessionHost;
 }
 
-describe('showLaneEditor — the lane the user clicked owns the editor', () => {
+describe('lane-header click — the lane the user clicked owns the editor', () => {
   beforeEach(() => mountDom());
 
   it('closes a clip editor left open on a different lane', () => {
@@ -210,7 +216,7 @@ describe('showLaneEditor — the lane the user clicked owns the editor', () => {
     const insp = openDrumsClip(state);
     expect(panel().hidden).toBe(false);
 
-    showLaneEditor(makeSelf(state, insp), 'tb-303-1');
+    focusLaneImpl(makeSelf(state, insp), 'tb-303-1');
 
     expect(panel().hidden, 'the drums clip editor closed').toBe(true);
     expect(insp.getSelectedClip()).toBeNull();
@@ -222,7 +228,7 @@ describe('showLaneEditor — the lane the user clicked owns the editor', () => {
     const state = makeState();
     const insp = openDrumsClip(state);
 
-    showLaneEditor(makeSelf(state, insp), 'drums-1');
+    focusLaneImpl(makeSelf(state, insp), 'drums-1');
 
     expect(panel().hidden).toBe(false);
     expect(insp.getSelectedClip()).toEqual({ laneId: 'drums-1', clipIdx: 0 });

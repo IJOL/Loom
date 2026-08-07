@@ -1,0 +1,148 @@
+// @vitest-environment jsdom
+//
+// focusLane is the ONE door. Every path that selects a lane goes through it,
+// and the clip editor never ends up on a different lane than the knobs.
+
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+const rollMock = vi.hoisted(() => ({ redraw: () => {}, getOctaveBase: () => 60, setOctaveBase: vi.fn() }));
+vi.mock('./clip-editors/clip-editor-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./clip-editors/clip-editor-router')>()),
+  renderClipEditor: () => rollMock,
+}));
+vi.mock('./clip-automation-lanes', () => ({ renderClipAutomationLanes: () => {} }));
+vi.mock('./example-loader', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./example-loader')>()),
+  loadAllExamples: async () => [],
+}));
+
+import { SessionInspector } from './session-inspector';
+import type { SessionHost } from './session-host';
+import { focusLaneImpl } from './session-host';
+import type { SessionState, SessionClip, SessionLane } from './session';
+import { fakeDestinations } from './fake-destinations';
+
+function mountDom(): void {
+  document.body.innerHTML = `
+    <div id="session-view-root">
+      <div class="page" data-page="drums" hidden></div>
+      <div class="page" data-page="poly" hidden></div>
+    </div>
+    <div id="session-inspector" hidden>
+      <div id="insp-context">
+        <span id="insp-context-swatch"></span>
+        <span id="insp-context-track"></span>
+        <span id="insp-context-scene"></span>
+        <span id="insp-context-row"></span>
+      </div>
+      <input id="insp-name" type="text" />
+      <input id="insp-length" type="number" />
+      <button id="insp-play"></button>
+      <button id="insp-rec" hidden></button>
+      <select id="insp-rec-mode" hidden></select>
+      <button id="insp-tempo-double"></button>
+      <button id="insp-tempo-halve"></button>
+      <select id="insp-quantize"><option value=""></option></select>
+      <button id="insp-duplicate"></button><button id="insp-delete"></button>
+      <button id="insp-copy"></button>
+      <button id="insp-paste-replace" disabled></button>
+      <button id="insp-paste-layer" disabled></button>
+      <button id="insp-random-notes"></button><button id="insp-variate"></button>
+      <button id="insp-invert-melodic"></button><button id="insp-retrograde"></button>
+      <button id="insp-chords"></button>
+      <select id="insp-style-select"></select>
+      <select id="insp-pattern-select"></select>
+      <button id="insp-save-example"></button><button id="insp-export-example"></button>
+      <button id="insp-toggle-editor"></button>
+      <div id="insp-tonality"></div>
+      <div id="insp-roll-host"></div>
+    </div>`;
+}
+
+function clip(id: string, name: string): SessionClip {
+  return { id, name, lengthBars: 2, notes: [] } as unknown as SessionClip;
+}
+
+function makeState(): SessionState {
+  return {
+    lanes: [
+      { id: 'drums-1', engineId: 'drums-machine', name: 'Drums 1', clips: [clip('c-d0', 'Beat')] },
+      { id: 'tb-303-1', engineId: 'tb303', name: 'Bass', clips: [clip('c-b0', 'Acid')] },
+    ] as unknown as SessionLane[],
+    scenes: [{ id: 's0', name: 'Drop', clipPerLane: {} }],
+  } as unknown as SessionState;
+}
+
+function makeInspector(state: SessionState): SessionInspector {
+  return new SessionInspector({
+    ctx: {} as AudioContext,
+    seq: { meter: { num: 4, den: 4 }, bpm: 120 } as unknown as InstanceType<typeof import('../core/sequencer').Sequencer>,
+    state,
+    laneStates: new Map(),
+    renderWithMixer: () => {},
+    midiLabel: (m: number) => String(m),
+    automationRegistry: new Map(),
+    destinations: fakeDestinations(),
+    getAutoAbsSubIdx: () => 0,
+  });
+}
+
+/** A SessionHost stub carrying only what focusLaneImpl reads. */
+function makeSelf(state: SessionState, insp: SessionInspector, activeEditLane: string | null): SessionHost {
+  return {
+    state,
+    inspector: insp,
+    activeEditLane,
+    activeSceneIdx: -1,
+    synthCollapsed: false,
+    renderWithMixer: () => {},
+    deps: { onActiveLaneChanged: vi.fn(), setActiveEngineLane: vi.fn() },
+  } as unknown as SessionHost;
+}
+
+const panel = () => document.getElementById('session-inspector') as HTMLElement;
+
+describe('focusLane — the one door', () => {
+  beforeEach(() => mountDom());
+
+  it('closes a clip left open on another lane', () => {
+    const state = makeState();
+    const insp = makeInspector(state);
+    insp.setSelectedClip({ laneId: 'drums-1', clipIdx: 0 });
+    insp.openInspector();
+    expect(panel().hidden, 'precondition: the drums clip is open').toBe(false);
+
+    const self = makeSelf(state, insp, 'drums-1');
+    focusLaneImpl(self, 'tb-303-1', 'lane');
+
+    expect(insp.getSelectedClip(), 'the drums selection is dropped').toBeNull();
+    expect(self.activeEditLane, 'the bass lane is now selected').toBe('tb-303-1');
+  });
+
+  it('a clip announcing its own lane never closes the editor it just opened', () => {
+    const state = makeState();
+    const insp = makeInspector(state);
+    insp.setSelectedClip({ laneId: 'tb-303-1', clipIdx: 0 });
+    insp.openInspector();
+
+    const self = makeSelf(state, insp, 'drums-1');
+    focusLaneImpl(self, 'tb-303-1', 'clip');
+
+    expect(insp.getSelectedClip(), 'the bass clip stays open').toEqual({ laneId: 'tb-303-1', clipIdx: 0 });
+    expect(self.activeEditLane, 'the instrument page still follows').toBe('tb-303-1');
+  });
+
+  it('re-selecting the open clip\'s own lane leaves the editor alone', () => {
+    // The chevron, an engine swap and an undo repaint all land here.
+    const state = makeState();
+    const insp = makeInspector(state);
+    insp.setSelectedClip({ laneId: 'drums-1', clipIdx: 0 });
+    insp.openInspector();
+
+    const self = makeSelf(state, insp, 'drums-1');
+    focusLaneImpl(self, 'drums-1', 'lane');
+
+    expect(panel().hidden).toBe(false);
+    expect(insp.getSelectedClip()).toEqual({ laneId: 'drums-1', clipIdx: 0 });
+  });
+});

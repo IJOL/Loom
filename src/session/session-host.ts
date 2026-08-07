@@ -59,6 +59,26 @@ import { withUndo } from '../save/history-wiring';
 
 export type { SessionHostDeps } from './session-host-deps';
 
+/** Where a lane selection came from. `'clip'` means the clip grid already chose
+ *  the clip and only the instrument page needs to move — without it, opening a
+ *  clip in another lane would open the editor and immediately close it. */
+export type LaneFocusOrigin = 'lane' | 'clip';
+
+/** THE single door for changing which lane is selected. Every path — lane
+ *  header, clip cell, mixer column, APC, engine-swap re-route, chevron, undo
+ *  repaint — goes through here, so the instrument page and the clip editor can
+ *  never end up on two different lanes.
+ *
+ *  It is a free function, not just a method, because the decision is worth
+ *  driving from a test with a stub host instead of a whole booted session. */
+export function focusLaneImpl(self: SessionHost, laneId: string, origin: LaneFocusOrigin = 'lane'): void {
+  const sameLane = self.activeEditLane === laneId;
+  // A clip announcing a lane that is already selected has nothing to move.
+  if (sameLane && origin === 'clip') return;
+  showLaneEditorImpl(self, laneId);
+  if (origin === 'lane' && !sameLane) self.inspector?.closeIfOtherLane(laneId);
+}
+
 export class SessionHost {
   state: SessionState = emptySessionState();
   laneStates = new Map<string, LanePlayState>();
@@ -444,13 +464,10 @@ export class SessionHost {
     this.callbacks.onCaptureScene();
   }
 
-  /** Make a lane the active/edit lane (single source of truth shared with the APC).
-   *  Idempotent; fires onActiveLaneChanged so subscribers (UI + control) stay in sync. */
-  focusLane(laneId: string): void {
-    if (this.activeEditLane === laneId) return;
-    this.activeEditLane = laneId;
-    this.deps.onActiveLaneChanged?.();
-    this.renderWithMixer();
+  /** Make a lane the active/edit lane (single source of truth shared with the APC,
+   *  the mixer and the clip grid). See focusLaneImpl for why `origin` exists. */
+  focusLane(laneId: string, origin: LaneFocusOrigin = 'lane'): void {
+    focusLaneImpl(this, laneId, origin);
   }
 
   /** The single funnel every UI knob-mount call site must use (engine param
@@ -502,7 +519,7 @@ export class SessionHost {
       isSceneLinked: () => this.isSceneLinked(),
       onSetSceneLinked: (linked: boolean) => this.setSceneLoopLinked(linked),
       onClipLoopEdited: () => this.onClipLoopEdited(),
-      onClipFocused: (laneId) => this.focusLane(laneId),
+      onClipFocused: (laneId) => this.focusLane(laneId, 'clip'),
       // The same launch + stop the session grid's ▶ and ⏹ already use — the
       // clip header is just another way in, not a second implementation.
       onPlayClip: (laneId, clipIdx) => this.launchClipAt(laneId, clipIdx),
@@ -884,7 +901,7 @@ export class SessionHost {
    *  rebuild the engine param UI + modulator panel + labels. Does NOT toggle.
    *  Impl in session-host-lane-editor. */
   showLaneEditor(laneId: string): void {
-    showLaneEditorImpl(this, laneId);
+    focusLaneImpl(this, laneId, 'lane');
   }
 
   /** @internal — inject a lane's engine param UI + modulator/note-FX/insert
