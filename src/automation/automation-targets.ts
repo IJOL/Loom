@@ -13,6 +13,7 @@
 
 import { getEngine } from '../engines/registry';
 import { getPlugin } from '../plugins/registry';
+import { WEAVE_MACROS, WEAVE_SCOPE, macroDestinationId } from '../weave/weave-catalog';
 import type { SessionState } from '../session/session';
 import type { KnobHandle } from '../core/knob';
 
@@ -87,7 +88,21 @@ export function listAutomationTargets(
   state: SessionState,
   registry: ReadonlyMap<string, KnobHandle>,
 ): AutomationTarget[] {
-  const targets: AutomationTarget[] = [];
+  // The WEAVE macros belong to the SESSION, not to a lane, so they are listed
+  // before anything lane-shaped and do not depend on a lane existing at all.
+  //
+  // AutomationTarget has no `group` field — the pickers group by laneName
+  // through groupTargetsByLane, which is a plain string key and never looks a
+  // lane up. So the macros travel as a pseudo-lane: the scope id is their
+  // laneId, and "Weave" is the heading the user sees.
+  const targets: AutomationTarget[] = WEAVE_MACROS.map((m) => ({
+    id: macroDestinationId(m.id),
+    label: m.label,
+    laneId: WEAVE_SCOPE,
+    laneName: 'Weave',
+    min: 0,
+    max: 1,
+  }));
 
   for (const lane of state.lanes) {
     const laneName = lane.name || lane.id;

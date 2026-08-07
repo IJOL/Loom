@@ -104,3 +104,39 @@ describe('applyAutomationToSession', () => {
     expect(applied).toBe(false);
   });
 });
+
+describe('the session scope (WEAVE macros)', () => {
+  it('parses a macro id as a macro, not as a lane param', () => {
+    expect(parseAutomationParamId('session.weave:density')).toEqual({
+      scopeId: 'session.weave', kind: 'macro', paramId: 'density',
+    });
+  });
+
+  it('still parses a lane engine param the way it did', () => {
+    expect(parseAutomationParamId('lane-3.cutoff')).toEqual({
+      scopeId: 'lane-3', kind: 'engine', paramId: 'cutoff',
+    });
+  });
+
+  it('still parses an insert param the way it did', () => {
+    expect(parseAutomationParamId('lane-3.fx:slot1.mix')).toEqual({
+      scopeId: 'lane-3', kind: 'insert', slotId: 'slot1', paramId: 'mix',
+    });
+  });
+
+  it('does not mistake a lane whose id merely starts with session for a macro', () => {
+    expect(parseAutomationParamId('session-lane.cutoff')?.kind).toBe('engine');
+  });
+
+  it('refuses the marker with nothing after it, rather than an empty macro', () => {
+    // Falls through to the dotted reading, which is the honest answer for a
+    // string that names no param at all.
+    expect(parseAutomationParamId('session.weave:')?.kind).not.toBe('macro');
+  });
+
+  it('keeps a dotted macro id whole, so a nested name survives', () => {
+    expect(parseAutomationParamId('session.weave:style.mix')).toEqual({
+      scopeId: 'session.weave', kind: 'macro', paramId: 'style.mix',
+    });
+  });
+});

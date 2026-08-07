@@ -11,17 +11,30 @@
 // the opposite obligation and goes through live-control-apply.ts, which wraps
 // this one — do not add persistence here.
 
+import { WEAVE_SCOPE } from '../weave/weave-catalog';
+
 /** A param id decomposed into what it addresses. `scopeId` is a lane id for
- *  engine params and lane racks, or `fx.master` / `fx.send.<id>` for the
- *  global racks. */
+ *  engine params and lane racks, `fx.master` / `fx.send.<id>` for the global
+ *  racks, or `session.weave` for a macro that belongs to no lane at all. */
 export type ParsedParamId =
   | { scopeId: string; kind: 'engine'; paramId: string }
-  | { scopeId: string; kind: 'insert'; slotId: string; paramId: string };
+  | { scopeId: string; kind: 'insert'; slotId: string; paramId: string }
+  | { scopeId: string; kind: 'macro'; paramId: string };
 
 /** Split a canonical destination id. The insert marker is the first segment
  *  shaped `fx:<slotId>`; everything before it is the scope (which is itself
  *  dotted for the global racks: `fx.send.A`). */
 export function parseAutomationParamId(id: string): ParsedParamId | null {
+  // Matched FIRST, and by an exact marker. Everything this function does not
+  // recognise falls through to "engine param of a lane" at the bottom, so a
+  // session-scope destination without a marker would be read as a lane that
+  // does not exist: it would land nowhere and throw nothing. Inert looks
+  // exactly like working, which is the worst failure available here.
+  if (id.startsWith(`${WEAVE_SCOPE}:`)) {
+    const paramId = id.slice(WEAVE_SCOPE.length + 1);
+    if (paramId.length > 0) return { scopeId: WEAVE_SCOPE, kind: 'macro', paramId };
+  }
+
   const parts = id.split('.');
   if (parts.length < 2) return null;
 

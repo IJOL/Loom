@@ -6,7 +6,8 @@
 //   2. An insert's params only entered the registry when that lane's editor
 //      panel was open, so a fresh insert never showed up as a destination.
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { listAutomationTargets } from './automation-targets';
+import { listAutomationTargets, groupTargetsByLane } from './automation-targets';
+import { WEAVE_MACROS, WEAVE_SCOPE, macroDestinationId } from '../weave/weave-catalog';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
 import type { FxInstance } from '../plugins/types';
 import { emptySessionState, type SessionState } from '../session/session';
@@ -93,9 +94,53 @@ describe('listAutomationTargets', () => {
       ['GHOST_LANE.cutoff', { meta: { id: 'GHOST_LANE.cutoff', label: 'Cutoff', min: 0, max: 1 } } as KnobHandle],
     ]);
 
-    const ids = listAutomationTargets(sessionWithInsertLane(), stale).map((t) => t.id);
+    const targets = listAutomationTargets(sessionWithInsertLane(), stale);
+    const ids = targets.map((t) => t.id);
 
     expect(ids).not.toContain('GHOST_LANE.cutoff');
-    expect(ids.every((id) => id.startsWith('L1.'))).toBe(true);
+    // Everything LANE-shaped must belong to the one lane the session has. The
+    // session-scope macros are not lane-shaped and are excluded by laneId
+    // rather than by an id prefix — that is what makes this assertion about
+    // ghost lanes rather than about which prefixes happen to exist.
+    const laneTargets = targets.filter((t) => t.laneId !== WEAVE_SCOPE);
+    expect(laneTargets.length).toBeGreaterThan(0);
+    expect(laneTargets.every((t) => t.id.startsWith('L1.'))).toBe(true);
+  });
+});
+
+describe('the weave macros in the catalogue', () => {
+  it('offers all six as destinations', () => {
+    const ids = listAutomationTargets(sessionWithInsertLane(), new Map()).map((t) => t.id);
+    for (const m of WEAVE_MACROS) expect(ids).toContain(macroDestinationId(m.id));
+  });
+
+  it('files them under a pseudo-lane called Weave', () => {
+    // AutomationTarget has no `group` field: the pickers group by laneName, so
+    // a session-scope destination needs a lane identity of its own.
+    const t = listAutomationTargets(sessionWithInsertLane(), new Map())
+      .find((x) => x.id === macroDestinationId('density'));
+    expect(t?.laneId).toBe(WEAVE_SCOPE);
+    expect(t?.laneName).toBe('Weave');
+  });
+
+  it('declares a 0..1 range for every macro', () => {
+    const ts = listAutomationTargets(sessionWithInsertLane(), new Map())
+      .filter((x) => x.laneId === WEAVE_SCOPE);
+    expect(ts).toHaveLength(WEAVE_MACROS.length);
+    for (const t of ts) {
+      expect(t.min).toBe(0);
+      expect(t.max).toBe(1);
+    }
+  });
+
+  it('offers them even when the session has no lanes at all', () => {
+    const empty = { ...sessionWithInsertLane(), lanes: [] };
+    const ids = listAutomationTargets(empty, new Map()).map((t) => t.id);
+    expect(ids).toContain(macroDestinationId('density'));
+  });
+
+  it('groups them under one heading', () => {
+    const groups = groupTargetsByLane(listAutomationTargets(sessionWithInsertLane(), new Map()));
+    expect(groups.get('Weave')).toHaveLength(WEAVE_MACROS.length);
   });
 });
