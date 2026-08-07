@@ -211,15 +211,18 @@ function makeSelf(state: SessionState, insp: SessionInspector): SessionHost {
 describe('lane-header click — the lane the user clicked owns the editor', () => {
   beforeEach(() => mountDom());
 
-  it('closes a clip editor left open on a different lane', () => {
+  it('takes the editor off the other lane\'s clip', () => {
+    // Both lanes have a clip in row 0, so the editor FOLLOWS to the bass one
+    // rather than closing. Either way the drums clip stops being what the
+    // generators, the ▶ and the knobs act on — which is the bug this guards.
     const state = makeState();
     const insp = openDrumsClip(state);
     expect(panel().hidden).toBe(false);
 
     focusLaneImpl(makeSelf(state, insp), 'tb-303-1');
 
-    expect(panel().hidden, 'the drums clip editor closed').toBe(true);
-    expect(insp.getSelectedClip()).toBeNull();
+    expect(insp.getSelectedClip(), 'the editor moved to the clicked lane')
+      .toEqual({ laneId: 'tb-303-1', clipIdx: 0 });
   });
 
   it('keeps the editor open when the clicked lane is the open clip\'s own', () => {

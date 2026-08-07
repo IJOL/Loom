@@ -31,6 +31,29 @@ export function shouldCloseClipEditorOnLaneSwitch(
   return openClip !== null && openClip.laneId !== nextLaneId;
 }
 
+/** Which clip the editor should show after the user selects `nextLaneId`.
+ *
+ *  The row is the one the user is already looking at: the open clip's row, or —
+ *  with nothing open — the launched scene's row. `null` means CLOSE the editor,
+ *  and it never means create: a lane with an empty slot in that row simply
+ *  shows no clip, while its instrument page still opens. Creating one here
+ *  would silently grow the session every time the user browsed lanes.
+ *
+ *  Pure and state-shaped rather than SessionState-typed so the "adds nothing"
+ *  claim can be asserted directly instead of inferred from the UI. */
+export function clipToShowOnLaneSwitch(
+  state: { lanes: { id: string; clips: unknown[] }[] },
+  nextLaneId: string,
+  openClip: { laneId: string; clipIdx: number } | null,
+  launchedSceneIdx: number,
+): { laneId: string; clipIdx: number } | null {
+  const row = openClip ? openClip.clipIdx : (launchedSceneIdx >= 0 ? launchedSceneIdx : -1);
+  if (row < 0) return null;
+  const lane = state.lanes.find((l) => l.id === nextLaneId);
+  if (!lane || lane.clips[row] == null) return null;
+  return { laneId: nextLaneId, clipIdx: row };
+}
+
 /** Which scene, if any, the global ▶ should launch when it starts the transport.
  *
  *  Pressing ▶ with nothing launched must sound something — the first scene — or

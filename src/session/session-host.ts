@@ -15,7 +15,7 @@ import { DEFAULT_RESOLUTION } from '../core/drum-grid-editing';
 // nextLaneSlug lives in session-host-util (shared with the extracted sub-modules).
 // Re-exported here so existing importers (e.g. session-add-lane.test) keep working.
 export { nextLaneSlug } from './session-host-util';
-import { nextLaneSlug, sceneToAutoLaunchOnPlay } from './session-host-util';
+import { nextLaneSlug, sceneToAutoLaunchOnPlay, clipToShowOnLaneSwitch } from './session-host-util';
 import {
   tickSession, launchClip, launchScene, stopAll, seekSession, tickGlobalLoop,
   emptyLanePlayState,
@@ -76,7 +76,17 @@ export function focusLaneImpl(self: SessionHost, laneId: string, origin: LaneFoc
   // A clip announcing a lane that is already selected has nothing to move.
   if (sameLane && origin === 'clip') return;
   showLaneEditorImpl(self, laneId);
-  if (origin === 'lane' && !sameLane) self.inspector?.closeIfOtherLane(laneId);
+  if (origin !== 'lane' || sameLane) return;
+
+  const insp = self.inspector;
+  if (!insp) return;
+  const next = clipToShowOnLaneSwitch(self.state, laneId, insp.getSelectedClip(), self.activeSceneIdx);
+  // No clip to show in this row: close, never create. closeIfOtherLane (rather
+  // than closeInspector) keeps the "a lane never closes its own clip" guarantee
+  // even if the row rule is ever loosened.
+  if (!next) { insp.closeIfOtherLane(laneId); return; }
+  insp.setSelectedClip(next);
+  insp.openInspector();
 }
 
 export class SessionHost {

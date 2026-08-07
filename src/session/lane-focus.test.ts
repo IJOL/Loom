@@ -105,7 +105,8 @@ const panel = () => document.getElementById('session-inspector') as HTMLElement;
 describe('focusLane — the one door', () => {
   beforeEach(() => mountDom());
 
-  it('closes a clip left open on another lane', () => {
+  it('never leaves the editor on a lane other than the selected one', () => {
+    // The whole point. Whatever else happens, these two agree afterwards.
     const state = makeState();
     const insp = makeInspector(state);
     insp.setSelectedClip({ laneId: 'drums-1', clipIdx: 0 });
@@ -115,8 +116,9 @@ describe('focusLane — the one door', () => {
     const self = makeSelf(state, insp, 'drums-1');
     focusLaneImpl(self, 'tb-303-1', 'lane');
 
-    expect(insp.getSelectedClip(), 'the drums selection is dropped').toBeNull();
     expect(self.activeEditLane, 'the bass lane is now selected').toBe('tb-303-1');
+    expect(insp.getSelectedClip()?.laneId ?? 'tb-303-1', 'and the editor is on it, or on nothing')
+      .toBe('tb-303-1');
   });
 
   it('a clip announcing its own lane never closes the editor it just opened', () => {
@@ -130,6 +132,51 @@ describe('focusLane — the one door', () => {
 
     expect(insp.getSelectedClip(), 'the bass clip stays open').toEqual({ laneId: 'tb-303-1', clipIdx: 0 });
     expect(self.activeEditLane, 'the instrument page still follows').toBe('tb-303-1');
+  });
+
+  it('opens the new lane\'s clip in the same row', () => {
+    // makeState already gives the bass lane a clip in row 0.
+    const state = makeState();
+    const insp = makeInspector(state);
+    insp.setSelectedClip({ laneId: 'drums-1', clipIdx: 0 });
+    insp.openInspector();
+
+    const self = makeSelf(state, insp, 'drums-1');
+    focusLaneImpl(self, 'tb-303-1', 'lane');
+
+    expect(insp.getSelectedClip(), 'the bass clip in row 0 is now open')
+      .toEqual({ laneId: 'tb-303-1', clipIdx: 0 });
+    expect(panel().hidden, 'the editor stays open').toBe(false);
+  });
+
+  it('closes the editor and creates nothing when the row is empty', () => {
+    const state = makeState();
+    // Row 1 exists in drums only.
+    (state.lanes[0] as unknown as { clips: SessionClip[] }).clips.push(clip('c-d1', 'Fill'));
+    const insp = makeInspector(state);
+    insp.setSelectedClip({ laneId: 'drums-1', clipIdx: 1 });
+    insp.openInspector();
+
+    const self = makeSelf(state, insp, 'drums-1');
+    focusLaneImpl(self, 'tb-303-1', 'lane');
+
+    expect(insp.getSelectedClip(), 'nothing is open').toBeNull();
+    expect(panel().hidden, 'the panel is hidden').toBe(true);
+    expect(state.lanes[1].clips.length, 'no clip was created in the bass lane').toBe(1);
+    expect(self.activeEditLane, 'the instrument page still switched').toBe('tb-303-1');
+  });
+
+  it('falls back to the launched scene\'s row when nothing is open', () => {
+    const state = makeState();
+    (state.lanes[0] as unknown as { clips: SessionClip[] }).clips.push(clip('c-d1', 'Fill'));
+    const insp = makeInspector(state);
+
+    const self = makeSelf(state, insp, 'tb-303-1');
+    self.activeSceneIdx = 1;          // scene row 1 is launched
+    focusLaneImpl(self, 'drums-1', 'lane');
+
+    expect(insp.getSelectedClip(), 'the drums clip in the launched row opens')
+      .toEqual({ laneId: 'drums-1', clipIdx: 1 });
   });
 
   it('re-selecting the open clip\'s own lane leaves the editor alone', () => {
