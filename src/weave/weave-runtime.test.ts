@@ -150,3 +150,40 @@ describe('the harmony leader, inside the runtime', () => {
     expect([...out.keys()].sort()).toEqual(['bass', 'lead']);
   });
 });
+
+describe('routing a woven bar to each loop\'s own instrument', () => {
+  it('answers plainly when the lane has no layers', () => {
+    // A number on an engine with no layers would be one nobody reads, and it
+    // has to stay `true` so the scheduler's cheap path is untouched.
+    const gate = createWeaveGate(cfg(0), opts);
+    expect(gate({ midi: 36 }, 0, tick(0))).toBe(true);
+  });
+
+  it('names the loop a hit came from', () => {
+    const gate = createWeaveGate(cfg(0), opts, true);
+    // A-only hat at step 3, with the fader still at A.
+    expect(gate({ midi: 42 }, 0, tick(3))).toBe(0);
+  });
+
+  it('sends B\'s own hits to B\'s instrument once they have entered', () => {
+    const gate = createWeaveGate(cfg(1), opts, true);
+    expect(gate({ midi: 42 }, 0, tick(11))).toBe(1);
+    // And A's hat is gone at the far end, routed or not.
+    expect(gate({ midi: 42 }, 0, tick(3))).toBe(false);
+  });
+
+  it('still refuses a hit that belongs to neither side right now', () => {
+    const gate = createWeaveGate(cfg(0), opts, true);
+    expect(gate({ midi: 42 }, 0, tick(11))).toBe(false);
+  });
+
+  it('gives the shared skeleton ONE owner, not both', () => {
+    // The kick is in both loops. It must fire once, from one instrument —
+    // emitting it from each would double every hit the two patterns agree on,
+    // which is the loudest possible bug.
+    const gate = createWeaveGate(cfg(0.5), opts, true);
+    const from = gate({ midi: 36 }, 0, tick(0));
+    expect(typeof from).toBe('number');
+    expect([0, 1]).toContain(from as number);
+  });
+});

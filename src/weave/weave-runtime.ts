@@ -6,22 +6,37 @@
 // the one place in Loom where being clever costs dropouts.
 
 import type { NoteEvent } from '../core/notes';
-import { blendLoops, type BlendOptions } from './blend-clip';
+import { blendLoops, blendLoopsBySource, type BlendOptions } from './blend-clip';
 import { laneWeights, type LaneWeaveConfig } from './weave-state';
 import { avoidClash } from './harmony-guard';
 import { applyNoteMacros } from './macro-notes';
 
 const hitKey = (tick: number, midi: number) => `${tick}:${midi}`;
 
+/** `false` = the note does not belong to the crossfade at this position.
+ *  `true` = it fires, plainly. A NUMBER = it fires, and it came from that loop —
+ *  which a layered instrument reads as which of its instruments should play it.
+ *
+ *  A union rather than a returned object because this is asked once per note
+ *  inside the look-ahead: an object per note would put an allocation in the
+ *  audio budget, the one place in Loom where being tidy costs dropouts. */
 export type WeaveGate = (
   note: { midi: number },
   scheduleTime: number,
   clipTick: number,
-) => boolean;
+) => boolean | number;
 
-export function createWeaveGate(cfg: LaneWeaveConfig, o: BlendOptions): WeaveGate {
+export function createWeaveGate(
+  cfg: LaneWeaveConfig,
+  o: BlendOptions,
+  /** True when the lane's instrument has layers, so each surviving hit can be
+   *  sent to the one belonging to its loop. False — the ordinary case — and the
+   *  gate answers plainly, because naming a layer on an engine that has none
+   *  would be a number nobody reads. */
+  routeByOrigin = false,
+): WeaveGate {
   let cacheKey = '';
-  let allowed = new Set<string>();
+  let allowed = new Map<string, number>();
 
   const refresh = () => {
     const weights = laneWeights(cfg);
@@ -32,8 +47,14 @@ export function createWeaveGate(cfg: LaneWeaveConfig, o: BlendOptions): WeaveGat
     const key = weights.map((w) => w.weight.toFixed(3)).join(',') + `|${o.barTicks}`;
     if (key === cacheKey) return;
     cacheKey = key;
-    allowed = new Set(
-      blendLoops(weights, o).map((n: NoteEvent) => hitKey(n.start % o.barTicks, n.midi)),
+    allowed = new Map(
+      // The sourced fold when the origin is wanted, the plain one when it is
+      // not — same notes either way; the sourced one only also says where each
+      // came from. A loop at weight 0 was already filtered out, so an origin
+      // here always names a loop that is genuinely sounding.
+      routeByOrigin
+        ? blendLoopsBySource(weights, o).map((n) => [hitKey(n.start % o.barTicks, n.midi), n.from] as const)
+        : blendLoops(weights, o).map((n: NoteEvent) => [hitKey(n.start % o.barTicks, n.midi), -1] as const),
     );
   };
 
@@ -42,7 +63,9 @@ export function createWeaveGate(cfg: LaneWeaveConfig, o: BlendOptions): WeaveGat
     // The scheduler counts ticks from the clip start and keeps counting across
     // iterations; the blend only ever describes one bar.
     const inBar = ((clipTick % o.barTicks) + o.barTicks) % o.barTicks;
-    return allowed.has(hitKey(inBar, note.midi));
+    const from = allowed.get(hitKey(inBar, note.midi));
+    if (from === undefined) return false;
+    return from < 0 ? true : from;
   };
 }
 

@@ -15,6 +15,7 @@ import { resolveSelection } from '../weave/weave-selection';
 import { weaveLoopNotes } from './weave-loops';
 import { macroNeutral } from '../weave/weave-catalog';
 import { isHarmonic } from '../plugins/capabilities';
+import { LAYERS_ENGINE_ID } from '../engines/layers-engine';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { ticksPerBar, type TimeSignature } from '../core/meter';
 import type { NoteEvent } from '../core/notes';
@@ -73,6 +74,9 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     });
   };
 
+  const lanesEngineId = (laneId: string): string | undefined =>
+    deps.getState?.().lanes.find((l) => l.id === laneId)?.engineId;
+
   const melodicLane = (laneId: string): boolean => {
     const lane = deps.getState?.().lanes.find((l) => l.id === laneId);
     // Percussion is never transposed: a drum note picks a voice, not a pitch.
@@ -102,6 +106,11 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
           harmonyLeader: state.lanes[laneId]?.harmonyLeader ?? false,
         };
         const m = musicality();
+        // A lane whose instrument HAS layers gets its notes routed by origin:
+        // the merged bar comes out shared between the loops' own instruments
+        // rather than played by one. Asked of the lane's engine, so it costs
+        // nothing on every other lane.
+        const layered = lanesEngineId(laneId) === LAYERS_ENGINE_ID;
         return createWeaveGate(cfg, {
           barTicks,
           melodic: melodicLane(laneId),
@@ -111,7 +120,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
           // only has to agree with itself, since both sides of a pair are
           // converted through the same base.
           octaveBase: 3,
-        });
+        }, layered);
       }
     }
 

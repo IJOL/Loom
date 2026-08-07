@@ -349,6 +349,11 @@ export type LaneTriggerFn = (
   sample?: ClipSample,
   velocity?: number,
   offsetSec?: number,
+  /** Which LAYER of a layered instrument this note belongs to. Set when the
+   *  lane is weaving several loops and each one has its own instrument, so the
+   *  merged bar comes out shared between them rather than played by one. Every
+   *  other engine ignores it. */
+  layerIndex?: number,
 ) => void;
 
 /** Called each time a step boundary fires (for visual playhead updates). */
@@ -435,10 +440,11 @@ export function tickSession(
       globalLoop: globalLoop?.enabled ? globalLoop : undefined,
       lastScheduledAt: lp.lastScheduledAt,
       shouldFire: weaveGateFor?.(lane.id),
-      onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; gridTick?: number }, scheduleTime: number) => {
+      onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; gridTick?: number; layerIndex?: number }, scheduleTime: number) => {
         if (scheduleTime > lp.lastScheduledAt) lp.lastScheduledAt = scheduleTime;
         const t = noteTrigger(lane.engineId, clip, note, scheduleTime, currentLoopStart, bpm, meter);
-        onLaneTrigger(lane.id, t.midi, scheduleTime, t.gateSec, t.accent, t.slidingIn, note.sample, t.velocity);
+        onLaneTrigger(lane.id, t.midi, scheduleTime, t.gateSec, t.accent, t.slidingIn, note.sample, t.velocity,
+          undefined, note.layerIndex);
         onClipStepFired(
           lane.id, clip.id,
           Math.floor(t.scheduledStartTick / TICKS_PER_STEP),

@@ -40,7 +40,7 @@ export interface SchedulerContext {
   swing?: number;
   /** Called with the original note + the absolute audio time at which it
    *  should be scheduled. */
-  onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; gridTick?: number }, scheduleTime: number) => void;
+  onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; gridTick?: number; layerIndex?: number }, scheduleTime: number) => void;
   /** Asked once per NOTE, at the moment that note is about to be scheduled.
    *  Returning false skips the trigger and nothing else — loop bookkeeping and
    *  `lastScheduledAt` advance either way, so refusing a note never desyncs
@@ -62,7 +62,7 @@ export interface SchedulerContext {
     note: { midi: number; duration: number; velocity: number; gridTick?: number },
     scheduleTime: number,
     clipTick: number,
-  ) => boolean;
+  ) => boolean | number;
   /** Called for each clip envelope sample falling in the window. The
    *  `clipTimeNorm` is 0..1 within the clip iteration. */
   onAutomation: (env: ClipEnvelope, clipTimeNorm: number, scheduleTime: number) => void;
@@ -198,9 +198,18 @@ export function tickLane(clip: SessionClip, ctx: SchedulerContext): number {
             // clip the derived value disagrees with the true tick, and swing 0
             // must stay byte-for-byte what it is today.
             gridTick: swing > 0 ? k * loopTicks + (n.start - startTick) : undefined,
+            // Filled by the gate below when it names a layer. Declared here so
+            // the literal has one shape rather than growing a property.
+            layerIndex: undefined as number | undefined,
           };
           // Absent ⇒ every note fires, exactly as before this hook existed.
-          if (!ctx.shouldFire || ctx.shouldFire(fired, scheduleAt, n.start)) {
+          const gate = ctx.shouldFire ? ctx.shouldFire(fired, scheduleAt, n.start) : true;
+          if (gate !== false) {
+            // A NUMBER is the gate naming which layer this note belongs to —
+            // the loop it survived from, when the lane is weaving several into a
+            // layered instrument. `true` is the ordinary answer and carries none,
+            // so a lane whose engine has no layers is untouched.
+            if (typeof gate === 'number') fired.layerIndex = gate;
             ctx.onTrigger(fired, scheduleAt);
           }
         }

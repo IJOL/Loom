@@ -63,6 +63,11 @@ class WorkletVoice implements Voice {
       velocity: velNorm(resolveVelocity(o.velocity, accent)),
       accent, slide: o.slide ?? false,
       voiceId: this.voiceId,
+      // Rides the note because it varies PER note: a bar woven from two loops
+      // sends each surviving hit to the instrument of the loop it came from.
+      // Undefined for every ordinary trigger, and ignored by every engine but
+      // LAYERS.
+      layerIndex: o.layerIndex,
     });
   }
   /** Note-off THIS voice. A live key-up (live-keyboard's voice pool) lands here,

@@ -40,6 +40,11 @@ export interface VoiceTriggerOptions {
   sample?: import('../session/session').ClipSample;
   /** Phase 3: explicit buffer second to start playback from (global seek/loop re-trigger); overrides the computed trim/warp offset. */
   offsetSec?: number;
+  /** Which LAYER of a layered instrument plays this note, when something
+   *  upstream already knows — a crossfade between loops each carrying its own
+   *  instrument. Absent means the instrument decides for itself, which for
+   *  LAYERS means by keyboard zone. Every other engine ignores it. */
+  layerIndex?: number;
 }
 
 export interface EngineUIContext {

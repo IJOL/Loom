@@ -13,6 +13,10 @@ export type TriggerForLane = (
   sample?: import('../session/session').ClipSample,
   velocity?: number,
   offsetSec?: number,
+  /** Which LAYER of a layered instrument this note belongs to. Set when a lane
+   *  is weaving several loops and each has its own instrument. Every other
+   *  engine ignores it. */
+  layerIndex?: number,
 ) => void;
 
 export interface TriggerDispatchDeps {
@@ -33,7 +37,7 @@ export interface TriggerDispatchDeps {
 }
 
 export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane {
-  return (laneId, note, time, gate, accent, slidingIn = false, sample, velocity, offsetSec) => {
+  return (laneId, note, time, gate, accent, slidingIn = false, sample, velocity, offsetSec, layerIndex) => {
     const res = deps.laneResources.get(laneId);
     // No engine ⇒ its plugin is not installed. The lane exists and keeps its
     // strip, its inserts and its clips; it just cannot make a sound, so a note
@@ -49,7 +53,7 @@ export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane 
       setCurrentLaneForVoice(null);
       // Track the live voice so any Stop path can release it immediately.
       deps.liveVoices?.record(laneId, v);
-      v.trigger(m, t, { gateDuration: g, accent: a, slide: sl, sample, velocity: vel, offsetSec });
+      v.trigger(m, t, { gateDuration: g, accent: a, slide: sl, sample, velocity: vel, offsetSec, layerIndex });
       deps.onVoiceFired?.(laneId, g);
     };
 
