@@ -110,10 +110,10 @@
 
 .weave-lane {
   display: grid;
-  // The weaving control is a CONTROL, not a canvas: given 1fr it swallowed the
-  // row and turned a five-lane list into a page of boxes. A fixed, modest width
-  // keeps the row readable and leaves room for what comes next in it.
-  grid-template-columns: 14px 30px 84px 120px 150px 200px 1fr;
+  // Eight columns: lamp, ring, name, instrument, preset, style, topology, loops.
+  // Only the last is elastic — the weaving control is where the row's spare
+  // width belongs, because it is the only cell whose contents change shape.
+  grid-template-columns: 14px 30px 78px 104px 128px 112px 124px 1fr;
   gap: 10px;
   align-items: center;
   background: var(--surface-2);
@@ -122,11 +122,98 @@
   padding: 6px 8px;
 }
 
+// The header is the same grid with no chrome, so a label cannot drift out of
+// line with the column it names.
+.weave-lane-head {
+  background: none;
+  border-color: transparent;
+  padding-bottom: 0;
+}
+
+.weave-col {
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
 // Shorter here than the control's own default: a lane row is a strip, and 54px
 // of pad per lane stacks into something you have to scroll.
 .weave-lane .pad2d {
-  height: 34px;
+  height: 44px;
+  width: 60px;
   border-color: var(--border);
+}
+
+// ── topology: which control this lane is played with ───────────────────────
+.weave-topo {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+}
+
+.weave-topo-btn {
+  padding: 3px 0;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  min-width: 0;
+
+  &.on {
+    background: var(--amber);
+    border-color: var(--amber);
+    color: var(--bg);
+    font-weight: 700;
+  }
+
+  &:disabled { opacity: 0.4; }
+}
+
+// ── the weaving cell — a fader, a queue or a pad ───────────────────────────
+.weave-cell-host { min-width: 0; }
+
+.weave-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+// The loop names ARE the pickers. Borderless so the row reads as two names with
+// a fader between them, but they still highlight on hover: an invisible control
+// is worse than an ugly one.
+.weave-slot {
+  background: none;
+  border-color: transparent;
+  color: var(--amber);
+  font-size: 10px;
+  max-width: 96px;
+  min-width: 0;
+  padding: 2px 4px;
+
+  &:hover:not(:disabled) { border-color: var(--border); background: var(--surface-3); }
+  &:disabled { color: var(--text-faint); }
+}
+
+.weave-fader { flex: 1 1 0; min-width: 60px; }
+
+.weave-between {
+  font-size: 9.5px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+// Four corners drawn WHERE THEY ARE, so the user is not matching names to
+// corners by counting.
+.weave-corners {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 96px));
+  gap: 2px;
+}
+
+.weave-hint {
+  font-size: 10px;
+  color: var(--text-faint);
+  font-style: italic;
 }
 
 .weave-lane-name { font-weight: 700; letter-spacing: 0.08em; font-size: 11px; }
@@ -162,7 +249,8 @@
 }
 
 .weave-engine,
-.weave-preset {
+.weave-preset,
+.weave-style {
   width: 100%;
   min-width: 0;
 }

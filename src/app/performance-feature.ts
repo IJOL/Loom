@@ -415,6 +415,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       (refresh) => createPanelContext({
         sessionHost, seq, ctx, weave, refresh,
         onMacroChanged: () => deps.onWeaveChanged?.(),
+        onWeaveChanged: () => deps.onWeaveChanged?.(),
         swapLaneEngine: deps.swapLaneEngine,
         applyLanePreset: deps.applyLanePreset,
       }),

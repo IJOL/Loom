@@ -185,7 +185,24 @@ export interface PanelLane {
 export interface PanelChoice {
   id: string;
   name: string;
+  /** Optional heading this choice belongs under. A list long enough to need one
+   *  — a whole pattern library, say — is unusable as a flat run of names. */
+  group?: string;
 }
+
+/** Which loops a lane is weaving, and where between them it sits.
+ *
+ *  Loops are named by ID, never by their notes: a panel holds a flat summary of
+ *  the session and the host owns the material. It is also what lets this be
+ *  saved — a selection that carried note arrays would be a second copy of the
+ *  clips, drifting from the first the moment either is edited.
+ *
+ *  The three shapes are the three topologies, and every one of them reduces to a
+ *  list of (loop, weight) before anything downstream sees it. */
+export type PanelWeave =
+  | { kind: 'ab'; a: string; b: string; x: number }
+  | { kind: 'queue'; loops: string[]; x: number }
+  | { kind: 'cloud'; corners: string[]; x: number; y: number };
 
 /** Where one loop is right now — the same reading the Session view's scene ring
  *  shows, narrowed to a single lane.
@@ -241,6 +258,28 @@ export interface PanelContext {
    *  number would hide exactly the thing worth seeing. A lane the host knows
    *  nothing about reads `silent`, never undefined. */
   loopPhase(laneId: string): PanelLoopPhase;
+  /** The loops this lane can weave: the pattern library for its style, plus its
+   *  own clips. Grouped — the library alone runs to hundreds of entries. */
+  loops(laneId: string): PanelChoice[];
+  /** Every style the pattern library ships loops for. */
+  styles(): PanelChoice[];
+  /** The style this lane draws its library loops from — its own choice if it
+   *  has made one, else the session's. */
+  laneStyle(laneId: string): string;
+  /** Point a lane at another style. Its loops change; what it is weaving does
+   *  not, until the user picks again. */
+  setLaneStyle(laneId: string, styleId: string): void;
+  /** What the lane is weaving, or null when no loops have been chosen. */
+  laneWeave(laneId: string): PanelWeave | null;
+  /** Choose loops or move the position. Passing null clears the lane back to
+   *  playing its clip untouched. */
+  setLaneWeave(laneId: string, weave: PanelWeave | null): void;
+  /** Put a lane on a topology, KEEPING the loops it already names.
+   *
+   *  A door of its own rather than something a panel assembles, because which
+   *  loops survive a change of control is a musical rule, not a layout one: the
+   *  user picked them and expects to still be weaving them afterwards. */
+  setLaneTopology(laneId: string, kind: PanelWeave['kind']): void;
 }
 
 export type ComponentManifest =

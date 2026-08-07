@@ -382,6 +382,9 @@ const activeLaneStore = createActiveLaneStore();
 const weaveWiring = createWeaveWiring({
   getLaneStates: () => sessionHost.laneStates,
   getMeter: () => seq.meter,
+  // A getter, not the state: New and Open replace the whole object, and a
+  // pinned reference would keep weaving the session the user just closed.
+  getState: () => sessionHost.state,
 });
 
 const sessionHost = new SessionHost({

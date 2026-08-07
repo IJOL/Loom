@@ -11,6 +11,7 @@
 // one on disk.
 
 import type { PanelContext, PanelLoopPhase } from '@loom/plugin-sdk';
+import { buildLaneRow } from './lane-row';
 
 /** The six macros, in the order the panel shows them. Colours match the knob
  *  palette the rest of Loom uses, so a WEAVE knob reads as a Loom knob. */
@@ -210,91 +211,24 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   flowRow.append(flowLabel, flow, flowOut);
 
   // ── lanes ────────────────────────────────────────────────────────────────
-  /** A dropdown of host-supplied choices, with `current` selected.
-   *
-   *  A lane whose current value the host cannot name gets no selection rather
-   *  than a wrong one: the browser would otherwise default to the first option
-   *  and the row would claim a preset the lane is not on. */
-  const picker = (
-    cls: string, label: string, choices: Array<{ id: string; name: string }>,
-    current: string | undefined, onPick: (id: string) => void,
-  ): HTMLSelectElement => {
-    const sel = document.createElement('select');
-    sel.className = cls;
-    sel.setAttribute('aria-label', label);
-
-    if (choices.length === 0) {
-      // An engine that ships no presets gets a disabled dash rather than an
-      // empty box, which reads as broken.
-      const o = document.createElement('option');
-      o.textContent = '—';
-      sel.appendChild(o);
-      sel.disabled = true;
-      return sel;
-    }
-
-    const known = current !== undefined && choices.some((c) => c.id === current);
-    if (!known) {
-      const o = document.createElement('option');
-      o.value = '';
-      o.textContent = '—';
-      sel.appendChild(o);
-    }
-    for (const c of choices) {
-      const o = document.createElement('option');
-      o.value = c.id;
-      o.textContent = c.name;
-      if (c.id === current) o.selected = true;
-      sel.appendChild(o);
-    }
-    sel.addEventListener('change', () => { if (sel.value) onPick(sel.value); });
-    return sel;
-  };
-
   const lanes = el('div', 'weave-lanes');
-  const laneRows: Array<{
-    id: string;
-    row: HTMLElement;
-    led: HTMLElement;
-    ring: { el: HTMLElement; set(phase: PanelLoopPhase): void };
-  }> = [];
-  const engineChoices = ctx.engines();
-  for (const lane of ctx.lanes()) {
-    const row = el('div', 'weave-lane');
-    const led = el('span', 'weave-led');
-    const name = el('span', 'weave-lane-name');
-    name.textContent = lane.name;
 
-    // Instrument and preset, right here in the row. Both go through the host's
-    // own doors, so a change made here behaves — and undoes — exactly like the
-    // same change made in the Session grid.
-    const engine = picker(
-      'weave-engine', `Instrument for ${lane.name}`, engineChoices, lane.engineId,
-      (id) => ctx.setEngine(lane.id, id),
-    );
-    const preset = picker(
-      'weave-preset', `Preset for ${lane.name}`, ctx.presets(lane.engineId), lane.presetId,
-      (id) => ctx.setPreset(lane.id, id),
-    );
-
-    // The cloud pad comes from the HOST's catalogue, not from this file: a
-    // plugin arranges controls, it does not paint their internals.
-    const pad = Loom.controls.pad2d({
-      x: 0.5, y: 0.5,
-      label: `Weave position for ${lane.name}`,
-      onChange: () => { /* wired to the lane's weave in the next slice */ },
-    });
-
-    // Where this lane's own loop is. Per lane and not per scene because that is
-    // the question a weave asks: these loops are different lengths on purpose,
-    // and one scene-wide number would hide the very thing worth watching.
-    const ring = Loom.controls.loopRing({ label: `Loop position for ${lane.name}` });
-
-    row.append(led, ring.el, name, engine, preset, pad.el);
-    lanes.appendChild(row);
-    laneRows.push({ id: lane.id, row, led, ring });
+  // Column headers. The row carries seven things now, and without a header the
+  // two dropdowns in the middle are guesswork.
+  const head2 = el('div', 'weave-lane weave-lane-head');
+  for (const label of ['', '', 'Lane', 'Instrument', 'Preset', 'Style', 'Topology', 'Loops']) {
+    const c = el('span', 'weave-col');
+    c.textContent = label;
+    head2.appendChild(c);
   }
+  lanes.appendChild(head2);
+
+  const engineChoices = ctx.engines();
+  const laneRows = ctx.lanes().map((lane) => buildLaneRow(lane, ctx, engineChoices));
+  for (const r of laneRows) lanes.appendChild(r.el);
+
   if (laneRows.length === 0) {
+    head2.remove();
     const empty = el('p', 'weave-empty');
     empty.textContent = 'No lanes yet. Add one in Session and it will appear here.';
     lanes.appendChild(empty);
@@ -342,7 +276,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
 
     // Every frame, not every step: the wedge is a sweep, and quantising it to
     // sixteenths would turn the one continuous thing on screen into a stutter.
-    for (const l of laneRows) l.ring.set(ctx.loopPhase(l.id));
+    for (const l of laneRows) l.ring.set(ctx.loopPhase(l.laneId));
 
     const step = Math.floor(phase * 16) % 16;
     if (step !== lastStep) {

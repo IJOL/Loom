@@ -5,7 +5,14 @@
 // across versions, which is why it stays small: what WEAVE genuinely needs and
 // nothing speculative.
 
-import type { PanelContext, PanelLane, PanelLoopPhase } from '@loom/plugin-sdk';
+import type { PanelContext, PanelLane, PanelLoopPhase, PanelWeave } from '@loom/plugin-sdk';
+import { defaultLaneSelection } from '../weave/weave-state';
+import { retopologise } from '../weave/weave-selection';
+import { weaveLoopChoices, type WeaveLoopContext } from './weave-loops';
+import { stylesWithPatterns } from '../patterns/pattern-library';
+import { STYLE_CATALOG, type StyleId } from '../core/musicality';
+import { isHarmonic } from '../plugins/capabilities';
+import { DEFAULT_MUSICALITY } from '../session/session-types';
 import type { SessionHost } from '../session/session-host';
 import type { LanePlayState } from '../session/session-runtime';
 import type { Sequencer } from '../core/sequencer';
@@ -29,6 +36,10 @@ export interface PanelContextDeps {
   /** Called after a macro moves, so the host can re-derive whatever depends on
    *  it (the live layer, the destination values). */
   onMacroChanged?: (id: string, value: number) => void;
+  /** Called after a lane's weave changes — a loop chosen, a topology switched,
+   *  the fader moved. The host drops its cached gate so the next tick folds the
+   *  new selection. */
+  onWeaveChanged?: (laneId: string) => void;
   /** Re-render the panel. Supplied by whoever mounted it. */
   refresh: () => void;
   /** Swap a lane's instrument. main hands in its own undoable wrapper, so a
@@ -50,6 +61,22 @@ const SILENT_PHASE: PanelLoopPhase = { state: 'silent', frac: 0, bars: 0, center
 const scratch = new Map<string, LanePlayState>();
 
 export function createPanelContext(deps: PanelContextDeps): PanelContext {
+  /** Everything the loop list and the loop resolver need about a lane, gathered
+   *  once. Built per call rather than cached: the style, the key and the lock
+   *  all move, and a stale copy would list loops the lane no longer draws. */
+  const loopContext = (laneId: string): WeaveLoopContext => {
+    const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
+    const m = deps.sessionHost.state.musicality ?? DEFAULT_MUSICALITY;
+    return {
+      lane,
+      style: deps.weave.lanes[laneId]?.forcedStyle ?? m.style,
+      harmonic: lane ? isHarmonic(lane.engineId) : true,
+      key: m.key,
+      scale: m.scale,
+      lock: m.lock,
+    };
+  };
+
   return {
     lanes(): PanelLane[] {
       // A flat, serialisable summary. Handing the real lane objects over would
@@ -125,6 +152,60 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
 
     isPlaying() {
       return deps.seq.isPlaying();
+    },
+
+    loops(laneId) {
+      // The pattern library first-class, the lane's own clips alongside it. One
+      // list, one vocabulary, so a weave can cross-fade a library loop into a
+      // clip without either side knowing which is which.
+      return weaveLoopChoices(loopContext(laneId));
+    },
+
+    styles() {
+      // Only the styles the library actually ships loops for. Offering the rest
+      // would be a dropdown whose entries empty the loop list.
+      //
+      // Ordered by the ONE catalogue the whole program uses, so neighbours here
+      // are the neighbours the Project Options dropdown shows.
+      const shipped = new Set<string>(stylesWithPatterns());
+      return STYLE_CATALOG
+        .filter((s) => shipped.has(s.id))
+        .map((s) => ({ id: s.id, name: s.label }));
+    },
+
+    laneStyle(laneId) {
+      return loopContext(laneId).style;
+    },
+
+    setLaneStyle(laneId, styleId) {
+      const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
+      deps.weave.lanes[laneId] = { ...cur, forcedStyle: styleId as StyleId };
+      deps.onWeaveChanged?.(laneId);
+    },
+
+    laneWeave(laneId) {
+      return deps.sessionHost.state.lanes.some((l) => l.id === laneId)
+        ? deps.weave.lanes[laneId]?.weave ?? null
+        : null;
+    },
+
+    setLaneWeave(laneId, weave) {
+      const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
+      deps.weave.lanes[laneId] = { ...cur, weave };
+      deps.onWeaveChanged?.(laneId);
+    },
+
+    setLaneTopology(laneId, kind) {
+      // The same list the dropdown offers, so a first selection is filled from
+      // what the user can actually see — the library included, not just the two
+      // clips that happen to be in the grid.
+      const loopIds = weaveLoopChoices(loopContext(laneId)).map((c) => c.id);
+      const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
+      deps.weave.lanes[laneId] = {
+        ...cur,
+        weave: retopologise(cur.weave, kind, loopIds),
+      };
+      deps.onWeaveChanged?.(laneId);
     },
 
     loopPhase(laneId): PanelLoopPhase {
