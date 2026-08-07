@@ -108,6 +108,29 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
     expect(w.notesFor('lane1')).not.toBe(first);
   });
 
+  it('shapes the CROSS-FADE with the macros too, not just an unwoven clip', () => {
+    // A lane that was weaving used to be the one lane the macros could not
+    // reach: they only ever applied to a clip playing itself.
+    const w = wiring(session());
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
+      locked: false, harmonyLeader: false,
+    };
+    const plain = w.notesFor('lane1')!()![0].velocity;
+
+    w.state.macros.energy = 1;
+    w.invalidate();
+    expect(w.notesFor('lane1')!()![0].velocity).toBeGreaterThan(plain);
+  });
+
+  it('needs no source at all while both note macros sit at their neutral', () => {
+    // The feature stays free until someone opens the panel.
+    const w = wiring(session());
+    w.state.macros.energy = 0.5;
+    w.state.macros.density = 0.5;
+    expect(w.notesFor('lane1')).toBeUndefined();
+  });
+
   it('leaves the lane untouched when its loops no longer exist', () => {
     // A save from another machine, or a deleted clip. Silence would be worse
     // than ignoring the weave.

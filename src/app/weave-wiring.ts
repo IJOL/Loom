@@ -66,6 +66,16 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     ));
   };
 
+  /** The two macros that rewrite notes. A getter, so a knob moved while the
+   *  transport runs reaches the next bar rather than the next launch. */
+  const noteMacros = () => ({ density: macro('density'), energy: macro('energy') });
+
+  /** Both at their neutral ⇒ the macro layer is the identity, so a lane with no
+   *  weave keeps the untouched scheduling path and the feature costs nothing
+   *  until someone opens the panel. */
+  const noteMacrosAreNeutral = () =>
+    macro('density') === macroNeutral('density') && macro('energy') === macroNeutral('energy');
+
   const lanesEngineId = (laneId: string): string | undefined =>
     deps.getState?.().lanes.find((l) => l.id === laneId)?.engineId;
 
@@ -112,20 +122,20 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
           // only has to agree with itself, since both sides of a pair are
           // converted through the same base.
           octaveBase: 3,
-        }, layered);
+        }, layered, noteMacros);
       }
     }
 
     // No loops chosen: the macros still have something to say about the clip
-    // that is playing. At the neutral density they say nothing, and the lane
-    // keeps the untouched scheduling path.
-    if (macro('density') === macroNeutral('density')) return undefined;
+    // that is playing. At the neutrals they say nothing, and the lane keeps the
+    // untouched scheduling path.
+    if (noteMacrosAreNeutral()) return undefined;
     return createMacroSource(
       // Read the clip at ask time, not at build time: the lane's playing clip
-      // changes on every scene launch, and a gate holding the old one would
+      // changes on every scene launch, and a source holding the old one would
       // silence the new clip entirely.
       () => deps.getLaneStates().get(laneId)?.playing?.notes ?? [],
-      () => ({ density: macro('density') }),
+      noteMacros,
       barTicks,
     );
   };

@@ -29,6 +29,12 @@ export type WovenNote = NoteEvent & { layerIndex?: number };
  *  A crossfade has to be able to let hits in. */
 export type WeaveSource = () => WovenNote[] | undefined;
 
+/** The two macros that rewrite notes, read at ask time so a knob moved while the
+ *  transport runs is heard on the next bar rather than the next launch. */
+export type ReadNoteMacros = () => { density: number; energy: number };
+
+const NEUTRAL_NOTE_MACROS: ReadNoteMacros = () => ({ density: 0.5, energy: 0.5 });
+
 export function createWeaveSource(
   cfg: LaneWeaveConfig,
   o: BlendOptions,
@@ -37,26 +43,36 @@ export function createWeaveSource(
    *  because a layer index on an engine with no layers is a number nobody
    *  reads. */
   routeByOrigin = false,
+  /** The macros, applied ON TOP of the blend. They shape whatever is playing,
+   *  and what is playing here is the cross-fade — a lane that was weaving used
+   *  to be the one lane the macros could not touch. */
+  readMacros: ReadNoteMacros = NEUTRAL_NOTE_MACROS,
 ): WeaveSource {
   let cacheKey = '';
   let woven: WovenNote[] = [];
 
   return () => {
     const weights = laneWeights(cfg);
+    const m = readMacros();
     // Rounding keeps a continuously moving fader from refolding on every
     // animation frame. 1e-3 of a crossfade is finer than any audible step, and
     // coarse enough that a slow sweep refolds tens of times rather than
     // thousands. Worth caring about: this runs on the scheduler's tick.
-    const key = weights.map((w) => w.weight.toFixed(3)).join(',') + `|${o.barTicks}`;
+    const key = `${weights.map((w) => w.weight.toFixed(3)).join(',')}|${o.barTicks}`
+      + `|${m.density.toFixed(3)}|${m.energy.toFixed(3)}`;
     if (key !== cacheKey) {
       cacheKey = key;
       // The sourced fold when the origin is wanted, the plain one when it is
       // not — the same notes either way; the sourced one only also says where
       // each came from. A loop at weight 0 is filtered out before folding, so
       // an origin always names a loop that is genuinely sounding.
-      woven = routeByOrigin
+      const blended = routeByOrigin
         ? blendLoopsBySource(weights, o).map((n) => ({ ...n, layerIndex: n.from }))
         : blendLoops(weights, o);
+      // applyNoteMacros spreads each note, so a layerIndex survives it. Density
+      // may drop or split a hit; a split inherits its parent's layer, which is
+      // right — the extra hit belongs to the loop the note came from.
+      woven = applyNoteMacros(blended, m, o.barTicks) as WovenNote[];
     }
     return woven;
   };
@@ -76,22 +92,22 @@ export function createWeaveSource(
  *  while the transport runs is heard on the next note, not the next launch. */
 export function createMacroSource(
   getNotes: () => NoteEvent[],
-  readMacros: () => { density: number },
+  readMacros: ReadNoteMacros,
   barTicks: number,
 ): WeaveSource {
   let cacheKey = '';
   let out: NoteEvent[] = [];
 
   return () => {
-    const density = readMacros().density;
+    const m = readMacros();
     const notes = getNotes();
-    // Keyed on the density AND the note count, so a clip swap under the same
-    // density still refolds. Rounding keeps a moving knob from refolding on
+    // Keyed on the macros AND the note count, so a clip swap under the same
+    // settings still refolds. Rounding keeps a moving knob from refolding on
     // every frame.
-    const key = `${density.toFixed(3)}|${notes.length}|${barTicks}`;
+    const key = `${m.density.toFixed(3)}|${m.energy.toFixed(3)}|${notes.length}|${barTicks}`;
     if (key !== cacheKey) {
       cacheKey = key;
-      out = applyNoteMacros(notes, { density, energy: 0.5 }, barTicks);
+      out = applyNoteMacros(notes, m, barTicks);
     }
     return out;
   };
