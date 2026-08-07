@@ -44,11 +44,6 @@ describe('flanger', () => {
     // reaches its resonance and stays there. Comparing the two halves says
     // which of those is happening without inventing a threshold.
     //
-    // Worth knowing what the magnitude actually is, because a threshold would
-    // have hidden it: at feedback 1 (a 0.9 ceiling) this peaks around 5.5x the
-    // input. That is not instability — a comb with gain g resonates at
-    // 1/(1-g) = 10 — but it IS loud enough to clip the master on its own, and
-    // nothing in the rack warns about it. See the gain-staging note in the spec.
     const b = await render((fx) => {
       fx.setBaseValue('mix', 0.7); fx.setBaseValue('depth', 1);
       fx.setBaseValue('rate', 3); fx.setBaseValue('feedback', 1);
@@ -59,6 +54,30 @@ describe('flanger', () => {
     const second = peakOf(b.subarray(half));
     expect(Number.isFinite(second)).toBe(true);
     expect(second).toBeLessThan(first * 1.1);
+  });
+
+  it('the top of the feedback knob no longer swamps the master', async () => {
+    // The reason the ceiling moved from 0.9 to 0.75. Settling is not the same as
+    // being usable: at 0.9 this was stable AND peaked at 5.48x its input, which
+    // is enough to eat the whole mix on its own with nothing in the rack to say
+    // so. A comb fed back at g resonates by 1/(1 - g), so the ceiling IS the
+    // number that decides this: 10 at 0.9, 4 at 0.75.
+    //
+    // Measured against the SAME effect with no feedback, so it says "the knob's
+    // top costs this much more than its bottom" rather than pinning a level.
+    const peakAt = async (feedback: number) => {
+      const b = await render((fx) => {
+        fx.setBaseValue('mix', 0.7); fx.setBaseValue('depth', 1);
+        fx.setBaseValue('rate', 3); fx.setBaseValue('feedback', feedback);
+      }, 2);
+      let p = 0; for (const v of b) { const a = Math.abs(v); if (a > p) p = a; }
+      return p;
+    };
+    const none = await peakAt(0);
+    // Still louder — resonance is the point of the knob, and a test that
+    // demanded no gain at all would be asking for the effect to be removed.
+    expect(await peakAt(1)).toBeGreaterThan(none);
+    expect(await peakAt(1)).toBeLessThan(none * 3);
   });
 
   it('feedback is what a flanger has and a chorus does not', async () => {
@@ -77,10 +96,15 @@ describe('flanger', () => {
     expect(await tail(0.9)).toBeGreaterThan(await tail(0) * 2);
   });
 
-  it('answers to every param its manifest declares, feedback included', () => {
+  it('answers to every param its manifest declares, at a value it did NOT start on', () => {
     expect(manifest.components[0].params.map((p) => p.id)).toEqual(['rate', 'depth', 'feedback', 'mix']);
     const fx = create(new OfflineAudioContext(1, 4410, 44100) as unknown as AudioContext);
     for (const p of manifest.components[0].params) {
+      // The default is what every shadow variable already holds, so writing it
+      // proves nothing about the write path.
+      const off = p.default === p.min ? p.max : p.min;
+      fx.setBaseValue(p.id, off);
+      expect(fx.getBaseValue(p.id), `${p.id} did not take the written value`).toBeCloseTo(off, 3);
       fx.setBaseValue(p.id, p.default);
       expect(fx.getBaseValue(p.id)).toBeCloseTo(p.default, 3);
     }

@@ -14,6 +14,7 @@
         { "id": "threshold", "label": "Thr", "kind": "continuous", "min": -60, "max": 0, "default": -30, "unit": "dB" },
         { "id": "range", "label": "Range", "kind": "continuous", "min": -60, "max": 0, "default": -60, "unit": "dB" },
         { "id": "attack", "label": "Atk", "kind": "continuous", "min": 0.5, "max": 100, "default": 2, "unit": "ms" },
+        { "id": "hold", "label": "Hold", "kind": "continuous", "min": 0, "max": 500, "default": 20, "unit": "ms" },
         { "id": "release", "label": "Rel", "kind": "continuous", "min": 10, "max": 1000, "default": 150, "unit": "ms" }
       ],
       "fx": { "color": "#ef5350" }

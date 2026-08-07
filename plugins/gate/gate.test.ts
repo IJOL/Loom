@@ -101,6 +101,37 @@ describe('gate', () => {
     expect(await tail(1000)).toBeGreaterThan((await tail(10)) * 5);
   });
 
+  it('hold keeps the gate open through a dip that would otherwise close it', async () => {
+    // What hold IS, and why a gate needs it: a real drum does not decay
+    // smoothly, it wobbles under the threshold and back over it, and a gate with
+    // no hold slams on every wobble — the tail machine-guns. So the source here
+    // is a loud tone that DIPS briefly and comes back, which is the shape that
+    // separates a gate with hold from one without.
+    const throughDip = async (holdMs: number) => {
+      const ctx = new OfflineAudioContext(1, SR, SR);
+      const src = ctx.createOscillator();
+      src.frequency.value = 200;
+      const amp = ctx.createGain();
+      amp.gain.setValueAtTime(0.8, 0);
+      amp.gain.setValueAtTime(0.005, 0.30);   // the dip, well under the threshold
+      amp.gain.setValueAtTime(0.8, 0.55);
+      const fx = create(ctx as unknown as AudioContext);
+      fx.setBaseValue('threshold', -24);
+      fx.setBaseValue('release', 10);         // short, so only hold can keep it open
+      fx.setBaseValue('hold', holdMs);
+      src.connect(amp).connect(fx.input);
+      fx.output.connect(ctx.destination);
+      src.start();
+      const d = (await ctx.startRendering()).getChannelData(0);
+      // 100 ms into the dip. Measured at 20 ms in, a release of 10 ms has not
+      // finished closing yet and the two settings are only 1.5x apart — true,
+      // but a thin claim about a knob whose whole job is the difference.
+      return rms(d.subarray(Math.floor(SR * 0.40), Math.floor(SR * 0.48)));
+    };
+    // Same source, same release, same threshold — only the hold differs.
+    expect(await throughDip(200)).toBeGreaterThan((await throughDip(0)) * 5);
+  });
+
   it('a threshold near the bottom of its range is still distinguishable', () => {
     // The curve is indexed by LINEAR amplitude while the knob is in dB, so the
     // bottom of the knob is where resolution runs out. At the original table

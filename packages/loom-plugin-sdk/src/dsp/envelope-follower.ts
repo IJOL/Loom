@@ -19,6 +19,8 @@
 // This is a main-thread GRAPH builder, not a per-sample kernel — it makes native
 // Web Audio nodes and cannot run inside the worklet.
 
+import { createSignalMax } from './signal-max';
+
 /** Hz. The floor the smoothing filter is clamped to. Public so a test can
  *  assert the clamp rather than restate the number. */
 export const FOLLOWER_MIN_HZ = 2;
@@ -86,11 +88,11 @@ export function createEnvelopeFollower(
   //    closed in under twenty milliseconds, identical to four decimal places.
   //    A noise gate's release is the control it is bought for.
   //
-  //    max(a, b) is expressible in native nodes: (a + b + |a − b|) / 2, and the
-  //    absolute value is a WaveShaper — the same one this file already builds to
-  //    rectify. Feed the rectified signal down a FAST chain and a SLOW one and
-  //    take the larger: rising, the fast chain is ahead, so attack governs;
-  //    falling, the slow chain lags above it, so release governs.
+  //    max(a, b) is expressible in native nodes — see `signal-max.ts`, which is
+  //    where that lives now that the gate's `hold` needs it too. Feed the
+  //    rectified signal down a FAST chain and a SLOW one and take the larger:
+  //    rising, the fast chain is ahead, so attack governs; falling, the slow
+  //    chain lags above it, so release governs.
   //
   //    Two poles per chain, not one: a single pole leaves audible ripple at low
   //    input frequencies and the second costs almost nothing. Q at 0.5 keeps
@@ -108,30 +110,9 @@ export function createEnvelopeFollower(
   rectify.connect(fast.head);
   rectify.connect(slow.head);
 
-  // (a + b) and (a − b).
-  const sum = ctx.createGain();
-  const diff = ctx.createGain();
-  const negate = ctx.createGain(); negate.gain.value = -1;
-  fast.tail.connect(sum);
-  slow.tail.connect(sum);
-  fast.tail.connect(diff);
-  slow.tail.connect(negate).connect(diff);
-
-  // |a − b|. The shaper's curve is only defined over −1..1 and CLAMPS outside
-  // it, so the difference is scaled down into that window and back out again —
-  // otherwise a signal hotter than full scale would silently have its
-  // difference clipped and the max would come out wrong in the loud case.
-  const ABS_HEADROOM = 4;
-  const preAbs  = ctx.createGain(); preAbs.gain.value  = 1 / ABS_HEADROOM;
-  const absShape = ctx.createWaveShaper();
-  absShape.curve = absCurve() as Float32Array<ArrayBuffer>;
-  absShape.oversample = 'none';
-  const postAbs = ctx.createGain(); postAbs.gain.value = ABS_HEADROOM;
-  diff.connect(preAbs).connect(absShape).connect(postAbs);
-
-  const max = ctx.createGain(); max.gain.value = 0.5;
-  sum.connect(max);
-  postAbs.connect(max);
+  const max = createSignalMax(ctx);
+  fast.tail.connect(max.a);
+  slow.tail.connect(max.b);
 
   // 3. Scale. Rectifying a sine gives a mean of 2/π ≈ 0.637 of its peak, so
   //    without this a full-scale input would report ~0.64 and every downstream
@@ -145,7 +126,7 @@ export function createEnvelopeFollower(
   scale.gain.value = Math.PI / 2;
 
   input.connect(rectify);
-  max.connect(scale);
+  max.output.connect(scale);
 
   let attackMs = opts.attackMs;
   let releaseMs = opts.releaseMs;
@@ -165,8 +146,8 @@ export function createEnvelopeFollower(
     setRelease: (ms) => { releaseMs = ms; apply(); },
     smoothingHz: () => ({ attack: fast.head.frequency.value, release: slow.head.frequency.value }),
     dispose: () => {
-      for (const n of [input, rectify, fast.head, fast.tail, slow.head, slow.tail,
-                       sum, diff, negate, preAbs, absShape, postAbs, max, scale]) {
+      max.dispose();
+      for (const n of [input, rectify, fast.head, fast.tail, slow.head, slow.tail, scale]) {
         try { n.disconnect(); } catch { /* ok */ }
       }
     },

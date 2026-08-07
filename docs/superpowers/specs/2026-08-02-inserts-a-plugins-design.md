@@ -352,7 +352,7 @@ worklet"** — eso sería otra rebanada, con su propia clase de processor.
 | insert | qué hace | mandos |
 | --- | --- | --- |
 | `autowah` | un seguidor de nivel gobierna la frecuencia de un pasa-banda | sens, range, attack, release, Q, mix |
-| `gate` | el mismo seguidor abre o cierra una ganancia | threshold, attack, ~~hold~~, release, range |
+| `gate` | el mismo seguidor abre o cierra una ganancia | threshold, attack, hold, release, range |
 | `width` | medio/lados para ensanchar + paseo izquierda-derecha con oscilador | width, rate, depth, sync |
 | `ringmod` | un oscilador multiplicando la señal | freq, mix |
 
@@ -377,27 +377,26 @@ Dos reglas concretas, ambas por escarmiento de este repo:
 El `ringmod` es el más pequeño de los cuatro (dos nodos) y hace de **plugin de
 ejemplo mínimo** en la documentación del SDK.
 
-#### ⛔ CONFIRMAR: el `gate` se ha entregado SIN `hold`
+#### El `hold` sí se podía, y el «no se puede» duró un día
 
-Esta tabla pedía cinco mandos para el gate y se han entregado cuatro. Falta
-`hold`, y no por descuido: **no es expresable con nodos nativos**.
+El gate se entregó primero **sin `hold`**, con el argumento de que un
+temporizador con estado por muestra no cabe en nodos nativos. Ese argumento era
+falso, y se vino abajo al escribirlo en llano para Nacho.
 
-`hold` es «una vez que la señal baja del umbral, mantén la puerta abierta N
-milisegundos ANTES de empezar a cerrar». Eso es un temporizador con estado por
-muestra. El `attack` y el `release` sí se pueden hacer nativos —dos cadenas de
-suavizado y un máximo, ver el seguidor— porque son filtros; un retardo de
-disparo no lo es. Las salidas posibles son tres:
+`hold` no es un temporizador. Es **el mayor entre el nivel de ahora y el nivel de
+hace N milisegundos**: si hace 40 ms había señal, la puerta sigue abierta, y
+nadie tiene que «detectar» un cruce. Retrasar una señal es un `DelayNode`, y el
+máximo es el mismo `signal-max` que el seguidor ya usaba para separar ataque de
+caída. Siete nodos.
 
-1. **Dejarlo fuera** (lo entregado). El gate tiene ataque y caída reales; el
-   `release` largo cubre buena parte de lo que se pide a un `hold`.
-2. **Meter el gate en el worklet.** Resuelve `hold` y abre la puerta a inserts
-   con DSP por muestra — que es explícitamente otra rebanada.
-3. **Falsearlo** con un `ConstantSource` y rampas programadas por evento. Sería
-   un `hold` que sólo funciona si algo del host observa el cruce del umbral, y
-   nada lo observa: el detector vive en el grafo, no en JavaScript.
+Es la SEGUNDA vez en esta rebanada que un «esto necesita un worklet» resulta ser
+un `max` disfrazado — la primera fue el `release` inerte. Merece quedar escrito
+como regla: **antes de concluir que algo pide estado por muestra, comprueba si es
+un máximo, un mínimo o una comparación con una copia retrasada de sí mismo.**
 
-Elegida la 1 y escrita aquí en vez de callada, porque recortar el alcance de un
-diseño aprobado es decisión de Nacho, no mía.
+Medido, con umbral −24 dB y caída de 10 ms, en un hueco de 250 ms: sin `hold` la
+puerta cierra y a los 100 ms deja pasar prácticamente nada; con `hold` a 200 ms
+el nivel en el hueco es **exactamente** el de la entrada, o sea abierta del todo.
 
 *(Aparte, `range: 0` significa **sin atenuación** y `-60` cierre total — el
 convenio de hardware. El plan lo había escrito al revés.)*
@@ -596,9 +595,14 @@ advierte. Conducta preexistente, no introducida por la migración: el DSP no se
 tocó. Queda anotado porque el único motivo de que no se supiera es que ningún
 test llegaba hasta ahí.
 
-Decidir aparte, y es decisión de Nacho: bajar el techo, compensar el nivel al
-subir la realimentación, o dejarlo y aceptar que el mando quema si se sube del
-todo. Lo que no debe pasar es que se quede sin decidir por no estar escrito.
+**DECIDIDO (2026-08-07): el techo baja de 0,9 a 0,75.** La resonancia pasa de 10
+a 4. El chorro sigue estando; el extremo del mando deja de comerse la mezcla. Es
+lo que hace el hardware — el recorrido que te dan es el recorrido que funciona.
+
+Descartadas las otras dos: compensar el nivel al subir la realimentación
+convierte el mando en un mando de volumen, que es el mismo problema que se acaba
+de arreglar en el `depth` del `width`; y dejarlo tal cual es dejar un extremo del
+recorrido que sólo sirve para saturar.
 
 ## Dos hallazgos menores de la revisión de los cuatro nuevos, anotados sin arreglar
 

@@ -39,6 +39,15 @@
           "unit": "ms"
         },
         {
+          "id": "hold",
+          "label": "Hold",
+          "kind": "continuous",
+          "min": 0,
+          "max": 500,
+          "default": 20,
+          "unit": "ms"
+        },
+        {
           "id": "release",
           "label": "Rel",
           "kind": "continuous",

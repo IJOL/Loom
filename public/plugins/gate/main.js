@@ -31,13 +31,58 @@ function typeOptionsFor(model) {
 var TYPE_OPTIONS_BY_MODE = Object.fromEntries(FILTER_MODES.map((_m, i) => [String(i), typeOptionsFor(i)]));
 var FILTER_MODE_OPTIONS = FILTER_MODES.map((m) => ({ value: m.value, label: m.label }));
 
+// packages/loom-plugin-sdk/src/dsp/signal-max.ts
+function absCurve() {
+  const n = 1025;
+  const c = new Float32Array(n);
+  for (let i = 0; i < n; i++) c[i] = Math.abs(i * 2 / (n - 1) - 1);
+  return c;
+}
+function createSignalMax(ctx, headroom = 4) {
+  const a = ctx.createGain();
+  const b = ctx.createGain();
+  const sum = ctx.createGain();
+  a.connect(sum);
+  b.connect(sum);
+  const diff = ctx.createGain();
+  const negate = ctx.createGain();
+  negate.gain.value = -1;
+  a.connect(diff);
+  b.connect(negate).connect(diff);
+  const preAbs = ctx.createGain();
+  preAbs.gain.value = 1 / headroom;
+  const absShape = ctx.createWaveShaper();
+  absShape.curve = absCurve();
+  absShape.oversample = "none";
+  const postAbs = ctx.createGain();
+  postAbs.gain.value = headroom;
+  diff.connect(preAbs).connect(absShape).connect(postAbs);
+  const output = ctx.createGain();
+  output.gain.value = 0.5;
+  sum.connect(output);
+  postAbs.connect(output);
+  return {
+    a,
+    b,
+    output,
+    dispose: () => {
+      for (const n of [a, b, sum, diff, negate, preAbs, absShape, postAbs, output]) {
+        try {
+          n.disconnect();
+        } catch {
+        }
+      }
+    }
+  };
+}
+
 // packages/loom-plugin-sdk/src/dsp/envelope-follower.ts
 var FOLLOWER_MIN_HZ = 2;
 function cutoffFor(ms) {
   const tau = Math.max(0.01, ms) / 1e3;
   return Math.max(FOLLOWER_MIN_HZ, 1 / (2 * Math.PI * tau));
 }
-function absCurve() {
+function absCurve2() {
   const n = 1025;
   const c = new Float32Array(n);
   for (let i = 0; i < n; i++) c[i] = Math.abs(i * 2 / (n - 1) - 1);
@@ -46,7 +91,7 @@ function absCurve() {
 function createEnvelopeFollower(ctx, opts) {
   const input = ctx.createGain();
   const rectify = ctx.createWaveShaper();
-  rectify.curve = absCurve();
+  rectify.curve = absCurve2();
   rectify.oversample = "none";
   const mkChain = () => {
     const a = ctx.createBiquadFilter();
@@ -62,31 +107,13 @@ function createEnvelopeFollower(ctx, opts) {
   const slow = mkChain();
   rectify.connect(fast.head);
   rectify.connect(slow.head);
-  const sum = ctx.createGain();
-  const diff = ctx.createGain();
-  const negate = ctx.createGain();
-  negate.gain.value = -1;
-  fast.tail.connect(sum);
-  slow.tail.connect(sum);
-  fast.tail.connect(diff);
-  slow.tail.connect(negate).connect(diff);
-  const ABS_HEADROOM = 4;
-  const preAbs = ctx.createGain();
-  preAbs.gain.value = 1 / ABS_HEADROOM;
-  const absShape = ctx.createWaveShaper();
-  absShape.curve = absCurve();
-  absShape.oversample = "none";
-  const postAbs = ctx.createGain();
-  postAbs.gain.value = ABS_HEADROOM;
-  diff.connect(preAbs).connect(absShape).connect(postAbs);
-  const max = ctx.createGain();
-  max.gain.value = 0.5;
-  sum.connect(max);
-  postAbs.connect(max);
+  const max = createSignalMax(ctx);
+  fast.tail.connect(max.a);
+  slow.tail.connect(max.b);
   const scale = ctx.createGain();
   scale.gain.value = Math.PI / 2;
   input.connect(rectify);
-  max.connect(scale);
+  max.output.connect(scale);
   let attackMs = opts.attackMs;
   let releaseMs = opts.releaseMs;
   const apply = () => {
@@ -111,22 +138,8 @@ function createEnvelopeFollower(ctx, opts) {
     },
     smoothingHz: () => ({ attack: fast.head.frequency.value, release: slow.head.frequency.value }),
     dispose: () => {
-      for (const n of [
-        input,
-        rectify,
-        fast.head,
-        fast.tail,
-        slow.head,
-        slow.tail,
-        sum,
-        diff,
-        negate,
-        preAbs,
-        absShape,
-        postAbs,
-        max,
-        scale
-      ]) {
+      max.dispose();
+      for (const n of [input, rectify, fast.head, fast.tail, slow.head, slow.tail, scale]) {
         try {
           n.disconnect();
         } catch {
@@ -158,16 +171,25 @@ Loom.registerFx("gate", (ctx) => {
   input.connect(vca).connect(output);
   const follower = createEnvelopeFollower(ctx, { attackMs: 2, releaseMs: 150 });
   input.connect(follower.input);
-  let threshold = -30, range = -60, attack = 2, release = 150;
+  const HOLD_MAX_SEC = 1;
+  const holdDelay = ctx.createDelay(HOLD_MAX_SEC);
+  const held = createSignalMax(ctx);
+  follower.output.connect(held.a);
+  follower.output.connect(holdDelay).connect(held.b);
+  let threshold = -30, range = -60, attack = 2, hold = 20, release = 150;
+  holdDelay.delayTime.value = hold / 1e3;
   let shaper = ctx.createWaveShaper();
   const buildShaper = () => {
     const next = ctx.createWaveShaper();
     next.curve = gateCurve(dbToLin(threshold), dbToLin(range));
     next.oversample = "none";
-    follower.output.connect(next);
+    held.output.connect(next);
     next.connect(vca.gain);
     try {
-      follower.output.disconnect(shaper);
+      held.output.disconnect(shaper);
+    } catch {
+    }
+    try {
       shaper.disconnect();
     } catch {
     }
@@ -178,7 +200,7 @@ Loom.registerFx("gate", (ctx) => {
     input,
     output,
     getAudioParams: () => /* @__PURE__ */ new Map(),
-    getBaseValue: (id) => id === "threshold" ? threshold : id === "range" ? range : id === "attack" ? attack : id === "release" ? release : 0,
+    getBaseValue: (id) => id === "threshold" ? threshold : id === "range" ? range : id === "attack" ? attack : id === "hold" ? hold : id === "release" ? release : 0,
     setBaseValue: (id, v) => {
       if (id === "threshold") {
         if (v !== threshold) {
@@ -196,6 +218,10 @@ Loom.registerFx("gate", (ctx) => {
         attack = v;
         follower.setAttack(v);
       }
+      if (id === "hold") {
+        hold = v;
+        holdDelay.delayTime.value = Math.min(HOLD_MAX_SEC, v / 1e3);
+      }
       if (id === "release") {
         release = v;
         follower.setRelease(v);
@@ -205,7 +231,8 @@ Loom.registerFx("gate", (ctx) => {
     },
     dispose: () => {
       follower.dispose();
-      for (const n of [input, output, vca, shaper]) {
+      held.dispose();
+      for (const n of [input, output, vca, holdDelay, shaper]) {
         try {
           n.disconnect();
         } catch {

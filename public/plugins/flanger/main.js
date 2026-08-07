@@ -113,6 +113,6 @@ Loom.registerFx("flanger", (ctx) => createModulatedDelay(ctx, {
   // ~2 ms — the jet region
   sweepSec: 18e-4,
   // sweep close to the base, staying short
-  maxFeedback: 0.9
-  // feedback: sharpens the comb, kept under 1 to stay stable
+  maxFeedback: 0.75
+  // resonance 1/(1 − g) = 4 — see the note above
 }));
