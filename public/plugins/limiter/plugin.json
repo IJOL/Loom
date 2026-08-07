@@ -1,0 +1,38 @@
+{
+  "id": "limiter",
+  "name": "Limiter",
+  "version": "1.0.0",
+  "loomApi": 1,
+  "author": "Loom",
+  "main": "main.js",
+  "components": [
+    {
+      "kind": "fx",
+      "id": "limiter",
+      "name": "Limiter",
+      "params": [
+        {
+          "id": "ceiling",
+          "label": "Ceil",
+          "kind": "continuous",
+          "min": -30,
+          "max": 0,
+          "default": -1,
+          "unit": "dB"
+        },
+        {
+          "id": "release",
+          "label": "Rel",
+          "kind": "continuous",
+          "min": 0.001,
+          "max": 0.5,
+          "default": 0.05,
+          "unit": "s"
+        }
+      ],
+      "fx": {
+        "color": "#e05a8a"
+      }
+    }
+  ]
+}

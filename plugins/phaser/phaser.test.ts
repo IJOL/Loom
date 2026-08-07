@@ -57,4 +57,16 @@ describe('phaser', () => {
     expect(fx.getBaseValue('feedback')).toBeCloseTo(0.3, 3);
     expect(fx.getBaseValue('mix')).toBeCloseTo(0.55, 3);
   });
+
+  it('answers to every param its manifest declares', () => {
+    // The other six migrated effects each got this check; the phaser imported
+    // its manifest and then asserted nothing with it, which left plugin.json
+    // and main.ts unverified against each other.
+    expect(manifest.components[0].id).toBe('phaser');
+    const fx = mk(new OfflineAudioContext(1, 4410, 44100));
+    for (const p of manifest.components[0].params) {
+      fx.setBaseValue(p.id, p.default);
+      expect(fx.getBaseValue(p.id)).toBeCloseTo(p.default, 3);
+    }
+  });
 });

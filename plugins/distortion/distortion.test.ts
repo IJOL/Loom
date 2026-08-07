@@ -85,8 +85,24 @@ describe('distortion plugin', () => {
   });
 
   it('a redundant drive write rebuilds nothing', () => {
-    const inst = create(new OfflineAudioContext(1, 128, SR) as unknown as AudioContext);
-    expect(() => inst.setBaseValue('drive', inst.getBaseValue('drive'))).not.toThrow();
+    // Counted, not inferred from "it did not throw": deleting the `v !== drive`
+    // guard would build a FRESH shaper, whose first curve write is legal, so a
+    // not-toThrow assertion stays green against the very thing it names. The
+    // only honest witness is whether another shaper was made.
+    const ctx = new OfflineAudioContext(1, 128, SR) as unknown as AudioContext;
+    let built = 0;
+    const real = ctx.createWaveShaper.bind(ctx);
+    ctx.createWaveShaper = () => { built++; return real(); };
+
+    const inst = create(ctx);
+    const afterConstruction = built;
+    inst.setBaseValue('drive', inst.getBaseValue('drive'));
+    expect(built).toBe(afterConstruction);
+
+    // And the control: a real move DOES build one, so the counter is measuring
+    // something rather than sitting at zero.
+    inst.setBaseValue('drive', inst.getBaseValue('drive') + 0.2);
+    expect(built).toBe(afterConstruction + 1);
   });
 });
 

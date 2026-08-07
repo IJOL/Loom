@@ -6,10 +6,11 @@
 // rather than ship a near-duplicate `gate` plugin, those three are params here.
 // Square + 1/16 + a little smooth IS the gate; sine + free Hz is the tremolo.
 //
-// It is also the only insert that takes `setBpm`. The host calls it on every
-// slot when the tempo changes, and a synced rate is computed from it rather
-// than living on the knob — which is why `getBaseValue('rate')` reports the
-// EFFECTIVE rate, not what the user last dialled.
+// It is one of the two inserts that take `setBpm` (the delay is the other).
+// The host calls it on every slot when the tempo changes, and a synced rate is
+// computed from it rather than living on the knob — which is why
+// `getBaseValue('rate')` reports the EFFECTIVE rate, not what the user last
+// dialled.
 import type { FxInstance } from '@loom/plugin-sdk';
 
 /** Sync division → beats per LFO cycle. Index 0 is Free (manual Hz).

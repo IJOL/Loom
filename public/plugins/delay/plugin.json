@@ -1,0 +1,101 @@
+{
+  "id": "delay",
+  "name": "Delay",
+  "version": "1.0.0",
+  "loomApi": 1,
+  "author": "Loom",
+  "main": "main.js",
+  "components": [
+    {
+      "kind": "fx",
+      "id": "delay",
+      "name": "Delay",
+      "params": [
+        {
+          "id": "time",
+          "label": "Time",
+          "kind": "continuous",
+          "min": 0.01,
+          "max": 2,
+          "default": 0.375,
+          "unit": "s"
+        },
+        {
+          "id": "feedback",
+          "label": "Fbk",
+          "kind": "continuous",
+          "min": 0,
+          "max": 0.95,
+          "default": 0.45
+        },
+        {
+          "id": "wet",
+          "label": "Wet",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1.5,
+          "default": 0.8
+        },
+        {
+          "id": "damping",
+          "label": "Damp",
+          "kind": "continuous",
+          "min": 200,
+          "max": 12000,
+          "default": 4500,
+          "curve": "exponential",
+          "unit": "Hz"
+        },
+        {
+          "id": "width",
+          "label": "Width",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 1
+        },
+        {
+          "id": "sync",
+          "label": "Sync",
+          "kind": "discrete",
+          "min": 0,
+          "max": 6,
+          "default": 0,
+          "options": [
+            {
+              "value": "free",
+              "label": "Free"
+            },
+            {
+              "value": "1/4",
+              "label": "1/4"
+            },
+            {
+              "value": "1/8",
+              "label": "1/8"
+            },
+            {
+              "value": "1/8.",
+              "label": "1/8."
+            },
+            {
+              "value": "1/8t",
+              "label": "1/8t"
+            },
+            {
+              "value": "1/16",
+              "label": "1/16"
+            },
+            {
+              "value": "1/16t",
+              "label": "1/16t"
+            }
+          ]
+        }
+      ],
+      "fx": {
+        "color": "#5aa9e6"
+      }
+    }
+  ]
+}

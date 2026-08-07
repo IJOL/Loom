@@ -1,0 +1,72 @@
+{
+  "id": "compressor",
+  "name": "Compressor",
+  "version": "1.0.0",
+  "loomApi": 1,
+  "author": "Loom",
+  "main": "main.js",
+  "components": [
+    {
+      "kind": "fx",
+      "id": "compressor",
+      "name": "Compressor",
+      "params": [
+        {
+          "id": "threshold",
+          "label": "Thr",
+          "kind": "continuous",
+          "min": -60,
+          "max": 0,
+          "default": -24,
+          "unit": "dB"
+        },
+        {
+          "id": "ratio",
+          "label": "Ratio",
+          "kind": "continuous",
+          "min": 1,
+          "max": 20,
+          "default": 4
+        },
+        {
+          "id": "attack",
+          "label": "Atk",
+          "kind": "continuous",
+          "min": 0.001,
+          "max": 1,
+          "default": 0.003,
+          "unit": "s"
+        },
+        {
+          "id": "release",
+          "label": "Rel",
+          "kind": "continuous",
+          "min": 0.001,
+          "max": 1,
+          "default": 0.25,
+          "unit": "s"
+        },
+        {
+          "id": "knee",
+          "label": "Knee",
+          "kind": "continuous",
+          "min": 0,
+          "max": 40,
+          "default": 30,
+          "unit": "dB"
+        },
+        {
+          "id": "makeup",
+          "label": "Mkup",
+          "kind": "continuous",
+          "min": 0,
+          "max": 4,
+          "default": 1
+        }
+      ],
+      "fx": {
+        "color": "#1abc9c"
+      }
+    }
+  ]
+}

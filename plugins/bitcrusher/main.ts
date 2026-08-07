@@ -65,7 +65,10 @@ Loom.registerFx('bitcrusher', (ctx): FxInstance => {
   let shaper = ctx.createWaveShaper();
   const buildShaper = (b: number) => {
     const next = ctx.createWaveShaper();
-    next.curve = crushCurve(b);
+    // The cast is load-bearing, not decoration: lib.dom types `curve` as
+    // Float32Array<ArrayBuffer> while a plain Float32Array is
+    // Float32Array<ArrayBufferLike>, and the two are not assignable.
+    next.curve = crushCurve(b) as Float32Array<ArrayBuffer>;
     next.oversample = 'none';                // crushing WANTS the aliasing
     // Signal AND dither noise both land on the shaper input, so the noise is
     // present at the moment of quantization — which is the whole point.

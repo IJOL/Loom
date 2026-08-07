@@ -21,7 +21,10 @@ Loom.registerFx('distortion', (ctx): FxInstance => {
   let shaper = ctx.createWaveShaper();
   const buildShaper = (amount: number) => {
     const next = ctx.createWaveShaper();
-    next.curve = makeCurve(amount);
+    // The cast is load-bearing, not decoration: lib.dom types `curve` as
+    // Float32Array<ArrayBuffer> while a plain Float32Array is
+    // Float32Array<ArrayBufferLike>, and the two are not assignable.
+    next.curve = makeCurve(amount) as Float32Array<ArrayBuffer>;
     next.oversample = '4x';                  // keep the new harmonics from aliasing
     input.connect(next); next.connect(wet);
     try { input.disconnect(shaper); shaper.disconnect(); } catch { /* first build */ }

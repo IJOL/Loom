@@ -63,7 +63,11 @@ export function createModulatedDelay(ctx: AudioContext, spec: ModulatedDelaySpec
   delay.connect(wet).connect(output);
   if (spec.maxFeedback > 0) delay.connect(fb).connect(delay);
 
-  let rate = d.rate, depth = d.depth, feedback = d.feedback, mix = d.mix;
+  // Annotated, not inferred: MODULATED_DELAY_DEFAULTS is `as const`, so an
+  // inferred local would take the LITERAL type (0.8, 0.6…) and setBaseValue's
+  // `number` could not be assigned to it.
+  let rate: number = d.rate, depth: number = d.depth,
+      feedback: number = d.feedback, mix: number = d.mix;
   const applyDepth = () => { sweep.gain.value = spec.sweepSec * depth * 0.6; };
   const applyMix   = () => { wet.gain.value = mix; dry.gain.value = 1 - mix; };
 

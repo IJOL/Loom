@@ -89,7 +89,15 @@ describe('modulated delay — feedback belongs to the flanger alone', () => {
       const out = (await ctx.startRendering()).getChannelData(0);
       return rms(out.subarray(Math.floor(SR * 0.55)));
     };
-    expect(await tail(0.9)).toBeGreaterThan(await tail(0) * 2);
+    // Stated plainly rather than dressed as a ratio: with a 2 ms line and no
+    // feedback the control tail is essentially zero, so `> control * 2` would
+    // read as a margin while really asserting `> 0`. What carries the claim is
+    // the comparison against the SIGNAL's own level, which the control cannot
+    // reach and a working feedback path can.
+    const withFb = await tail(0.9);
+    const withoutFb = await tail(0);
+    expect(withoutFb).toBeLessThan(withFb * 0.1);
+    expect(withFb).toBeGreaterThan(0.01);
   });
 
   it('the two shipped configurations do not sound the same', () => {

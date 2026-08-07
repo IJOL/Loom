@@ -1,0 +1,36 @@
+{
+  "id": "distortion",
+  "name": "Dist",
+  "version": "1.0.0",
+  "loomApi": 1,
+  "author": "Loom",
+  "main": "main.js",
+  "components": [
+    {
+      "kind": "fx",
+      "id": "distortion",
+      "name": "Dist",
+      "params": [
+        {
+          "id": "drive",
+          "label": "Drive",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.3
+        },
+        {
+          "id": "mix",
+          "label": "Mix",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 1
+        }
+      ],
+      "fx": {
+        "color": "#e6794a"
+      }
+    }
+  ]
+}

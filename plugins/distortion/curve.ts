@@ -3,9 +3,12 @@
 // clipping and not just how hard the signal hits it.
 //
 // It lives apart from main.ts because it is pure maths and can be measured
-// without a graph — which is not a preference here but a necessity: the suite's
-// audio engine refuses a second write to a WaveShaperNode's curve, so no
-// rendered test can move the drive knob. See distortion.test.ts.
+// without a graph, which lets the shape claims be sharper than a render allows.
+// (An earlier version of this note said a rendered test COULD NOT move the
+// drive knob, because the suite's audio engine refuses a second write to a
+// WaveShaperNode's curve. That was retracted: main.ts swaps in a fresh shaper,
+// the way the bitcrusher already did, and distortion.test.ts moves the knob for
+// real.)
 
 export function makeCurve(amount: number): Float32Array {
   const n = 1024;

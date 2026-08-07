@@ -8,10 +8,10 @@
 // of that group with nothing to say so.
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import '../../../test/setup';
+import '../../test/setup';
 import type { FxInstance } from '@loom/plugin-sdk';
 import manifest from './plugin.json';
-import { spectralCentroid } from '../../../test/dsp-asserts';
+import { spectralCentroid } from '../../test/dsp-asserts';
 
 // The plugin's own test, run against the plugin the way the host runs it.
 let create: (ctx: AudioContext) => FxInstance;

@@ -1,0 +1,65 @@
+{
+  "id": "multifilter",
+  "name": "Filter",
+  "version": "1.0.0",
+  "loomApi": 1,
+  "author": "Loom",
+  "main": "main.js",
+  "components": [
+    {
+      "kind": "fx",
+      "id": "multifilter",
+      "name": "Filter",
+      "params": [
+        {
+          "id": "freq",
+          "label": "Freq",
+          "kind": "continuous",
+          "min": 20,
+          "max": 20000,
+          "default": 1000,
+          "curve": "exponential",
+          "unit": "Hz"
+        },
+        {
+          "id": "q",
+          "label": "Q",
+          "kind": "continuous",
+          "min": 0.1,
+          "max": 24,
+          "default": 1,
+          "curve": "exponential"
+        },
+        {
+          "id": "type",
+          "label": "Type",
+          "kind": "discrete",
+          "min": 0,
+          "max": 3,
+          "default": 0,
+          "options": [
+            {
+              "value": "lowpass",
+              "label": "LP"
+            },
+            {
+              "value": "highpass",
+              "label": "HP"
+            },
+            {
+              "value": "bandpass",
+              "label": "BP"
+            },
+            {
+              "value": "notch",
+              "label": "Notch"
+            }
+          ]
+        }
+      ],
+      "fx": {
+        "color": "#ffa726"
+      }
+    }
+  ]
+}

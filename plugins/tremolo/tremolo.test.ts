@@ -143,10 +143,13 @@ describe('tremolo as a trance gate', () => {
   });
 });
 
-// The tempo cases above already cover setBpm — the one surface no other insert
-// has, and therefore the one thing that could have broken silently in the move.
-// What the manifest adds is the other direction: that nothing it promises is
-// left unanswered by the graph.
+// The tempo cases above already cover setBpm — the surface only this and the
+// delay have, and therefore the one thing that could have broken silently in
+// the move. (An earlier version of this comment called it "the only insert
+// with setBpm". That was wrong: the delay syncs its time the same way, which
+// only surfaced when the delay's own migration came round.) What the manifest
+// adds is the other direction: that nothing it promises is left unanswered by
+// the graph.
 describe('tremolo — the manifest and the graph agree', () => {
   it('answers to every param its manifest declares', () => {
     expect(manifest.components[0].id).toBe('tremolo');
