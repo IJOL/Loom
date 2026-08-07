@@ -14,6 +14,7 @@
 
 import { html, render } from 'lit-html';
 import { listEngines } from './registry';
+import { melodicSynthEngineIds } from './engine-selector-ui';
 import type { EngineUIContext, SynthEngine } from './engine-types';
 import { LAYERS_ENGINE_ID, laneLayers } from './layers-engine';
 import { layerPrefix, MAX_LAYERS, type LayerSpec } from '../audio-dsp/layers/layer-spec';
@@ -54,13 +55,24 @@ export function hiddenLayerParam(laneId: string, paramId: string): boolean {
   return false;
 }
 
-/** Everything a slot could hold: every melodic engine except this one.
+/** Everything a slot can actually hold.
  *
- *  Excluding itself is not tidiness. A LAYERS inside a LAYERS would build its
- *  own sub-engines at spawn and nothing bounds the depth — one rack pointing at
- *  itself is an infinite tower of synths inside the audio callback. */
+ *  `melodicSynthEngineIds` is the host's OWN answer to "which engines is a
+ *  melodic lane allowed to be", and asking it is the whole point: it already
+ *  drops the audio channel and the pad-editor engines. Building the list here
+ *  from `listEngines` — which is what this did first — offered the Sampler and
+ *  the drum machine, and NEITHER is reachable from the worklet's renderer
+ *  registry: they run in processors of their own. A slot holding one would have
+ *  been silently skipped at spawn, which reads as a broken instrument.
+ *
+ *  Excluding LAYERS itself is a separate rule and not tidiness: a LAYERS inside
+ *  a LAYERS would build its own sub-engines at spawn with nothing bounding the
+ *  depth — one rack pointing at itself is an infinite tower of synths inside the
+ *  audio callback. */
 function slotChoices() {
-  return listEngines('polyhost').filter((e) => e.id !== LAYERS_ENGINE_ID);
+  const allowed = new Set(melodicSynthEngineIds());
+  return listEngines('polyhost')
+    .filter((e) => e.id !== LAYERS_ENGINE_ID && allowed.has(e.id));
 }
 
 /** Recall a preset INTO one layer.

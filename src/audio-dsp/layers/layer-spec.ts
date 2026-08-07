@@ -37,6 +37,18 @@ export interface LayerSpec {
 
 export const emptyLayer = (): LayerSpec => ({ engineId: '', lo: 0, hi: 127, gain: 1 });
 
+/** A stored rack read as exactly MAX_LAYERS slots, gaps filled.
+ *
+ *  ONE implementation because both sides need it and they must agree on what an
+ *  absent slot means: the host reads it to draw the tabs and to post the rack,
+ *  the worklet reads it off a message that may have come from another build.
+ *  Two copies of this rule is two answers to "what is slot 3 when nobody set
+ *  it", and the disagreement would be silent. */
+export function readRack(stored: readonly Partial<LayerSpec>[] | undefined): LayerSpec[] {
+  const raw = Array.isArray(stored) ? stored : [];
+  return Array.from({ length: MAX_LAYERS }, (_, i) => ({ ...emptyLayer(), ...raw[i] }));
+}
+
 /** Which layers this note should sound on.
  *
  *  An out-of-range index selects NOTHING rather than falling back to the zones.

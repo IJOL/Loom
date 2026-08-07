@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  defaultSelection, retopologise, selectionLoopIds, setSlot, slotNames, resolveSelection,
+  defaultSelection, retopologise, selectionLoopIds, resolveSelection,
 } from './weave-selection';
 import type { PanelWeave } from './weave-selection';
 import type { NoteEvent } from '../core/notes';
@@ -61,27 +61,6 @@ describe('retopologise', () => {
 });
 
 describe('slots', () => {
-  it('replaces the B end without touching the position', () => {
-    const sel: PanelWeave = { kind: 'ab', a: 'c1', b: 'c2', x: 0.6 };
-    expect(setSlot(sel, 1, 'c3')).toEqual({ kind: 'ab', a: 'c1', b: 'c3', x: 0.6 });
-  });
-
-  it('ignores a slot the selection does not have', () => {
-    const sel: PanelWeave = { kind: 'queue', loops: ['c1', 'c2'], x: 0 };
-    // Growing the queue here would hide the caller's bug behind a longer list.
-    expect(setSlot(sel, 5, 'c3')).toBe(sel);
-  });
-
-  it('names the ends so a control can label them', () => {
-    const sel: PanelWeave = { kind: 'ab', a: 'c1', b: 'c2', x: 0 };
-    expect(slotNames(sel, (id) => ({ c1: 'Four/Floor', c2: 'Amen Roll' })[id])).toEqual(['Four/Floor', 'Amen Roll']);
-  });
-
-  it('falls back to the raw id rather than a blank end', () => {
-    const sel: PanelWeave = { kind: 'ab', a: 'c1', b: 'gone', x: 0 };
-    expect(slotNames(sel, () => undefined)).toEqual(['c1', 'gone']);
-  });
-
   it('lists each loop once, in order', () => {
     const sel: PanelWeave = { kind: 'cloud', corners: ['c1', 'c2', 'c1', 'c3'], x: 0, y: 0 };
     expect(selectionLoopIds(sel)).toEqual(['c1', 'c2', 'c3']);

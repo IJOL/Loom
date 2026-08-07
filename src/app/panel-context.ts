@@ -8,7 +8,7 @@
 import type { PanelContext, PanelLane, PanelLoopPhase, PanelWeave } from '@loom/plugin-sdk';
 import { defaultLaneSelection } from '../weave/weave-state';
 import { retopologise } from '../weave/weave-selection';
-import { weaveLoopChoices, type WeaveLoopContext } from './weave-loops';
+import { weaveLoopChoices, weaveLoopContext, type WeaveLoopContext } from './weave-loops';
 import { stylesWithPatterns } from '../patterns/pattern-library';
 import { STYLE_CATALOG, type StyleId } from '../core/musicality';
 import { isHarmonic } from '../plugins/capabilities';
@@ -77,18 +77,11 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
   /** Everything the loop list and the loop resolver need about a lane, gathered
    *  once. Built per call rather than cached: the style, the key and the lock
    *  all move, and a stale copy would list loops the lane no longer draws. */
-  const loopContext = (laneId: string): WeaveLoopContext => {
-    const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
-    const m = deps.sessionHost.state.musicality ?? DEFAULT_MUSICALITY;
-    return {
-      lane,
-      style: deps.weave.lanes[laneId]?.forcedStyle ?? m.style,
-      harmonic: lane ? isHarmonic(lane.engineId) : true,
-      key: m.key,
-      scale: m.scale,
-      lock: m.lock,
-    };
-  };
+  const loopContext = (laneId: string): WeaveLoopContext => weaveLoopContext(
+    deps.sessionHost.state.lanes.find((l) => l.id === laneId),
+    deps.sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
+    deps.weave.lanes[laneId]?.forcedStyle,
+  );
 
   return {
     lanes(): PanelLane[] {

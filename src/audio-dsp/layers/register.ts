@@ -8,7 +8,7 @@
 
 import { registerRenderer } from '../renderer-registry';
 import { LayersRenderer } from './layers-renderer';
-import { emptyLayer, MAX_LAYERS, type LayerSpec } from './layer-spec';
+import { readRack, type LayerSpec } from './layer-spec';
 
 /** What the host posts as this lane's structural state. */
 export interface LayersStructural {
@@ -21,12 +21,10 @@ export interface LayersStructural {
  *  or newer build has to degrade to silence rather than to a throw inside the
  *  audio callback — where a throw takes the whole lane down mid-bar. */
 function racksOf(structural: unknown): LayerSpec[] {
-  const raw = (structural as LayersStructural | undefined)?.layers;
-  if (!Array.isArray(raw)) return [];
-  return Array.from({ length: Math.min(raw.length, MAX_LAYERS) }, (_, i) => ({
-    ...emptyLayer(),
-    ...raw[i],
-  }));
+  // readRack is the ONE reading of a stored rack, shared with the host. A second
+  // one here would be a second answer to "what is slot 3 when nobody set it",
+  // across a thread boundary where the disagreement is silent.
+  return readRack((structural as LayersStructural | undefined)?.layers);
 }
 
 export const LAYERS_ENGINE_ID = 'layers';

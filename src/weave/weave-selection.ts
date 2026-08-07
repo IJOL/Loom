@@ -69,36 +69,12 @@ export function selectionLoopIds(sel: PanelWeave): string[] {
   return [...new Set(ids)];
 }
 
-/** Replace one slot of a selection — the A end, a queue entry, a cloud corner.
- *
- *  Out-of-range slots are ignored rather than appended: a caller that asks for
- *  corner 9 has a bug, and growing the square to nine corners would hide it. */
-export function setSlot(sel: PanelWeave, slot: number, loopId: string): PanelWeave {
-  if (sel.kind === 'ab') {
-    if (slot === 0) return { ...sel, a: loopId };
-    if (slot === 1) return { ...sel, b: loopId };
-    return sel;
-  }
-  if (sel.kind === 'queue') {
-    if (slot < 0 || slot >= sel.loops.length) return sel;
-    const loops = [...sel.loops];
-    loops[slot] = loopId;
-    return { ...sel, loops };
-  }
-  if (slot < 0 || slot >= sel.corners.length) return sel;
-  const corners = [...sel.corners];
-  corners[slot] = loopId;
-  return { ...sel, corners };
-}
-
-/** Names for the slots, so a control can label its ends and corners. Unknown
- *  ids come back as their id — better a raw id than a blank end. */
-export function slotNames(sel: PanelWeave, nameOf: (id: string) => string | undefined): string[] {
-  const ids = sel.kind === 'ab' ? [sel.a, sel.b]
-    : sel.kind === 'queue' ? sel.loops
-      : sel.corners;
-  return ids.map((id) => nameOf(id) ?? id);
-}
+// A `setSlot` and a `slotNames` used to live here, written for the panel to
+// replace an end and to label one. They were dead BY CONSTRUCTION: the panel is
+// a plugin, compiled separately, and cannot import this module at all. A
+// selection is plain data, so the panel does both with an object spread and its
+// own name lookup — which is the right answer, and the reason these two only
+// ever had tests for callers.
 
 /** Turn a stored selection into the live topology state the blend consumes.
  *

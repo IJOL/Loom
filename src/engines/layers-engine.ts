@@ -31,7 +31,7 @@ import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 import { registerEngineCapabilities } from '../plugins/capabilities';
 import { isStripParamId } from '../core/channel-strip-params';
-import { MAX_LAYERS, emptyLayer, layerPrefix, type LayerSpec } from '../audio-dsp/layers/layer-spec';
+import { MAX_LAYERS, layerPrefix, readRack, type LayerSpec } from '../audio-dsp/layers/layer-spec';
 import { buildLayersRack, hiddenLayerParam } from './layers-rack-ui';
 import type { SessionLane } from '../session/session';
 
@@ -85,8 +85,7 @@ export const LAYERS_PARAMS: EngineParamSpec[] = rackParams();
 /** The rack as stored, padded to MAX_LAYERS. Reading it in one place means the
  *  audio side and the UI cannot disagree about what an absent slot means. */
 export function laneLayers(lane: SessionLane | undefined): LayerSpec[] {
-  const stored = lane?.engineState?.layers ?? [];
-  return Array.from({ length: MAX_LAYERS }, (_, i) => ({ ...emptyLayer(), ...stored[i] }));
+  return readRack(lane?.engineState?.layers);
 }
 
 /** Each filled slot's OWN engine params, wearing this slot's prefix.

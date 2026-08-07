@@ -14,6 +14,7 @@ import type { PanelChoice } from '@loom/plugin-sdk';
 import type { NoteEvent } from '../core/notes';
 import type { ScaleId, StyleId } from '../core/musicality';
 import type { SessionLane } from '../session/session';
+import { isHarmonic } from '../plugins/capabilities';
 import { formatLoopId, parseLoopId } from '../weave/loop-ids';
 import { patternNotes, patternsFor, type PatternKind } from '../patterns/pattern-library';
 
@@ -30,6 +31,31 @@ export interface WeaveLoopContext {
    *  every pattern arrives exactly as its author wrote it — and in acid those
    *  chromatic notes ARE the line. */
   lock: boolean;
+}
+
+/** Everything the list and the resolver need about a lane, gathered ONCE.
+ *
+ *  Both callers must agree exactly — the panel LISTS these loops and the
+ *  scheduler RESOLVES them — and they used to build this separately, with the
+ *  same three fallbacks written twice. An id that lists but resolves differently
+ *  is a loop that shows in the dropdown and plays something else.
+ *
+ *  `forcedStyle` is the lane's own choice; absent, it inherits the session's. */
+export function weaveLoopContext(
+  lane: SessionLane | undefined,
+  musicality: { key: number; scale: ScaleId; style: StyleId; lock: boolean },
+  forcedStyle: StyleId | undefined,
+): WeaveLoopContext {
+  return {
+    lane,
+    style: forcedStyle ?? musicality.style,
+    // Asked through the capability door, so a plugin drum machine answers for
+    // itself rather than the core keeping a list of ids that mean "drums".
+    harmonic: lane ? isHarmonic(lane.engineId) : true,
+    key: musicality.key,
+    scale: musicality.scale,
+    lock: musicality.lock,
+  };
 }
 
 /** Which library shelves a lane reads. A drum lane has one; a melodic lane gets

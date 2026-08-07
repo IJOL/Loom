@@ -12,7 +12,7 @@
 import { defaultWeaveState, type WeaveState, type LaneWeaveConfig } from '../weave/weave-state';
 import { createWeaveGate, createMacroGate, type WeaveGate } from '../weave/weave-runtime';
 import { resolveSelection } from '../weave/weave-selection';
-import { weaveLoopNotes } from './weave-loops';
+import { weaveLoopNotes, weaveLoopContext } from './weave-loops';
 import { macroNeutral } from '../weave/weave-catalog';
 import { isHarmonic } from '../plugins/capabilities';
 import { LAYERS_ENGINE_ID } from '../engines/layers-engine';
@@ -59,19 +59,11 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *  edited in place, the lane's style changes, the key changes. */
   const notesOf = (laneId: string) => (loopId: string): NoteEvent[] | undefined => {
     const session = deps.getState?.();
-    const lane = session?.lanes.find((l) => l.id === laneId);
-    const m = session?.musicality ?? DEFAULT_MUSICALITY;
-    return weaveLoopNotes(loopId, {
-      lane,
-      // The lane's own style if it has chosen one, else the session's — the
-      // same fallback the panel's dropdown shows, because they must name the
-      // same shelf of the library.
-      style: state.lanes[laneId]?.forcedStyle ?? m.style,
-      harmonic: lane ? isHarmonic(lane.engineId) : true,
-      key: m.key,
-      scale: m.scale,
-      lock: m.lock,
-    });
+    return weaveLoopNotes(loopId, weaveLoopContext(
+      session?.lanes.find((l) => l.id === laneId),
+      session?.musicality ?? DEFAULT_MUSICALITY,
+      state.lanes[laneId]?.forcedStyle,
+    ));
   };
 
   const lanesEngineId = (laneId: string): string | undefined =>
