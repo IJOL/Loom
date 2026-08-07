@@ -1,0 +1,642 @@
+<title>WEAVE · el panel dinámico de Loom</title>
+
+<style>
+  /* ── Tokens de Loom (src/styles/_design-tokens.scss) ── */
+  :root {
+    --bg:          #0e0c0a;
+    --surface:     #161310;
+    --surface-2:   #1c1814;
+    --surface-3:   #221d18;
+    --border:      #2a221c;
+    --border-soft: #1f1a15;
+
+    --text:        #d8d2c8;
+    --text-dim:    #8a8278;
+    --text-faint:  #5a5550;
+
+    --amber:       #ffa726;
+    --amber-soft:  rgba(255, 167, 38, .4);
+    --amber-glow:  rgba(255, 167, 38, .18);
+    --red:         #e53935;
+    --green:       #7cb342;
+
+    --z-synths:      #5bb8c4;
+    --z-synths-wash: rgba(91, 184, 196, .12);
+
+    --k-cyan:   #2ee0c0;
+    --k-yellow: #f7d000;
+    --k-red:    #c0392b;
+    --k-purple: #9b59b6;
+    --k-blue:   #3498db;
+    --k-orange: #e67e22;
+
+    --a: #3498db;   /* loop de origen */
+    --b: #e67e22;   /* loop de destino */
+
+    --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* grano, como en Loom */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    opacity: .05; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.7 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  .page { position: relative; z-index: 1; padding: 20px clamp(12px, 3vw, 28px) 64px; max-width: 1240px; margin: 0 auto; }
+
+  .brief { color: var(--text-dim); max-width: 74ch; margin: 0 0 18px; font-size: 12.5px; }
+  .brief b { color: var(--text); font-weight: 700; }
+
+  /* ── carcasa del plugin ── */
+  .rack { background: var(--surface); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; }
+
+  .rack-head {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
+    padding: 11px 14px; border-bottom: 1px solid var(--border); background: var(--surface-2);
+  }
+  .logo { font-weight: 700; font-size: 15px; letter-spacing: .2em; color: var(--amber); text-shadow: 0 0 8px var(--amber-glow); }
+  .logo small { font-size: .62em; letter-spacing: .14em; color: var(--text-faint); margin-left: .6em; text-shadow: none; }
+  .head-spacer { flex: 1 1 auto; }
+
+  .field { display: inline-flex; align-items: center; gap: 6px; }
+  .lbl { font-size: 9.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--text-faint); }
+
+  select, .num {
+    font-family: var(--mono); font-size: 11px; color: var(--text);
+    background: var(--surface-3); border: 1px solid var(--border); border-radius: 2px;
+    padding: 3px 6px; appearance: none;
+  }
+  select:focus-visible, .num:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--amber); outline-offset: 1px;
+  }
+  .num { width: 52px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  button {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-dim); background: var(--surface-3);
+    border: 1px solid var(--border); border-radius: 2px; padding: 4px 9px; cursor: pointer;
+  }
+  button:hover { color: var(--text); border-color: var(--amber-soft); }
+  button.on { color: var(--bg); background: var(--amber); border-color: var(--amber); font-weight: 700; }
+  button.ghost { background: transparent; }
+
+  .strip { padding: 11px 14px; border-bottom: 1px solid var(--border-soft); }
+  .strip-title {
+    font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-faint);
+    display: flex; align-items: center; gap: 10px; margin-bottom: 9px;
+  }
+  .strip-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── FLOW maestro ── */
+  .flow { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .flow-track { flex: 1 1 260px; min-width: 200px; }
+  .readout { font-variant-numeric: tabular-nums; color: var(--amber); font-weight: 700; font-size: 14px; min-width: 3.4em; text-align: right; }
+
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 18px; background: transparent; margin: 0; cursor: ew-resize; }
+  input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--a), var(--b)); }
+  input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--a), var(--b)); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 9px; height: 18px; margin-top: -7px; border-radius: 1px; background: var(--amber); border: none; }
+  input[type=range]::-moz-range-thumb { width: 9px; height: 18px; border-radius: 1px; background: var(--amber); border: none; }
+
+  /* ── tabla de lanes ── */
+  .lanes { display: flex; flex-direction: column; gap: 5px; }
+  .lane-head, .lane {
+    display: grid;
+    grid-template-columns: 22px 62px 108px 116px 104px 70px 1fr 54px;
+    gap: 8px; align-items: center;
+  }
+  /* Mismo padding y mismo borde (transparente) que la fila, o las cabeceras
+     se desplazan respecto a las celdas que titulan. */
+  .lane-head { font-size: 9px; letter-spacing: .13em; text-transform: uppercase; color: var(--text-faint); padding: 0 6px 3px; border: 1px solid transparent; }
+  .lane { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 2px; padding: 7px 6px; }
+  .lane.open { background: var(--z-synths-wash); border-color: rgba(91,184,196,.4); }
+
+  .led { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 6px rgba(124,179,66,.7); margin: 0 auto; }
+  .led.off { background: var(--surface-3); box-shadow: none; }
+  .lane-name { font-weight: 700; letter-spacing: .08em; font-size: 11px; }
+  .lane.open .lane-name { color: var(--z-synths); }
+  select.tight { width: 100%; }
+
+  .topo-pick { display: flex; gap: 2px; }
+  .topo-pick button { padding: 4px 0; flex: 1; font-size: 9.5px; letter-spacing: 0; min-width: 0; }
+
+  /* mando de fundido por lane */
+  .weave-cell { min-width: 0; }
+  .loopnames { display: flex; justify-content: space-between; gap: 8px; font-size: 9.5px; color: var(--text-dim); margin-bottom: 1px; }
+  .loopnames .na { color: var(--a); }
+  .loopnames .nb { color: var(--b); }
+
+  /* cola */
+  .queue {
+    display: flex; align-items: center; gap: 0; height: 26px; position: relative;
+    background: var(--surface-3); border: 1px solid var(--border); border-radius: 2px;
+    padding: 0 8px; cursor: ew-resize; touch-action: none;
+  }
+  .queue-line { position: absolute; left: 14px; right: 14px; height: 2px; border-radius: 1px; background: var(--border); }
+  .qdot { position: relative; flex: 1; display: flex; justify-content: center; }
+  .qdot i { width: 11px; height: 11px; border-radius: 50%; background: var(--surface-2); border: 2px solid var(--border); display: block; }
+  .qdot.past i { background: var(--a); border-color: var(--a); }
+  .qdot.next i { background: var(--b); border-color: var(--b); box-shadow: 0 0 7px rgba(230,126,34,.55); }
+  .qcursor { position: absolute; top: -2px; width: 2px; height: 28px; background: var(--amber); box-shadow: 0 0 7px var(--amber-soft); }
+
+  /* nube */
+  .pad { position: relative; height: 54px; background: var(--surface-3); border: 1px solid var(--border); border-radius: 2px; cursor: crosshair; touch-action: none; overflow: hidden; }
+  .pad::before, .pad::after { content: ''; position: absolute; background: var(--border-soft); }
+  .pad::before { left: 50%; top: 0; bottom: 0; width: 1px; }
+  .pad::after { top: 50%; left: 0; right: 0; height: 1px; }
+  .pad .corner { position: absolute; font-size: 8.5px; color: var(--text-faint); padding: 2px 4px; letter-spacing: .04em; }
+  .pad .c1 { top: 0; left: 0; color: var(--a); } .pad .c2 { top: 0; right: 0; color: var(--b); }
+  .pad .c3 { bottom: 0; left: 0; color: var(--b); } .pad .c4 { bottom: 0; right: 0; color: var(--a); }
+  .pad .dot { position: absolute; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 8px var(--amber-soft); pointer-events: none; }
+
+  .lane-tools { display: flex; gap: 3px; justify-content: flex-end; }
+  .icon-btn { padding: 3px 5px; font-size: 11px; line-height: 1; text-transform: none; letter-spacing: 0; }
+
+  /* ── macros ── */
+  .macros { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 10px; }
+  .macro { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .macro svg { width: 58px; height: 58px; cursor: ns-resize; touch-action: none; }
+  .macro .mname { font-size: 9px; letter-spacing: .11em; text-transform: uppercase; color: var(--text-dim); text-align: center; }
+  .macro .mval { font-size: 10px; font-variant-numeric: tabular-nums; color: var(--amber); }
+  .knob-track { fill: none; stroke: var(--surface-3); stroke-width: 5; stroke-linecap: round; }
+  .knob-arc   { fill: none; stroke-width: 5; stroke-linecap: round; }
+  .knob-hub   { fill: var(--surface-2); stroke: var(--border); }
+  .knob-tick  { stroke: var(--text); stroke-width: 2; stroke-linecap: round; }
+
+  /* ── clip ── */
+  .clip-tools { display: flex; flex-wrap: wrap; gap: 16px 26px; align-items: flex-end; }
+  .tool { display: flex; flex-direction: column; gap: 5px; }
+  .tool-row { display: flex; gap: 3px; }
+  .hint { font-size: 10px; color: var(--text-faint); max-width: 74ch; flex: 1 0 100%; margin: 2px 0 0; }
+
+  /* ── step automation ── */
+  .steps-head { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 10px; }
+  .stepgrid {
+    display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px;
+    height: 92px; align-items: end;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 2px;
+    padding: 6px; cursor: ns-resize; touch-action: none;
+  }
+  .stepgrid .bar { background: var(--amber); opacity: .82; border-radius: 1px 1px 0 0; min-height: 2px; }
+  .stepgrid .bar.accent { background: var(--k-cyan); }
+  .stepruler { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; padding: 3px 6px 0; font-size: 8.5px; color: var(--text-faint); text-align: center; font-variant-numeric: tabular-nums; }
+
+  .foot { padding: 10px 14px; background: var(--surface-2); display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+  .plugin-note { font-size: 10px; color: var(--text-faint); letter-spacing: .06em; }
+
+  .after { margin-top: 26px; display: flex; flex-direction: column; gap: 14px; }
+  .after h2 { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--amber); margin: 0; }
+  .after p { margin: 0; color: var(--text-dim); max-width: 76ch; font-size: 12.5px; }
+  .after code { color: var(--text); background: var(--surface-2); padding: 1px 4px; border-radius: 2px; }
+  .qs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+  .q { background: var(--surface); border: 1px solid var(--border); border-left: 2px solid var(--amber); border-radius: 2px; padding: 10px 12px; }
+  .q b { display: block; color: var(--text); font-size: 11px; letter-spacing: .06em; margin-bottom: 4px; }
+  .q span { color: var(--text-dim); font-size: 11.5px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  @media (max-width: 900px) {
+    .lane-head { display: none; }
+    .lane { grid-template-columns: 22px 1fr 1fr; grid-auto-rows: auto; row-gap: 6px; }
+    .lane > .weave-cell { grid-column: 1 / -1; }
+  }
+</style>
+
+<div class="page">
+
+  <p class="brief">
+    <b>WEAVE</b> — el panel dinámico, dibujado con los tokens reales de Loom. Responde a tu pregunta:
+    <b>las tres topologías conviven</b>, es un selector por lane. Abajo hay una lane en <b>A→B</b>, otra en <b>cola</b>
+    y otra en <b>nube</b>, funcionando a la vez. Todo lo que ves se puede arrastrar.
+  </p>
+
+  <div class="rack">
+
+    <!-- ── cabecera ── -->
+    <div class="rack-head">
+      <span class="logo">WEAVE<small>PLUGIN · UI</small></span>
+      <span class="field"><span class="lbl">Tono</span>
+        <select id="key"><option>A</option><option>C</option><option>D</option><option>F#</option></select>
+        <select id="scale"><option>minor</option><option>pent minor</option><option>phrygian</option><option>dorian</option></select>
+      </span>
+      <span class="field"><span class="lbl">Estilo base</span>
+        <select id="style"><option>Acid Techno</option><option>Breakbeat</option><option>Dub Techno</option><option>Jungle</option><option>Deep House</option></select>
+      </span>
+      <span class="field"><span class="lbl">BPM</span><input class="num" id="bpm" value="128"></span>
+      <span class="head-spacer"></span>
+      <button id="reseed">⟳ Rebarajar</button>
+      <button class="on" id="print">▣ Fijar a clip</button>
+    </div>
+
+    <!-- ── flow maestro ── -->
+    <div class="strip">
+      <div class="strip-title">Flujo maestro</div>
+      <div class="flow">
+        <span class="lbl">Todas las lanes</span>
+        <div class="flow-track"><input type="range" id="flow" min="0" max="1" step="0.01" value="0.34" aria-label="Flujo maestro"></div>
+        <span class="readout" id="flowOut">0,34</span>
+        <span class="field"><span class="lbl">Deriva</span>
+          <select id="drift"><option>Lanes desfasadas</option><option>Todas a la vez</option></select>
+        </span>
+        <span class="field"><span class="lbl">Velocidad</span>
+          <select id="speed"><option>8 compases</option><option>4 compases</option><option>16 compases</option><option>Manual</option></select>
+        </span>
+      </div>
+    </div>
+
+    <!-- ── lanes ── -->
+    <div class="strip">
+      <div class="strip-title">Lanes · instrumento, preset y tejido</div>
+
+      <div class="lane-head">
+        <span></span><span>Lane</span><span>Instrumento</span><span>Preset</span><span>Estilo</span><span>Topo</span><span>Tejido</span><span></span>
+      </div>
+
+      <div class="lanes">
+
+        <!-- A→B -->
+        <div class="lane" data-lane="0">
+          <span class="led"></span>
+          <span class="lane-name">KICK</span>
+          <select class="tight"><option>Drums</option><option>Sampler</option><option>TB-303</option></select>
+          <select class="tight"><option>909 Hard</option><option>808 Deep</option><option>Linn Dry</option></select>
+          <select class="tight"><option>Techno</option><option>Breakbeat</option><option>Jungle</option></select>
+          <div class="topo-pick" data-topo="0">
+            <button class="on" data-t="ab" title="A→B con reenganche">A▸B</button>
+            <button data-t="q" title="Cola de loops">≡</button>
+            <button data-t="c" title="Nube 2D">◇</button>
+          </div>
+          <div class="weave-cell">
+            <div class="loopnames"><span class="na">Four/Floor</span><span class="nb">Amen Roll</span></div>
+            <input type="range" class="lfade" min="0" max="1" step="0.01" value="0.22" aria-label="Fundido de la lane KICK">
+          </div>
+          <div class="lane-tools">
+            <button class="icon-btn ghost" title="Candar esta lane">🔒</button>
+            <button class="icon-btn ghost" title="Rebarajar sólo esta lane">⟳</button>
+          </div>
+        </div>
+
+        <!-- cola -->
+        <div class="lane" data-lane="1">
+          <span class="led"></span>
+          <span class="lane-name">BASS</span>
+          <select class="tight"><option>TB-303</option><option>Subtractive</option><option>FM</option></select>
+          <select class="tight"><option>Acid Line</option><option>Rubber Sub</option><option>Reese</option></select>
+          <select class="tight"><option>Acid Techno</option><option>Dub Techno</option></select>
+          <div class="topo-pick" data-topo="1">
+            <button data-t="ab">A▸B</button>
+            <button class="on" data-t="q">≡</button>
+            <button data-t="c">◇</button>
+          </div>
+          <div class="weave-cell">
+            <div class="loopnames"><span>Cola · 6 loops</span><span id="qLabel">L2 ▸ L3</span></div>
+            <div class="queue" id="queue">
+              <div class="queue-line"></div>
+              <span class="qdot past"><i></i></span><span class="qdot past"><i></i></span>
+              <span class="qdot next"><i></i></span><span class="qdot"><i></i></span>
+              <span class="qdot"><i></i></span><span class="qdot"><i></i></span>
+              <div class="qcursor" id="qcursor" style="left: 28%"></div>
+            </div>
+          </div>
+          <div class="lane-tools">
+            <button class="icon-btn ghost" title="Candar esta lane">🔒</button>
+            <button class="icon-btn ghost" title="Rebarajar sólo esta lane">⟳</button>
+          </div>
+        </div>
+
+        <!-- nube -->
+        <div class="lane open" data-lane="2">
+          <span class="led"></span>
+          <span class="lane-name">LEAD</span>
+          <select class="tight"><option>Wavetable</option><option>Westcoast</option><option>Karplus</option></select>
+          <select class="tight"><option>Glass Pad</option><option>Bell Stack</option><option>Hollow</option></select>
+          <select class="tight"><option>Trance</option><option>IDM</option><option>Ambient</option></select>
+          <div class="topo-pick" data-topo="2">
+            <button data-t="ab">A▸B</button>
+            <button data-t="q">≡</button>
+            <button class="on" data-t="c">◇</button>
+          </div>
+          <div class="weave-cell">
+            <div class="loopnames"><span>Nube · 4 loops</span><span id="padOut">0,58 / 0,41</span></div>
+            <div class="pad" id="pad">
+              <span class="corner c1">Arp 1</span><span class="corner c2">Arp 7</span>
+              <span class="corner c3">Pad 3</span><span class="corner c4">Stab 2</span>
+              <div class="dot" id="padDot" style="left:58%; top:41%"></div>
+            </div>
+          </div>
+          <div class="lane-tools">
+            <button class="icon-btn ghost" title="Candar esta lane">🔒</button>
+            <button class="icon-btn ghost" title="Rebarajar sólo esta lane">⟳</button>
+          </div>
+        </div>
+
+        <!-- A→B, melódico -->
+        <div class="lane" data-lane="3">
+          <span class="led off"></span>
+          <span class="lane-name">PAD</span>
+          <select class="tight"><option>Subtractive</option><option>FM</option><option>Sampler</option></select>
+          <select class="tight"><option>Wide Strings</option><option>Choir</option></select>
+          <select class="tight"><option>Ambient</option><option>Downtempo</option></select>
+          <div class="topo-pick" data-topo="3">
+            <button class="on" data-t="ab">A▸B</button>
+            <button data-t="q">≡</button>
+            <button data-t="c">◇</button>
+          </div>
+          <div class="weave-cell">
+            <div class="loopnames"><span class="na">Suspend 4</span><span class="nb">Drone 2</span></div>
+            <input type="range" class="lfade" min="0" max="1" step="0.01" value="0.71" aria-label="Fundido de la lane PAD">
+          </div>
+          <div class="lane-tools">
+            <button class="icon-btn ghost" title="Candar esta lane">🔒</button>
+            <button class="icon-btn ghost" title="Rebarajar sólo esta lane">⟳</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── macros ── -->
+    <div class="strip">
+      <div class="strip-title">Macros · automatizables como cualquier destino</div>
+      <div class="macros" id="macros"></div>
+    </div>
+
+    <!-- ── clip ── -->
+    <div class="strip">
+      <div class="strip-title">Clip · longitud y tempo del bucle</div>
+      <div class="clip-tools">
+        <div class="tool">
+          <span class="lbl">Longitud</span>
+          <div class="tool-row">
+            <button>÷3</button><button>÷2</button><button>×2</button><button>×3</button><button>×1½</button>
+          </div>
+        </div>
+        <div class="tool">
+          <span class="lbl">Al alargar</span>
+          <div class="tool-row">
+            <button class="on">Repetir</button><button>Estirar notas</button><button>Repetir y variar</button>
+          </div>
+        </div>
+        <div class="tool">
+          <span class="lbl">Tempo del bucle</span>
+          <div class="tool-row">
+            <button>×0,5</button><button class="on">×1</button><button>×1,5</button><button>×2</button>
+            <input class="num" value="128" aria-label="Tempo libre del bucle">
+          </div>
+        </div>
+        <p class="hint">«Repetir» tesela el bucle y conserva el groove; «estirar» alarga las notas y cambia el carácter. Son cosas distintas y por eso son dos botones, no un modo escondido.</p>
+      </div>
+    </div>
+
+    <!-- ── automatización por pasos ── -->
+    <div class="strip">
+      <div class="strip-title">Automatización por pasos · nuevo modo, junto al LFO</div>
+      <div class="steps-head">
+        <span class="field"><span class="lbl">Destino</span>
+          <select id="dest">
+            <option>weave.flow — flujo maestro</option>
+            <option>weave.density — densidad</option>
+            <option>weave.darkness — oscuridad</option>
+            <option>lane.bass.cutoff</option>
+            <option>fx.send.A — reverb</option>
+          </select>
+        </span>
+        <span class="field"><span class="lbl">Pasos</span><input class="num" value="16" aria-label="Número de pasos"></span>
+        <span class="field"><span class="lbl">Modo</span>
+          <select><option>Escalón (hold)</option><option>Rampa (glide)</option></select>
+        </span>
+        <div class="tool-row">
+          <button>Rampa ↗</button><button>Rampa ↘</button><button>Invertir</button><button>Al azar</button>
+        </div>
+      </div>
+      <div class="stepgrid" id="stepgrid"></div>
+      <div class="stepruler" id="stepruler"></div>
+    </div>
+
+    <div class="foot">
+      <span class="plugin-note">Primer plugin con UI propia · <code>public/plugins/weave/</code> · <code>loomApi: 1</code></span>
+      <span class="plugin-note">Arrastra los mandos, el pad, la cola y las barras de pasos.</span>
+    </div>
+  </div>
+
+  <div class="after">
+    <h2>Lo que este dibujo decide — y lo que deja abierto</h2>
+    <p>
+      La respuesta a tu pregunta es que <b>sí</b>: las tres topologías caben porque el mando de cada lane es
+      un widget distinto sobre el mismo contrato — un valor de posición que el motor de fundido consume.
+      A→B da un número, la cola da un número, la nube da dos. Nada más las diferencia, así que añadir una
+      cuarta más adelante no rompe nada.
+    </p>
+    <p>
+      Ser el <b>primer plugin con UI</b> es lo más arriesgado del lote: hoy <code>public/plugins/*</code> aporta DSP y
+      manifiesto, y el host construye los controles desde los params declarados. WEAVE necesita widgets que no
+      existen en ese vocabulario — un pad 2D, una cola, una rejilla de pasos. O el manifiesto aprende a declararlos,
+      o el ABI abre una puerta para que un plugin monte su propio DOM.
+    </p>
+    <div class="qs">
+      <div class="q"><b>Alcance</b><span>Esto son cuatro sistemas: tejido de loops, macros, herramientas de clip y automatización por pasos. ¿Los especificamos juntos o el tejido primero?</span></div>
+      <div class="q"><b>La puerta del ABI</b><span>¿WEAVE es plugin de verdad desde el día uno, o nace dentro del host y sale a <code>plugins/</code> cuando sepamos qué widgets necesita?</span></div>
+      <div class="q"><b>Melodía</b><span>Los grados de escala hacen que el fundido no desafine. ¿El bajo debe seguir a la melodía en armonía, o cada lane teje por su cuenta?</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── mandos de fundido por lane ───────────────────────────────────────────
+  const flow = document.getElementById('flow');
+  const flowOut = document.getElementById('flowOut');
+  const fades = [...document.querySelectorAll('.lfade')];
+  const fmt = (v) => v.toFixed(2).replace('.', ',');
+
+  function driveAll() {
+    const x = parseFloat(flow.value);
+    flowOut.textContent = fmt(x);
+    // Cada lane va desfasada a propósito: es lo que quita la costura.
+    fades.forEach((f, i) => { f.value = Math.min(1, Math.max(0, x + (i - 1) * 0.13)); });
+    const q = Math.min(1, Math.max(0, x + 0.1));
+    setQueue(q);
+  }
+  flow.addEventListener('input', driveAll);
+
+  // ── cola ─────────────────────────────────────────────────────────────────
+  const queue = document.getElementById('queue');
+  const qcursor = document.getElementById('qcursor');
+  const qLabel = document.getElementById('qLabel');
+  const dots = [...queue.querySelectorAll('.qdot')];
+
+  const N = dots.length;
+  // Los puntos son celdas flex: su centro cae en (i + 0.5) / N, no en i / (N-1).
+  // El cursor tiene que usar ESA escala o no se posa sobre ningún punto.
+  const posToPct = (pos) => (pos + 0.5) / N * 100;
+
+  function setQueue(t) {
+    const pos = t * (N - 1);                     // 0..N-1
+    qcursor.style.left = posToPct(pos) + '%';
+    const i = Math.floor(pos);
+    dots.forEach((d, n) => {
+      d.className = 'qdot' + (n <= i ? ' past' : n === i + 1 ? ' next' : '');
+    });
+    qLabel.textContent = `L${i + 1} ▸ L${Math.min(N, i + 2)}`;
+  }
+  function queueFromEvent(e) {
+    const r = queue.getBoundingClientRect();
+    const pct = (e.clientX - r.left) / r.width;             // 0..1 de la caja
+    const pos = pct * N - 0.5;                              // inversa de posToPct
+    setQueue(Math.min(1, Math.max(0, pos / (N - 1))));
+  }
+  queue.addEventListener('pointerdown', (e) => {
+    queue.setPointerCapture(e.pointerId); queueFromEvent(e);
+    queue.onpointermove = (ev) => { if (ev.buttons) queueFromEvent(ev); };
+  });
+  queue.addEventListener('pointerup', () => { queue.onpointermove = null; });
+
+  // ── nube 2D ──────────────────────────────────────────────────────────────
+  const pad = document.getElementById('pad');
+  const padDot = document.getElementById('padDot');
+  const padOut = document.getElementById('padOut');
+  function padFrom(e) {
+    const r = pad.getBoundingClientRect();
+    const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    padDot.style.left = (x * 100) + '%';
+    padDot.style.top = (y * 100) + '%';
+    padOut.textContent = `${fmt(x)} / ${fmt(y)}`;
+  }
+  pad.addEventListener('pointerdown', (e) => {
+    pad.setPointerCapture(e.pointerId); padFrom(e);
+    pad.onpointermove = (ev) => { if (ev.buttons) padFrom(ev); };
+  });
+  pad.addEventListener('pointerup', () => { pad.onpointermove = null; });
+
+  // ── macros ───────────────────────────────────────────────────────────────
+  const MACROS = [
+    { id: 'density',  name: 'Densidad',  v: 0.55, c: 'var(--k-cyan)' },
+    { id: 'energy',   name: 'Energía',   v: 0.68, c: 'var(--k-yellow)' },
+    { id: 'darkness', name: 'Oscuridad', v: 0.40, c: 'var(--k-purple)' },
+    { id: 'space',    name: 'Espacio',   v: 0.28, c: 'var(--k-blue)' },
+    { id: 'motion',   name: 'Movimiento',v: 0.62, c: 'var(--k-orange)' },
+    { id: 'mix',      name: 'Mezcla estilos', v: 0.22, c: 'var(--k-red)' },
+  ];
+  // El hueco del arco abre ABAJO, como cualquier mando: arranca en 225° (medido
+  // en sentido horario desde las 12) y barre 270°.
+  const R = 22, CX = 29, CY = 29, SWEEP = 270, START = 225;
+
+  function arcPath(frac) {
+    const a0 = START, a1 = START + SWEEP * frac;
+    const pt = (deg) => {
+      const rad = (deg - 90) * Math.PI / 180;
+      return [CX + R * Math.cos(rad), CY + R * Math.sin(rad)];
+    };
+    const [x0, y0] = pt(a0), [x1, y1] = pt(a1);
+    const large = SWEEP * frac > 180 ? 1 : 0;
+    return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+  }
+  // El indicador vive DENTRO del cubo, que es donde se lee: del centro al borde.
+  function tickPos(frac) {
+    const rad = (START + SWEEP * frac - 90) * Math.PI / 180;
+    return [CX + 3 * Math.cos(rad), CY + 3 * Math.sin(rad),
+            CX + 10 * Math.cos(rad), CY + 10 * Math.sin(rad)];
+  }
+
+  const host = document.getElementById('macros');
+  for (const m of MACROS) {
+    const wrap = document.createElement('div');
+    wrap.className = 'macro';
+    wrap.innerHTML = `
+      <svg viewBox="0 0 58 58" role="slider" tabindex="0"
+           aria-label="${m.name}" aria-valuemin="0" aria-valuemax="1" aria-valuenow="${m.v}">
+        <path class="knob-track" d="${arcPath(1)}"></path>
+        <path class="knob-arc" d="${arcPath(m.v)}" style="stroke:${m.c}"></path>
+        <circle class="knob-hub" cx="${CX}" cy="${CY}" r="11"></circle>
+        <line class="knob-tick"></line>
+      </svg>
+      <span class="mname">${m.name}</span>
+      <span class="mval">${fmt(m.v)}</span>`;
+    host.appendChild(wrap);
+
+    const svg = wrap.querySelector('svg');
+    const arc = wrap.querySelector('.knob-arc');
+    const tick = wrap.querySelector('.knob-tick');
+    const val = wrap.querySelector('.mval');
+    let v = m.v;
+
+    const paint = () => {
+      arc.setAttribute('d', arcPath(v));
+      const [x1, y1, x2, y2] = tickPos(v);
+      tick.setAttribute('x1', x1.toFixed(2)); tick.setAttribute('y1', y1.toFixed(2));
+      tick.setAttribute('x2', x2.toFixed(2)); tick.setAttribute('y2', y2.toFixed(2));
+      val.textContent = fmt(v);
+      svg.setAttribute('aria-valuenow', v.toFixed(2));
+    };
+    paint();
+
+    let last = 0;
+    svg.addEventListener('pointerdown', (e) => {
+      svg.setPointerCapture(e.pointerId); last = e.clientY;
+      svg.onpointermove = (ev) => {
+        if (!ev.buttons) return;
+        v = Math.min(1, Math.max(0, v + (last - ev.clientY) / 180));
+        last = ev.clientY; paint();
+      };
+    });
+    svg.addEventListener('pointerup', () => { svg.onpointermove = null; });
+    svg.addEventListener('keydown', (e) => {
+      const d = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? 0.05
+              : e.key === 'ArrowDown' || e.key === 'ArrowLeft' ? -0.05 : 0;
+      if (!d) return;
+      e.preventDefault();
+      v = Math.min(1, Math.max(0, v + d)); paint();
+    });
+  }
+
+  // ── rejilla de pasos ─────────────────────────────────────────────────────
+  const SEED = [.30,.42,.55,.38,.66,.50,.74,.44,.86,.58,.70,.48,.92,.62,.80,.34];
+  const grid = document.getElementById('stepgrid');
+  const ruler = document.getElementById('stepruler');
+  const bars = SEED.map((h, i) => {
+    const b = document.createElement('div');
+    b.className = 'bar' + (i % 4 === 0 ? ' accent' : '');
+    b.style.height = (h * 100) + '%';
+    grid.appendChild(b);
+    const r = document.createElement('span');
+    r.textContent = i % 4 === 0 ? (i / 4 + 1) : '·';
+    ruler.appendChild(r);
+    return b;
+  });
+  function paintStep(e) {
+    const r = grid.getBoundingClientRect();
+    const i = Math.floor((e.clientX - r.left) / r.width * 16);
+    if (i < 0 || i > 15) return;
+    const h = Math.min(1, Math.max(0.02, 1 - (e.clientY - r.top) / r.height));
+    bars[i].style.height = (h * 100) + '%';
+  }
+  grid.addEventListener('pointerdown', (e) => {
+    grid.setPointerCapture(e.pointerId); paintStep(e);
+    grid.onpointermove = (ev) => { if (ev.buttons) paintStep(ev); };
+  });
+  grid.addEventListener('pointerup', () => { grid.onpointermove = null; });
+
+  // ── selector de topología ────────────────────────────────────────────────
+  for (const pick of document.querySelectorAll('.topo-pick')) {
+    pick.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      pick.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === btn));
+    });
+  }
+
+  driveAll();
+</script>
