@@ -530,6 +530,13 @@ export class SessionHost {
       onSetSceneLinked: (linked: boolean) => this.setSceneLoopLinked(linked),
       onClipLoopEdited: () => this.onClipLoopEdited(),
       onClipFocused: (laneId) => this.focusLane(laneId, 'clip'),
+      // The mixer's OWN records, handed over by reference. The clip header's
+      // M/S and the mixer column's are two views of one state.
+      muteSolo: {
+        muteState: this.deps.mixerDeps.muteState,
+        soloState: this.deps.mixerDeps.soloState,
+        apply: () => this.deps.mixerDeps.applyMuteSolo(),
+      },
       // The same launch + stop the session grid's ▶ and ⏹ already use — the
       // clip header is just another way in, not a second implementation.
       onPlayClip: (laneId, clipIdx) => this.launchClipAt(laneId, clipIdx),

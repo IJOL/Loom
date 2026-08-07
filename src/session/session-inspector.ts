@@ -104,6 +104,14 @@ export interface InspectorDeps {
   onStopClip?: (laneId: string) => void;
   /** True while the clip's lane is sounding — drives the ▶/■ face. */
   isLanePlaying?: (laneId: string) => boolean;
+  /** The mixer's OWN mute/solo records and its apply hook. The clip header's
+   *  M/S write THESE — a private copy would drift from the mixer column the
+   *  moment either side was used. Optional so test fixtures can omit it. */
+  muteSolo?: {
+    muteState: Record<string, boolean>;
+    soloState: Record<string, boolean>;
+    apply: () => void;
+  };
   /** Fired when a lane's insert chain gains or loses a plugin (add/remove, not
    *  bypass or a value edit) — drives DestinationRegistry.invalidate() so every
    *  automation-destination picker sees the new set. Optional so test fixtures
@@ -241,6 +249,30 @@ export class SessionInspector {
     };
   }
 
+  /** Paint and wire the clip header's M/S from the SHARED mixer state. Called
+   *  wherever refreshPlayButton is, so the pair tracks the open clip. */
+  refreshMuteSolo(): void {
+    const ms = this.deps.muteSolo;
+    const sel = this.selectedClip;
+    const pairs: [HTMLButtonElement | null, Record<string, boolean> | undefined][] = [
+      [document.getElementById('insp-mute') as HTMLButtonElement | null, ms?.muteState],
+      [document.getElementById('insp-solo') as HTMLButtonElement | null, ms?.soloState],
+    ];
+    for (const [btn, bag] of pairs) {
+      if (!btn) continue;
+      btn.disabled = !sel || !ms || !bag;
+      btn.classList.toggle('active', !!(sel && bag?.[sel.laneId]));
+      btn.onclick = (!sel || !ms || !bag) ? null : () => {
+        bag[sel.laneId] = !bag[sel.laneId];
+        ms.apply();
+        this.refreshMuteSolo();
+        // The mixer column paints from these same records, so it has to repaint
+        // or the two surfaces disagree until the next unrelated render.
+        this.deps.renderWithMixer();
+      };
+    }
+  }
+
   getSelectedClip(): { laneId: string; clipIdx: number } | null {
     return this.selectedClip;
   }
@@ -271,6 +303,7 @@ export class SessionInspector {
     this.selectedClip = null;
     this.refreshPlayButton();
     this.refreshRecButton();
+    this.refreshMuteSolo();
   }
 
   /** Close the editor when `laneId` is not the open clip's lane. The seam every
@@ -610,6 +643,7 @@ export class SessionInspector {
     this.renderContextHeader(lane, clip);
     this.refreshRecButton();
     this.refreshPlayButton();
+    this.refreshMuteSolo();
 
     // Auto-render editor
     this.renderEditor();
@@ -687,6 +721,7 @@ export class SessionInspector {
 
     this.refreshRecButton();
     this.refreshPlayButton();
+    this.refreshMuteSolo();
   }
 
   /** Re-fill the breadcrumb from the current selection (after a rename). */
