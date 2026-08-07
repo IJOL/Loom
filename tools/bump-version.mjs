@@ -124,4 +124,8 @@ try {
   console.warn(`bump-version: left package-lock.json alone (${err instanceof Error ? err.message : String(err)})`);
 }
 
-console.log(`Bumped to v${nextVersion} · alpha · ${codename}`);
+// Report the stage that was actually written, not a literal. This line said
+// `alpha` while the file above correctly carried `beta` over — the one place in
+// the script that still assumed the app was on 0.x, telling you it had demoted
+// something it had not touched.
+console.log(`Bumped to v${nextVersion} · ${stage} · ${codename}`);
