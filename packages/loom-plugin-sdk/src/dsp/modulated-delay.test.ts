@@ -70,10 +70,21 @@ describe('modulated delay — feedback belongs to the flanger alone', () => {
     // survives the input. Measured on the tail after the oscillator stops,
     // against the same graph with feedback at zero — not against a magnitude.
     //
-    // (An earlier version asserted that feedback widens the level swing. It
-    // does not, and the measurement said so: 0.114 against 0.114. Resonance is
-    // not amplitude modulation, and the test was rewritten to measure the
-    // property rather than the assumption.)
+    // TWO WRONG VERSIONS OF THIS TEST ARE WORTH RECORDING, because both were
+    // wrong about the effect rather than about the code:
+    //
+    //   1. It first asserted that feedback widens the level swing. It does not,
+    //      and the measurement said so: 0.114 against 0.114. Resonance is not
+    //      amplitude modulation.
+    //   2. It then measured the tail from 0.55 s — fifty milliseconds after the
+    //      source stops. A flanger's line is TWO MILLISECONDS long, so by then
+    //      even 0.81 effective feedback has passed through it twenty-five times
+    //      and decayed to dust (1.5e-3). The measurement was of nothing, and the
+    //      absolute floor it was checked against was invented, not derived.
+    //
+    // So the window starts 5 ms after the stop: past the longest delay the line
+    // can hold (2 ms base + 1.8 ms of sweep), which is what makes everything in
+    // it the feedback path and nothing else.
     const tail = async (feedback: number) => {
       const ctx = new OfflineAudioContext(1, SR, SR);
       const fx = createModulatedDelay(ctx as unknown as AudioContext, FLANGER);
@@ -87,17 +98,25 @@ describe('modulated delay — feedback belongs to the flanger alone', () => {
       osc.start();
       osc.stop(0.5);
       const out = (await ctx.startRendering()).getChannelData(0);
-      return rms(out.subarray(Math.floor(SR * 0.55)));
+      return {
+        during: rms(out.subarray(Math.floor(SR * 0.2), Math.floor(SR * 0.45))),
+        after:  rms(out.subarray(Math.floor(SR * 0.505), Math.floor(SR * 0.56))),
+      };
     };
-    // Stated plainly rather than dressed as a ratio: with a 2 ms line and no
-    // feedback the control tail is essentially zero, so `> control * 2` would
-    // read as a margin while really asserting `> 0`. What carries the claim is
-    // the comparison against the SIGNAL's own level, which the control cannot
-    // reach and a working feedback path can.
-    const withFb = await tail(0.9);
-    const withoutFb = await tail(0);
-    expect(withoutFb).toBeLessThan(withFb * 0.1);
-    expect(withFb).toBeGreaterThan(0.01);
+    const none = await tail(0);
+    const some = await tail(0.3);
+    const lots = await tail(0.9);
+
+    // The control is not "small", it is EXACTLY nothing: with no feedback path
+    // the line has emptied before the window opens. That is what stops the
+    // ordering below from being an ordering over numerical dust.
+    expect(none.after).toBe(0);
+    // More feedback, more tail — three points, so a single lucky pair cannot
+    // carry it.
+    expect(lots.after).toBeGreaterThan(some.after * 2);
+    // And against the SIGNAL's own level, which is the comparison the second
+    // version promised in a comment and never actually made.
+    expect(lots.after).toBeGreaterThan(lots.during * 0.1);
   });
 
   it('the two shipped configurations do not sound the same', () => {

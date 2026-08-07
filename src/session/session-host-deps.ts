@@ -100,7 +100,7 @@ export interface SessionHostDeps {
   saveSession?: () => void;
   /** Task 28: master insert chain for rehydrating persisted master inserts on load.
    *  Optional so test fixtures without audio don't need to wire it. */
-  masterInsertChain?: import('../plugins/fx/insert-chain').InsertChain;
+  masterInsertChain?: import('../core/insert-chain').InsertChain;
   /** Option B2: FxBus instance for threading master send instances into the
    *  modulation destination dropdown. Optional so test fixtures without audio
    *  don't need to wire it. */

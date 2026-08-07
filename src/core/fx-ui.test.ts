@@ -9,7 +9,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '../../test/setup';
 import { wireFxUI, type FxUIDeps } from './fx-ui';
 import { FxBus, MasterCompressor } from './fx';
-import { InsertChain } from '../plugins/fx/insert-chain';
+import { InsertChain } from './insert-chain';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
 import type { FxInstance } from '../plugins/types';
 

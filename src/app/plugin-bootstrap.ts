@@ -2,11 +2,16 @@
 //
 // Plugin file convention:
 //   - Engines:          src/engines/<name>.ts          (register an engine descriptor)
-//   - FX plugins:       src/plugins/fx/<name>.ts
 //   - Modulators:       src/plugins/modulators/<name>.ts
 //
-// FX modules export a value satisfying the PluginFactory shape
-// ({ kind, manifest, create }); this file scans them via import.meta.glob.
+// NO EFFECT IS SCANNED HERE ANY MORE. All fifteen inserts live outside the
+// tree, in plugins/<id>/, and reach the host through the plugin loader and its
+// manifest — not through this build-time glob. The `kind: 'fx'` branch in the
+// shape check below survives for a plugin that ships an fx factory as a module
+// export inside src/, which nothing currently does.
+//
+// The modules this glob does find export a value satisfying the PluginFactory
+// shape ({ kind, manifest, create }).
 //
 // Modulators do NOT go through this registry: they call registerModulator at
 // module scope into src/modulation/modulator-registry.ts, their own door. The

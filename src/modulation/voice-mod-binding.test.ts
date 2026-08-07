@@ -14,7 +14,7 @@ import type { Voice } from '../engines/engine-types';
 import type { SynthEngine } from '../engines/engine-types';
 import type { EngineParamSpec } from '../engines/engine-params';
 import type { ParamRange } from './modulation-host';
-import { InsertChain } from '../plugins/fx/insert-chain';
+import { InsertChain } from '../core/insert-chain';
 import { rehydrateInsertChain } from '../session/insert-slot';
 import { registerPlugin } from '../plugins/registry';
 import { testFilterPlugin as multifilterPlugin } from '../../test/fx-fixtures';

@@ -1,6 +1,6 @@
 import type { FxBus } from '../core/fx';
 import type { Sequencer } from '../core/sequencer';
-import type { InsertChain } from '../plugins/fx/insert-chain';
+import type { InsertChain } from '../core/insert-chain';
 import type { LaneResourceMap } from '../core/lane-resources';
 import { collectStretchJobs } from './stretch-resync';
 import { stretchCache } from '../samples/stretch-cache';

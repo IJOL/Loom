@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { LaneResourceMap } from './lane-resources';
-import type { InsertChain } from '../plugins/fx/insert-chain';
+import type { InsertChain } from './insert-chain';
 
 describe('LaneResourceMap', () => {
   it('allocates and retrieves resources by laneId', () => {

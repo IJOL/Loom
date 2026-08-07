@@ -9,7 +9,7 @@ import {
 import { alertDialog, confirmDialog, promptDialog } from '../core/dialog';
 import type { Sequencer } from '../core/sequencer';
 import type { FxBus } from '../core/fx';
-import type { InsertChain } from '../plugins/fx/insert-chain';
+import type { InsertChain } from '../core/insert-chain';
 import type { SessionHost } from '../session/session-host';
 import type { HistoryController } from '../core/history';
 import type { LaneAllocator } from '../app/lane-allocator';

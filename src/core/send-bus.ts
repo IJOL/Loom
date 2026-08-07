@@ -2,7 +2,7 @@
 // the signal passes through an InsertChain (seeded with one effect, e.g. delay
 // or reverb), through a return-level gain, and into the master sum bus. Muting
 // zeroes the return without disconnecting the chain.
-import { InsertChain } from '../plugins/fx/insert-chain';
+import { InsertChain } from './insert-chain';
 import type { InsertSlot } from '../session/insert-slot';
 
 export interface SendBusState {

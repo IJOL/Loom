@@ -17,7 +17,7 @@ import type { SynthEngine, Voice } from '../engines/engine-types';
 import type { ModulatorVoice } from './types';
 import type { ParamRange } from './modulation-host';
 import { ConnectionBinder } from './connection-binder';
-import type { InsertChain } from '../plugins/fx/insert-chain';
+import type { InsertChain } from '../core/insert-chain';
 import { stripModulationRange } from '../core/channel-strip-params';
 import { insertParamId } from '../automation/automation-targets';
 

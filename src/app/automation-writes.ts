@@ -28,7 +28,7 @@ import type { Sequencer } from '../core/sequencer';
 import type { KnobHandle } from '../core/knob';
 import type { LaneResourceMap } from '../core/lane-resources';
 import type { FxBus } from '../core/fx';
-import type { InsertChain } from '../plugins/fx/insert-chain';
+import type { InsertChain } from '../core/insert-chain';
 import type { SynthEngine } from '../engines/engine-types';
 import type { SessionHost } from '../session/session-host';
 import type { DestinationRegistry } from '../automation/destination-registry';

@@ -4,7 +4,7 @@
 
 import type { ChannelStrip } from './fx';
 import type { SynthEngine } from '../engines/engine-types';
-import type { InsertChain } from '../plugins/fx/insert-chain';
+import type { InsertChain } from './insert-chain';
 
 export interface LaneResources {
   strip:   ChannelStrip;

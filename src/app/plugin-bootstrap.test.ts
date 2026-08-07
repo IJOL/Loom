@@ -34,7 +34,12 @@ describe('bootstrapPlugins', () => {
         applyPreset: () => {}, dispose: () => {},
       }),
     }]);
-    expect(listPlugins('fx').map((p) => p.manifest.id).sort()).toEqual(['bitcrusher', 'chorus', 'compressor', 'delay', 'distortion', 'flanger', 'limiter', 'multifilter', 'noop', 'phaser', 'reverb', 'tremolo']);
+    // The extra is the ONLY fx here, and that is the point. This list used to
+    // name eleven built-ins because the glob found eleven effect files in src/;
+    // all of them now live in plugins/<id>/ and reach the host through the
+    // loader instead. So the equality doubles as the invariant of that move: an
+    // effect reappearing under src/ would show up here and fail.
+    expect(listPlugins('fx').map((p) => p.manifest.id).sort()).toEqual(['noop']);
   });
 
   it('lists an engine component under the kind the rest of the app uses', () => {

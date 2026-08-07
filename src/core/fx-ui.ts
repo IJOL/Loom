@@ -1,6 +1,6 @@
 import { html, render } from 'lit-html';
 import { type FxBus } from './fx';
-import type { InsertChain } from '../plugins/fx/insert-chain';
+import type { InsertChain } from './insert-chain';
 import { createKnob, type KnobHandle } from './knob';
 import { attachKnobUndo, type HistoryDeps } from '../save/history-wiring';
 import { buildLaneInsertUI } from '../session/lane-insert-ui';

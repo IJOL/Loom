@@ -4,7 +4,7 @@ import { SessionHost } from './session-host';
 import { ChannelStrip, FxBus, MasterCompressor } from '../core/fx';
 import { MasterBusStrip } from '../core/master-bus-strip';
 import { MasterShaper, MASTER_SHAPER_DEFAULTS } from '../core/master-shaper';
-import { InsertChain } from '../plugins/fx/insert-chain';
+import { InsertChain } from '../core/insert-chain';
 import { DEFAULT_COMP_STATE } from '../core/comp-state';
 import { emptySessionState } from './session';
 import { getNoteFxChain } from '../notefx/notefx-registry';

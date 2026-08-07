@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { applyInsertSlot, snapshotInsertSlot, rehydrateInsertChain, type InsertSlot } from './insert-slot';
-import { InsertChain } from '../plugins/fx/insert-chain';
+import { InsertChain } from '../core/insert-chain';
 import { createInstance, registerPlugin, _resetRegistry } from '../plugins/registry';
 import { testFilterPlugin as multifilterPlugin } from '../../test/fx-fixtures';
 import type { FxInstance } from '../plugins/types';
@@ -91,11 +91,9 @@ describe('stable insert ids', () => {
 });
 
 describe('a slot whose plugin is missing', () => {
-  // A locally-built effect, not a real one imported from src/plugins/fx: the
-  // eleven built-ins are leaving the tree one task at a time, and this test is
-  // about the CHAIN, not about any particular effect. Importing a real one
-  // would make it break on the day that effect migrates, for a reason that has
-  // nothing to do with what it checks.
+  // A locally-built effect, not a real one: this test is about the CHAIN, not
+  // about any particular effect. Now that every effect lives outside the tree
+  // there is nothing in src/ to import even if it wanted one.
   const fakeFx = (id: string) => ({
     kind: 'fx' as const,
     manifest: { id, name: id, kind: 'fx' as const, version: '1.0.0', params: [], presets: [], color: '#888' },

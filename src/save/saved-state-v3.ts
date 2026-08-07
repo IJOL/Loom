@@ -40,7 +40,7 @@ export interface SavedStateV3Deps {
   sessionHost: SessionHost;
   renderLanes: () => void;
   fx: import('../core/fx').FxBus;
-  masterInsertChain: import('../plugins/fx/insert-chain').InsertChain;
+  masterInsertChain: import('../core/insert-chain').InsertChain;
   master: GainNode;
   /** Master bus EQ/pan/mute strip — serialized/restored alongside masterVol.
    *  Optional so callers without an audio graph (tests) keep working. */

@@ -1,5 +1,6 @@
 {
   "plugins": [
+    "autowah",
     "bitcrusher",
     "chorus",
     "compressor",
@@ -7,16 +8,19 @@
     "distortion",
     "flanger",
     "fm",
+    "gate",
     "karplus",
     "limiter",
     "multifilter",
     "phaser",
     "reverb",
+    "ringmod",
     "sh",
     "subtractive",
     "tb303",
     "tremolo",
     "wavetable",
-    "westcoast"
+    "westcoast",
+    "width"
   ]
 }

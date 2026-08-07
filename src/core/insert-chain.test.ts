@@ -1,7 +1,7 @@
-// src/plugins/fx/insert-chain.test.ts
+// src/core/insert-chain.test.ts
 import { describe, it, expect, beforeEach } from 'vitest';
 import { InsertChain } from './insert-chain';
-import type { FxInstance } from '../types';
+import type { FxInstance } from '../plugins/types';
 
 class FakeNode {
   connections: FakeNode[] = [];

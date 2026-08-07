@@ -1,7 +1,7 @@
 import { FxBus, MasterCompressor } from '../core/fx';
 import { MasterBusStrip } from '../core/master-bus-strip';
 import { MasterShaper } from '../core/master-shaper';
-import { InsertChain } from '../plugins/fx/insert-chain';
+import { InsertChain } from '../core/insert-chain';
 import { SidechainBus } from '../core/sidechain-bus';
 
 // Phase G: audio-graph.ts is master-only. All per-lane strips, instrument

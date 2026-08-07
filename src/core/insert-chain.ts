@@ -1,5 +1,7 @@
-// src/plugins/fx/insert-chain.ts
-import type { FxInstance } from '../types';
+// src/core/insert-chain.ts — the RACK, not an effect. It holds whatever inserts
+// a lane has and rewires them in order; every actual effect now lives outside
+// the tree, in plugins/<id>/.
+import type { FxInstance } from '../plugins/types';
 
 export interface ChainSlot {
   /** Mirrors the persisted InsertSlot.id, so anything addressing a live slot

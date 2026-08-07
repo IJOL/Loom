@@ -26,7 +26,7 @@ import { pruneKnobRegistry, pruneKnobRegistryToDestinations } from '../app/knob-
 import { DEFAULT_COMP_STATE } from '../core/comp-state';
 import { MASTER_SHAPER_DEFAULTS } from '../core/master-shaper';
 import { defaultSends } from '../core/send-migration';
-import type { InsertChain } from '../plugins/fx/insert-chain';
+import type { InsertChain } from '../core/insert-chain';
 
 function emptyRack(chain: InsertChain | undefined): void {
   if (!chain) return;

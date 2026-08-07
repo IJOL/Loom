@@ -27,7 +27,7 @@ import type { Sequencer } from '../core/sequencer';
 import type { FxBus, MasterCompressor } from '../core/fx';
 import type { MasterBusStrip } from '../core/master-bus-strip';
 import type { MasterShaper } from '../core/master-shaper';
-import type { InsertChain } from '../plugins/fx/insert-chain';
+import type { InsertChain } from '../core/insert-chain';
 import type { SessionHost } from '../session/session-host';
 import type { LaneAllocator } from './lane-allocator';
 import type { PerformanceFeature } from './performance-feature';

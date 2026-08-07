@@ -32,7 +32,7 @@ vi.mock('./example-loader', async (importOriginal) => ({
 import { SessionInspector } from './session-inspector';
 import { createDestinationRegistry } from '../automation/destination-registry';
 import { registerPlugin, _resetRegistry } from '../plugins/registry';
-import { InsertChain } from '../plugins/fx/insert-chain';
+import { InsertChain } from '../core/insert-chain';
 import type { LaneResourceMap } from '../core/lane-resources';
 import { emptySessionState, type SessionState, type SessionClip, type SessionLane } from './session';
 import type { FxInstance } from '../plugins/types';

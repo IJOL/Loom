@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { buildLaneInsertUI } from './lane-insert-ui';
 import { registerPlugin, listPlugins, _resetRegistry } from '../plugins/registry';
 import { bootstrapPlugins } from '../app/plugin-bootstrap';
-import { InsertChain } from '../plugins/fx/insert-chain';
+import { InsertChain } from '../core/insert-chain';
 import { buildEngineParamGrid } from '../engines/engine-param-grid';
 import { rehydrateInsertChain, type InsertSlot } from './insert-slot';
 import type { KnobHandle } from '../core/knob';

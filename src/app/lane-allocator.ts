@@ -1,6 +1,6 @@
 import { LaneResourceMap } from '../core/lane-resources';
 import { ChannelStrip } from '../core/fx';
-import { InsertChain } from '../plugins/fx/insert-chain';
+import { InsertChain } from '../core/insert-chain';
 import { createEngineInstance, getEngineDescriptor } from '../engines/registry';
 import { WorkletLaneEngine } from '../engines/worklet-lane-engine';
 import { DrumsWorkletEngine } from '../engines/drums-worklet-engine';

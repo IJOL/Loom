@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildAudioGraph, createAudioGraph, makeMasterSoftClipCurve } from './audio-graph';
-import { InsertChain } from '../plugins/fx/insert-chain';
+import { InsertChain } from '../core/insert-chain';
 import { collectSends, rehydrateSends } from '../session/session-host-persistence';
 
 describe('AudioGraph master InsertChain', () => {

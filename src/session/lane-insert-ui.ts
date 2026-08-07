@@ -4,7 +4,7 @@ import { repeat } from 'lit-html/directives/repeat.js';
 import { styleMap } from 'lit-html/directives/style-map.js';
 import { listPlugins, createInstance } from '../plugins/registry';
 import { type InsertSlot, newInsertId } from './insert-slot';
-import type { InsertChain, ChainSlot } from '../plugins/fx/insert-chain';
+import type { InsertChain, ChainSlot } from '../core/insert-chain';
 import { createKnob, type KnobHandle } from '../core/knob';
 import { createSelectControl } from '../core/select-control';
 import { buildFxVis, hasFxVis, VIS_W, VIS_H } from '../core/fx-vis';
