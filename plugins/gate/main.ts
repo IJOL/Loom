@@ -16,7 +16,16 @@
 // a ratio.
 import { createEnvelopeFollower, type FxInstance } from '@loom/plugin-sdk';
 
-const CURVE_POINTS = 1025;
+// The table is indexed by a LINEAR amplitude, while the threshold knob is in
+// dB — so the bottom of the knob is where the resolution runs out, not the top.
+// At the original 1025 points a step was 0.00195, and the knob's own minimum of
+// -60 dB is 0.001 linear: every threshold below about -54 dB landed on the same
+// grid point, and the knee (a tenth of the threshold) was narrower than one step
+// from -40 dB down, degenerating into the hard step it exists to prevent — the
+// click. 4097 puts a step at 0.000488, so -60 dB is a couple of steps rather
+// than none, at 16 KB per rebuild instead of 4.
+const CURVE_POINTS = 4097;
+const CURVE_STEP = 2 / (CURVE_POINTS - 1);
 
 /** Map the follower's 0..1 reading to a gain multiplier.
  *  `thrLin` is the threshold as a linear amplitude; `floor` the closed gain. */
@@ -24,8 +33,9 @@ function gateCurve(thrLin: number, floor: number): Float32Array {
   const c = new Float32Array(CURVE_POINTS);
   // A soft knee either side of the threshold, one tenth of it wide, so the
   // gate opens over a few samples instead of stepping — a hard step in a gain
-  // is a click.
-  const knee = Math.max(1e-4, thrLin * 0.1);
+  // is a click. Floored in CURVE STEPS rather than in amplitude: a knee the
+  // table cannot represent is not a knee.
+  const knee = Math.max(2 * CURVE_STEP, thrLin * 0.1);
   for (let i = 0; i < CURVE_POINTS; i++) {
     // The shaper's input domain is -1..1; the follower only produces >= 0, so
     // the lower half is unreachable and mirrors the upper.

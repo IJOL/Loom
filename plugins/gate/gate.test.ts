@@ -65,9 +65,81 @@ describe('gate', () => {
     expect(gentle).toBeGreaterThan(shut * 2);
   });
 
-  it('answers to every param its manifest declares', () => {
+  it('release holds the tail open — the knob a gate is bought for', async () => {
+    // The case whose absence let a dead knob ship. The follower used to run one
+    // filter pair at the FASTER of attack and release, so with the gate's 2 ms
+    // attack the entire 10–1000 ms release range collapsed to 2 ms: measured, a
+    // 1-second release closed in under twenty milliseconds, identical to four
+    // decimal places. Every gate test passed, because none of them touched it.
+    //
+    // The source must DROP below the threshold, not stop: a gate passes a
+    // signal, it does not make one, so after silence the output is silence at
+    // any release and the comparison is 0 against 0. (Written down because the
+    // first version of this test did exactly that and failed for that reason.)
+    // A loud burst falling to a quiet tail is also the real case — gating a
+    // snare and choosing how much room to keep.
+    const tail = async (releaseMs: number) => {
+      const ctx = new OfflineAudioContext(1, SR, SR);
+      const src = ctx.createOscillator();
+      src.frequency.value = 200;
+      const amp = ctx.createGain();
+      amp.gain.setValueAtTime(0.8, 0);
+      amp.gain.setValueAtTime(0.02, 0.5);   // well under the -24 dB threshold
+      const fx = create(ctx as unknown as AudioContext);
+      fx.setBaseValue('threshold', -24);
+      fx.setBaseValue('release', releaseMs);
+      src.connect(amp).connect(fx.input);
+      fx.output.connect(ctx.destination);
+      src.start();
+      const d = (await ctx.startRendering()).getChannelData(0);
+      // 200–400 ms after the drop. Measured at 20–120 ms instead, a 10 ms
+      // release is still on its way down and only 1.7× apart from a 1-second
+      // one — true but a thin claim. By here the short release has shut
+      // (0.00001) and the long one is still wide open (0.00798).
+      return rms(d.subarray(Math.floor(SR * 0.7), Math.floor(SR * 0.9)));
+    };
+    expect(await tail(1000)).toBeGreaterThan((await tail(10)) * 5);
+  });
+
+  it('a threshold near the bottom of its range is still distinguishable', () => {
+    // The curve is indexed by LINEAR amplitude while the knob is in dB, so the
+    // bottom of the knob is where resolution runs out. At the original table
+    // size every threshold below about -54 dB landed on the same grid point —
+    // the last stretch of the knob's travel did nothing at all. Compared as
+    // curves, because that is where the collapse happened.
+    const ctx = new OfflineAudioContext(1, 128, SR) as unknown as AudioContext;
+    const curves: Float32Array[] = [];
+    const real = ctx.createWaveShaper.bind(ctx);
+    ctx.createWaveShaper = () => {
+      const n = real();
+      let held: Float32Array | null = null;
+      Object.defineProperty(n, 'curve', {
+        get: () => held,
+        set: (v: Float32Array) => { held = v; curves.push(v); },
+        configurable: true,
+      });
+      return n;
+    };
+    const fx = create(ctx);
+    fx.setBaseValue('threshold', -60);
+    fx.setBaseValue('threshold', -54);
+    const [a, b] = curves.slice(-2);
+    let diff = 0;
+    for (let i = 0; i < a.length; i++) diff += Math.abs(a[i] - b[i]);
+    expect(diff).toBeGreaterThan(0);
+  });
+
+  it('answers to every param its manifest declares, at a value it did NOT start on', () => {
+    // Writing the manifest's own default proves nothing: every shadow variable
+    // is already initialised to it, so a `setBaseValue` that ignored the id
+    // entirely would still read back correctly. A review proved exactly that by
+    // deleting a knob's branch from a sibling plugin and watching its suite stay
+    // green. So: write something else, then read it back.
     const fx = create(new OfflineAudioContext(1, 128, SR) as unknown as AudioContext);
     for (const p of manifest.components[0].params) {
+      const off = p.default === p.min ? p.max : p.min;
+      fx.setBaseValue(p.id, off);
+      expect(fx.getBaseValue(p.id), `${p.id} did not take the written value`).toBeCloseTo(off, 5);
       fx.setBaseValue(p.id, p.default);
       expect(fx.getBaseValue(p.id)).toBeCloseTo(p.default, 5);
     }

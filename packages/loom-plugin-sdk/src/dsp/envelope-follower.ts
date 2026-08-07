@@ -33,13 +33,17 @@ export interface EnvelopeFollowerOptions {
 export interface EnvelopeFollower {
   /** Feed the signal to be measured here. */
   readonly input: AudioNode;
-  /** A control signal in roughly 0..1, to connect to an AudioParam or a gain. */
+  /** A LEVEL ESTIMATE, not a normalised one. Calibrated so a full-scale SINE
+   *  settles at 1.0; a square reads about 1.56, because its mean rectified value
+   *  really is higher — see the calibration note by `scale` below. Anything that
+   *  multiplies audio by this must clamp or the loud case gets louder. */
   readonly output: AudioNode;
   setAttack(ms: number): void;
   setRelease(ms: number): void;
-  /** The smoothing cutoff actually in force, in Hz. Exposed so a test can
-   *  prove the clamp rather than trust it. */
-  smoothingHz(): number;
+  /** The two smoothing cutoffs actually in force, in Hz. Exposed so a test can
+   *  prove the clamp, and prove the two sides are really independent, rather
+   *  than trust either. */
+  smoothingHz(): { attack: number; release: number };
   dispose(): void;
 }
 
@@ -72,34 +76,85 @@ export function createEnvelopeFollower(
   rectify.curve = absCurve() as Float32Array<ArrayBuffer>;
   rectify.oversample = 'none';           // measuring a level, not making sound
 
-  // 2. Smooth. Two one-pole-ish lowpasses in series: one pole leaves audible
-  //    ripple at low input frequencies, and the second costs almost nothing.
-  //    Q at 0.5 keeps them from resonating — a peaking smoother would report a
-  //    level the signal never had.
-  const smooth1 = ctx.createBiquadFilter();
-  const smooth2 = ctx.createBiquadFilter();
-  for (const f of [smooth1, smooth2]) { f.type = 'lowpass'; f.Q.value = 0.5; }
+  // 2. Smooth, TWICE — this is what makes attack and release two knobs instead
+  //    of one. An earlier version ran a single filter pair at
+  //    `max(cutoffFor(attack), cutoffFor(release))` and this comment claimed a
+  //    real asymmetric follower "needs per-sample state, which is a worklet".
+  //    That was simply wrong, and the cost of being wrong was measured: the
+  //    faster constant always won, so with a gate at attack 2 ms the release
+  //    knob was INERT over its whole 10–1000 ms range — a 1-second release
+  //    closed in under twenty milliseconds, identical to four decimal places.
+  //    A noise gate's release is the control it is bought for.
+  //
+  //    max(a, b) is expressible in native nodes: (a + b + |a − b|) / 2, and the
+  //    absolute value is a WaveShaper — the same one this file already builds to
+  //    rectify. Feed the rectified signal down a FAST chain and a SLOW one and
+  //    take the larger: rising, the fast chain is ahead, so attack governs;
+  //    falling, the slow chain lags above it, so release governs.
+  //
+  //    Two poles per chain, not one: a single pole leaves audible ripple at low
+  //    input frequencies and the second costs almost nothing. Q at 0.5 keeps
+  //    them from resonating — a peaking smoother would report a level the signal
+  //    never had.
+  const mkChain = () => {
+    const a = ctx.createBiquadFilter();
+    const b = ctx.createBiquadFilter();
+    for (const f of [a, b]) { f.type = 'lowpass'; f.Q.value = 0.5; }
+    a.connect(b);
+    return { head: a, tail: b };
+  };
+  const fast = mkChain();
+  const slow = mkChain();
+  rectify.connect(fast.head);
+  rectify.connect(slow.head);
+
+  // (a + b) and (a − b).
+  const sum = ctx.createGain();
+  const diff = ctx.createGain();
+  const negate = ctx.createGain(); negate.gain.value = -1;
+  fast.tail.connect(sum);
+  slow.tail.connect(sum);
+  fast.tail.connect(diff);
+  slow.tail.connect(negate).connect(diff);
+
+  // |a − b|. The shaper's curve is only defined over −1..1 and CLAMPS outside
+  // it, so the difference is scaled down into that window and back out again —
+  // otherwise a signal hotter than full scale would silently have its
+  // difference clipped and the max would come out wrong in the loud case.
+  const ABS_HEADROOM = 4;
+  const preAbs  = ctx.createGain(); preAbs.gain.value  = 1 / ABS_HEADROOM;
+  const absShape = ctx.createWaveShaper();
+  absShape.curve = absCurve() as Float32Array<ArrayBuffer>;
+  absShape.oversample = 'none';
+  const postAbs = ctx.createGain(); postAbs.gain.value = ABS_HEADROOM;
+  diff.connect(preAbs).connect(absShape).connect(postAbs);
+
+  const max = ctx.createGain(); max.gain.value = 0.5;
+  sum.connect(max);
+  postAbs.connect(max);
 
   // 3. Scale. Rectifying a sine gives a mean of 2/π ≈ 0.637 of its peak, so
   //    without this a full-scale input would report ~0.64 and every downstream
-  //    range would quietly be short by a third.
+  //    range would quietly be short by a third. It is calibrated FOR A SINE and
+  //    nothing else: a square's mean rectified value is its peak, so a
+  //    full-scale square settles at π/2 ≈ 1.57, measured. That is not a bug —
+  //    the follower reports level, it does not normalise it — but a consumer
+  //    that multiplies audio by this signal must clamp, or the loud case gets
+  //    louder. Said again on `output` in the interface, where a caller reads it.
   const scale = ctx.createGain();
   scale.gain.value = Math.PI / 2;
 
-  input.connect(rectify).connect(smooth1).connect(smooth2).connect(scale);
+  input.connect(rectify);
+  max.connect(scale);
 
   let attackMs = opts.attackMs;
   let releaseMs = opts.releaseMs;
 
-  // One filter pair, two time constants: the faster of the two sets the
-  // cutoff. A true asymmetric attack/release needs per-sample state, which is
-  // a worklet — and an insert is native nodes by design. The audible effect of
-  // the pair is dominated by the faster one, so this is the honest native
-  // approximation rather than a pretence of two-sided behaviour.
   const apply = () => {
-    const hz = Math.max(cutoffFor(attackMs), cutoffFor(releaseMs));
-    smooth1.frequency.value = hz;
-    smooth2.frequency.value = hz;
+    const aHz = cutoffFor(attackMs);
+    const rHz = cutoffFor(releaseMs);
+    fast.head.frequency.value = aHz; fast.tail.frequency.value = aHz;
+    slow.head.frequency.value = rHz; slow.tail.frequency.value = rHz;
   };
   apply();
 
@@ -108,9 +163,10 @@ export function createEnvelopeFollower(
     output: scale,
     setAttack: (ms) => { attackMs = ms; apply(); },
     setRelease: (ms) => { releaseMs = ms; apply(); },
-    smoothingHz: () => smooth1.frequency.value,
+    smoothingHz: () => ({ attack: fast.head.frequency.value, release: slow.head.frequency.value }),
     dispose: () => {
-      for (const n of [input, rectify, smooth1, smooth2, scale]) {
+      for (const n of [input, rectify, fast.head, fast.tail, slow.head, slow.tail,
+                       sum, diff, negate, preAbs, absShape, postAbs, max, scale]) {
         try { n.disconnect(); } catch { /* ok */ }
       }
     },
