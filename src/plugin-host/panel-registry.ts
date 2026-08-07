@@ -8,12 +8,22 @@
 
 import type { EngineParamSpec } from '@loom/plugin-sdk';
 
+/** What a panel does with the zone it is given: fill it, and hand back its own
+ *  teardown. The host never inspects what went inside. */
+export type PanelMount = (host: HTMLElement) => () => void;
+
 export interface PanelEntry {
   id: string;
   name: string;
   placement: 'main-view';
-  /** Declared params, so a panel's controls can be automated like any other. */
+  /** Declared params — the panel's MUSICAL surface, automatable like any
+   *  other. Its bespoke widgets are not here: those it asks for at runtime
+   *  through `Loom.controls` and arranges inside its own zone. */
   params: EngineParamSpec[];
+  /** Delivered from the plugin's main.js, the same way an fx delivers its
+   *  factory. Absent until then — a manifest can declare a panel, but only
+   *  running code can say how to draw it. */
+  mount?: PanelMount;
 }
 
 const panels = new Map<string, PanelEntry>();
@@ -30,6 +40,21 @@ export function registerPanel(entry: PanelEntry): void {
 
 export function unregisterPanel(id: string): void {
   panels.delete(id);
+}
+
+/** The second half of a panel's arrival: the manifest declared it, main.js says
+ *  how to draw it. Refusing an unknown id is the point — a plugin that mounts a
+ *  panel it never declared would appear on screen having passed no validation
+ *  at all. */
+export function registerPanelMount(id: string, mount: PanelMount): void {
+  const entry = panels.get(id);
+  if (!entry) {
+    throw new Error(`registerPanel("${id}"): this plugin's manifest never declared a panel component with that id`);
+  }
+  if (entry.mount) {
+    throw new Error(`registerPanel("${id}"): a mount is already registered — registerPanel must be called at most once per id`);
+  }
+  entry.mount = mount;
 }
 
 export function listPanels(): PanelEntry[] {

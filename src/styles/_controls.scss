@@ -1,0 +1,118 @@
+// The widget controls a plugin can declare: a two-axis pad, a cursor over a
+// queue, a row of bars. They live here rather than in _base.scss because they
+// are a catalogue any plugin draws from, not chrome of the app shell.
+
+.pad2d {
+  position: relative;
+  height: 54px;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  cursor: crosshair;
+  touch-action: none;
+  overflow: hidden;
+
+  // A faint centre cross, so the box reads as a two-axis field rather than as
+  // an empty rectangle with a dot loose in it.
+  &::before,
+  &::after { content: ''; position: absolute; background: var(--border-soft); }
+  &::before { left: 50%; top: 0; bottom: 0; width: 1px; }
+  &::after { top: 50%; left: 0; right: 0; height: 1px; }
+
+  &:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+}
+
+.pad2d-dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber-soft);
+  pointer-events: none;
+}
+
+.queue-control {
+  display: flex;
+  align-items: center;
+  height: 26px;
+  position: relative;
+  padding: 0 8px;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  cursor: ew-resize;
+  touch-action: none;
+
+  &:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+}
+
+.queue-line {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--border);
+}
+
+.queue-dot {
+  position: relative;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+
+  i {
+    display: block;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 2px solid var(--border);
+  }
+
+  &.past i { background: var(--knob-blue); border-color: var(--knob-blue); }
+
+  // The loop being crossfaded INTO glows, so the direction of travel reads at
+  // a glance instead of having to be inferred from the cursor's position.
+  &.next i {
+    background: var(--knob-orange);
+    border-color: var(--knob-orange);
+    box-shadow: 0 0 7px rgba(230, 126, 34, 0.55);
+  }
+}
+
+.queue-cursor {
+  position: absolute;
+  top: -2px;
+  width: 2px;
+  height: 28px;
+  background: var(--amber);
+  box-shadow: 0 0 7px var(--amber-soft);
+}
+
+.steps-control {
+  display: grid;
+  gap: 3px;
+  height: 92px;
+  align-items: end;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 6px;
+  cursor: ns-resize;
+  touch-action: none;
+
+  &:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+}
+
+.step-bar {
+  background: var(--amber);
+  opacity: 0.82;
+  border-radius: 1px 1px 0 0;
+  min-height: 2px;
+
+  // Every fourth step, so bars can be counted without drawing a ruler.
+  &.accent { background: var(--knob-cyan); }
+}

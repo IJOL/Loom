@@ -16,6 +16,8 @@ function paramError(p: unknown, i: number): string | null {
   if (!isObj(p)) return `params[${i}] is not an object`;
   if (!isStr(p.id)) return `params[${i}].id must be a non-empty string`;
   if (!isStr(p.label)) return `params[${i}].label must be a non-empty string`;
+  // A param is one number. A control shaped otherwise is asked for at runtime
+  // through Loom.controls, not declared here — see EngineParamSpec.
   if (p.kind !== 'continuous' && p.kind !== 'discrete') return `params[${i}].kind must be continuous|discrete`;
   for (const k of ['min', 'max', 'default'] as const) {
     if (!isNum(p[k])) return `params[${i}].${k} must be a number`;

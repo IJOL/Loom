@@ -14,6 +14,13 @@ export const LOOM_API_VERSION = 1;
 export interface EngineParamSpec {
   id: string;
   label: string;
+  /** A param is one number. A component that needs a control shaped otherwise
+   *  — a two-axis pad, a cursor over a list, a row of bars — asks the host for
+   *  it at runtime through `Loom.controls` and places it in its own DOM zone.
+   *  Declaring such shapes here was tried and reverted: the manifest can
+   *  describe params but not an ARRANGEMENT, so a component whose layout is
+   *  the point needs the zone regardless, and the extra kinds would have been
+   *  permanent vocabulary serving exactly one plugin. */
   kind: 'continuous' | 'discrete';
   min: number;
   max: number;

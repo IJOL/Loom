@@ -27,6 +27,50 @@ Mockup aprobado: [2026-08-07-weave-panel-dinamico-mockup.html](../specs/2026-08-
 
 ---
 
+## ⚠️ Enmienda 2026-08-07 — la fase 2 cambió de forma durante la ejecución
+
+**Lee esto antes que las tareas 5 a 8.** El plan original hacía que WEAVE
+declarase sus controles en el manifiesto, con tres tipos de parámetro nuevos
+(`pad2d`, `queue`, `steps`). Se implementó, y Nacho lo rechazó con razón:
+`queue` —un cursor sobre N loops— es una idea de tejido sin uso fuera de WEAVE,
+y ensanchar para siempre el vocabulario del manifiesto para servir a un solo
+añadido es generalizar desde un único ejemplo.
+
+Tirando del hilo salió el agujero de fondo: **el manifiesto sabe declarar
+parámetros pero no una disposición.** La pantalla de WEAVE es una cabecera, una
+tabla de canales con un widget distinto por fila, una tira de mandos y dos
+secciones más. Ninguna lista de params expresa eso, así que la zona DOM iba a
+hacer falta igualmente — y para entonces los tres tipos ya serían ABI permanente
+sin cliente.
+
+**Lo que rige ahora:**
+
+- Un `panel` declara en el manifiesto **sólo sus params musicales** (los seis
+  macros, `continuous`, automatizables como cualquier otro) y **entrega su
+  función de montaje desde `main.js`** con `Loom.registerPanel(id, mount)` — la
+  misma llegada en dos mitades que ya tiene un `fx`, y por la misma razón: una
+  función no viaja como JSON.
+- Los tres controles **siguen siendo código del host** y se entregan en tiempo
+  de ejecución por `Loom.controls.{pad2d,queue,steps}`. El añadido los coloca;
+  no pinta sus tripas. El radio de daño es su propia zona, no la aplicación.
+- `EngineParamSpec` vuelve a `continuous | discrete`.
+
+**Qué tareas cambian:** la 5 queda **derogada** (implementada y revertida en
+`8d49601`). Las 6, 7 y 8 siguen válidas tal cual — los controles son los mismos.
+La 32 y la 33 cambian: el manifiesto de WEAVE declara sólo los siete params
+continuos, y el panel se monta por `registerPanel` en vez de por el registro
+directo del host. Las fases 3 a 9 **no se tocan**: el núcleo musical es
+independiente de todo esto.
+
+**Y un gotcha de tests que el plan no preveía:** vitest corre con
+`environment: 'node'` y `// @vitest-environment jsdom` por fichero, y **jsdom no
+tiene `PointerEvent`**. Los tests de los tres controles usan `MouseEvent` (que
+lleva `clientX`/`clientY`/`buttons`, que es todo lo que los manejadores leen), y
+los controles piden la captura de puntero sólo si la API existe — ver
+`src/core/controls/pointer-drag.ts`.
+
+---
+
 ## Estructura de ficheros
 
 Todo el núcleo nuevo vive en `src/weave/`. Ningún fichero existente crece más de lo imprescindible.

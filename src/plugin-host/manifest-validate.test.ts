@@ -254,6 +254,12 @@ describe('what the manifest refuses today (pinned before WEAVE widens it)', () =
     expect(res.ok === false && res.error).toMatch(/needs a panel object/);
   });
 
+  // This one is NOT a pin waiting to be opened. A param is one number, and a
+  // component that needs a control shaped otherwise asks for it at runtime
+  // through Loom.controls and places it in its own DOM zone. Declaring widget
+  // shapes here was tried and reverted: the manifest can describe params but
+  // not an ARRANGEMENT, so a panel needs the zone regardless — and the extra
+  // kinds would have been permanent vocabulary serving one plugin.
   it('rejects a param kind that is not continuous|discrete', () => {
     const res = validatePluginManifest({
       ...base,

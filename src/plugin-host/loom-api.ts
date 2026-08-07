@@ -10,7 +10,10 @@ import {
   type FxFactory, type PluginManifestFile,
 } from '@loom/plugin-sdk';
 import { registerEngine, registerEngineFactory, unregisterEngine } from '../engines/registry';
-import { registerPanel, unregisterPanel } from './panel-registry';
+import { registerPanel, unregisterPanel, registerPanelMount, type PanelMount } from './panel-registry';
+import { createPad2d } from '../core/controls/pad2d';
+import { createQueueControl } from '../core/controls/queue-control';
+import { createStepsControl } from '../core/controls/steps-control';
 import { createDescriptorEngine } from '../engines/descriptor-engine';
 import { registerRenderer } from '../audio-dsp/renderer-registry';
 import { registerModulatorKernel } from '../audio-dsp/modulator-kernels';
@@ -251,6 +254,28 @@ export function installMainThreadLoomApi(): void {
       registerModulatorKernel: (kernel: { id: string; valueAt(m: ModLiteLike, t: number, origin: number): number }) =>
         registerModulatorKernel(kernel),
       registerFx: (id: string, create: FxFactory) => registerFxFactory(id, create),
+      // A panel component declares itself in the manifest and delivers its
+      // mount function here, exactly as an fx declares itself and delivers its
+      // factory — a function cannot travel as JSON.
+      registerPanel: (id: string, mount: PanelMount) => registerPanelMount(id, mount),
+      // The host's control catalogue, handed over at runtime rather than
+      // declared in the manifest.
+      //
+      // A param is one number. A pad, a cursor over a list, a row of bars are
+      // not, and declaring those shapes as param kinds was tried and reverted:
+      // the manifest can describe params but not an ARRANGEMENT, so a component
+      // whose layout IS the point needs a DOM zone regardless — at which point
+      // the extra kinds would have been permanent vocabulary serving exactly
+      // one plugin.
+      //
+      // Handing over factories keeps what mattered: the host still owns the
+      // drawing, so a plugin can arrange these controls but cannot paint their
+      // internals. The blast radius is its own zone, not the application.
+      controls: {
+        pad2d: createPad2d,
+        queue: createQueueControl,
+        steps: createStepsControl,
+      },
     },
     writable: false,
     configurable: true,
