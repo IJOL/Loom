@@ -149,6 +149,36 @@ export async function installMasterTap(page: Page): Promise<void> {
   });
 }
 
+/**
+ * Blocks until the master tap actually carries signal.
+ *
+ * Launching a scene is QUANTIZED: with the boot demo's `globalQuantize: "1/1"`
+ * at 130 BPM the scene does not start until the next bar, up to 1846ms after the
+ * click. Specs used to paper over that with a flat `waitForTimeout(1200)`, which
+ * is SHORTER than the bar — so measurement began ~600ms before the first note
+ * and those pre-roll frames were counted as dropouts. Measured across three
+ * runs: 35-36 near-silent frames, all consecutive from index 0, then continuous
+ * audio for the remaining 2.4s. That is a late start, not a "corte", but it sat
+ * right at the 10% threshold and so failed at random.
+ *
+ * Waiting on the signal itself rather than on a clock also decouples these specs
+ * from the demo's tempo and quantize setting, neither of which they are testing.
+ */
+export async function waitForAudible(page: Page, timeout = 10_000, threshold = 0.01): Promise<void> {
+  await page.waitForFunction(
+    (min) => {
+      const an = (window as unknown as { __masterTap?: AnalyserNode }).__masterTap;
+      if (!an) return false;
+      const buf = new Float32Array(an.fftSize);
+      an.getFloatTimeDomainData(buf);
+      for (const v of buf) if (Math.abs(v) > min) return true;
+      return false;
+    },
+    threshold,
+    { timeout, polling: 'raf' },
+  );
+}
+
 /** Measures the master tap for `ms`. Requires installMasterTap before goto. */
 export async function measureMaster(page: Page, ms: number): Promise<MasterLevels> {
   return page.evaluate(async (windowMs) => {

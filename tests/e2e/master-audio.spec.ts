@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { installMasterTap, measureMaster, waitForBoot } from './helpers';
+import { installMasterTap, measureMaster, waitForAudible, waitForBoot } from './helpers';
 
 // Does the app actually make sound? Every other spec asserts DOM; this one taps
 // the master bus and measures the signal, which is the only way to catch a UI
@@ -17,7 +17,10 @@ test('launching a scene produces continuous, unclipped audio on master', async (
 
   // A trusted click is what resumes the AudioContext; a synthetic one does not.
   await page.locator('.session-scene-launch').first().click();
-  await page.waitForTimeout(1200);   // let the first loop get going
+  // The launch is quantized to the next bar, so measure from the first sound
+  // rather than from a fixed clock — a flat wait shorter than the bar counts the
+  // pre-roll as dropouts. See `waitForAudible`.
+  await waitForAudible(page);
 
   const levels = await measureMaster(page, 3000);
 
@@ -36,7 +39,10 @@ test('the transport Stop button silences the master', async ({ page }) => {
   await waitForBoot(page);
 
   await page.locator('.session-scene-launch').first().click();
-  await page.waitForTimeout(1200);
+  // Same quantized-launch hazard as above: at 130 BPM the old flat 1200ms wait
+  // ended BEFORE the bar boundary at 1846ms, so this measured mostly pre-roll
+  // and passed only on the tail of its own window.
+  await waitForAudible(page);
   const playing = await measureMaster(page, 800);
   expect(playing.peak).toBeGreaterThan(0.01);
 

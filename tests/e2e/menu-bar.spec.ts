@@ -1,6 +1,13 @@
 import { test, expect } from '@playwright/test';
+import { waitForBoot } from './helpers';
 
-test.beforeEach(async ({ page }) => { await page.goto('/'); });
+// `goto` resolves on the load event, which says nothing about the boot demo's
+// `replaceSession` — measured at ~450ms after load. Renaming the project before
+// it lands writes into the pre-boot empty session, and the demo then replaces
+// the whole state (name included) on top of it: the rename test read back
+// "Minimal Techno" instead of what it had just typed. Waiting for boot is the
+// project-wide fix for that race; see `waitForBoot`'s doc in helpers.ts.
+test.beforeEach(async ({ page }) => { await page.goto('/'); await waitForBoot(page); });
 
 test('menu bar shows the five top-level menus', async ({ page }) => {
   const tops = page.locator('#menu-bar .menubar-top');
