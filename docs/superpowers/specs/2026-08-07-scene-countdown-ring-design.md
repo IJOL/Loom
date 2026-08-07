@@ -62,9 +62,11 @@ re-deriving it — a ring that showed the plain maximum would count down to an i
 scheduler never uses.
 
 **Caption target** — `SessionHost` records the label at the launch site
-(`launchSceneAt` stores the scene name, the clip launch stores the clip name) in a new
-`queuedLabel: string | null`, cleared once no lane has a pending boundary. One owner, no
-heuristic that guesses "scene or clip?" from how many lanes happen to be queued.
+(`launchSceneAt` stores the scene name, the clip launch stores the clip name) as a
+`{ label, boundary }` record. It is honoured only while `boundary` is still the pending
+one, so it expires itself the moment the switch lands and no stop/seek/undo seam has to
+remember to clear it. One owner, and no heuristic that guesses "scene or clip?" from how
+many lanes happen to be queued — a one-lane scene would be captioned with a clip's name.
 
 In the idle state the caption is `activeScene()?.name`. Note `activeSceneIdx` is advanced
 at *launch* time, not at the boundary, so during a countdown it already names the
@@ -88,6 +90,9 @@ export interface SceneCountdown {
   bars: number;
   /** Seconds until the switch; null when nothing is queued. */
   secsLeft: number | null;
+  /** Pre-formatted centre reading. Produced here, not in the widget, so the
+   *  beats-per-bar count follows the session meter and stays under test. */
+  centerText: string;
 }
 
 export function sceneCountdown(
@@ -119,9 +124,9 @@ with the `MASTER` label: a flex row of `[ring][MASTER]`. The handle is passed to
 nothing leaks across the re-renders that every play-state change triggers.
 
 The master strip is deliberately aligned pixel-for-pixel with the lane columns, so the
-ring must not make that column taller on its own. `.mix-name` therefore gets
-`min-height: 40px` in **every** mixer column; lane columns centre their label in that
-space. Cost: the mixer row grows ~26 px. No grid-template change, no column steals width
+ring must not make that column taller on its own. `.mix-col .mix-name` therefore goes from
+`height: 22px` to `40px` in **every** mixer column; lane columns centre their label in that
+space. Cost: the mixer row grows 18 px. No grid-template change, no column steals width
 from a lane.
 
 `buildMasterStrip` gains the ring deps as optional fields: test fixtures without audio
