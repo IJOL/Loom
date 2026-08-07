@@ -1,0 +1,31 @@
+{
+  "id": "width",
+  "name": "Width",
+  "version": "1.0.0",
+  "loomApi": 1,
+  "author": "Loom",
+  "main": "main.js",
+  "components": [
+    {
+      "kind": "fx",
+      "id": "width",
+      "name": "Width",
+      "params": [
+        { "id": "width", "label": "Width", "kind": "continuous", "min": 0, "max": 2, "default": 1 },
+        { "id": "rate", "label": "Rate", "kind": "continuous", "min": 0.05, "max": 8, "default": 0.5, "unit": "Hz" },
+        { "id": "depth", "label": "Depth", "kind": "continuous", "min": 0, "max": 1, "default": 0 },
+        { "id": "sync", "label": "Sync", "kind": "discrete", "min": 0, "max": 6, "default": 0,
+          "options": [
+            { "value": "free", "label": "Free" },
+            { "value": "1/1", "label": "1/1" },
+            { "value": "1/2", "label": "1/2" },
+            { "value": "1/2.", "label": "1/2." },
+            { "value": "1/2t", "label": "1/2t" },
+            { "value": "1/4", "label": "1/4" },
+            { "value": "1/4t", "label": "1/4t" }
+          ] }
+      ],
+      "fx": { "color": "#26c6da" }
+    }
+  ]
+}
