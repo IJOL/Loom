@@ -629,3 +629,32 @@ a 1 por defecto y sin ganancia de compensación, quien lo meta en una pista va a
 leerlo como «el wah me ha roto el tema» antes que como «un wah suena así».
 Decidir: compensar la salida, bajar el `mix` de fábrica, o dejarlo y que el
 manual lo diga.
+
+## Rojo PREEXISTENTE, verificado contra `main`: el `bits` del bitcrusher a veces no llega
+
+`plugins/bitcrusher/bitcrusher.test.ts > fewer bits mangle the wave more` falla
+de forma intermitente **en la suite completa y nunca en solitario**. No es de
+esta rama: la misma prueba, en `src/plugins/fx/bitcrusher.test.ts` sobre `main`
+sin tocar (`2517ef6`), falla con **el mismo número exacto** —
+`expected 0 to be greater than 0.19901054964301407`.
+
+Tres síntomas observados, y los tres dicen lo mismo:
+
+| pasada | resultado | qué significa |
+| --- | --- | --- |
+| A | `0` contra `0.199` | con 2 bits el render sale **idéntico** al de 16 |
+| B | `NaN` contra `NaN` | el render trae muestras no finitas |
+| C | `0.582` contra `0.870` | con 2 bits mangea lo mismo que con 6 (`0.580`) |
+
+Es decir: **`buildShaper` a veces no surte efecto**. El plugin cambia de bits
+creando un `WaveShaper` nuevo, conectándolo y desconectando el viejo — porque
+`node-web-audio-api` no deja reasignar `curve` dos veces. Los tres `disconnect`
+del viejo van dentro de UN solo `try`, así que si el primero lanza, los otros dos
+no se ejecutan y el shaper anterior **sigue conectado**: las dos curvas suman.
+Eso explica A y C; queda por explicar B.
+
+Lo único que se ha hecho aquí es que `mangle` lance con un mensaje que diga qué
+render vino roto, en vez de dejar un `expected NaN to be greater than NaN` que no
+dice nada. **No se ha tocado el DSP**: arreglarlo es cambiar `buildShaper` en un
+efecto que esta rebanada sólo ha movido de sitio, y merece su propia rama con su
+propio test que reproduzca el fallo a voluntad.

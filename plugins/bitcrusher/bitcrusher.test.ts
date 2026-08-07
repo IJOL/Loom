@@ -30,9 +30,23 @@ async function render(setup: (fx: ReturnType<typeof mk>) => void, secs = 0.3): P
   return (await ctx.startRendering()).getChannelData(0);
 }
 const rms = (b: Float32Array) => Math.sqrt(b.reduce((s, v) => s + v * v, 0) / b.length);
-/** Distance from a clean reference: how much the crusher has mangled the wave. */
+/** Distance from a clean reference: how much the crusher has mangled the wave.
+ *
+ *  Guarded, because an unusable render used to surface here as
+ *  `expected NaN to be greater than NaN` — an assertion message that says
+ *  nothing about which of the three renders was empty or why. Twice, under the
+ *  full suite only and never in isolation, this file has produced a render that
+ *  was all zeros or all NaN; the guard turns that into a sentence instead of a
+ *  riddle. It does NOT weaken the claim below: a healthy render passes it
+ *  without noticing. */
 function mangle(a: Float32Array, b: Float32Array): number {
-  let d = 0; for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
+  let d = 0;
+  for (let i = 0; i < a.length; i++) {
+    if (!Number.isFinite(a[i]) || !Number.isFinite(b[i])) {
+      throw new Error(`render produced a non-finite sample at ${i}: ${a[i]} vs ${b[i]}`);
+    }
+    d += Math.abs(a[i] - b[i]);
+  }
   return d / a.length;
 }
 
