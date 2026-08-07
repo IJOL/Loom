@@ -8,7 +8,7 @@ Both drift. Where a document and the code disagree, **the code is right**: every
 
 Three structures hold everything together:
 
-1. **A plugin registry** — engines, FX, and modulators are all plugins. They are discovered at build time via a Vite `import.meta.glob` scan, so adding a new one means dropping a file in the right directory, not editing core wiring.
+1. **A plugin registry** — engines, FX and modulators are all plugins, and most of them are no longer in this repository's source at all. A plugin is a directory under `plugins/`, compiled into `public/plugins/<id>/`, and loaded by the browser **at runtime** off a JSON manifest; it compiles against `@loom/plugin-sdk` and talks to the host through one small runtime ABI, `globalThis.Loom`. Six engines, fifteen inserts and one modulator ship that way today. A shrinking in-tree SPI, discovered by a Vite `import.meta.glob` scan, still carries the LFO/ADSR modulators and the note-FX.
 
 2. **`SessionState`** — the pure data model: lanes contain clips, scenes reference which clip each lane plays. No audio side-effects live here.
 
@@ -18,29 +18,42 @@ Three structures hold everything together:
 
 `src/main.ts` is a boot script, not a feature file. It builds the handful of objects everything else needs, then hands them to one wiring module per concern in `src/app/`:
 
-- `bootstrapPlugins()` first, before anything reads the registry (`main.ts:95`), then the preset cache derived from it (`main.ts:103`).
-- `createAudioGraph()` (`main.ts:114`) and the three worklet `addModule` calls, which every lane allocation waits on (`main.ts:129`).
-- The `Sequencer` (`main.ts:142`), the automation recorder and its knob registry (`main.ts:143`), the `DestinationRegistry` (`main.ts:150`), the lane allocator (`main.ts:172`), and the `SessionHost` (`main.ts:379`).
+- `bootstrapPlugins()` first, before anything reads the registry (`main.ts:92`), then `loadPlugins()` — the external plugins, fetched and validated (`main.ts:98`). That second one is a **promise**, and the difference matters: everything the in-tree registry knows is available synchronously, while every engine and insert that arrives from `public/plugins/` lands later. Code that enumerates components at boot sees only the built-ins unless it awaits it, which is written down at `main.ts:647`.
+- `createAudioGraph()` (`main.ts:120`) and the worklet `addModule` calls, which every lane allocation waits on (`main.ts:136`–`154`). The order inside that block is load-bearing too: `loom-processor` installs `globalThis.Loom` and must be registered **before** any plugin's `dsp.js` is added, or the plugin has nothing to register its renderer with.
+- The `Sequencer` (`main.ts:162`), the `DestinationRegistry` (`main.ts:170`), the lane allocator (`main.ts:192`), and the `SessionHost` (`main.ts:377`).
 - Then roughly a dozen `wireX(...)` / `createXFeature(...)` calls, each of which owns one concern end to end and lives in its own file under `src/app/`.
 
-**The order is load-bearing**, and the comments in `main.ts` say why at each step. `wireMenuBar` is deliberately the last statement of boot (`main.ts:813`): its action table names a handle from nearly every feature above, so the bar appearing is the proof that boot ran start to finish.
+**The order is load-bearing**, and the comments in `main.ts` say why at each step. `wireMenuBar` is deliberately the last statement of boot (`main.ts:810`): its action table names a handle from nearly every feature above, so the bar appearing is the proof that boot ran start to finish.
 
 If you are looking for the code behind a control, it is almost never in `main.ts` — find the `wireX` call that mentions it and open that module.
 
-## The plugin registry
+## How a plugin gets in
 
-`src/app/plugin-bootstrap.ts` calls `import.meta.glob` at build time over two trees:
+### The external ABI — the normal case
 
-```text
-src/engines/*.ts       — synth engines
-src/plugins/**/*.ts    — the WHOLE plugin tree: fx/, modulators/, notefx/
-```
+The browser cannot list a directory, so **`public/plugins/index.json` is the discovery mechanism**: a flat array of plugin ids, rewritten by `npm run build:plugins`. For each id, `loadPlugins` (`src/plugin-host/plugin-host.ts`) fetches `plugin.json`, validates it as **data** before a single line of the plugin runs (`manifest-validate.ts`), adopts its declared components into the engine / modulator / fx registries, seeds any `presets.json`, and collects its `dsp.js` URL for the worklet.
 
-(`*.test.ts` is excluded from both.) Every module in those trees is eagerly imported. Any exported value that satisfies the `PluginFactory` shape (`{ kind, manifest, create }`, with `kind` one of `synth` / `fx` / `modulator`) is collected and registered via `registerPlugin`.
+Two properties of that loop are worth relying on:
 
-**Note-FX are the exception.** A `NoteFxFactory` declares `defaultParams()` instead of `create()`, so the shape check skips it (`plugin-bootstrap.ts:36`). Those files call `registerPlugin` themselves at module scope — the glob's only job for that category is to evaluate the module. That is why the second glob has to cover the whole plugin tree, not just `fx/` and `modulators/`.
+- **Failure is contained and complete.** A plugin that throws — even one whose components were already adopted before its own module blew up — is rolled back in full and recorded in the load report. One bad plugin never takes the app down, and never leaves a half-registered engine behind: visible in the selector, silent at note time, is exactly the failure this design refuses to allow.
+- **A plugin's JS is loaded through a `blob:` URL**, not a bare `import(url)` (`module-loader.ts`). A plugin is a static asset in `public/`, and Vite's dev middleware refuses to serve one as a module — so the obvious import works in the production build and breaks under `npm run dev`. Fetching the source and evaluating it from a blob behaves identically in both, and is the same mechanism a user-installed plugin will need when its bytes live in IndexedDB instead of at a URL.
+
+The worklet half is symmetrical: `loom-processor.ts` installs `globalThis.Loom` (`registerRenderer`, `registerModulatorKernel`) and the host guarantees that module is `addModule`'d **first**, so every plugin `dsp.js` added afterwards shares the realm and can reach the registry. The ABI deliberately carries no DSP — everything a plugin uses from `@loom/plugin-sdk` is compiled into the plugin's own bundle, which is what lets the ABI stay stable across versions.
+
+### What is left of the in-tree SPI
+
+`src/app/plugin-bootstrap.ts` still calls `import.meta.glob` at build time over `src/engines/*.ts` and `src/plugins/**/*.ts` (`*.test.ts` excluded), and any exported value matching the `PluginFactory` shape (`{ kind, manifest, create }`) is registered. **No insert is found this way any more** — all fifteen are external. What the glob does today is mostly to *evaluate* modules so their module-scope registrations run:
+
+- **Modulators** call `registerModulator` at module scope into `src/modulation/modulator-registry.ts` — their own door, the same one a plugin modulator arrives through. The shape check does not match them.
+- **Note-FX** declare `defaultParams()` instead of `create()`, so the shape check skips them too; those files call `registerPlugin` themselves (`src/plugins/notefx/arp.ts:11`).
+
+`bootstrapPlugins` then bridges every registered engine descriptor into the plugin registry, so `listPlugins('engine')` keeps seeing all nine.
 
 The engine registry (`src/engines/registry.ts`) supports both a **singleton** pattern (`registerEngine`) for shared instances and a **factory** pattern (`registerEngineFactory` / `createEngineInstance`) for per-lane instances that need independent state.
+
+### Never ask an engine its name
+
+Anything the core needs to know about a component goes through **one door**, `src/plugins/capabilities.ts` — `clipContent`, `slide`, `outputTrim`, `acceptsNoteFx`, `defaultNoteView`, and so on. A built-in answers from code, a plugin from its manifest, and the caller cannot tell which; that is the whole point, because it is what let six engines move out of `src/` without the core noticing. Every accessor there returns a safe default for an unknown id and never `undefined` — an unregistered engine that blanked its lane's UI would fail silently. **An `engineId === '…'` comparison anywhere outside that file is a bug.**
 
 `listEngines()` reads from the singleton map and is the source of metadata (name, type, polyphony, parameter specs) used to populate the lane engine selector.
 
@@ -113,43 +126,45 @@ That precedence has a consequence worth knowing before you touch clip automation
 
 ### Add a synth engine
 
-Since synthesis moved into the AudioWorklet, an engine is **two halves in two
-places**: a metadata descriptor on the main thread and a per-sample renderer
-inside the worklet bundle. There are **five** steps, and skipping either of the
-last two gives you an engine that appears in the lane selector and then plays
-**silence** — the failure is quiet, so do all five.
+**Write a plugin. Do not add a file to `src/`.** All six melodic engines are
+external plugins, and yours should be too — it needs no access to this repo's
+source, and it is a directory no future PR review has to carry. Full walkthrough
+in [`docs/plugin-development.md`](../plugin-development.md); the shape:
 
-1. **Metadata descriptor** — `src/engines/<id>.ts`. Build it with
-   `createDescriptorEngine(...)` and register it with `registerEngineFactory(id, …)`
-   + `registerEngine(...)` at module scope. Declare params as `EngineParamSpec[]`.
-   This half carries no DSP: it describes the parameters and the UI.
-2. **Renderer** — `src/audio-dsp/<id>-renderer.ts`, a pure per-sample voice
-   renderer that calls `registerRenderer(id, ctor)` at module scope. This is the
-   half that makes sound, and it is plain TypeScript — unit-test it directly, no
-   `AudioContext` required.
-3. **Implement the live-params hook** — `setLiveParams` (and `setLiveSubParams`
-   where the engine has per-slot params) on `VoiceRenderer`
-   (`src/audio-dsp/types.ts`). Read your **continuous** params out of the live bag
-   every sample so a knob moves the note already sounding; copy the
+1. **Scaffold** — `npm run plugin -- new plugins/<id>`.
+2. **Declare it in `plugin.json`.** The manifest is the whole declaration: `id`,
+   `loomApi: 1`, and a `components` array. An engine component carries `kind:
+   "engine"`, `polyphony`, its `params`, a `groups` table (which sections exist,
+   their title, order, colour, and which share a row — omit it and the grid falls
+   back to first-appearance order, one row per group, no colour), an optional
+   `modulators` array shipped with the sound, and a `capabilities` block. Add
+   `"dsp": "dsp.js"` and `"presets": "presets.json"` alongside.
+3. **Write `dsp.ts`** — the pure per-sample voice renderer, registered with
+   `Loom.registerRenderer(id, ctor)` at module scope. It is plain TypeScript with
+   no `AudioContext`: unit-test it directly, next to the code, in
+   `plugins/<id>/dsp.test.ts`.
+4. **Implement the live-params hook** — read your **continuous** params out of
+   the live bag every sample so a knob moves the note already sounding; copy the
    **structural** ones — waveform, filter model, unison size, envelope times —
    into your own fields once, at construction, from the trigger-time snapshot.
-   Both hooks are optional on the interface, so a renderer that skips this
-   compiles clean and passes the whole suite; it is just the one engine whose
-   knobs go dead mid-note. The registry-driven test in
-   `src/audio-dsp/live-params.dsp.test.ts` walks `WORKLET_ENGINE_IDS` and catches
-   the omission — but only once step 5 is done.
-4. **Side-effect import in the worklet** — add `import '../audio-dsp/<id>-renderer';`
-   to [`src/audio-worklet/loom-processor.ts`](../../src/audio-worklet/loom-processor.ts).
-   The worklet is a separate bundle; without this import the renderer never
-   registers *inside it* and `createRenderer` throws
-   `no renderer registered for engine '<id>'`.
-5. **Route the lane** — add the id to `WORKLET_ENGINE_IDS` in
-   [`src/app/lane-allocator.ts`](../../src/app/lane-allocator.ts). The allocator
-   only sends listed ids down the worklet path; an unlisted id falls through,
-   the lane gets no engine, and nothing sounds.
+   The hook is optional, so a renderer that skips it compiles clean and passes
+   the whole suite; it is just the one engine whose knobs go dead mid-note. The
+   registry-driven test in `src/audio-dsp/live-params.dsp.test.ts` catches it.
+5. **Build it** — `npm run build:plugins`. **Nothing you did is visible until
+   this runs**: the app loads `public/plugins/`, and the dev server does not
+   compile `plugins/` for you. A stale build looks exactly like a broken engine.
 
-Two things about the registered descriptor are worth knowing, because they look
-like bugs otherwise:
+There is no `WORKLET_ENGINE_IDS` list to add yourself to any more — it is a live
+view over "is this id worklet-hosted", and any plugin id answers yes.
+
+**Adding an engine in-tree is the exception and needs a reason.** The three that
+still live in `src/engines/` — `sampler`, `audio`, `drums-machine` — are there
+because each owns browser resources an external plugin has no way to hold:
+decoded buffers, IndexedDB, per-voice `AudioParam`s. "I have a checkout, so it is
+easier" is not that reason.
+
+If you do write one, two things about the registered descriptor look like bugs
+and are not:
 
 - **Its synthesis surface is inert, not throwing.** `createDescriptorEngine`
   gives you a `createVoice()` that returns a no-op `Voice` with an empty
@@ -158,10 +173,10 @@ like bugs otherwise:
   metadata, and modulation for these engines runs sample-accurately inside the
   worklet (`src/audio-dsp/modulation-runtime.ts`).
 - **The bridged *plugin* does throw.** `bootstrapPlugins` wraps each engine
-  descriptor in a synth `PluginFactory` so `listPlugins('synth')` keeps seeing
+  descriptor in an engine `PluginFactory` so `listPlugins('engine')` keeps seeing
   every engine, and that wrapper's `create()` throws on purpose
-  (`src/app/plugin-bootstrap.ts:81`). It is a tripwire: if you see it, something
-  called `createInstance('synth', …)` instead of going through the lane
+  (`src/app/plugin-bootstrap.ts:90`). It is a tripwire: if you see it, something
+  called `createInstance('engine', …)` instead of going through the lane
   allocator.
 
 See [Engines](04-engines.md) for the full engine catalogue.
@@ -198,17 +213,41 @@ saved tweak beats its lane preset.
 
 ### Add an FX insert
 
-1. Create `src/plugins/fx/<name>.ts`.
-2. Export a `PluginFactory` with `kind: 'fx'`. Do **not** call `registerPlugin` — the glob's shape check collects it for you; none of the eleven shipped inserts registers itself.
-3. That is all. The "+ Add insert" picker is an unfiltered `listPlugins('fx')` (`src/session/lane-insert-ui.ts:218`), and the same builder serves lanes, the master rack and both send racks, so a new insert appears in all four at once.
+An insert is a plugin like an engine, with one structural difference: **it is not
+a worklet**. Only synthesis runs in the worklet; an insert builds ordinary Web
+Audio nodes on the main thread.
 
-Separately from the picker, the `FxBus` seeds send A with `delay` and send B with `reverb` when it is constructed (`src/core/fx.ts:30`). That is a default, not a restriction — both are offered as ordinary inserts too.
+1. `npm run plugin -- new plugins/<name>`.
+2. In `plugin.json`, declare a component with `kind: "fx"` and its `params`.
+3. Write `main.ts` — the factory that builds the node graph. The SDK's
+   main-thread builders are there for you (`modulated-delay`, `signal-max`,
+   `envelope-follower`); they sit **below the dividing line** in
+   `packages/loom-plugin-sdk/src/index.ts`, and importing one into a `dsp.ts`
+   renderer will not work, because that half runs inside the worklet with no
+   `AudioContext`.
+4. `npm run build:plugins`.
+
+The "+ Add insert" picker is an unfiltered `listPlugins('fx')`
+(`src/session/lane-insert-ui.ts`), and the same builder serves lanes, the master
+rack and both send racks, so a new insert appears in all four at once.
+
+Separately from the picker, the `FxBus` seeds send A with `delay` and send B with `reverb` when it is constructed (`src/core/fx.ts:30`). That is a default, not a restriction — both are offered as ordinary inserts too. **Seeding needs the plugin registry to be up**: the FxBus cannot seed a send with an insert that has not loaded yet.
 
 ### Add a modulator
 
-`kind: 'modulator'` plugins are collected the same way and bound the same way: `ConnectionBinder.apply` builds `modulator.output → GainNode(depth × (max − min)) → targetAudioParam` (`src/modulation/connection-binder.ts:44`).
+A modulator can be a plugin too — `plugins/sh/` (sample & hold) is the shipped
+proof. Declare `kind: "modulator"` with a `modulator` block naming its `driver`
+(`time` or `gate`), the `scopes` it supports (`shared`, `per-voice`) and an
+`idPrefix`; a `time`-driven one also ships a per-sample kernel registered with
+`Loom.registerModulatorKernel` inside the worklet. In-tree modulators come
+through the same door, `registerModulator` in
+`src/modulation/modulator-registry.ts` — the LFO and the ADSR just call it
+directly.
 
-Be aware of the ceiling before you invest in one. The MODULATORS panel offers exactly two buttons, **+ LFO** and **+ ADSR** (`src/modulation/modulation-ui.ts:63`), so there is no UI path that adds a third kind. `ModulationHost` hardcodes `LFOVoice` / `ADSRVoice` and routes any other kind through `createInstance`, which its own comment describes as a stateless stub whose `currentValue()` returns 0 (`src/modulation/modulation-host.ts:85`). Inside the worklet, `ModLite.kind` is typed `'lfo' | 'adsr'` (`src/audio-dsp/modulation-runtime.ts:24`), so a custom modulator cannot reach a melodic engine's params at all. Adding a genuinely new modulator kind is a change to those three places, not a drop-in.
+Binding is unchanged: `ConnectionBinder.apply` builds `modulator.output →
+GainNode(depth × (max − min)) → targetAudioParam`
+(`src/modulation/connection-binder.ts:44`) for the native-node targets, while a
+worklet engine's params are modulated per sample by `ModulationRuntime`.
 
 See [Modulation and Note FX](06-modulation-and-note-fx.md) for the user-facing side.
 
@@ -218,7 +257,9 @@ See [Modulation and Note FX](06-modulation-and-note-fx.md) for the user-facing s
 
 ### Add a preset
 
-Open `public/presets/<engine>.json` and append an entry. The `gm` field is optional (an integer GM program number for MIDI-import matching). JSON is the source of truth; `preset-loader.ts` validates and `preset-apply.ts` applies it at runtime by calling `engine.applyPreset`. Each engine's JSON keys are its own vocabulary — do not use a generic `setBaseValue` loop.
+For one of the six melodic engines, the presets ship **with the plugin**: append an entry to `plugins/<id>/presets.json` and run `npm run build:plugins`. `plugin-host` seeds them at load. For Sampler or Drums, the file is still `public/presets/<engine>.json`.
+
+Either way the `gm` field is optional (an integer GM program number for MIDI-import matching), JSON is the source of truth, `preset-loader.ts` validates and `preset-apply.ts` applies it at runtime by calling `engine.applyPreset`. Each engine's JSON keys are its own vocabulary — do not use a generic `setBaseValue` loop.
 
 ### Add a synth drum kit
 
@@ -234,7 +275,7 @@ Append an object to the `KITS` array in `src/core/drums.ts`. Kits are parameter 
 
 ## Conventions
 
-**File size: 300 lines of code as a target, 500 as a hard cap.** Lines of *code* — comment lines and blank lines do not count towards either number. The distinction is not pedantry: `src/main.ts` is 820 raw lines and 488 lines of code, which is inside the cap by the rule that applies and over it by the one that does not. A file that is long because it explains itself is fine; a file that is long because it does too much is the thing the cap exists to catch. When one crosses the line, split it by concern — `src/app/` is what that looks like in practice.
+**File size: 300 lines of code as a target, 500 as a hard cap.** Lines of *code* — comment lines and blank lines do not count towards either number. The distinction is not pedantry: `src/main.ts` is 816 raw lines and 473 lines of code, which is inside the cap by the rule that applies and over it by the one that does not. A file that is long because it explains itself is fine; a file that is long because it does too much is the thing the cap exists to catch. When one crosses the line, split it by concern — `src/app/` is what that looks like in practice.
 
 **Assertions are relative.** See Testing, below.
 
@@ -255,13 +296,22 @@ src/
                     — the seven strip params (level, pan, sends A/B, EQ x3)
                       declared ONCE: engine params, automation targets,
                       modulation targets and mixer knob ids all read this
-  engines/        SynthEngine abstraction, registry, one file per engine —
-                  nine register today: tb303, subtractive, fm, wavetable,
-                  karplus, westcoast, sampler, audio (the dedicated audio
-                  channel), drums-engine — plus engine-selector UI,
+  engines/        SynthEngine abstraction, registry, and the HOST side of an
+                  instrument. Only THREE engines still have a file here —
+                  sampler, audio (the dedicated audio channel) and drums-engine
+                  — because each owns browser resources a plugin cannot hold.
+                  The other six arrive from plugins/ and register the same
+                  descriptor shape from their manifest. Nine in total.
+                  Also: the lane engine wrappers (worklet-lane-engine,
+                  sampler-/drums-/audio-worklet-engine), engine-selector UI,
                   engine-param-commit (the one write path for a param edit) and
                   engine-randomize (the 🎲 dice, derived from each engine's
                   declared EngineParamSpec rather than per-engine knowledge)
+  plugin-host/    How an external plugin gets in: plugin-host (index.json is
+                  the discovery mechanism; validate-as-data, then roll back in
+                  full if it throws), manifest-validate, module-loader (blob:
+                  URLs, because Vite dev refuses to serve public/ as a module)
+                  and loom-api (the main-thread half of globalThis.Loom)
   session/        SessionState model + all session UI
                   (session-host, session-ui, session-inspector,
                   clip-editors/, session-migration)
@@ -270,17 +320,19 @@ src/
                     starts from a released desk
   modulation/     LFO/ADSR voices, ModulationHost, ModulatorScope,
                   connection binder
-  plugins/        Plugin SPI + registry
-                  fx/       — eleven inserts: bitcrusher, chorus, compressor,
-                              delay, distortion, flanger, limiter, multifilter,
-                              phaser, reverb, tremolo. chorus and flanger share
-                              modulated-delay.ts; reverb reads reverb-ir.ts.
-                              insert-chain.ts is the generic host, not a plugin
-                  modulators/ — lfo, adsr
-                  notefx/   — arp, chord (the fourth plugin kind; the
-                              processors themselves live in src/notefx/)
-  presets/        Preset loader + apply logic
-                  (JSON assets live in public/presets/)
+  plugins/        What is left of the in-tree SPI. There is NO fx/ directory
+                  any more — all fifteen inserts are external plugins
+                  capabilities.ts — the ONE door through which the core asks
+                    what a component can do. An engineId === '…' anywhere else
+                    is a bug
+                  modulators/ — lfo, adsr (they call registerModulator at
+                              module scope, the same door a plugin modulator
+                              arrives through)
+                  notefx/   — arp, chord, random (the processors themselves
+                              live in src/notefx/)
+  presets/        Preset loader + apply logic. A melodic engine's presets ship
+                  with its plugin; public/presets/ now holds only what the
+                  in-tree engines need
   midi/           SMF parser, MIDI-to-session transform, GM lookup, import UI
   samples/        Sample types, IndexedDB store, buffer cache, keymap,
                   import metadata
@@ -290,11 +342,17 @@ src/
                   arrangement-from-session, arrangement-ops,
                   arrangement-runtime (records clip-launches + knob automation;
                   surfaced via the REC group's take mode — see performance-feature)
-  audio-dsp/      THE SYNTHESIS KERNEL. Pure per-sample DSP that the worklet
-                  runs: one <id>-renderer.ts per engine (self-registering into
-                  renderer-registry.ts), voice-manager, scheduler-queue,
-                  modulation-runtime, plus primitives (osc, filter, ladder,
-                  sync-osc, unison, adsr). No AudioContext — unit-test directly
+  audio-dsp/      THE SYNTHESIS KERNEL, minus the engines. voice-manager,
+                  scheduler-queue, modulation-runtime + modulator-kernels, and
+                  renderer-registry — which is now filled AT RUNTIME by plugin
+                  dsp.js modules, not by in-tree imports; there is no
+                  <id>-renderer.ts per melodic engine any more. The DSP that
+                  stayed in-house is drums/ and sample/. The shared primitives
+                  (osc, filter, ladder, sync-osc, unison, fold, adsr) moved to
+                  packages/loom-plugin-sdk, where a plugin can reach them.
+                  No AudioContext — unit-test directly
+                  param-index.ts — params are addressed BY INDEX in the audio
+                    loop, so a per-sample render does zero name lookups
                   param-smoother.ts — the lane's live param bag: slews only the
                     params still in flight, and is what makes a knob move the
                     note already sounding
@@ -308,11 +366,15 @@ src/
   export/         Offline scene/WAV render + the live take recorder
   patterns/       The pattern library (styles x patterns) + its picker UI
   perf/           Performance diagnostics (the PERF HUD)
-  polysynth/      The Subtractive lane's PRESET SURFACE, and nothing else: the
-                  preset dropdown + Randomize (polysynth-presets), apply, store,
-                  templates and the param id list (poly-params). The PolySynth
-                  class that once hosted the voices is gone — Subtractive is a
-                  descriptor engine rendered in the worklet like the other five
+  instrument-presets/
+                  The instrument page's USER-PRESET SURFACE, and nothing else:
+                  the preset dropdown + Randomize, apply, store, templates and
+                  the param id list (poly-params). Was src/polysynth/ before the
+                  poly → instrument rename; the PolySynth class it was named
+                  after went with the worklet cutover. The `poly` names INSIDE
+                  it are load-bearing and must not be renamed: the localStorage
+                  key 'tb303-poly-presets-v1' and the JSON shape stored under
+                  it. There are no migrations in this project
   app/            Boot wiring, one module per concern (37 files). main.ts calls
                   into these; it does not contain them — see "Boot" above
                   audio spine  — audio-graph, lane-allocator, engine-swap,
@@ -332,13 +394,15 @@ src/
                   features     — performance-feature, arrangement-playback,
                                  automation-recording, stretch-resync,
                                  warp-resync
-                  plugin-bootstrap — the build-time glob scan (see above)
+                  plugin-bootstrap — the build-time glob scan, now mostly a way
+                                 to RUN module-scope registrations (see above)
   save/           SaveManager (schemaVersion: 3), auto-history (AutoHistory:
                   snapshot-diff undo/redo + gesture coalescing, wired to the
                   transport-bar ↺/↻ buttons), history-wiring (withUndo /
                   attachKnobUndo + the undo keyboard — LIVE and load-bearing:
                   withUndo wraps mutation sites across the app)
-  notefx/         Note-FX plugin category (arpeggiator, chord spread) — per-lane
+  notefx/         Note-FX processors (arpeggiator, chord spread, random) —
+                  per-lane, applied to notes before they reach the engine
   automation/     Clip envelope recording + read-back, the automation painter
                   and its LFO, the knob right-click menu — and the
                   DestinationRegistry, the ONE catalogue every parameter
@@ -348,11 +412,36 @@ src/
   demo/           Baked MIDI demos + demo picker
   styles/         SCSS
 
+plugins/          PLUGIN SOURCE — 22 shipped directories, each a plugin.json
+                  plus its code: six engines (tb303, subtractive, fm, wavetable,
+                  karplus, westcoast), fifteen inserts (autowah, bitcrusher,
+                  chorus, compressor, delay, distortion, flanger, gate, limiter,
+                  multifilter, phaser, reverb, ringmod, tremolo, width) and one
+                  modulator (sh). A component that synthesises ships dsp.ts; an
+                  insert ships main.ts and builds native nodes on the main
+                  thread. Its tests live beside it. audio-probe is private:true
+                  — a fixture for the host's own tests, never shipped
+
+packages/
+  loom-plugin-sdk/  @loom/plugin-sdk — the surface a plugin author compiles
+                  against: manifest + param types, and the shared DSP
+                  primitives. One line in src/index.ts divides two species:
+                  above it runs per-sample in the worklet, below it builds
+                  native Web Audio nodes on the main thread
+
 public/
-  presets/        Engine preset JSONs (20+ per engine, GM-tagged)
+  plugins/        PLUGIN BUILD OUTPUT — written by `npm run build:plugins`,
+                  discovered by the browser through index.json. Versioned,
+                  because the deploy publishes it. Editing plugins/ and not
+                  rebuilding ships the OLD plugin, silently
+  presets/        What the in-tree engines need: sampler, drums-machine and
+                  drum-kits.json. A melodic engine's presets ship with its
+                  plugin instead
   drumkits/       Sampled drum kits: index.json + <id>.json manifests + WAVs
 
 tools/
+  loom-plugin/    The plugin CLI: `new` scaffolds a directory, `build` compiles
+                  one (or plugins/*) into public/plugins/ and rewrites the index
   stem-service/   Local Python service (FastAPI + audio-separator / Demucs)
                   exposing an HTTP job queue for stem separation.
                   Run: uvicorn app:app --port 8765
@@ -386,7 +475,9 @@ Loom has four test layers, one per risk class.
 
 **Real DSP** (`*.dsp.test.ts`) — audio actually rendered and measured, in two techniques. The **pure kernel** is driven sample by sample with no `AudioContext` at all: `src/audio-dsp/drums/new-voices.dsp.test.ts` calls `renderSample()` in a loop and asserts each voice sounds like what it claims to be. `src/audio-dsp/modulation-scope.dsp.test.ts` is the same technique, and so is `src/audio-dsp/live-params.dsp.test.ts` — the registry-driven one that renders every engine in `WORKLET_ENGINE_IDS` twice, moving a knob mid-note in the second render, and fails the engine whose sound does not change. The **Web Audio nodes that stayed native** render through `OfflineAudioContext` via [`node-web-audio-api`](https://github.com/ircam-ismm/node-web-audio-api), globalised in `test/setup.ts`: `comp-block`, `master-comp`, `master-shaper`, `strip-ducker`, `multifilter`, the sample/warp helpers and the offline export. (`src/performance/arrangement.dsp.test.ts` carries the suffix but does neither — it is arrangement maths. Glob for `*.dsp.test.ts` rather than trusting this list to stay complete.)
 
-There is no per-engine battery any more. `test/setup.ts` states the design plainly: the pure DSP kernel is tested directly and the real worklet's audio is verified in the browser via Playwright, because `node-web-audio-api` cannot run our TypeScript processor. `runStandardEngineBattery` in `test/dsp-battery.ts` survives with **no callers**, so nothing writes to `test/output/`, and `npm run test:wav-diff` / `test:wav-bless` do nothing but print "`test/output/ does not exist`". The 90 WAVs in `test/golden/` are orphans of the batteries the worklet cutover removed. Do not reach for that loop expecting it to work; reviving it is a decision, not a step.
+**A plugin's DSP is tested inside the plugin**, beside the code: `plugins/<id>/dsp.test.ts`, plus `plugins/tb303/tb303-parity.dsp.test.ts`, which pins the 303 against a committed `reference-render.json` so a refactor that changes the sound has to say so out loud. `packages/loom-plugin-sdk/src/sdk-parity.test.ts` guards the primitives those plugins share. They run in the same `npm run test:unit` sweep as everything else.
+
+There is no per-engine WAV battery any more. `test/setup.ts` states the design plainly: the pure DSP kernel is tested directly and the real worklet's audio is verified in the browser via Playwright, because `node-web-audio-api` cannot run our TypeScript processor. `runStandardEngineBattery` in `test/dsp-battery.ts` survives with **no callers**, so nothing writes to `test/output/`, and `npm run test:wav-diff` / `test:wav-bless` do nothing but print "`test/output/ does not exist`". The 90 WAVs in `test/golden/` are orphans of the batteries the worklet cutover removed. Do not reach for that loop expecting it to work; reviving it is a decision, not a step.
 
 **Modulation, objective and end-to-end** — `src/audio-dsp/modulation-pipeline.test.ts` drives the real in-engine path (`ModulationRuntime` → `VoiceManager` → renderer) for each of the six melodic engines, with an LFO at full depth on a continuous param, and asserts the rendered RMS envelope differs measurably from the unmodulated render, plus a negative control. It exists because the worklet rewrite dropped the per-engine coverage the old `.wiring.test.ts` files had. One `.wiring.test.ts` remains — `src/core/ducker-subgraph.wiring.test.ts` — and it covers Web Audio subgraph wiring like the sidechain, which is the only place that pattern still applies.
 
@@ -399,7 +490,9 @@ There is no per-engine battery any more. `test/setup.ts` states the design plain
 | Command | What it runs |
 | --- | --- |
 | `npm run dev` | Vite dev server with hot reload at <http://localhost:5173> |
-| `npm run build` | `tsc` typecheck + Vite bundle to `dist/` |
+| `npm run build` | Every plugin, then `tsc` typecheck + Vite bundle to `dist/` |
+| `npm run build:plugins` | `plugins/*` → `public/plugins/` + its `index.json` |
+| `npm run plugin -- new plugins/<id>` | Scaffold a new plugin directory |
 | `npm test` | Full suite: unit + e2e (always build first) |
 | `npm run test:unit` | Vitest only, no browser |
 | `npm run test:fast` | Unit tests excluding DSP renders (inner-loop TDD) |
@@ -407,6 +500,8 @@ There is no per-engine battery any more. `test/setup.ts` states the design plain
 | `npm run test:e2e` | Playwright against `vite preview` on port 4173 |
 
 **e2e gotcha:** `test:e2e` and `npm test` serve `dist/` with no build step. Playwright boots `vite preview` over the last production bundle. If you changed `src/` without rebuilding, the newest features are absent from the bundle and tests fail with "element not found" — which looks like a regression. Always run `npm run build` before `npm run test:e2e`.
+
+**The same trap has a plugin-shaped twin.** `public/plugins/` is build output, and nothing recompiles it for you — not the dev server, not `vite build` on its own. Change a plugin, reload, and you hear the previous version with no warning; add a new one and its engine is simply missing from the selector. `npm run build:plugins` after every plugin edit, or `npm run build`, which does it first.
 
 Vitest runs test files serially (`fileParallelism: false`) because `node-web-audio-api`'s `OfflineAudioContext` is not safe under parallel forks. The teardown occasionally exits non-zero with `ERR_IPC_CHANNEL_CLOSED` after all tests pass — that is a tinypool shutdown race, not a test failure; re-run to confirm green.
 
