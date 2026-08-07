@@ -84,9 +84,19 @@ export function focusLaneImpl(self: SessionHost, laneId: string, origin: LaneFoc
   // No clip to show in this row: close, never create. closeIfOtherLane (rather
   // than closeInspector) keeps the "a lane never closes its own clip" guarantee
   // even if the row rule is ever loosened.
-  if (!next) { insp.closeIfOtherLane(laneId); return; }
-  insp.setSelectedClip(next);
-  insp.openInspector();
+  if (next) {
+    insp.setSelectedClip(next);
+    insp.openInspector();
+  } else {
+    insp.closeIfOtherLane(laneId);
+  }
+  // Repaint AFTER the clip moved, not before. showLaneEditorImpl already
+  // rendered once — but that ran while the OUTGOING clip was still selected, and
+  // the grid draws its "editing" ring from that selection. Without this second
+  // pass the yellow border stays on the old lane's cell while the editor shows
+  // the new one: the very mismatch this whole funnel exists to prevent, just
+  // drawn instead of real.
+  self.renderWithMixer();
 }
 
 export class SessionHost {

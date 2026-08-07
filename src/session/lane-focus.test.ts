@@ -87,15 +87,27 @@ function makeInspector(state: SessionState): SessionInspector {
   });
 }
 
-/** A SessionHost stub carrying only what focusLaneImpl reads. */
-function makeSelf(state: SessionState, insp: SessionInspector, activeEditLane: string | null): SessionHost {
+/** A SessionHost stub carrying only what focusLaneImpl reads.
+ *
+ *  `renderWithMixer` records the inspector's selection AS IT WAS at each call.
+ *  The grid rings the open clip by reading that selection, so the last render of
+ *  a lane switch has to see the NEW one — see the stale-ring test below. */
+function makeSelf(
+  state: SessionState,
+  insp: SessionInspector,
+  activeEditLane: string | null,
+  renderLog?: (string | null)[],
+): SessionHost {
   return {
     state,
     inspector: insp,
     activeEditLane,
     activeSceneIdx: -1,
     synthCollapsed: false,
-    renderWithMixer: () => {},
+    renderWithMixer: () => {
+      const sel = insp.getSelectedClip();
+      renderLog?.push(sel ? `${sel.laneId}#${sel.clipIdx}` : null);
+    },
     deps: { onActiveLaneChanged: vi.fn(), setActiveEngineLane: vi.fn() },
   } as unknown as SessionHost;
 }
@@ -177,6 +189,38 @@ describe('focusLane — the one door', () => {
 
     expect(insp.getSelectedClip(), 'the drums clip in the launched row opens')
       .toEqual({ laneId: 'drums-1', clipIdx: 1 });
+  });
+
+  it('repaints the grid AFTER the clip moves, so the ring is not left behind', () => {
+    // Caught by looking, not by a test: the yellow "editing" border stayed on the
+    // old lane's cell while the editor showed the new one. showLaneEditor
+    // repaints the grid, and it runs BEFORE the clip decision — so the ring was
+    // drawn from the outgoing selection and nothing repainted it afterwards.
+    const state = makeState();
+    const insp = makeInspector(state);
+    insp.setSelectedClip({ laneId: 'drums-1', clipIdx: 0 });
+    insp.openInspector();
+
+    const renders: (string | null)[] = [];
+    const self = makeSelf(state, insp, 'drums-1', renders);
+    focusLaneImpl(self, 'tb-303-1', 'lane');
+
+    expect(renders.at(-1), 'the last repaint sees the clip that is actually open')
+      .toBe('tb-303-1#0');
+  });
+
+  it('repaints the grid after CLOSING too, so no ring survives an empty row', () => {
+    const state = makeState();
+    (state.lanes[0] as unknown as { clips: SessionClip[] }).clips.push(clip('c-d1', 'Fill'));
+    const insp = makeInspector(state);
+    insp.setSelectedClip({ laneId: 'drums-1', clipIdx: 1 });
+    insp.openInspector();
+
+    const renders: (string | null)[] = [];
+    const self = makeSelf(state, insp, 'drums-1', renders);
+    focusLaneImpl(self, 'tb-303-1', 'lane');
+
+    expect(renders.at(-1), 'the last repaint sees no open clip at all').toBeNull();
   });
 
   it('re-selecting the open clip\'s own lane leaves the editor alone', () => {
