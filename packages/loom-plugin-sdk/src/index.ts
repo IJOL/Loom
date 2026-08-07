@@ -32,3 +32,4 @@ export * from './dsp/reverb-ir';
 // the main thread — because that is what an insert is in Loom. Same folder, two
 // species; importing one of these into a renderer will not work.
 export * from './dsp/modulated-delay';
+export * from './dsp/envelope-follower';
