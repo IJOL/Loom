@@ -1,6 +1,6 @@
 // src/polysynth/poly-preset-templates.ts
 // Shared option templates for the preset <select>s polysynth-presets fills
-// (#poly-preset-select and the per-page 303/drums selects). Option values keep
+// (#instrument-preset-select and the per-page 303/drums selects). Option values keep
 // the dropdown vocabulary (`__custom__`, `engine:<name>`, `user:<name>`,
 // `sampler:…`) — pagePresetName and the change handlers key off it.
 

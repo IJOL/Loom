@@ -23,11 +23,11 @@ async function firstPresetValue(page: Page, selectId: string): Promise<string> {
 // Engines that expose a preset dropdown, with the select element each one uses.
 // (Sampler is a poly engine too but ships no presets, so it has no dropdown.)
 const ENGINES: { engineId: string; label: string; selectId: string }[] = [
-  { engineId: 'subtractive',   label: 'Subtractive', selectId: '#poly-preset-select' },
-  { engineId: 'fm',            label: 'FM',          selectId: '#poly-preset-select' },
-  { engineId: 'wavetable',     label: 'Wavetable',   selectId: '#poly-preset-select' },
-  { engineId: 'karplus',       label: 'Karplus',     selectId: '#poly-preset-select' },
-  { engineId: 'tb303',         label: 'TB-303',      selectId: '#poly-preset-select' },
+  { engineId: 'subtractive',   label: 'Subtractive', selectId: '#instrument-preset-select' },
+  { engineId: 'fm',            label: 'FM',          selectId: '#instrument-preset-select' },
+  { engineId: 'wavetable',     label: 'Wavetable',   selectId: '#instrument-preset-select' },
+  { engineId: 'karplus',       label: 'Karplus',     selectId: '#instrument-preset-select' },
+  { engineId: 'tb303',         label: 'TB-303',      selectId: '#instrument-preset-select' },
   { engineId: 'drums-machine', label: 'Drums',       selectId: '#drums-preset-select' },
 ];
 

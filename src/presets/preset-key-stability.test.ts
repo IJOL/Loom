@@ -6,7 +6,7 @@
 // a description of whatever the rename happened to do.
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { loadUserPolyPresets, saveUserPolyPresets } from '../polysynth/poly-preset-store';
+import { loadUserPolyPresets, saveUserPolyPresets } from '../instrument-presets/poly-preset-store';
 
 const KEY = 'tb303-poly-presets-v1';
 

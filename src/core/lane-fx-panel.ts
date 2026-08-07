@@ -153,7 +153,7 @@ function compTemplate(ctx: Ctx): TemplateResult {
   const help = helpPair(ctx, `${laneId}.fx.comp.help`, COMP_LEGEND);
 
   return html`
-    <div class="row poly-section lane-fx-comp">
+    <div class="row instrument-section lane-fx-comp">
       ${sectionHead('COMP', 'channel compressor')}
       ${help.btn}
       <div class="knob-row">
@@ -248,7 +248,7 @@ function scTemplate(ctx: Ctx): TemplateResult {
   const scKnob = (cfg: KnobCfg) => knob(ctx, cfg).el;
 
   return html`
-    <div class="row poly-section lane-fx-sc">
+    <div class="row instrument-section lane-fx-sc">
       ${sectionHead('SIDECHAIN', 'duck this lane')}
       ${help.btn}
       <div class="knob-row">

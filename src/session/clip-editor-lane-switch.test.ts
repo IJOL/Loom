@@ -54,7 +54,7 @@ function mountDom(): void {
     <div id="session-view-root">
       <div class="page" data-page="303" hidden></div>
       <div class="page" data-page="drums" hidden></div>
-      <div class="page" data-page="poly" hidden></div>
+      <div class="page" data-page="instrument" hidden></div>
     </div>
     <div id="session-inspector" hidden>
       <div id="insp-context">

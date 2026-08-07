@@ -22,9 +22,9 @@ const SMF = Uint8Array.from([
 
 function setup(): { input: HTMLInputElement; list: HTMLDivElement } {
   document.body.innerHTML = `
-    <input type="file" id="poly-midi-file" />
-    <div id="poly-midi-tracklist" style="display:none;"></div>
-    <button id="poly-midi-load" disabled>Import MIDI</button>`;
+    <input type="file" id="midi-import-file" />
+    <div id="midi-import-tracklist" style="display:none;"></div>
+    <button id="midi-import-load" disabled>Import MIDI</button>`;
   const deps = {
     session: { lanes: [], scenes: [] },
     setBpm: vi.fn(),
@@ -36,8 +36,8 @@ function setup(): { input: HTMLInputElement; list: HTMLDivElement } {
   } as unknown as MidiImportUiDeps;
   wireMidiImportUI(deps);
   return {
-    input: document.getElementById('poly-midi-file') as HTMLInputElement,
-    list: document.getElementById('poly-midi-tracklist') as HTMLDivElement,
+    input: document.getElementById('midi-import-file') as HTMLInputElement,
+    list: document.getElementById('midi-import-tracklist') as HTMLDivElement,
   };
 }
 

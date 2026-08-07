@@ -1,6 +1,6 @@
 import { html, render } from 'lit-html';
 import { getEngineDescriptor, listEngines } from './registry';
-import { populatePolyPresetSelect, refreshPolyPresetSelect } from '../polysynth/polysynth-presets';
+import { populatePolyPresetSelect, refreshPolyPresetSelect } from '../instrument-presets/polysynth-presets';
 import type { KnobHandle } from '../core/knob';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
 import { isAudioEngine } from '../plugins/capabilities';
@@ -122,12 +122,12 @@ export function wireEngineSelector(deps: EngineSelectorUIDeps, initialEngineId: 
 
   // Build the engine-params container and insert it into the poly page.
   // One-shot scaffolding: rendered into a fragment, the element pulled out.
-  const polyPage = document.querySelector('[data-page="poly"]')!;
+  const polyPage = document.querySelector('[data-page="instrument"]')!;
   const frag = document.createDocumentFragment();
   render(html`<div id="engine-params" style="display:none"></div>`, frag);
   const engineParamEl = frag.firstElementChild as HTMLDivElement;
   _engineParamEl = engineParamEl;
-  const firstPolyRow = polyPage.querySelector('.poly-section')!;
+  const firstPolyRow = polyPage.querySelector('.instrument-section')!;
   firstPolyRow.parentNode!.insertBefore(engineParamEl, firstPolyRow.nextSibling);
 
   populateEngineSelect(deps, initialEngineId);

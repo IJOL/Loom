@@ -53,7 +53,7 @@ test('the UI follows a hand-edited plugin.json, not a copy baked into main.js', 
     // silently fell back to a different lane, would also show no "Damping"
     // knob, and an absence check on the old label would pass for the wrong
     // reason. Only "EDITED" being visible proves the fetched file was read.
-    const editor = page.locator('[data-page="poly"]');
+    const editor = page.locator('[data-page="instrument"]');
     await expect(editor.locator('.knob-label:visible', { hasText: 'EDITED' }).first()).toBeVisible();
 
     expect(errors).toEqual([]);

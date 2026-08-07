@@ -37,7 +37,7 @@
 .synth-tab-add { color: var(--text-dim); font-size: 11px; }
 .synth-tab-add:hover { color: var(--amber); }
 
-.poly-section {
+.instrument-section {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -56,7 +56,7 @@
   align-items: center;
 }
 
-.poly-wave-sel {
+.instrument-wave-sel {
   background: var(--surface-2);
   color: var(--amber);
   border: 1px solid var(--border);

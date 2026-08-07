@@ -51,11 +51,11 @@ const addLane = async (page, engineId) => {
   await page.waitForTimeout(300);
 };
 
-/** Select a value in the shared #poly-preset-select, waiting for the (async-
+/** Select a value in the shared #instrument-preset-select, waiting for the (async-
  *  populated) option to exist first. The Sampler surfaces its instruments —
  *  drumkits, melodic instruments and loops — as options here. */
 const loadPolyPreset = async (page, value) => {
-  const sel = page.locator('#poly-preset-select');
+  const sel = page.locator('#instrument-preset-select');
   await sel.locator(`option[value="${value}"]`).waitFor({ state: 'attached', timeout: 10_000 });
   await sel.selectOption(value);
 };
@@ -209,7 +209,7 @@ export const SHOTS = [
   },
   {
     name: 'engine-subtractive',
-    selector: '.page[data-page="poly"]',
+    selector: '.page[data-page="instrument"]',
     setup: async (page) => {
       await loadDemo(page, 'Minimal Techno');
       await clickLaneTab(page, 'Sub 1');
@@ -217,7 +217,7 @@ export const SHOTS = [
   },
   {
     name: 'engine-karplus',
-    selector: '.page[data-page="poly"]',
+    selector: '.page[data-page="instrument"]',
     setup: async (page) => {
       await loadDemo(page, 'Cordillera');
       await clickLaneTab(page, 'Guitar');
@@ -225,7 +225,7 @@ export const SHOTS = [
   },
   {
     name: 'engine-wavetable',
-    selector: '.page[data-page="poly"]',
+    selector: '.page[data-page="instrument"]',
     setup: async (page) => {
       await loadDemo(page, 'Neon Drive');
       await clickLaneTab(page, 'Neon Lead');
@@ -233,7 +233,7 @@ export const SHOTS = [
   },
   {
     name: 'engine-fm',
-    selector: '.page[data-page="poly"]',
+    selector: '.page[data-page="instrument"]',
     setup: async (page) => {
       await loadDemo(page, 'Minimal Techno');
       await addLane(page, 'fm');
@@ -246,7 +246,7 @@ export const SHOTS = [
   },
   {
     name: 'engine-westcoast',
-    selector: '.page[data-page="poly"]',
+    selector: '.page[data-page="instrument"]',
     setup: async (page) => {
       await loadDemo(page, 'Minimal Techno');
       await addLane(page, 'westcoast');
@@ -270,7 +270,7 @@ export const SHOTS = [
   },
   {
     name: 'engine-sampler',
-    selector: '.page[data-page="poly"]',
+    selector: '.page[data-page="instrument"]',
     setup: async (page) => {
       await openSamplerLane(page);
       // Load a ready-made drumkit so the channel strips, keyboard map and
@@ -284,7 +284,7 @@ export const SHOTS = [
     // The Sampler's Loop instrument: the whole-loop colour-coded overview above
     // the per-slice channel strips.
     name: 'engine-sampler-loop',
-    selector: '.page[data-page="poly"]',
+    selector: '.page[data-page="instrument"]',
     setup: async (page) => {
       await openSamplerLane(page);
       await loadPolyPreset(page, 'sampler:loop:amen-175');

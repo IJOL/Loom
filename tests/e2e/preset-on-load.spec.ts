@@ -14,7 +14,7 @@ function selectIdFor(engine: string): string {
   if (engine === 'drums-machine') return '#drums-preset-select';
   // Every melodic engine, TB-303 included: the bass lost its own page, so it is
   // edited — and its preset picked — in the common panel like the rest.
-  return '#poly-preset-select';
+  return '#instrument-preset-select';
 }
 
 /** Open a lane's editor and return the text of its preset dropdown's selected

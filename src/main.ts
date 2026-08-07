@@ -40,7 +40,7 @@ import {
 } from './save/history-wiring';
 import {
   wirePolyControls, refreshPolyPresetSelect, recordPagePresetForLane,
-} from './polysynth/polysynth-presets';
+} from './instrument-presets/polysynth-presets';
 import { initRandomize } from './core/randomize-ui';
 import { wireFxUI, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, setPlaying, type TransportDeps } from './core/transport';
@@ -248,7 +248,7 @@ const laneHost = createLaneHost({
 });
 const getLaneEngineId     = (laneId: string) => laneHost.getLaneEngineId(laneId);
 const setActiveEngineLane = (laneId: string) => laneHost.setActiveEngineLane(laneId);
-const _lehState = laneHost.state; // kept for the engine-selector wiring (reads _lehState.activeLaneId)
+const _lehState = laneHost.state; // kept for the engine-selector wiring (reads _lehState.instrumentPageLaneId)
 
 // Holder for historyDeps for discrete selectors. historyDeps is built later
 // (it closes over saveWiringDeps / sessionHost), but event handlers fire after
@@ -623,7 +623,7 @@ document.addEventListener('keydown', (e) => {
 const engineSelectors = wireEngineSelectors({
   engineSel,
   initialEngineId: currentEngineId,
-  getActiveEngineLaneId: () => _lehState.activeLaneId,
+  getActiveEngineLaneId: () => _lehState.instrumentPageLaneId,
   getLaneEngineId,
   automationRegistry,
   registerKnob,

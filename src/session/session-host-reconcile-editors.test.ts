@@ -17,7 +17,7 @@ function mountDom(): void {
     <div id="session-view-root">
       <div class="page" data-page="303" hidden></div>
       <div class="page" data-page="drums" hidden></div>
-      <div class="page" data-page="poly"></div>
+      <div class="page" data-page="instrument"></div>
     </div>
     <div id="engine-lane-label">Sub 1</div>
     <div id="session-inspector"></div>
@@ -48,7 +48,7 @@ describe('reconcileOpenEditors — close orphaned editors after a state swap', (
 
     expect(self.activeEditLane, 'activeEditLane is cleared').toBeNull();
     expect(
-      (document.querySelector('.page[data-page="poly"]') as HTMLElement).hidden,
+      (document.querySelector('.page[data-page="instrument"]') as HTMLElement).hidden,
       'the visible synth editor page is hidden',
     ).toBe(true);
     expect(onActiveLaneChanged).toHaveBeenCalled();
@@ -87,7 +87,7 @@ describe('reconcileOpenEditors — close orphaned editors after a state swap', (
     reconcileOpenEditors(self);
 
     expect(self.activeEditLane).toBe('subtractive-1');
-    expect((document.querySelector('.page[data-page="poly"]') as HTMLElement).hidden).toBe(false);
+    expect((document.querySelector('.page[data-page="instrument"]') as HTMLElement).hidden).toBe(false);
     expect(closeInspector).not.toHaveBeenCalled();
   });
 });

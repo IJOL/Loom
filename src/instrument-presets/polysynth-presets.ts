@@ -20,7 +20,7 @@ import {
 // Re-export the store surface so existing importers of './polysynth-presets' keep working.
 export { polyParamsToFlat, loadUserPolyPresets, saveUserPolyPresets } from './poly-preset-store';
 
-// Bumped on every #poly-preset-select population so a slow async fill (the
+// Bumped on every #instrument-preset-select population so a slow async fill (the
 // sampler's instrument list) bails if the user has since switched lanes.
 let polyPopGen = 0;
 
@@ -50,7 +50,7 @@ let _deps: PolySynthPresetsDeps | null = null;
 
 
 export function refreshPolyPresetSelect(): void {
-  const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
+  const sel = document.getElementById('instrument-preset-select') as HTMLSelectElement;
   if (!sel) return;
   // FM / Wavetable poly lanes have no PolySynth instance to key
   // polyPresetName by, so fall back to the lane-keyed memory (engine:<name>,
@@ -62,12 +62,12 @@ export function refreshPolyPresetSelect(): void {
   sel.value = (laneId && pagePresetName.get(laneId)) || '__custom__';
 }
 
-/** Core implementation: populate #poly-preset-select using an explicit laneId.
+/** Core implementation: populate #instrument-preset-select using an explicit laneId.
  *  Exposed as a separate helper so injectEngineModulatorPanel can call it for
  *  FM/Wavetable poly lanes without relying on getActiveEngineLaneId()
  *  (which is only updated for subtractive via the showPolyEditor path). */
 export function populatePolyPresetSelectForLane(laneId: string): void {
-  const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
+  const sel = document.getElementById('instrument-preset-select') as HTMLSelectElement;
   if (!sel) return;
   const gen = ++polyPopGen;
 
@@ -90,7 +90,7 @@ export function populatePolyPresetSelectForLane(laneId: string): void {
     renderInto(sel, html`${customOption()}${presetGroup('Presets', presetItems)}`);
     void Promise.all([listDrumkits(), listInstruments()]).then(([kits, instruments]) => {
       if (gen !== polyPopGen) return;
-      const s = document.getElementById('poly-preset-select') as HTMLSelectElement | null;
+      const s = document.getElementById('instrument-preset-select') as HTMLSelectElement | null;
       if (!s) return;
       renderInto(s, html`${customOption()}${presetGroup('Presets', presetItems)}${presetGroup(
         'Drumkit', kits.map((k) => [`sampler:drumkit:${k.id}`, k.name] as [string, string]),
@@ -152,7 +152,7 @@ const pageSelectActiveLane = new Map<string, { laneId: string }>();
 // `populateEnginePresetSelectById` and `wireEnginePresetSelectById` lived here.
 // Their ONLY caller was mountBassPresetSelect — the TB-303's own page: a second
 // preset dropdown, with its own ids and its own wiring, doing the job
-// #poly-preset-select already does for every other melodic lane. That page is
+// #instrument-preset-select already does for every other melodic lane. That page is
 // gone, and they went with it.
 
 /** Forget a lane's preset binding and show "(custom — no preset)" on every
@@ -171,10 +171,10 @@ export function markPresetCustomForLane(laneId: string): void {
   for (const [selectId, holder] of pageSelectActiveLane) {
     if (holder.laneId === laneId) setCustom(selectId);
   }
-  // #poly-preset-select never registers a holder in pageSelectActiveLane (it is
+  // #instrument-preset-select never registers a holder in pageSelectActiveLane (it is
   // populated per-lane by populatePolyPresetSelectForLane), so it is synced
   // explicitly when the lane it shows is the active one.
-  if (_deps?.getActiveEngineLaneId() === laneId) setCustom('poly-preset-select');
+  if (_deps?.getActiveEngineLaneId() === laneId) setCustom('instrument-preset-select');
 }
 
 /** Record a lane's per-page (303 / drums) preset selection so the dropdown
@@ -182,8 +182,8 @@ export function markPresetCustomForLane(laneId: string): void {
  *  sound, but nothing sets pagePresetName otherwise, so the select came up
  *  "(custom — no preset)". Normalizes any prefix to the dropdown's
  *  `engine:<name>` option vocabulary and live-updates a currently-shown
- *  select. Harmless for poly-page engines (their dropdown is
- *  poly-preset-select, which never reads pagePresetName). */
+ *  select. Harmless for instrument-page engines (their dropdown is
+ *  instrument-preset-select, which never reads pagePresetName). */
 export function recordPagePresetForLane(laneId: string, presetName: string): void {
   // Record the value VERBATIM. It already carries the canonical dropdown
   // vocabulary — `engine:<name>` for every built-in preset, `user:<name>` for
@@ -297,7 +297,7 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
   populatePolyPresetSelect();
 
   const loadCurrentPreset = () => {
-    const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
+    const sel = document.getElementById('instrument-preset-select') as HTMLSelectElement;
     const val = sel.value;
     if (!val || val === '__custom__') return;
 
@@ -344,18 +344,18 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
   // Auto-load on change — selecting a preset applies it immediately, no Load
   // button needed. The Load button stays as a no-op fallback for now (in case
   // the user wants to re-apply the current selection).
-  const presetSel = document.getElementById('poly-preset-select') as HTMLSelectElement;
+  const presetSel = document.getElementById('instrument-preset-select') as HTMLSelectElement;
   presetSel.addEventListener('change', () => {
     if (deps.historyDeps) withUndo(deps.historyDeps, loadCurrentPreset);
     else loadCurrentPreset();
   });
-  (document.getElementById('poly-preset-load') as HTMLButtonElement)
+  (document.getElementById('instrument-preset-load') as HTMLButtonElement)
     .addEventListener('click', () => {
       if (deps.historyDeps) withUndo(deps.historyDeps, loadCurrentPreset);
       else loadCurrentPreset();
     });
 
-  (document.getElementById('poly-preset-save') as HTMLButtonElement).addEventListener('click', async () => {
+  (document.getElementById('instrument-preset-save') as HTMLButtonElement).addEventListener('click', async () => {
     const name = await promptDialog('Preset name:');
     if (!name) return;
     const trimmed = name.trim();
@@ -376,8 +376,8 @@ export function wirePolyControls(deps: PolySynthPresetsDeps): void {
     refreshPolyPresetSelect();
   });
 
-  (document.getElementById('poly-preset-delete') as HTMLButtonElement).addEventListener('click', async () => {
-    const sel = document.getElementById('poly-preset-select') as HTMLSelectElement;
+  (document.getElementById('instrument-preset-delete') as HTMLButtonElement).addEventListener('click', async () => {
+    const sel = document.getElementById('instrument-preset-select') as HTMLSelectElement;
     const val = sel.value;
     if (!val.startsWith('user:')) {
       void alertDialog('Only user presets can be deleted (not the Factory ones).');

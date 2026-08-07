@@ -45,15 +45,17 @@ import {
   type EngineSelectorUIDeps,
 } from '../engines/engine-selector-ui';
 import { swapLaneEngineFlow, type EngineSwapDeps } from './engine-swap';
-import { refreshPolyPresetSelect, type PolySynthPresetsDeps } from '../polysynth/polysynth-presets';
+import { refreshPolyPresetSelect, type PolySynthPresetsDeps } from '../instrument-presets/polysynth-presets';
 
 export interface EngineSelectorWiringDeps {
   engineSel: HTMLSelectElement;
   /** Engine id the generic selector is seeded with at boot ('subtractive'). */
   initialEngineId: string;
-  /** The lane the ENGINE HOST considers active (laneHost.state.activeLaneId).
-   *  Deliberately not the same lane as sessionHost.activeEditLane, which is what
-   *  the 303 page's selector means — keeping both is the existing behaviour. */
+  /** The lane painted on the INSTRUMENT page (laneHost.state.instrumentPageLaneId).
+   *  Deliberately NOT sessionHost.activeEditLane, and the rule is not arbitrary:
+   *  selecting a drum lane shows the drums page, so the instrument page — and
+   *  therefore this selector, its preset dropdown and its FX panel — stays on
+   *  the last melodic lane. See LaneEngineHostState for what breaks otherwise. */
   getActiveEngineLaneId: () => string;
   getLaneEngineId: (laneId: string) => string;
   automationRegistry: Map<string, KnobHandle>;

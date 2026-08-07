@@ -1,5 +1,5 @@
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
-import { markPresetCustomForLane } from '../polysynth/polysynth-presets';
+import { markPresetCustomForLane } from '../instrument-presets/polysynth-presets';
 import { commitEngineBaseValues } from '../engines/engine-param-commit';
 import type { SynthEngine } from '../engines/engine-types';
 import type { SessionState } from '../session/session';
@@ -12,7 +12,7 @@ import type { SessionState } from '../session/session';
 // It used to be written twice, and the two copies had drifted:
 //
 //   #bass-random-sound (303 page)  repainted the bass knobs directly  ✅
-//   #poly-randomize    (inspector) called rebuildEngineParamUI           ❌
+//   #instrument-randomize    (inspector) called rebuildEngineParamUI           ❌
 //
 // rebuildEngineParamUI is the ENGINE-SWAP tool: it unregisters every knob of
 // the lane and only re-mounts them for Subtractive. On fm / wavetable /
@@ -81,7 +81,7 @@ export function mountRandomizeButton(slot: HTMLElement, laneId: string, show: bo
   if (!show) return;
   const btn = document.createElement('button');
   btn.className = 'rnd primary';
-  btn.id = 'poly-randomize';
+  btn.id = 'instrument-randomize';
   btn.textContent = '🎲 Sound';
   btn.title = 'Randomize sound (sets preset to Custom)';
   btn.addEventListener('click', () => randomizeLane(laneId));

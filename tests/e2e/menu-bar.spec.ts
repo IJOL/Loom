@@ -12,7 +12,7 @@ test('File ▸ Import MIDI… opens the Import MIDI dialog; the old <details> is
   await page.locator('#menu-bar .menubar-top', { hasText: 'File' }).click();
   await page.locator('.menubar-item', { hasText: 'Import MIDI' }).click();
   await expect(page.locator('#midi-import-dialog')).toBeVisible();
-  await expect(page.locator('#midi-import-dialog #poly-midi-file')).toBeVisible();
+  await expect(page.locator('#midi-import-dialog #midi-import-file')).toBeVisible();
 });
 
 test('Tools ▸ MIDI Controller… opens the dialog; the old <details> is gone', async ({ page }) => {

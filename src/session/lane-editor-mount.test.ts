@@ -25,7 +25,7 @@ const knob = (id: string): KnobHandle =>
   ({ el: document.createElement('div'), setValue() {}, meta: { id, label: id, min: 0, max: 1 } }) as unknown as KnobHandle;
 
 function hostWith(registry: Map<string, KnobHandle>, engineParamIds: (laneId: string) => string[]) {
-  document.body.innerHTML = '<div class="page" data-page="poly"><div id="poly-fx-row"></div></div>';
+  document.body.innerHTML = '<div class="page" data-page="instrument"><div id="instrument-fx-row"></div></div>';
   const lanes = [
     { id: 'fm-1', engineId: 'fm', name: 'FM', clips: [], inserts: [] },
     { id: 'sub-1', engineId: 'subtractive', name: 'Sub', clips: [], inserts: [] },
@@ -73,10 +73,10 @@ describe('lane editor mount transaction', () => {
   it('drops the previous lane engine knobs when the editor re-points', () => {
     const host = hostWith(registry, (laneId) => (laneId === 'fm-1' ? ['op1.ratio'] : ['filter.cutoff']));
 
-    injectEngineModulatorPanel(host, 'fm-1', 'poly');
+    injectEngineModulatorPanel(host, 'fm-1', 'instrument');
     expect(registry.has('fm-1.op1.ratio')).toBe(true);
 
-    injectEngineModulatorPanel(host, 'sub-1', 'poly');
+    injectEngineModulatorPanel(host, 'sub-1', 'instrument');
     expect(registry.has('fm-1.op1.ratio')).toBe(false);
     expect(registry.has('sub-1.filter.cutoff')).toBe(true);
   });
@@ -85,8 +85,8 @@ describe('lane editor mount transaction', () => {
     const host = hostWith(registry, () => ['op1.ratio']);
     registry.set('fm-1.bus.level', knob('fm-1.bus.level'));   // the mixer column owns this
 
-    injectEngineModulatorPanel(host, 'fm-1', 'poly');
-    injectEngineModulatorPanel(host, 'sub-1', 'poly');
+    injectEngineModulatorPanel(host, 'fm-1', 'instrument');
+    injectEngineModulatorPanel(host, 'sub-1', 'instrument');
 
     expect(registry.has('fm-1.bus.level')).toBe(true);
   });
@@ -94,9 +94,9 @@ describe('lane editor mount transaction', () => {
   it('re-opening the same lane leaves exactly one live handle per id', () => {
     const host = hostWith(registry, () => ['op1.ratio']);
 
-    injectEngineModulatorPanel(host, 'fm-1', 'poly');
+    injectEngineModulatorPanel(host, 'fm-1', 'instrument');
     const first = registry.get('fm-1.op1.ratio');
-    injectEngineModulatorPanel(host, 'fm-1', 'poly');
+    injectEngineModulatorPanel(host, 'fm-1', 'instrument');
     const second = registry.get('fm-1.op1.ratio');
 
     expect(second).toBeDefined();
@@ -111,8 +111,8 @@ describe('lane editor mount transaction', () => {
 
   it('an XY-pad write reaches a lane whose editor is closed', () => {
     const host = hostWith(registry, () => ['op1.ratio']);
-    injectEngineModulatorPanel(host, 'fm-1', 'poly');
-    injectEngineModulatorPanel(host, 'sub-1', 'poly');
+    injectEngineModulatorPanel(host, 'fm-1', 'instrument');
+    injectEngineModulatorPanel(host, 'sub-1', 'instrument');
     expect(registry.has('fm-1.op1.ratio')).toBe(false);
 
     const engine = makeEngine(0.2);
@@ -133,8 +133,8 @@ describe('lane editor mount transaction', () => {
 
   it('a MIDI-surface write reaches a lane whose editor is closed', () => {
     const host = hostWith(registry, () => ['op1.ratio']);
-    injectEngineModulatorPanel(host, 'fm-1', 'poly');
-    injectEngineModulatorPanel(host, 'sub-1', 'poly');
+    injectEngineModulatorPanel(host, 'fm-1', 'instrument');
+    injectEngineModulatorPanel(host, 'sub-1', 'instrument');
     expect(registry.has('fm-1.op1.ratio')).toBe(false);
 
     const engine = makeEngine(0.2);
@@ -149,8 +149,8 @@ describe('lane editor mount transaction', () => {
 
   it('a take curve reaches a lane whose editor is closed', () => {
     const host = hostWith(registry, () => ['op1.ratio']);
-    injectEngineModulatorPanel(host, 'fm-1', 'poly');
-    injectEngineModulatorPanel(host, 'sub-1', 'poly');
+    injectEngineModulatorPanel(host, 'fm-1', 'instrument');
+    injectEngineModulatorPanel(host, 'sub-1', 'instrument');
     expect(registry.has('fm-1.op1.ratio')).toBe(false);
 
     const engine = makeEngine(0.2);

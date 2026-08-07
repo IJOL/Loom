@@ -111,9 +111,9 @@ export function applyMidiImport(
 }
 
 export function wireMidiImportUI(deps: MidiImportUiDeps): void {
-  const fileInput   = document.getElementById('poly-midi-file')      as HTMLInputElement   | null;
-  const trackListEl = document.getElementById('poly-midi-tracklist') as HTMLDivElement     | null;
-  const loadBtn     = document.getElementById('poly-midi-load')      as HTMLButtonElement  | null;
+  const fileInput   = document.getElementById('midi-import-file')      as HTMLInputElement   | null;
+  const trackListEl = document.getElementById('midi-import-tracklist') as HTMLDivElement     | null;
+  const loadBtn     = document.getElementById('midi-import-load')      as HTMLButtonElement  | null;
   if (!fileInput || !trackListEl || !loadBtn) {
     console.warn('[midi-import-ui] DOM ids missing, skipping wire');
     return;

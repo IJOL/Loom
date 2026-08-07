@@ -45,7 +45,7 @@ export function samplerEditorTemplate(v: SamplerEditorView): TemplateResult {
       : nothing}
     ${v.knobRow}
     ${importSectionTemplate(v)}
-    <div class="row poly-section sampler-channel-filter">
+    <div class="row instrument-section sampler-channel-filter">
       <div class="section-label">CHANNEL FILTER</div>
       ${v.filterRow}
     </div>

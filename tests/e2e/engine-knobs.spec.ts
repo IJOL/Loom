@@ -43,7 +43,7 @@ const MELODIC: EngineCase[] = [
 /** The lane editor lives on the poly page — for EVERY melodic engine, the
  *  TB-303 included. There is no second page. */
 function editor(page: Page) {
-  return page.locator('[data-page="poly"]');
+  return page.locator('[data-page="instrument"]');
 }
 
 /** Knob labels are literal text, and some carry regex metacharacters ("FB (op4)"). */
@@ -83,7 +83,7 @@ for (const eng of MELODIC) {
 
     // A melodic engine rolls its declared params, so it declares isRandomizable
     // (by saying nothing) and gets the dice.
-    await expect(editor(page).locator('#poly-randomize')).toBeVisible();
+    await expect(editor(page).locator('#instrument-randomize')).toBeVisible();
 
     expect(errors).toEqual([]);
   });
@@ -97,7 +97,7 @@ test('the TB-303 has no page of its own', async ({ page }) => {
   await expect(page.locator('[data-page="303"]')).toHaveCount(0);
   await openLane(page, 'tb-303-1');
   await expect(editor(page)).toBeVisible();
-  await expect(editor(page).locator('#poly-randomize')).toBeVisible();
+  await expect(editor(page).locator('#instrument-randomize')).toBeVisible();
 });
 
 test('an engine whose sound is a loaded thing shows NO dice', async ({ page }) => {
@@ -107,14 +107,14 @@ test('an engine whose sound is a loaded thing shows NO dice', async ({ page }) =
   // Sampler: its sound is a keymap, not a bag of params — isRandomizable: false.
   const samplerLane = await addLane(page, 'sampler');
   await openLane(page, samplerLane);
-  await expect(editor(page).locator('#poly-randomize')).toHaveCount(0);
+  await expect(editor(page).locator('#instrument-randomize')).toHaveCount(0);
 
   // Non-vacuity: the same slot DOES get a dice once a melodic lane is opened,
   // so the assertion above is about the capability and not about the page being
   // blank or the selector being wrong.
   const fmLane = await addLane(page, 'fm');
   await openLane(page, fmLane);
-  await expect(editor(page).locator('#poly-randomize')).toBeVisible();
+  await expect(editor(page).locator('#instrument-randomize')).toBeVisible();
 });
 
 test('the drum machine shows no dice either', async ({ page }) => {
@@ -123,5 +123,5 @@ test('the drum machine shows no dice either', async ({ page }) => {
   await openLane(page, 'drums-1');
   // Drums keep their own page (pads, kits, bus knobs are genuinely different),
   // and `drums-machine` declares isRandomizable: false — a kit is a preset.
-  await expect(page.locator('#poly-randomize')).toHaveCount(0);
+  await expect(page.locator('#instrument-randomize')).toHaveCount(0);
 });

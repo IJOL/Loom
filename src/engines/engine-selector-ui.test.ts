@@ -50,7 +50,7 @@ describe('engine-selector-ui — mixer knobs across a lane switch', () => {
   // still a real deletion in between — this test intentionally does not
   // simulate that follow-up step, so it fails if the hammer ever comes back.)
   it('a lane switch never leaves the new lane without its mixer knobs', () => {
-    document.body.innerHTML = '<div data-page="poly"><div class="poly-section"></div></div>';
+    document.body.innerHTML = '<div data-page="instrument"><div class="instrument-section"></div></div>';
     const registry = new Map<string, KnobHandle>();
     const deps: EngineSelectorUIDeps = {
       engineSel: document.createElement('select'),
@@ -126,7 +126,7 @@ describe('engine-selector-ui — no static subtractive markup', () => {
   it('non-vacuity: the poly page and its shared FX row are still there', () => {
     // Proves the two checks above fail for the RIGHT reason (dead rows gone),
     // not because the whole poly page was accidentally deleted with them.
-    expect(html).toContain('data-page="poly"');
-    expect(html).toContain('id="poly-fx-row"');
+    expect(html).toContain('data-page="instrument"');
+    expect(html).toContain('id="instrument-fx-row"');
   });
 });

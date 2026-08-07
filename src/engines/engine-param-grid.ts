@@ -193,7 +193,7 @@ export function buildEngineParamGrid(
         ? html`<div class="row knob-row">
             ${row.sections[0].specs.map((s) => buildControl(engine, ctx, s, opts))}
           </div>`
-        : html`<div class="row poly-section">
+        : html`<div class="row instrument-section">
             ${row.sections.map((section, i) => html`
               ${i > 0 ? html`<div class="vert-divider"></div>` : nothing}
               <div class="section-label">${section.title}</div>

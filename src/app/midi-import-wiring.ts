@@ -35,7 +35,7 @@ import type { PerformanceFeature } from './performance-feature';
 import { prepImportedLanes } from './import-lane-prep';
 import { launchScene as launchSceneRuntime } from '../session/session-runtime';
 import { reloadDrumkit } from '../session/session-host-presets';
-import { recordPagePresetForLane } from '../polysynth/polysynth-presets';
+import { recordPagePresetForLane } from '../instrument-presets/polysynth-presets';
 import { setPlaying } from '../core/transport';
 import { emptySessionState } from '../session/session';
 import { wireMidiImportUI } from '../midi/midi-import-ui';

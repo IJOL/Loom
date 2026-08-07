@@ -23,10 +23,10 @@
       label:has(> #bars),
       .vert-divider,
       #drum-tracks,
-      #poly-tracks,
+      #instrument-tracks,
       button.tab[data-tab="drums"],
-      #poly-mode-step,
-      #poly-mode-piano,
+      #instrument-mode-step,
+      #instrument-mode-piano,
       .synth > p.hint {
         display: none !important;
       }
@@ -45,8 +45,8 @@
       .transport-spacer { flex: 1 1 auto; }
       /* Hide legacy PolySynth LFO1/LFO2 knob sections — the per-lane
          modulators panel replaces them functionally. */
-      .row.poly-section:has(#poly-lfo1-knobs),
-      .row.poly-section:has(#poly-lfo2-knobs) {
+      .row.instrument-section:has(#instrument-lfo1-knobs),
+      .row.instrument-section:has(#instrument-lfo2-knobs) {
         display: none !important;
       }
       .export-menu-wrap { position: relative; display: inline-block; }
@@ -163,7 +163,7 @@
            nothing but a second copy of every header control. -->
 
       <div class="page" data-page="drums" hidden>
-        <div class="row poly-section">
+        <div class="row instrument-section">
           <span class="section-label">PRESET</span>
           <select id="drums-preset-select" class="engine-preset-select"></select>
           <button class="rnd" id="drums-preset-load">Load</button>
@@ -176,39 +176,39 @@
         <div class="row knobs">
           <div id="drum-master-knobs" class="knob-row"></div>
         </div>
-        <div class="row poly-section">
+        <div class="row instrument-section">
           <div class="section-label">FX</div>
           <div class="lane-fx-knobs knob-row"></div>
         </div>
         <div id="drum-tracks" class="tracks"></div>
       </div>
 
-      <div class="page" data-page="poly" hidden>
-        <div class="row poly-section" id="poly-engine-row">
+      <div class="page" data-page="instrument" hidden>
+        <div class="row instrument-section" id="instrument-engine-row">
           <span class="section-label">ENGINE</span>
           <span id="engine-lane-label" class="active-edit-label">MAIN</span>
           <select id="engine-select"></select>
           <div class="vert-divider"></div>
           <span class="section-label">PRESET</span>
-          <select id="poly-preset-select"></select>
-          <button class="rnd" id="poly-preset-load">Load</button>
-          <button class="rnd" id="poly-preset-save">Save As…</button>
-          <button class="rnd" id="poly-preset-delete">Delete</button>
+          <select id="instrument-preset-select"></select>
+          <button class="rnd" id="instrument-preset-load">Load</button>
+          <button class="rnd" id="instrument-preset-save">Save As…</button>
+          <button class="rnd" id="instrument-preset-delete">Delete</button>
           <!-- The "🎲 Sound" button is mounted here by core/randomize-ui.ts, and
                only for a lane whose engine declares isRandomizable. It is not
                written in the markup because a static button cannot know that. -->
           <span class="dice-slot" data-dice-slot></span>
         </div>
-        <div class="row poly-section" id="poly-fx-row">
+        <div class="row instrument-section" id="instrument-fx-row">
           <div class="section-label">FX</div>
           <div class="lane-fx-knobs knob-row"></div>
         </div>
-        <div class="row poly-section" id="poly-seq-mode-row">
-          <span id="poly-active-label" class="active-edit-label" style="display:none">MAIN</span>
-          <select id="poly-target-select" style="display:none"></select>
-          <button class="rnd" id="poly-add-track" style="display:none">+ Add Track</button>
+        <div class="row instrument-section" id="instrument-seq-mode-row">
+          <span id="instrument-active-label" class="active-edit-label" style="display:none">MAIN</span>
+          <select id="instrument-target-select" style="display:none"></select>
+          <button class="rnd" id="instrument-add-track" style="display:none">+ Add Track</button>
         </div>
-        <div id="poly-tracks" class="tracks"></div>
+        <div id="instrument-tracks" class="tracks"></div>
       </div>
 
 
@@ -300,12 +300,12 @@
             </div>
           </div>
           <!-- MASTER COMP: standalone -->
-          <div class="row poly-section">
+          <div class="row instrument-section">
             <div class="section-label">MASTER COMP</div>
             <div id="fx-master-comp-knobs" class="knob-row"></div>
           </div>
           <!-- MASTER SHAPER: air, multiband glue, stereo width -->
-          <div class="row poly-section">
+          <div class="row instrument-section">
             <div class="section-label">MASTER SHAPER</div>
             <div id="fx-master-shaper-knobs" class="knob-row"></div>
           </div>
@@ -313,7 +313,7 @@
           <div class="row fx-zone">
             <div class="section-label">INSERTS</div>
             <div class="fx-zone-content">
-              <div class="row poly-section">
+              <div class="row instrument-section">
                 <div class="section-label">MASTER FILTERS</div>
                 <button class="rnd primary" id="fx-add-filter">+ Add Filter</button>
               </div>
@@ -456,15 +456,15 @@
         <button class="app-modal-x" data-dialog-close aria-label="Close">×</button>
       </div>
       <div class="app-modal-body midi-import-row">
-        <input type="file" id="poly-midi-file" accept=".mid,.midi" />
-        <div id="poly-midi-tracklist" class="midi-tracklist" style="display:none;"></div>
+        <input type="file" id="midi-import-file" accept=".mid,.midi" />
+        <div id="midi-import-tracklist" class="midi-tracklist" style="display:none;"></div>
       </div>
       <!-- Standard dialog footer: Cancel closes; Import MIDI is the primary
            action (enabled once a file parses — see midi-import-ui) and closes the
            dialog once the import commits. -->
       <div class="app-modal-foot">
         <button class="rnd" data-dialog-close>Cancel</button>
-        <button class="rnd primary" id="poly-midi-load" disabled>Import MIDI</button>
+        <button class="rnd primary" id="midi-import-load" disabled>Import MIDI</button>
       </div>
     </dialog>
 

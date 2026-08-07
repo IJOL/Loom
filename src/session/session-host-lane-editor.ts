@@ -15,7 +15,7 @@ import {
   mountDrumsPresetSelect,
   populatePolyPresetSelectForLane,
   refreshPolyPresetSelect,
-} from '../polysynth/polysynth-presets';
+} from '../instrument-presets/polysynth-presets';
 
 /** Show a lane's editor: route to its engine's page (poly / 303 / drums),
  *  rebuild the engine param UI + modulator panel + labels. Does NOT toggle.
@@ -36,7 +36,7 @@ export function showLaneEditor(self: SessionHost, laneId: string): void {
   // copy of every header control, and the copies drifted: the dice on one page
   // repainted the knobs while the dice on the other unregistered them.
   const targetTab =
-    (lane?.engineId === 'drums-machine' || laneId.startsWith('drum:')) ? 'drums' : 'poly';
+    (lane?.engineId === 'drums-machine' || laneId.startsWith('drum:')) ? 'drums' : 'instrument';
   // No lane-tabs row any more — the grid column header carries the active mark
   // (session-lane-header-active, applied by renderSessionGrid). Only the page
   // tab-strip buttons need toggling here.
@@ -55,14 +55,14 @@ export function showLaneEditor(self: SessionHost, laneId: string): void {
   // this for subtractive lanes, reached only when the lane's engine answered
   // `getPolySynth()`. No engine implements that method, so the branch never ran
   // and every lane already took this path — the condition was decorative.
-  if (targetTab === 'poly') {
+  if (targetTab === 'instrument') {
     self.deps.setActiveEngineLane?.(laneId);
   }
   // Keep #engine-lane-label in sync for non-poly lanes too (no-op if the
   // active page doesn't include it).
   const laneLabelEl = document.getElementById('engine-lane-label');
   if (laneLabelEl) laneLabelEl.textContent = displayName;
-  const polyActiveLabel = document.getElementById('poly-active-label');
+  const polyActiveLabel = document.getElementById('instrument-active-label');
   if (polyActiveLabel) polyActiveLabel.textContent = displayName;
   self.activeEditLane = laneId;
   injectEngineModulatorPanel(self, laneId, targetTab);
@@ -104,7 +104,7 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
   if (!engine && !panels.missingEngine) return;
 
   // Mount or reuse a container. Place the modulators panel BELOW the main
-  // synth controls — for poly we anchor on #poly-seq-mode-row so the panel
+  // synth controls — for poly we anchor on #instrument-seq-mode-row so the panel
   // sits between the engine controls and the SEQ MODE / tracks block. For
   // other pages (drums, bass) we fall back to appending at the end.
   const page = document.querySelector<HTMLElement>(`[data-page="${targetTab}"]`);
@@ -115,10 +115,10 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
     // wipes and refills it) — a detached one-shot render, not a lit panel.
     host = renderElement(html`<div class="engine-mod-host"></div>`);
     // Place engine body BEFORE the FX row so the engine knobs render above
-    // the compressor on every page: poly anchors on #poly-fx-row, while the
+    // the compressor on every page: poly anchors on #instrument-fx-row, while the
     // 303 / drums pages fall back to the FX row that hosts .lane-fx-knobs.
-    const anchor = page.querySelector<HTMLElement>('#poly-fx-row')
-      ?? page.querySelector<HTMLElement>('#poly-seq-mode-row')
+    const anchor = page.querySelector<HTMLElement>('#instrument-fx-row')
+      ?? page.querySelector<HTMLElement>('#instrument-seq-mode-row')
       ?? page.querySelector<HTMLElement>('.lane-fx-knobs')?.closest<HTMLElement>('.row');
     if (anchor) page.insertBefore(host, anchor);
     else page.appendChild(host);
@@ -190,13 +190,13 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
   self.inspector.mountLaneInserts(laneId, host, registerOwned);
 
   // Populate the correct preset dropdown for each page type.
-  // The poly page's #poly-preset-select is populated here for EVERY poly-engine
+  // The poly page's #instrument-preset-select is populated here for EVERY poly-engine
   // lane (subtractive, fm, wavetable, …) so none of them show a stale previous
   // engine's presets.
   // Hide the poly page's ENGINE/PRESET/🎲 header row for audio lanes (an audio
   // channel is not an instrument).
-  if (targetTab === 'poly') {
-    const headerRow = page.querySelector<HTMLElement>('#poly-engine-row');
+  if (targetTab === 'instrument') {
+    const headerRow = page.querySelector<HTMLElement>('#instrument-engine-row');
     if (headerRow) headerRow.style.display = panels.engineHeaderRow ? '' : 'none';
   }
   // The "🎲 Sound" button is mounted, not written in the markup: whether a lane
@@ -204,7 +204,7 @@ export function injectEngineModulatorPanel(self: SessionHost, laneId: string, ta
   const diceSlot = page.querySelector<HTMLElement>('[data-dice-slot]');
   if (diceSlot) mountRandomizeButton(diceSlot, laneId, panels.dice);
   if (panels.preset) {
-    if (targetTab === 'poly') { populatePolyPresetSelectForLane(laneId); refreshPolyPresetSelect(); }
+    if (targetTab === 'instrument') { populatePolyPresetSelectForLane(laneId); refreshPolyPresetSelect(); }
     if (targetTab === 'drums') mountDrumsPresetSelect(laneId);
   }
 }

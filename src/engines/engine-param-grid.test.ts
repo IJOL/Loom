@@ -51,7 +51,7 @@ describe('buildEngineParamGrid', () => {
       cont('feedback'), cont('op1.ratio', 'OP1'), cont('op1.level', 'OP1'), cont('op2.ratio', 'OP2'),
     ]), ctx(), parent);
 
-    const sections = parent.querySelectorAll('.poly-section');
+    const sections = parent.querySelectorAll('.instrument-section');
     expect(sections.length).toBe(2);                                   // OP1, OP2
     expect(sections[0].querySelector('.section-label')?.textContent).toBe('OP1');
     expect(sections[1].querySelector('.section-label')?.textContent).toBe('OP2');
@@ -240,7 +240,7 @@ describe("buildEngineParamGrid layout:'flat'", () => {
     const host = document.createElement('div');
     buildEngineParamGrid(stubEngine([cont('a'), cont('b', 'GRP')]), ctx(), host, { layout: 'flat' });
     expect(host.querySelector('.knob-row')).toBeNull();
-    expect(host.querySelector('.poly-section')).toBeNull();
+    expect(host.querySelector('.instrument-section')).toBeNull();
     expect(host.querySelectorAll(':scope > .knob').length).toBe(2);   // both, groups ignored
   });
 
@@ -399,7 +399,7 @@ describe('buildEngineParamGrid — declared groups', () => {
     );
     buildEngineParamGrid(engine, ctx(), parent);
 
-    const rows = parent.querySelectorAll('.poly-section');
+    const rows = parent.querySelectorAll('.instrument-section');
     expect(rows.length).toBe(1);
     expect([...rows[0].querySelectorAll('.section-label')].map((e) => e.textContent))
       .toEqual(['OSC 1', 'OSC 2']);

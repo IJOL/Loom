@@ -77,7 +77,7 @@ test.describe('preset selection', () => {
       () => document.querySelectorAll('.session-cell-filled').length > 0,
     );
     await openLane(page, 'subtractive-1');
-    const sel = page.locator('#poly-preset-select');
+    const sel = page.locator('#instrument-preset-select');
     await expect(sel).toHaveValue('engine:LEAD Square');
   });
 });
@@ -101,10 +101,10 @@ test.describe('demo JSON presets', () => {
     await waitForBoot(page);
 
     await openLane(page, 'subtractive-1');
-    await expect(page.locator('#poly-preset-select')).toHaveValue('engine:LEAD Square');
+    await expect(page.locator('#instrument-preset-select')).toHaveValue('engine:LEAD Square');
 
     await openLane(page, 'subtractive-2');
-    await expect(page.locator('#poly-preset-select')).toHaveValue('engine:PAD Sweep');
+    await expect(page.locator('#instrument-preset-select')).toHaveValue('engine:PAD Sweep');
   });
 
   test('launching a scene does not change per-lane presets', async ({ page }) => {
@@ -116,10 +116,10 @@ test.describe('demo JSON presets', () => {
     await page.locator('.session-scene-launch').nth(1).click();
 
     await openLane(page, 'subtractive-1');
-    await expect(page.locator('#poly-preset-select')).toHaveValue('engine:LEAD Square');
+    await expect(page.locator('#instrument-preset-select')).toHaveValue('engine:LEAD Square');
 
     await openLane(page, 'subtractive-2');
-    await expect(page.locator('#poly-preset-select')).toHaveValue('engine:PAD Sweep');
+    await expect(page.locator('#instrument-preset-select')).toHaveValue('engine:PAD Sweep');
   });
 });
 

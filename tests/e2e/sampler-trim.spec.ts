@@ -6,7 +6,7 @@ test('dragging the start handle trims the sample', async ({ page }) => {
   await addLane(page, 'sampler');
   await openLane(page, 'sampler-1');
 
-  const sel = page.locator('#poly-preset-select');
+  const sel = page.locator('#instrument-preset-select');
   await expect(sel).toBeVisible();
   // Melodic sampler instruments are normal JSON presets (presets/sampler.json),
   // so they appear as `sampler:preset:<name>` (not the old `sampler:melodic:<id>`).

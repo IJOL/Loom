@@ -256,7 +256,7 @@ describe('WorkletLaneEngine', () => {
     const engine = makeWorkletEngine('subtractive');
     engine.buildParamUI(container, testCtx('sub-1'));
 
-    const poly = [...container.querySelectorAll('.poly-section')]
+    const poly = [...container.querySelectorAll('.instrument-section')]
       .find((s) => s.querySelector('.section-label')?.textContent === 'POLY');
     expect(poly).toBeDefined();
     // The label is 'Voices' (matching every other spec's Title Case label);

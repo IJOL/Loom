@@ -26,7 +26,7 @@ test('the S&H plugin modulator loads from disk and works in the panel', async ({
   // — opening it routes to the shared poly editor page and injects the
   // modulators panel at the bottom, the same panel every melodic lane gets.
   await openLane(page, 'tb-303-1');
-  const editor = page.locator('[data-page="poly"]');
+  const editor = page.locator('[data-page="instrument"]');
   await expect(editor).toBeVisible();
 
   const addButton = editor.locator('.mod-panel-header button.rnd', { hasText: '+ S&H' });

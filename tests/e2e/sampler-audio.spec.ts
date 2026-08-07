@@ -1,6 +1,6 @@
 // tests/e2e/sampler-audio.spec.ts
 // The Sampler's instruments (Melodic / Drumkit / Loop) ARE its presets: they
-// load from the unified PRESET dropdown (`#poly-preset-select`), and selecting
+// load from the unified PRESET dropdown (`#instrument-preset-select`), and selecting
 // one switches the clip editor:
 //   • Melodic / Loop  → piano-roll (`.pr-frame`)
 //   • Drumkit         → drum-grid (canvas, no `.pr-frame`)
@@ -59,7 +59,7 @@ test.describe('sampler instruments via the PRESET dropdown', () => {
     await page.goto('/');
     await addAndOpenSamplerLane(page);
 
-    const sel = page.locator('#poly-preset-select');
+    const sel = page.locator('#instrument-preset-select');
     await expect(sel).toBeVisible();
 
     // The Sampler's instruments populate the shared preset selector as namespaced
@@ -85,7 +85,7 @@ test.describe('sampler instruments via the PRESET dropdown', () => {
     // A plain sampler lane edits on the piano-roll first.
     await expect(roll.locator('.pr-frame')).toBeVisible();
 
-    const sel = page.locator('#poly-preset-select');
+    const sel = page.locator('#instrument-preset-select');
     await expect(sel).toBeVisible();
 
     // A drumkit: loading it sets drumkitId → the clip reroutes to the canvas
@@ -106,7 +106,7 @@ test.describe('sampler instruments via the PRESET dropdown', () => {
     await page.goto('/');
     const laneId = await addAndOpenSamplerLane(page);
 
-    const sel = page.locator('#poly-preset-select');
+    const sel = page.locator('#instrument-preset-select');
     await expect(sel).toBeVisible();
     // The loop options are fetched async; wait for the bundled one to appear.
     await expect(sel.locator('option[value="sampler:loop:amen-175"]')).toHaveCount(1);
