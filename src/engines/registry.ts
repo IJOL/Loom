@@ -42,6 +42,35 @@ export interface EngineDescriptor {
   /** The engine's DEFAULT modulator set (serialized state), used to seed a
    *  worklet lane's ModulationHost. */
   modulators: ModulatorState[];
+  /** Params this engine declares only once it can see the lane — LAYERS, whose
+   *  four slots each contribute their own engine's knobs. Read where the lane's
+   *  live engine is CONSTRUCTED, because the worklet numbers a lane's params
+   *  once and keeps that numbering for the lane's lifetime.
+   *
+   *  It was already on SynthEngine and on the descriptor factory; not carrying
+   *  it here meant the allocator, the one caller that has to fold these in
+   *  before the numbering is fixed, could not see them. */
+  dynamicParamsFor?(lane: import('../session/session').SessionLane): EngineParamSpec[];
+  /** Lane state this engine's renderer needs that is NOT a number, ready to post
+   *  to the worklet. Absent — which is every engine but LAYERS — means there is
+   *  none, and the allocator posts nothing.
+   *
+   *  Declared rather than switched on an id: the allocator must not grow a
+   *  branch per engine, and the next engine that needs some would add one. */
+  structuralFor?(lane: import('../session/session').SessionLane): unknown;
+  /** A control this engine needs that a knob grid cannot express, drawn above
+   *  its grid. LAYERS has one — which instrument is in each slot is a dropdown,
+   *  not a number. Absent for every other engine. */
+  extraUI?: (
+    host: HTMLElement, ctx: import('./engine-types').EngineUIContext, engine: SynthEngine,
+  ) => void;
+  /** Section titles this engine only knows once it can see the lane — LAYERS,
+   *  whose open tab renders its instrument's REAL layout rather than one flat
+   *  row. Same reason as dynamicParamsFor, and read at the same moment. */
+  dynamicGroupsFor?(lane: import('../session/session').SessionLane): EngineParamGroup[];
+  /** A param this engine declares but does not want DRAWN right now. See
+   *  WorkletEngineConfig.hideParam. */
+  hideParam?: (laneId: string, paramId: string) => boolean;
 }
 
 export function registerEngine(engine: SynthEngine): void {
@@ -102,6 +131,14 @@ export function getEngineDescriptor(id: string): EngineDescriptor | undefined {
     groups: eng.groups,
     presets: eng.presets,
     modulators: eng.modulators.serialize(),
+    // Bound so it keeps the engine as its receiver. Left off, LAYERS lanes
+    // allocate with the rack's params missing from the numbering and every
+    // layer knob is silently unaddressable.
+    dynamicParamsFor: eng.dynamicParamsFor?.bind(eng),
+    structuralFor: eng.structuralFor?.bind(eng),
+    extraUI: eng.extraUI,
+    dynamicGroupsFor: eng.dynamicGroupsFor?.bind(eng),
+    hideParam: eng.hideParam,
   };
 }
 

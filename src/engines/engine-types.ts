@@ -149,4 +149,15 @@ export interface SynthEngine {
    *  the lane keymap). The catalogue merges these with `params` when listing
    *  destinations. */
   dynamicParamsFor?(lane: import('../session/session').SessionLane): import('./engine-params').EngineParamSpec[];
+  /** Lane state this engine's renderer needs that is not a number, ready to post
+   *  to the worklet. See EngineDescriptor.structuralFor. */
+  structuralFor?(lane: import('../session/session').SessionLane): unknown;
+  /** A control this engine needs that a knob grid cannot express. See
+   *  EngineDescriptor.extraUI. */
+  extraUI?: (host: HTMLElement, ctx: EngineUIContext, engine: SynthEngine) => void;
+  /** Section titles this engine only knows once it can see the lane. See
+   *  EngineDescriptor.dynamicGroupsFor. */
+  dynamicGroupsFor?(lane: import('../session/session').SessionLane): import('./engine-param-groups').EngineParamGroup[];
+  /** A param declared but not drawn right now. See EngineDescriptor.hideParam. */
+  hideParam?: (laneId: string, paramId: string) => boolean;
 }

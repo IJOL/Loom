@@ -125,6 +125,11 @@ export interface SessionLane {
     drumMutes?: Record<string, boolean>;
     /** Which drum source the Drums lane plays. Absent ⇒ 'synth' (façade default). */
     kitMode?: 'synth' | 'sample';
+    /** A LAYERS lane's rack: which engine sits in each slot, its zone and its
+     *  gain. Here rather than in `params` because an engine id is not a number —
+     *  and the layers' OWN knob values do live in `params`, prefixed `l0.`,
+     *  `l1.`… so they save, load, automate and undo like any other param. */
+    layers?: import('../audio-dsp/layers/layer-spec').LayerSpec[];
   };
   /** Currently applied preset name for this lane, prefix-tagged with the unified
    *  preset vocabulary: `engine:Name` for any built-in/JSON preset (all engines),

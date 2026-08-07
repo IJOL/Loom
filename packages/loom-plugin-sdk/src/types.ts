@@ -23,6 +23,14 @@ export interface NoteSpec {
    *  message and needs a way to name its voice. Sequenced notes carry their own
    *  duration and never need it, so it is optional. */
   voiceId?: number;
+  /** Which LAYER of a layered instrument this note belongs to, when something
+   *  upstream already knows — a crossfade between loops, a keyboard split made
+   *  elsewhere, a note-FX. Absent means the instrument decides for itself, which
+   *  for LAYERS means by keyboard zone.
+   *
+   *  It rides on the note rather than on the lane because it varies per note:
+   *  that is the whole point. Every other engine ignores it. */
+  layerIndex?: number;
 }
 
 /** Generic engine parameter bag: dot-id (`'filter.cutoff'`, `'op1.ratio'`, …)

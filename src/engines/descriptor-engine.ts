@@ -53,6 +53,17 @@ export interface DescriptorEngineConfig {
   subGroupFor?: (paramId: string) => { key: string; label: string } | undefined;
   /** See SynthEngine.dynamicParamsFor. */
   dynamicParamsFor?: (lane: import('../session/session').SessionLane) => EngineParamSpec[];
+  /** See SynthEngine.structuralFor. */
+  structuralFor?: (lane: import('../session/session').SessionLane) => unknown;
+  /** See SynthEngine.extraUI. */
+  extraUI?: (
+    host: HTMLElement, ctx: import('./engine-types').EngineUIContext,
+    engine: import('./engine-types').SynthEngine,
+  ) => void;
+  /** See SynthEngine.dynamicGroupsFor. */
+  dynamicGroupsFor?: (lane: import('../session/session').SessionLane) => EngineParamGroup[];
+  /** See SynthEngine.hideParam. */
+  hideParam?: (laneId: string, paramId: string) => boolean;
 }
 
 const inertVoice = (): Voice => ({
@@ -134,5 +145,9 @@ export function createDescriptorEngine(cfg: DescriptorEngineConfig): SynthEngine
     dispose() { /* no live resources */ },
     subGroupFor: cfg.subGroupFor,
     dynamicParamsFor: cfg.dynamicParamsFor,
+    structuralFor: cfg.structuralFor,
+    extraUI: cfg.extraUI,
+    dynamicGroupsFor: cfg.dynamicGroupsFor,
+    hideParam: cfg.hideParam,
   };
 }

@@ -66,6 +66,11 @@ export interface LaneAllocatorDeps {
    *  worth of params). Drives DestinationRegistry.invalidate(). Optional so
    *  test fixtures without the registry still compile. */
   onDestinationsChanged?: () => void;
+  /** The lane, for an engine whose DECLARED params depend on the lane's own
+   *  state — today only LAYERS, whose four slots each contribute their engine's
+   *  params. Read at construction because a lane's param numbering is fixed for
+   *  its lifetime. Absent in fixtures with no session. */
+  getLane?: (laneId: string) => import('../session/session').SessionLane | undefined;
 }
 
 export interface LaneAllocator {
@@ -112,18 +117,44 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     if (WORKLET_ENGINE_IDS.has(engineId)) {
       const spec = getEngineDescriptor(engineId);
       if (spec) {
+        // An engine whose params depend on the lane declares them through
+        // dynamicParamsFor. They are folded in HERE, at construction, because
+        // the worklet numbers a lane's params once and keeps that numbering for
+        // the lane's lifetime — which is also why changing what a LAYERS slot
+        // holds rebuilds the lane, exactly like an ordinary engine swap.
+        const lane = deps.getLane?.(laneId);
+        const dynamic = lane ? spec.dynamicParamsFor?.(lane) ?? [] : [];
         const eng = new WorkletLaneEngine(deps.ctx, inserts.inputNode, {
           engineId, name: spec.name, presetsKey: engineId, polyphony: spec.polyphony,
-          params: spec.params, groups: spec.groups, modulators: spec.modulators,
+          params: dynamic.length ? [...spec.params, ...dynamic] : spec.params,
+          // Sections too: the instrument inside a LAYERS slot keeps its own
+          // layout, so an open tab looks like that engine's page instead of a
+          // translation of it.
+          groups: lane
+            ? [...(spec.groups ?? []), ...(spec.dynamicGroupsFor?.(lane) ?? [])]
+            : spec.groups,
+          modulators: spec.modulators,
+          hideParam: spec.hideParam,
           // A plugin engine's renderer does NOT multiply by its own engine trim
           // (the number lives in its manifest, not its compiled JS), so the host
           // carries it down to the sum point. The `?? 1` is the floor for a
           // manifest that declares no outputTrim, not a built-in fallback —
           // there are no built-in melodic engines left.
           outputTrim: pluginSynthTrim(engineId) ?? 1,
+          // Declared by the engine, not decided here. An `engineId === 'layers'`
+          // in this function is exactly the switch the capability door exists to
+          // prevent — and the next engine that needs a non-knob control would
+          // add a second branch to it.
+          extraUI: spec.extraUI,
         });
         // Enrol this lane's worklet node in the global voice cap.
         deps.globalVoiceCap?.register(laneId, eng.getWorkletNode());
+        // Lane state that is not a number, for an engine that has some. Posted
+        // after construction rather than through the config, because it is not a
+        // param: it is what a voice reads at spawn. Which engines have any is
+        // the engine's own answer — see EngineDescriptor.structuralFor.
+        const structural = lane ? spec.structuralFor?.(lane) : undefined;
+        if (structural !== undefined) eng.setStructural(structural);
         return eng;
       }
     }

@@ -99,6 +99,17 @@ export interface WorkletEngineConfig {
    *  not apply its own (i.e. plugins — the number lives in their manifest).
    *  Default 1 leaves the six in-tree engines exactly as they were. */
   outputTrim?: number;
+  /** A control this engine needs that is not a knob, drawn ABOVE its grid.
+   *
+   *  LAYERS has one: which instrument sits in each slot is a dropdown, not a
+   *  number, so the generic grid has nothing to draw for it. The engine supplies
+   *  the builder — that keeps the decision with the engine instead of putting an
+   *  `if (engineId === …)` in the one class every worklet lane shares. */
+  extraUI?: (host: HTMLElement, ctx: EngineUIContext, engine: SynthEngine) => void;
+  /** A param this engine declares but does not want DRAWN right now. LAYERS
+   *  hides the three closed tabs, so the page shows one instrument rather than
+   *  four stacked. Absent ⇒ everything declared is drawn, as before. */
+  hideParam?: (laneId: string, paramId: string) => boolean;
 }
 
 export class WorkletLaneEngine implements SynthEngine {
@@ -125,6 +136,13 @@ export class WorkletLaneEngine implements SynthEngine {
   /** Connection-paramId → modulation target name. One dot-id mapper for every
    *  engine (subtractive once had a translator of its own — see below). */
   private readonly mapTarget: (paramId: string) => string | null;
+  /** See WorkletEngineConfig.extraUI. Public because SynthEngine declares it —
+   *  a private field of the same name makes this class stop implementing the
+   *  interface, and every `SynthEngine & WorkletLaneEngine` intersection in the
+   *  offline recorder collapses to `never`. */
+  readonly extraUI?: (host: HTMLElement, ctx: EngineUIContext, engine: SynthEngine) => void;
+  /** See WorkletEngineConfig.hideParam. */
+  readonly hideParam?: (laneId: string, paramId: string) => boolean;
   private _bpm = 120;
   /** Tempo. Assigning re-posts the modulator set so BPM-synced LFOs re-resolve
    *  their rate live (bpm-broadcast assigns this on every tempo change). */
@@ -146,6 +164,8 @@ export class WorkletLaneEngine implements SynthEngine {
     // which is keyed by dot-ids. Nothing persisted changes: a saved connection
     // always stored the dot-id, and the translation only ever happened in flight.
     this.mapTarget = makeDotIdMapper(cfg.params);
+    this.extraUI = cfg.extraUI;
+    this.hideParam = cfg.hideParam;
     // Strip params are excluded from the bag on purpose: the bag IS the worklet
     // renderer's input (and what the offline kernel renders from), while the seven
     // mixer params live on the lane's native ChannelStrip. Seeding them here would
@@ -197,6 +217,19 @@ export class WorkletLaneEngine implements SynthEngine {
   get modulators(): ModulationHostImpl { return this.modHost; }
   /** Exposed for the global voice cap and for tests. */
   getWorkletNode(): LoomWorkletNode { return this.worklet; }
+
+  /** Lane state a renderer needs that is not a number — a LAYERS rack, say.
+   *
+   *  Read by each voice at SPAWN, so an edit reaches the next note and never one
+   *  already sounding. That is the rule every structural param follows, and here
+   *  it is not even a compromise: re-reading it mid-note would mean swapping a
+   *  voice's instrument underneath it.
+   *
+   *  Must be plain data — it crosses the thread boundary by structured clone,
+   *  which refuses functions and class instances. */
+  setStructural(structural: unknown): void {
+    this.worklet.setStructural(structural);
+  }
 
   /** Live modulation offset (normalised -1..1) currently applied to `paramId`
    *  (a dot-id like 'filter.cutoff' or the synthetic 'amp.gain'), or 0 if none.
@@ -319,7 +352,20 @@ export class WorkletLaneEngine implements SynthEngine {
     // grid here — grouped params (e.g. FM's OP1..OP4, Subtractive's OSC 1/
     // OSC 2/SUB/NOISE/FILTER/MASTER) become one labelled row each, ungrouped
     // params share the top row.
-    buildEngineParamGrid(this, ctx, container);
+    // Whatever this engine needs that a knob grid cannot express, above its
+    // grid — the rack of a layered instrument, say. Most engines have none.
+    if (this.extraUI) {
+      const host = document.createElement('div');
+      container.appendChild(host);
+      this.extraUI(host, ctx, this);
+    }
+
+    // `skip` is how the grid already lets a caller withhold a param — the
+    // sampler uses it for the ids its own scaffold draws. The engine decides;
+    // this class only asks.
+    const hide = this.hideParam;
+    buildEngineParamGrid(this, ctx, container,
+      hide ? { skip: (id) => hide(ctx.laneId, id) } : undefined);
 
     // Modulators panel. Editing a modulator/connection re-posts the whole
     // modulator set to the worklet runtime (postMods) so live LFO edits sound.

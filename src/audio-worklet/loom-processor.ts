@@ -20,6 +20,10 @@ import { LOOM_PROCESSOR_NAME } from './processor-name';
 // Modulator kernels are still registered by side-effect import, so
 // ModulationRuntime's registry lookup finds them inside the worklet bundle.
 import '../audio-dsp/modulators/lfo-kernel';
+// LAYERS is the one renderer that could not be a plugin: it reaches into this
+// registry to build OTHER engines, and the plugin ABI deliberately does not open
+// that door. So it ships in the worklet's own bundle, like the kernel above.
+import '../audio-dsp/layers/register';
 import { registerRenderer } from '../audio-dsp/renderer-registry';
 import { registerModulatorKernel } from '../audio-dsp/modulator-kernels';
 import { LOOM_API_VERSION, type ModLiteLike } from '@loom/plugin-sdk';
@@ -81,6 +85,7 @@ class LoomProcessor extends AudioWorkletProcessor {
         case 'spawn':  this.queue.push(Math.floor(m.note.beginSec * sampleRate), m.note); break;
         case 'params': this.vm.setParams(m.params); break;
         case 'config': this.vm.setMaxVoices(m.maxVoices); break;
+        case 'structural': this.vm.setStructural(m.structural); break;
         case 'steal':  this.vm.steal(m.count); break;
         case 'release': this.vm.releaseVoice(m.voiceId); break;
         case 'mods':   this.mod.setMods(m.mods); break;

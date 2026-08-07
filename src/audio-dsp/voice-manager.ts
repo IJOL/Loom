@@ -80,6 +80,13 @@ export class VoiceManager {
     // No legacyBag fill here on purpose: nothing reads it until a renderer that
     // does not speak slots turns up, and spawn() fills it then.
   }
+  /** Per-lane state a renderer needs that is not a number — which engine sits in
+   *  each of a LAYERS lane's slots, say. Handed to every voice at SPAWN, never
+   *  to one already sounding: it is structural by definition, and re-reading it
+   *  mid-note would mean swapping a voice's instrument underneath it. */
+  private structural: unknown;
+  setStructural(s: unknown): void { this.structural = s; }
+
   get activeCount(): number { return this.slots.length; }
   /** The smoothed values handed to every voice, and their numbering. Read-only
    *  by convention: write through setParams so the values ramp instead of
@@ -176,7 +183,7 @@ export class VoiceManager {
         oldest?.v.noteOff(this.lastT);
       }
     }
-    const v = createRenderer(this.engineId, note, this.params, this.sr);
+    const v = createRenderer(this.engineId, note, this.params, this.sr, this.structural);
     // Hand this voice the lane's live bag so its continuous params track the
     // knobs. Its constructor already took the structural snapshot from `params`.
     // Both hooks are declared right on VoiceRenderer (optional) — this IS the

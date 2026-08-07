@@ -1,0 +1,60 @@
+// The LAYERS strip: four tabs, and the open one's instrument and preset.
+//
+// It sits ABOVE the knob grid because it decides what that grid contains — pick
+// a tab and that engine's own page appears below it, with its own labels and its
+// own sections. Reading order and causal order are the same, which is the only
+// reason a page that changes under you is not disorienting.
+
+.layers-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+}
+
+.layers-tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.layers-tab {
+  width: 26px;
+  padding: 4px 0;
+  font-size: 11px;
+  font-weight: 700;
+
+  &.on {
+    background: var(--amber);
+    border-color: var(--amber);
+    color: var(--bg);
+  }
+
+  // An empty slot still gets a tab — that is where you go to fill it — but it
+  // says so, or the rack looks four instruments deep before you have picked one.
+  &.empty:not(.on) { color: var(--text-faint); }
+}
+
+.layers-field {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+
+  span {
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  select {
+    min-width: 0;
+    max-width: 170px;
+    font-size: 11px;
+  }
+}

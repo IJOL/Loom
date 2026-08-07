@@ -63,6 +63,10 @@ export class LoomWorkletNode {
   spawn(note: NoteSpec): void { this.post({ type: 'spawn', note }); }
   setParams(params: ParamBag): void { this.post({ type: 'params', params }); }
   setMaxVoices(n: number): void { this.post({ type: 'config', maxVoices: n }); }
+  /** Per-lane state that is not a number — a LAYERS rack, say. Structured-cloned
+   *  across the thread boundary, so it must stay plain data: no functions, no
+   *  class instances, nothing the clone algorithm refuses. */
+  setStructural(structural: unknown): void { this.post({ type: 'structural', structural }); }
   setMods(mods: ModLite[]): void { this.post({ type: 'mods', mods }); }
   steal(count: number): void { this.post({ type: 'steal', count }); }
   /** Note-off ONE voice by the id its spawn carried — what a key-up sends.

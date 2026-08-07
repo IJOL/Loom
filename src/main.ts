@@ -16,6 +16,8 @@ import { createKnobMounter } from './app/knob-mounting';
 import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
 import { createWeaveWiring } from './app/weave-wiring';
+import { wireLayersRack } from './engines/layers-rack-ui';
+import { LAYERS_ENGINE_ID } from './engines/layers-engine';
 import { createRecordingFeature } from './app/recording-feature';
 import { wireMidiImport } from './app/midi-import-wiring';
 import { rebuildEngineParamUI, refreshMelodicEngineOptions } from './engines/engine-selector-ui';
@@ -198,6 +200,10 @@ const lanes = createLaneAllocator({
   globalVoiceCap,
   masterInserts: masterInsertChain,
   onDestinationsChanged: () => destinations.invalidate(),
+  // A closure, not a value: sessionHost is built below, and New/Open replace
+  // its state wholesale. LAYERS reads its rack through this when a lane's
+  // engine is constructed.
+  getLane: (laneId) => sessionHost?.state.lanes.find((l) => l.id === laneId),
 });
 const { resources: laneResources, extraStrips,
         stripFor, ensureLaneVoice,
@@ -677,6 +683,29 @@ const engineSelectors = wireEngineSelectors({
 });
 // wireInstrumentPresetControls(instrumentPresetDeps) stays where it is, ~230 lines down.
 const instrumentPresetDeps = engineSelectors.instrumentPresetDeps;
+
+// Changing which instrument sits in a LAYERS slot REBUILDS the lane's engine.
+// That is not caution — the worklet numbers a lane's params once and keeps that
+// numbering for its lifetime, and a new instrument in a slot brings a new set of
+// them. It is the same rebuild a plain engine swap already performs.
+wireLayersRack({
+  setRack: (laneId, layers) => {
+    const lane = sessionHost.state.lanes.find((l) => l.id === laneId);
+    if (!lane) return;
+    lane.engineState = { ...lane.engineState, layers };
+    swapLaneEngine(laneId, LAYERS_ENGINE_ID);
+    // Repaint through the ONE door: focusLane owns which lane the instrument
+    // page shows, and reaching past it to showLaneEditor is what once left the
+    // clip editor and the knobs pointing at two different lanes.
+    sessionHost.focusLane(laneId);
+    // Autosave through the host's own hook, the same one an insert edit uses —
+    // the save-manager's buttons are the manual route and mean something else.
+    sessionHost.deps.saveSession?.();
+  },
+  // Opening another tab, or recalling a preset into a layer, changes only what
+  // is DRAWN. Repaint through the one door rather than rebuilding the lane.
+  repaint: (laneId) => sessionHost.focusLane(laneId),
+});
 
 // The two engine selectors were just painted from the registry as it stands
 // RIGHT NOW — which is before loadPlugins() has resolved, so it holds only the

@@ -80,7 +80,11 @@ export function slidesOnOverlap(id: string): boolean {
  *  with real per-sample DSP would still get the wrong backend — a gap slice 3
  *  closes when the backends stop being hard-coded in the allocator. */
 export function isWorkletHosted(id: string): boolean {
-  return fromPlugin.has(id);
+  // A plugin is worklet-hosted by construction: bringing DSP through the ABI
+  // means exactly this. An in-tree engine has to SAY so — which today only
+  // LAYERS does, because it is in-tree solely to reach the worklet's registry
+  // and build other engines out of it.
+  return fromPlugin.has(id) || caps.get(id)?.workletHosted === true;
 }
 
 /** Every id `isWorkletHosted` answers true for. The host has no melodic engine
@@ -88,7 +92,8 @@ export function isWorkletHosted(id: string): boolean {
  *  which is what a registry-driven test (audio-dsp/live-params.dsp.test.ts) has
  *  to walk. Read through `WORKLET_ENGINE_IDS` in the allocator, never here. */
 export function workletHostedIds(): string[] {
-  return [...fromPlugin];
+  const own = [...caps.keys()].filter((id) => !fromPlugin.has(id) && caps.get(id)?.workletHosted);
+  return [...fromPlugin, ...own];
 }
 
 /** What the host must multiply a PLUGIN engine's voices by: its declared

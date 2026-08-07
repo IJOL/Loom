@@ -129,6 +129,15 @@ export interface EngineCapabilities {
    *  is not a flag on a NoteEvent. Absent ⇒ this engine never slides. */
   slide?: 'overlap';
   gm?: GmHint;
+  /** This engine synthesises through the SHARED worklet path — the same one
+   *  every plugin engine uses. A plugin never sets it: bringing DSP through the
+   *  ABI already means this, and the host infers it. It exists for the rare
+   *  IN-TREE engine that also lives there, which today is LAYERS: it is in-tree
+   *  only because it builds other engines out of the worklet's registry, a door
+   *  the plugin ABI deliberately keeps shut. Without a way to declare this, the
+   *  allocator would route it to no backend at all and the lane would be
+   *  silent. Default: false. */
+  workletHosted?: boolean;
 }
 
 export interface ComponentManifestBase {
@@ -406,4 +415,10 @@ export type RendererFactory = (
   note: import('./types').NoteSpec,
   params: import('./types').ParamBag,
   sampleRate: number,
+  /** Per-lane state that is NOT a number — the only kind a param cannot carry.
+   *  Optional and last, so a renderer written before this existed simply ignores
+   *  an extra argument. `unknown` because the host does not know what a given
+   *  engine's structural state looks like, and a union of the ones we ship today
+   *  would have to grow for every future plugin. */
+  structural?: unknown,
 ) => import('./types').VoiceRenderer;
