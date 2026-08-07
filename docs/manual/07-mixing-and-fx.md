@@ -87,7 +87,9 @@ Every lane also has a private insert chain that sits *before* the channel strip 
 
 **Inserts vs sends:** an insert is a serial in-line processor that the signal passes *through*; a send is a parallel path that taps a copy of the signal into a shared return. Use inserts for tone-shaping a single lane; use sends when several lanes should share one effect (a common reverb space, a tempo-synced delay). Loom no longer privileges any effect — reverb and delay are ordinary inserts too, and they just happen to be the default residents of the Send A / Send B return chains.
 
-**The same picker everywhere.** Every insert rack — per lane (including audio lanes), on each send return, and on the master — draws from one unified effect picker, whose eleven entries read: **Filter**, **Dist**, **Reverb**, **Delay**, **Compressor**, **Limiter**, **Trem/Gate**, **Chorus**, **Flanger**, **Phaser**, and **Crush**. See [Master FX panel](#master-fx-panel) below for each effect's parameters. Any insert's parameters are modulation and Performance-automation destinations, wherever the insert sits.
+**The same picker everywhere.** Every insert rack — per lane (including audio lanes), on each send return, and on the master — draws from one unified effect picker, whose fifteen entries read: **Filter**, **Dist**, **Reverb**, **Delay**, **Compressor**, **Limiter**, **Trem/Gate**, **Gate**, **Chorus**, **Flanger**, **Phaser**, **Crush**, **Auto-Wah**, **Ring** and **Width**. See [Master FX panel](#master-fx-panel) below for each effect's parameters. Any insert's parameters are modulation and Performance-automation destinations, wherever the insert sits.
+
+The list is not fixed in the app: each of those effects is a plugin loaded at start-up, and the picker simply shows whatever loaded. That is why a broken or missing one shows up as an entry that is absent rather than as an app that fails.
 
 ---
 
