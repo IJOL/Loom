@@ -49,6 +49,13 @@ export interface PanelContextDeps {
   swapLaneEngine?: (laneId: string, engineId: string) => void;
   /** Apply a preset to a lane, likewise through the host's own path. */
   applyLanePreset?: (laneId: string, presetName: string) => void;
+  /** The mixer's OWN mute and solo tables, not copies. A panel that toggled a
+   *  private flag would let a lane read soloed here and muted at the desk.
+   *  Absent in fixtures with no audio graph — the buttons then do nothing
+   *  rather than pretending to. */
+  muteState?: Record<string, boolean>;
+  soloState?: Record<string, boolean>;
+  applyMuteSolo?: () => void;
 }
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -61,6 +68,12 @@ const SILENT_PHASE: PanelLoopPhase = { state: 'silent', frac: 0, bars: 0, center
 const scratch = new Map<string, LanePlayState>();
 
 export function createPanelContext(deps: PanelContextDeps): PanelContext {
+  /** The mixer column paints its M and S lit state when it is BUILT, so a mute
+   *  toggled from a panel changes the audio immediately and leaves the desk's
+   *  button looking untouched until something else rebuilds it. Rebuilding here
+   *  is what keeps the two surfaces telling the same story. */
+  const repaintDesk = () => deps.sessionHost.renderWithMixer();
+
   /** Everything the loop list and the loop resolver need about a lane, gathered
    *  once. Built per call rather than cached: the style, the key and the lock
    *  all move, and a stale copy would list loops the lane no longer draws. */
@@ -152,6 +165,45 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
 
     isPlaying() {
       return deps.seq.isPlaying();
+    },
+
+    laneTransport(laneId) {
+      return {
+        playing: deps.sessionHost.laneStates.get(laneId)?.playing != null,
+        muted: deps.muteState?.[laneId] ?? false,
+        soloed: deps.soloState?.[laneId] ?? false,
+      };
+    },
+
+    setLanePlaying(laneId, playing) {
+      if (!playing) {
+        // The host's own stop seam, which also releases the lane's still-
+        // sounding voices — a long audio clip otherwise plays to its end.
+        deps.sessionHost.callbacks.onStopLane?.(laneId);
+        return;
+      }
+      const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
+      if (!lane) return;
+      // The launched scene's row if this lane has a clip there, else the first
+      // clip it has. Following the scene keeps a lane started from here in step
+      // with the ones started from the grid.
+      const scene = deps.sessionHost.activeSceneIdx;
+      const row = lane.clips[scene] ? scene : lane.clips.findIndex((c) => c !== null);
+      if (row >= 0) deps.sessionHost.launchClipAt(laneId, row);
+    },
+
+    setLaneMuted(laneId, muted) {
+      if (!deps.muteState) return;
+      deps.muteState[laneId] = muted;
+      deps.applyMuteSolo?.();
+      repaintDesk();
+    },
+
+    setLaneSoloed(laneId, soloed) {
+      if (!deps.soloState) return;
+      deps.soloState[laneId] = soloed;
+      deps.applyMuteSolo?.();
+      repaintDesk();
     },
 
     loops(laneId) {

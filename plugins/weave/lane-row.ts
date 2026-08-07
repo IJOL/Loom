@@ -16,6 +16,11 @@ export interface LaneRowHandle {
   el: HTMLElement;
   led: HTMLElement;
   ring: { el: HTMLElement; set(phase: PanelLoopPhase): void };
+  /** Repaint the transport buttons from the host. Driven by the panel's one rAF
+   *  rather than by a click handler, because a lane can start or stop from the
+   *  grid, from a scene launch or from a MIDI controller — none of which pass
+   *  through this row. */
+  syncTransport(): void;
 }
 
 const TOPOS: { kind: PanelWeave['kind']; label: string; title: string }[] = [
@@ -189,6 +194,47 @@ export function buildLaneRow(
   const preset = picker('weave-preset', `Preset for ${lane.name}`, ctx.presets(lane.engineId),
     lane.presetId, (id) => ctx.setPreset(lane.id, id));
 
+  // ── transport: play, stop, mute, solo ────────────────────────────────────
+  //
+  // All four go through the HOST's own seams. Launch is the grid's launch, so a
+  // lane started here lands on the same bar line as one started there; mute and
+  // solo are the mixer's own tables by reference, so these are literally the
+  // desk's two buttons rather than a second pair that can disagree with it.
+  const transport = el('div', 'weave-transport');
+  const tbtn = (cls: string, text: string, title: string, on: () => void) => {
+    const b = el('button', `weave-tbtn ${cls}`, text) as HTMLButtonElement;
+    b.type = 'button';
+    b.title = title;
+    b.addEventListener('click', on);
+    transport.appendChild(b);
+    return b;
+  };
+  const play = tbtn('play', '▶', 'Launch this track', () => {
+    ctx.setLanePlaying(lane.id, true);
+    syncTransport();
+  });
+  const stop = tbtn('stop', '■', 'Stop this track', () => {
+    ctx.setLanePlaying(lane.id, false);
+    syncTransport();
+  });
+  const mute = tbtn('mute', 'M', 'Silence it without losing its place in the bar', () => {
+    ctx.setLaneMuted(lane.id, !ctx.laneTransport(lane.id).muted);
+    syncTransport();
+  });
+  const solo = tbtn('solo', 'S', 'Solo — the mixer\'s own, not a second one', () => {
+    ctx.setLaneSoloed(lane.id, !ctx.laneTransport(lane.id).soloed);
+    syncTransport();
+  });
+
+  const syncTransport = () => {
+    const t = ctx.laneTransport(lane.id);
+    play.classList.toggle('on', t.playing);
+    stop.disabled = !t.playing;
+    mute.classList.toggle('on', t.muted);
+    solo.classList.toggle('on', t.soloed);
+  };
+  syncTransport();
+
   // Re-read on every repaint, never captured: the style picker below changes
   // which shelf of the library this lane draws from, and a captured list would
   // keep offering the loops of the style the user just left.
@@ -229,6 +275,6 @@ export function buildLaneRow(
   paintTopo();
   repaintCell();
 
-  row.append(led, ring.el, name, engine, preset, style, topo, cellHost);
-  return { laneId: lane.id, el: row, led, ring };
+  row.append(led, ring.el, name, transport, engine, preset, style, topo, cellHost);
+  return { laneId: lane.id, el: row, led, ring, syncTransport };
 }

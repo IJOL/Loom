@@ -190,6 +190,16 @@ export interface PanelChoice {
   group?: string;
 }
 
+/** A lane's transport and desk state, as a panel sees it.
+ *
+ *  Muted and soloed are the MIXER's, not a private copy: a panel that kept its
+ *  own would let the same lane read soloed on one screen and muted on another. */
+export interface PanelLaneTransport {
+  playing: boolean;
+  muted: boolean;
+  soloed: boolean;
+}
+
 /** Which loops a lane is weaving, and where between them it sits.
  *
  *  Loops are named by ID, never by their notes: a panel holds a flat summary of
@@ -258,6 +268,19 @@ export interface PanelContext {
    *  number would hide exactly the thing worth seeing. A lane the host knows
    *  nothing about reads `silent`, never undefined. */
   loopPhase(laneId: string): PanelLoopPhase;
+  /** Where a lane stands right now. Read it per frame — it is a getter, not an
+   *  event, so a panel that never shows transport costs nothing. */
+  laneTransport(laneId: string): PanelLaneTransport;
+  /** Start or stop this lane. Launching is quantised exactly like the grid's,
+   *  because it IS the grid's launch — a panel does not get a second one that
+   *  could land off the bar. */
+  setLanePlaying(laneId: string, playing: boolean): void;
+  /** Silence a lane without stopping it: it keeps its place in the bar, so
+   *  bringing it back drops it in where the music already is. */
+  setLaneMuted(laneId: string, muted: boolean): void;
+  /** Solo, sharing the ONE solo bus with the mixer. Two independent solo states
+   *  would let a lane be soloed here and muted there. */
+  setLaneSoloed(laneId: string, soloed: boolean): void;
   /** The loops this lane can weave: the pattern library for its style, plus its
    *  own clips. Grouped — the library alone runs to hundreds of entries. */
   loops(laneId: string): PanelChoice[];

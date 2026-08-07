@@ -110,10 +110,11 @@
 
 .weave-lane {
   display: grid;
-  // Eight columns: lamp, ring, name, instrument, preset, style, topology, loops.
-  // Only the last is elastic — the weaving control is where the row's spare
-  // width belongs, because it is the only cell whose contents change shape.
-  grid-template-columns: 14px 30px 78px 104px 128px 112px 124px 1fr;
+  // Nine columns: lamp, ring, name, transport, instrument, preset, style,
+  // topology, loops. Only the last is elastic — the weaving control is where the
+  // row's spare width belongs, because it is the only cell whose contents
+  // change shape.
+  grid-template-columns: 14px 30px 74px 96px 96px 118px 106px 118px 1fr;
   gap: 10px;
   align-items: center;
   background: var(--surface-2);
@@ -143,6 +144,29 @@
   height: 44px;
   width: 60px;
   border-color: var(--border);
+}
+
+// ── per-track transport ────────────────────────────────────────────────────
+// Four buttons, the same four the desk has, in the same colours: green plays,
+// amber mutes, blue solos. Reusing the palette is what makes them recognisable
+// at this size — at 20px there is no room for a word.
+.weave-transport {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+}
+
+.weave-tbtn {
+  padding: 3px 0;
+  font-size: 9px;
+  line-height: 1;
+  min-width: 0;
+
+  &:disabled { opacity: 0.35; }
+
+  &.play.on   { background: var(--green); border-color: var(--green); color: var(--bg); }
+  &.mute.on   { background: var(--amber); border-color: var(--amber); color: var(--bg); }
+  &.solo.on   { background: var(--blue, #4a9eff); border-color: var(--blue, #4a9eff); color: var(--bg); }
 }
 
 // ── topology: which control this lane is played with ───────────────────────

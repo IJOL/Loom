@@ -81,6 +81,11 @@ export interface PerformanceFeatureDeps {
    *  set of its own. */
   swapLaneEngine?: (laneId: string, engineId: string) => void;
   applyLanePreset?: (laneId: string, presetName: string) => void;
+  /** Passed through to a panel's context: the mixer's own mute/solo tables, so
+   *  a panel's M and S buttons and the desk's are the same two buttons. */
+  muteState?: Record<string, boolean>;
+  soloState?: Record<string, boolean>;
+  applyMuteSolo?: () => void;
   /** The ONE weave state, shared with the session host's gate. Absent in test
    *  fixtures, which get a fresh one. */
   weave?: WeaveState;
@@ -418,6 +423,11 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         onWeaveChanged: () => deps.onWeaveChanged?.(),
         swapLaneEngine: deps.swapLaneEngine,
         applyLanePreset: deps.applyLanePreset,
+        // The desk's own tables, by reference. A panel muting a copy would look
+        // like it worked and change nothing.
+        muteState: deps.muteState,
+        soloState: deps.soloState,
+        applyMuteSolo: deps.applyMuteSolo,
       }),
     );
   }

@@ -216,7 +216,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   // Column headers. The row carries seven things now, and without a header the
   // two dropdowns in the middle are guesswork.
   const head2 = el('div', 'weave-lane weave-lane-head');
-  for (const label of ['', '', 'Lane', 'Instrument', 'Preset', 'Style', 'Topology', 'Loops']) {
+  for (const label of ['', '', 'Lane', '', 'Instrument', 'Preset', 'Style', 'Topology', 'Loops']) {
     const c = el('span', 'weave-col');
     c.textContent = label;
     head2.appendChild(c);
@@ -286,6 +286,10 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
       // a bar reads as flicker rather than as a beat.
       const onBeat = step % 4 === 0;
       for (const l of laneRows) l.led.classList.toggle('hit', onBeat);
+      // Once a beat, not once a frame: a lane can start or stop from the grid,
+      // from a scene launch or from a MIDI pad, none of which pass through this
+      // row — but four reads a second is plenty to notice.
+      for (const l of laneRows) l.syncTransport();
     }
 
     if (!reduced) {

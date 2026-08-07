@@ -139,6 +139,39 @@ function buildLaneRow(lane, ctx, engines) {
     lane.presetId,
     (id) => ctx.setPreset(lane.id, id)
   );
+  const transport = el("div", "weave-transport");
+  const tbtn = (cls, text, title, on) => {
+    const b = el("button", `weave-tbtn ${cls}`, text);
+    b.type = "button";
+    b.title = title;
+    b.addEventListener("click", on);
+    transport.appendChild(b);
+    return b;
+  };
+  const play = tbtn("play", "\u25B6", "Launch this track", () => {
+    ctx.setLanePlaying(lane.id, true);
+    syncTransport();
+  });
+  const stop = tbtn("stop", "\u25A0", "Stop this track", () => {
+    ctx.setLanePlaying(lane.id, false);
+    syncTransport();
+  });
+  const mute = tbtn("mute", "M", "Silence it without losing its place in the bar", () => {
+    ctx.setLaneMuted(lane.id, !ctx.laneTransport(lane.id).muted);
+    syncTransport();
+  });
+  const solo = tbtn("solo", "S", "Solo \u2014 the mixer's own, not a second one", () => {
+    ctx.setLaneSoloed(lane.id, !ctx.laneTransport(lane.id).soloed);
+    syncTransport();
+  });
+  const syncTransport = () => {
+    const t = ctx.laneTransport(lane.id);
+    play.classList.toggle("on", t.playing);
+    stop.disabled = !t.playing;
+    mute.classList.toggle("on", t.muted);
+    solo.classList.toggle("on", t.soloed);
+  };
+  syncTransport();
   const cellHost = el("div", "weave-cell-host");
   const repaintCell = () => {
     cellHost.replaceChildren(weaveCell(lane.id, ctx, ctx.loops(lane.id), repaintCell));
@@ -175,8 +208,8 @@ function buildLaneRow(lane, ctx, engines) {
   };
   paintTopo();
   repaintCell();
-  row.append(led, ring.el, name, engine, preset, style, topo, cellHost);
-  return { laneId: lane.id, el: row, led, ring };
+  row.append(led, ring.el, name, transport, engine, preset, style, topo, cellHost);
+  return { laneId: lane.id, el: row, led, ring, syncTransport };
 }
 
 // plugins/weave/main.ts
@@ -344,7 +377,7 @@ function mountWeave(host, ctx) {
   flowRow.append(flowLabel, flow, flowOut);
   const lanes = el2("div", "weave-lanes");
   const head2 = el2("div", "weave-lane weave-lane-head");
-  for (const label of ["", "", "Lane", "Instrument", "Preset", "Style", "Topology", "Loops"]) {
+  for (const label of ["", "", "Lane", "", "Instrument", "Preset", "Style", "Topology", "Loops"]) {
     const c = el2("span", "weave-col");
     c.textContent = label;
     head2.appendChild(c);
@@ -393,6 +426,7 @@ function mountWeave(host, ctx) {
       cells.forEach((c, i) => c.classList.toggle("on", i === step));
       const onBeat = step % 4 === 0;
       for (const l of laneRows) l.led.classList.toggle("hit", onBeat);
+      for (const l of laneRows) l.syncTransport();
     }
     if (!reduced) {
       const beat = phase * 4 % 1;

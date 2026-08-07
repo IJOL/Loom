@@ -593,6 +593,9 @@ const performanceFeature = createPerformanceFeature({
   // would change a panel and play nothing.
   weave: weaveWiring.state,
   onWeaveChanged: () => weaveWiring.invalidate(),
+  // The desk's mute/solo, shared by reference: a panel's M and S and the
+  // mixer's are the same two buttons, not two that can disagree.
+  muteState, soloState, applyMuteSolo,
   swapLaneEngine: onEngineChangeUndoable,
   // The host's OWN applyPresetForLane, not a fresh call to applyPresetToEngine:
   // that closure also mirrors the recalled base values into engineState, which
