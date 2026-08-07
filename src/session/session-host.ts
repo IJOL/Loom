@@ -593,6 +593,7 @@ export class SessionHost {
         this.deps.liveVoices,
         this.activeScene(),
         this.deps.seq.swing,
+        this.deps.weaveGateFor,
       );
       if (this.deps.onAfterTick) this.deps.onAfterTick(now, look);
     };

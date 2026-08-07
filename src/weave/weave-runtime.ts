@@ -9,6 +9,7 @@ import type { NoteEvent } from '../core/notes';
 import { blendLoops, type BlendOptions } from './blend-clip';
 import { laneWeights, type LaneWeaveConfig } from './weave-state';
 import { avoidClash } from './harmony-guard';
+import { applyNoteMacros } from './macro-notes';
 
 const hitKey = (tick: number, midi: number) => `${tick}:${midi}`;
 
@@ -41,6 +42,46 @@ export function createWeaveGate(cfg: LaneWeaveConfig, o: BlendOptions): WeaveGat
     // The scheduler counts ticks from the clip start and keeps counting across
     // iterations; the blend only ever describes one bar.
     const inBar = ((clipTick % o.barTicks) + o.barTicks) % o.barTicks;
+    return allowed.has(hitKey(inBar, note.midi));
+  };
+}
+
+/** A gate driven by the MACROS alone, over a clip's own notes.
+ *
+ *  This is what makes the panel audible before any A/B loops are chosen: with
+ *  no weave configured there is nothing to crossfade, but Density still has
+ *  something to say about the clip that is playing. It thins and thickens what
+ *  is already there.
+ *
+ *  Only Density reaches the sound through a gate: a gate answers "does this note
+ *  fire", so it can add and remove notes but cannot change one. Energy moves
+ *  velocity and needs a transform rather than a predicate — see REMAINING-WORK.
+ *
+ *  `readMacros` is called per refresh rather than captured, so a knob moved
+ *  while the transport runs is heard on the next note, not the next launch. */
+export function createMacroGate(
+  getNotes: () => NoteEvent[],
+  readMacros: () => { density: number },
+  barTicks: number,
+): WeaveGate {
+  let cacheKey = '';
+  let allowed = new Set<string>();
+
+  return (note, _at, clipTick) => {
+    const density = readMacros().density;
+    const notes = getNotes();
+    // Keyed on the density AND the note count, so a clip swap under the same
+    // density still refolds. Rounding keeps a moving knob from refolding on
+    // every frame.
+    const key = `${density.toFixed(3)}|${notes.length}|${barTicks}`;
+    if (key !== cacheKey) {
+      cacheKey = key;
+      allowed = new Set(
+        applyNoteMacros(notes, { density, energy: 0.5 }, barTicks)
+          .map((n) => hitKey(n.start % barTicks, n.midi)),
+      );
+    }
+    const inBar = ((clipTick % barTicks) + barTicks) % barTicks;
     return allowed.has(hitKey(inBar, note.midi));
   };
 }

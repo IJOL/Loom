@@ -35,6 +35,29 @@ Three slices are deliberately unfinished rather than faked:
   plan was not written; the spec's §6 still describes what it must do, including
   the test that the printed scene plays back what was heard.
 
+## Which preset a lane is on has three answers and no owner
+
+Found while wiring WEAVE's preset dropdown, and worth fixing on its own: there
+is no single way to ask "what preset is this lane on". There are three, and they
+disagree.
+
+| Where | Written by | Survives a reload |
+|---|---|---|
+| `lane.enginePresetName` | ONLY engine-swap (which clears it), the drum-kit picker and the MIDI importer | yes |
+| `pagePresetName` (module `Map` in `instrument-presets/preset-select-state.ts`) | `recordPagePresetForLane`, from the live dropdown | **no** — module state |
+| `lane.engineState.params` | `commitEngineBaseValues` | yes, but it is the SOUND, not the label |
+
+So a melodic lane's recalled sound survives a reload while its NAME does not,
+and `engine-param-commit.ts` says as much out loud: *"`enginePresetName` is set
+only by engine-swap, the drum-kit picker and the MIDI importer, never by the
+live preset picker."* A drums lane behaves differently from a subtractive one
+for no reason a user could infer.
+
+WEAVE reads `pagePresetName` first and falls back to `enginePresetName` —
+deliberately NOT a fourth answer. The real fix is to give the question one
+owner, which means touching the preset vocabulary across drums, sampler and
+melodic together; that is a round of its own, not a line in this one.
+
 ## Known code debts (not feature work, tracked nowhere else)
 
 Small, isolated, and kept here only so they are not silently forgotten. All

@@ -113,7 +113,7 @@
   // The weaving control is a CONTROL, not a canvas: given 1fr it swallowed the
   // row and turned a five-lane list into a page of boxes. A fixed, modest width
   // keeps the row readable and leaves room for what comes next in it.
-  grid-template-columns: 14px 90px 110px 220px 1fr;
+  grid-template-columns: 14px 30px 84px 120px 150px 200px 1fr;
   gap: 10px;
   align-items: center;
   background: var(--surface-2);
@@ -130,7 +130,46 @@
 }
 
 .weave-lane-name { font-weight: 700; letter-spacing: 0.08em; font-size: 11px; }
-.weave-lane-engine { font-size: 10.5px; color: var(--text-dim); }
+
+// The scene ring at lane scale. It inherits every colour and every state rule
+// from .scene-ring in the mixer — a ring here and a ring in the master strip
+// mean the same thing and must not look like two different instruments — and
+// only the size is a row decision. The viewBox stays at 32 units, so the wedge
+// geometry is the same one, scaled.
+.loop-ring {
+  svg { width: 28px; height: 28px; }
+  // No caption in a row: the lane already has a name two columns away, and the
+  // second line would push every row taller for a word it already carries.
+  //
+  // The bar number sits ON the wedge here rather than beside it, so it is drawn
+  // stroke-first: a halo in the row's own colour keeps the digits legible at the
+  // moment the sweep passes under them, which is exactly when they matter.
+  .ring-num {
+    font-size: 11px;
+    fill: var(--text);
+    stroke: var(--surface-2);
+    stroke-width: 2.4;
+    paint-order: stroke fill;
+  }
+
+  // The master strip's idle grey is a whisper at 32px and invisible at 28: it
+  // was tuned against that ring's size, not this one. The sweep is the whole
+  // point of putting a ring in the row, so it gets enough contrast to be seen
+  // at a glance — still grey, so amber and red keep meaning what they mean.
+  .ring-wedge { fill: var(--text-dim); fill-opacity: 0.62; }
+  &.armed .ring-wedge,
+  &.imminent .ring-wedge { fill-opacity: 1; }
+}
+
+.weave-engine,
+.weave-preset {
+  width: 100%;
+  min-width: 0;
+}
+
+// An engine that ships no presets shows a disabled dash rather than an empty
+// box, which reads as broken.
+.weave-preset:disabled { color: var(--text-faint); }
 
 .weave-led {
   width: 9px;

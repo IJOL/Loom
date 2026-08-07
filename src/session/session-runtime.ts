@@ -4,6 +4,7 @@
 import type { SessionClip, SessionState, LaunchQuantize, SessionLane, ClipSample, SessionScene } from './session';
 import { emptyScene, clipRowCount, cloneClipWithNewId } from './session';
 import { tickLane, noteTrigger } from '../core/lane-scheduler';
+import type { WeaveGate } from '../weave/weave-runtime';
 import { TICKS_PER_STEP } from '../core/notes';
 import { DEFAULT_METER, type TimeSignature } from '../core/meter';
 import { envelopeSubIndex } from '../core/clip-envelope-length';
@@ -375,6 +376,11 @@ export function tickSession(
   activeScene?: SessionScene | null,
   /** Transport shuffle amount (0 = straight). See core/swing.ts. */
   swing = 0,
+  /** Per-lane note gate — WEAVE's crossfade, asked once per note. Absent, or
+   *  returning undefined for a lane, means every note fires exactly as before.
+   *  Resolved per tick rather than held, so a lane whose weave changed mid-bar
+   *  is answered by the new one on the very next note. */
+  weaveGateFor?: (laneId: string) => WeaveGate | undefined,
 ): void {
   // Resolve the active global loop once per tick (not per-lane).
   const globalLoop = activeScene ? effectiveGlobalLoop(activeScene) : undefined;
@@ -428,6 +434,7 @@ export function tickSession(
       swing,
       globalLoop: globalLoop?.enabled ? globalLoop : undefined,
       lastScheduledAt: lp.lastScheduledAt,
+      shouldFire: weaveGateFor?.(lane.id),
       onTrigger: (note: { midi: number; duration: number; velocity: number; sample?: ClipSample; gridTick?: number }, scheduleTime: number) => {
         if (scheduleTime > lp.lastScheduledAt) lp.lastScheduledAt = scheduleTime;
         const t = noteTrigger(lane.engineId, clip, note, scheduleTime, currentLoopStart, bpm, meter);

@@ -35,6 +35,10 @@ export interface SessionHostDeps {
    *  clip, which otherwise plays to the end after any Stop. Optional so test
    *  fixtures without audio can skip it. */
   liveVoices?: import('../app/live-voice-registry').LiveVoiceRegistry;
+  /** WEAVE's per-lane note gate, asked once per note at schedule time. Absent —
+   *  or returning undefined for a lane — means every note fires exactly as it
+   *  did before the panel existed, which is what keeps this additive. */
+  weaveGateFor?: (laneId: string) => import('../weave/weave-runtime').WeaveGate | undefined;
   // Phase G: drums removed — triggerForLane now routes drums-machine via
   // res.engine.createVoice() like every other engine.
   drumLanes: readonly DrumVoice[];

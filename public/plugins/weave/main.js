@@ -161,15 +161,58 @@ function mountWeave(host, ctx) {
     showFlow();
   });
   flowRow.append(flowLabel, flow, flowOut);
+  const picker = (cls, label, choices, current, onPick) => {
+    const sel = document.createElement("select");
+    sel.className = cls;
+    sel.setAttribute("aria-label", label);
+    if (choices.length === 0) {
+      const o = document.createElement("option");
+      o.textContent = "\u2014";
+      sel.appendChild(o);
+      sel.disabled = true;
+      return sel;
+    }
+    const known = current !== void 0 && choices.some((c) => c.id === current);
+    if (!known) {
+      const o = document.createElement("option");
+      o.value = "";
+      o.textContent = "\u2014";
+      sel.appendChild(o);
+    }
+    for (const c of choices) {
+      const o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = c.name;
+      if (c.id === current) o.selected = true;
+      sel.appendChild(o);
+    }
+    sel.addEventListener("change", () => {
+      if (sel.value) onPick(sel.value);
+    });
+    return sel;
+  };
   const lanes = el("div", "weave-lanes");
   const laneRows = [];
+  const engineChoices = ctx.engines();
   for (const lane of ctx.lanes()) {
     const row = el("div", "weave-lane");
     const led = el("span", "weave-led");
     const name = el("span", "weave-lane-name");
     name.textContent = lane.name;
-    const engine = el("span", "weave-lane-engine");
-    engine.textContent = lane.engineId;
+    const engine = picker(
+      "weave-engine",
+      `Instrument for ${lane.name}`,
+      engineChoices,
+      lane.engineId,
+      (id) => ctx.setEngine(lane.id, id)
+    );
+    const preset = picker(
+      "weave-preset",
+      `Preset for ${lane.name}`,
+      ctx.presets(lane.engineId),
+      lane.presetId,
+      (id) => ctx.setPreset(lane.id, id)
+    );
     const pad = Loom.controls.pad2d({
       x: 0.5,
       y: 0.5,
@@ -177,9 +220,10 @@ function mountWeave(host, ctx) {
       onChange: () => {
       }
     });
-    row.append(led, name, engine, pad.el);
+    const ring = Loom.controls.loopRing({ label: `Loop position for ${lane.name}` });
+    row.append(led, ring.el, name, engine, preset, pad.el);
     lanes.appendChild(row);
-    laneRows.push({ row, led });
+    laneRows.push({ id: lane.id, row, led, ring });
   }
   if (laneRows.length === 0) {
     const empty = el("p", "weave-empty");
@@ -197,6 +241,7 @@ function mountWeave(host, ctx) {
   let raf = 0;
   let lastStep = -1;
   const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+  const SILENT = { state: "silent", frac: 0, bars: 0, centerText: "" };
   const frame = () => {
     raf = requestAnimationFrame(frame);
     const phase = ctx.barPhase();
@@ -204,11 +249,15 @@ function mountWeave(host, ctx) {
       if (lastStep !== -1) {
         lastStep = -1;
         for (const c of cells) c.classList.remove("on");
-        for (const l of laneRows) l.led.classList.remove("hit");
+        for (const l of laneRows) {
+          l.led.classList.remove("hit");
+          l.ring.set(SILENT);
+        }
         rack.style.removeProperty("--weave-pulse");
       }
       return;
     }
+    for (const l of laneRows) l.ring.set(ctx.loopPhase(l.id));
     const step = Math.floor(phase * 16) % 16;
     if (step !== lastStep) {
       lastStep = step;

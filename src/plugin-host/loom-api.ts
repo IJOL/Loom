@@ -14,6 +14,7 @@ import { registerPanel, unregisterPanel, registerPanelMount, type PanelMount } f
 import { createPad2d } from '../core/controls/pad2d';
 import { createQueueControl } from '../core/controls/queue-control';
 import { createStepsControl } from '../core/controls/steps-control';
+import { createLoopRing } from '../core/controls/loop-ring';
 import { createDescriptorEngine } from '../engines/descriptor-engine';
 import { registerRenderer } from '../audio-dsp/renderer-registry';
 import { registerModulatorKernel } from '../audio-dsp/modulator-kernels';
@@ -275,6 +276,7 @@ export function installMainThreadLoomApi(): void {
         pad2d: createPad2d,
         queue: createQueueControl,
         steps: createStepsControl,
+        loopRing: createLoopRing,
       },
     },
     writable: false,

@@ -5,11 +5,16 @@
 // across versions, which is why it stays small: what WEAVE genuinely needs and
 // nothing speculative.
 
-import type { PanelContext, PanelLane } from '@loom/plugin-sdk';
+import type { PanelContext, PanelLane, PanelLoopPhase } from '@loom/plugin-sdk';
 import type { SessionHost } from '../session/session-host';
+import type { LanePlayState } from '../session/session-runtime';
 import type { Sequencer } from '../core/sequencer';
+import { sceneCountdown } from '../core/scene-countdown';
 import { ticksPerBar } from '../core/meter';
 import { TICKS_PER_QUARTER } from '../core/notes';
+import { listEngines } from '../engines/registry';
+import { getCachedPresets } from '../presets/preset-loader';
+import { pagePresetName } from '../instrument-presets/preset-select-state';
 import { macroNeutral } from '../weave/weave-catalog';
 import type { WeaveState } from '../weave/weave-state';
 
@@ -26,9 +31,23 @@ export interface PanelContextDeps {
   onMacroChanged?: (id: string, value: number) => void;
   /** Re-render the panel. Supplied by whoever mounted it. */
   refresh: () => void;
+  /** Swap a lane's instrument. main hands in its own undoable wrapper, so a
+   *  swap made from the panel undoes exactly like one made from the grid —
+   *  there is one engine-swap path in the app and a panel does not get a
+   *  second. Absent in fixtures with no audio graph. */
+  swapLaneEngine?: (laneId: string, engineId: string) => void;
+  /** Apply a preset to a lane, likewise through the host's own path. */
+  applyLanePreset?: (laneId: string, presetName: string) => void;
 }
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+
+const SILENT_PHASE: PanelLoopPhase = { state: 'silent', frac: 0, bars: 0, centerText: '' };
+
+// sceneCountdown reads a map and keeps nothing, so one scratch map serves every
+// lane and every frame. Building a fresh Map per lane per frame is the kind of
+// allocation that costs nothing until there are eight lanes at sixty hertz.
+const scratch = new Map<string, LanePlayState>();
 
 export function createPanelContext(deps: PanelContextDeps): PanelContext {
   return {
@@ -39,8 +58,45 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         id: l.id,
         name: l.name || l.id,
         engineId: l.engineId,
-        presetId: l.enginePresetName,
+        // Which preset a lane is on lives in THREE places today, and none of
+        // them owns it: `enginePresetName` (persists, but only engine-swap,
+        // the kit picker and the MIDI importer ever write it), `pagePresetName`
+        // (what the live dropdown records, module state, dies on reload), and
+        // the mirrored params (the SOUND, not the label). This reads the same
+        // one the existing lane dropdown reads, then falls back — inventing a
+        // fourth answer here would make the asymmetry worse rather than expose
+        // it. See REMAINING-WORK.
+        presetId: pagePresetName.get(l.id) ?? l.enginePresetName,
       }));
+    },
+
+    engines() {
+      // The SAME list the lane selector paints from. A panel that built its own
+      // would drift the moment a plugin engine registered.
+      return listEngines('polyhost').map((e) => ({ id: e.id, name: e.name }));
+    },
+
+    presets(engineId) {
+      // The same preset cache the lane's own dropdown reads, in the same
+      // vocabulary: `engine:<name>` is what recordPagePresetForLane stores
+      // verbatim, so offering bare names here would guarantee the current
+      // selection never matched an option.
+      return getCachedPresets(engineId).map((p) => ({
+        id: `engine:${p.name}`,
+        name: p.name,
+      }));
+    },
+
+    setEngine(laneId, engineId) {
+      // main's undoable wrapper around swapLaneEngineFlow — one engine-swap
+      // path in the app, and a swap made here undoes like one made in the grid.
+      deps.swapLaneEngine?.(laneId, engineId);
+      deps.refresh();
+    },
+
+    setPreset(laneId, presetId) {
+      deps.applyLanePreset?.(laneId, presetId);
+      deps.refresh();
     },
 
     macro(id) {
@@ -69,6 +125,21 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
 
     isPlaying() {
       return deps.seq.isPlaying();
+    },
+
+    loopPhase(laneId): PanelLoopPhase {
+      const lp = deps.sessionHost.laneStates.get(laneId);
+      if (!lp) return SILENT_PHASE;
+
+      // The scene ring's own reading, narrowed to one lane: with a single entry
+      // `governingLoopSec` returns that lane's loop and `sceneSwitchBoundary`
+      // its next wrap, so a ring in a WEAVE row and the one in the master strip
+      // cannot disagree about where the bar is. Deriving a second phase here
+      // would be a second answer to a question that already has an owner.
+      scratch.clear();
+      scratch.set(laneId, lp);
+      const c = sceneCountdown(scratch, deps.ctx.currentTime, deps.seq.bpm, deps.seq.meter);
+      return { state: c.state, frac: c.frac, bars: c.bars, centerText: c.centerText };
     },
   };
 }

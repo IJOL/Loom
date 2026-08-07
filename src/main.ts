@@ -15,6 +15,7 @@ import { LiveVoiceRegistry } from './app/live-voice-registry';
 import { createKnobMounter } from './app/knob-mounting';
 import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
+import { createWeaveWiring } from './app/weave-wiring';
 import { createRecordingFeature } from './app/recording-feature';
 import { wireMidiImport } from './app/midi-import-wiring';
 import { rebuildEngineParamUI, refreshMelodicEngineOptions } from './engines/engine-selector-ui';
@@ -375,6 +376,14 @@ const triggerForLane = createTriggerForLane({
 // Active-lane store: single source of truth bridged to SessionHost.activeEditLane
 // so the UI and the APC stay in sync. Mirrored in onActiveLaneChanged below.
 const activeLaneStore = createActiveLaneStore();
+// WEAVE's live state, built BEFORE the host so the host can ask it for a gate
+// on every tick, and read later by the panel plugin. Neither can own it: the
+// host exists before the panel does.
+const weaveWiring = createWeaveWiring({
+  getLaneStates: () => sessionHost.laneStates,
+  getMeter: () => seq.meter,
+});
+
 const sessionHost = new SessionHost({
   ctx, seq, playBtn,
   resetAutomationPosition,
@@ -431,6 +440,10 @@ const sessionHost = new SessionHost({
   // (session-host-reset.ts). Their persistence stays in the save layer.
   masterComp,
   masterShaper,
+  // Asked once per note at schedule time. Returns undefined while every macro
+  // sits at its neutral, so a session nobody has woven schedules exactly as it
+  // did before this feature existed.
+  weaveGateFor: (laneId) => weaveWiring.gateFor(laneId),
   applyPresetForLane: (laneId, presetName) => {
     // presetName is a prefixed value in the unified dropdown vocabulary
     // (engine: / user: / sampler:). See src/presets/preset-apply.ts.
@@ -569,6 +582,21 @@ const performanceFeature = createPerformanceFeature({
   // button) is created further down, so this must stay a closure — the bare
   // value would be a TDZ crash. It only fires from onPlay/toggleTakeRec.
   onRecVisualChanged: () => recording.refreshRecButton(),
+  // A panel plugin changes a lane's instrument and preset through the SAME
+  // doors the lane selectors use — the undoable swap wrapper above and the
+  // shared preset path — so it cannot leave a lane in a state the grid would
+  // not survive, and its edits undo like any other.
+  // One weave state, shared with the host's gate: a knob that moved a copy
+  // would change a panel and play nothing.
+  weave: weaveWiring.state,
+  onWeaveChanged: () => weaveWiring.invalidate(),
+  swapLaneEngine: onEngineChangeUndoable,
+  // The host's OWN applyPresetForLane, not a fresh call to applyPresetToEngine:
+  // that closure also mirrors the recalled base values into engineState, which
+  // is the only vehicle by which a preset reaches a save. Reaching past it
+  // would recall a sound that vanished on reload.
+  applyLanePreset: (laneId, presetName) =>
+    sessionHost.deps.applyPresetForLane?.(laneId, presetName),
   applyUnmounted: (id, n, r) => writes?.applyPlaybackUnmountedWrite(id, n, r),
   getTargetRanges: () => writes?.targetRanges() ?? new Map(),
 });

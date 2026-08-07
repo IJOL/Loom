@@ -181,9 +181,43 @@ export interface PanelLane {
  *  and hashed — so everything it needs to read or change arrives through this
  *  one object. Keeping it small is deliberate: each addition is a promise the
  *  host has to keep across versions. */
+/** Something a panel can offer in a dropdown: an id and what to show. */
+export interface PanelChoice {
+  id: string;
+  name: string;
+}
+
+/** Where one loop is right now — the same reading the Session view's scene ring
+ *  shows, narrowed to a single lane.
+ *
+ *  `frac` means two things on purpose, and the state says which: ELAPSED while
+ *  the loop is simply going round, REMAINING once a switch is queued. That is
+ *  what lets one wedge be drawn without branching on the state. */
+export interface PanelLoopPhase {
+  /** `silent` = the lane is neither playing nor waiting for anything. */
+  state: 'silent' | 'idle' | 'armed' | 'imminent';
+  frac: number;
+  /** Length of the loop in bars. May be fractional. */
+  bars: number;
+  /** Pre-formatted centre reading: the bar the loop is in, or how much is left
+   *  before a queued switch lands. The host formats it so it follows the
+   *  session meter. */
+  centerText: string;
+}
+
 export interface PanelContext {
   /** The lanes currently in the session, in order. */
   lanes(): PanelLane[];
+  /** Every melodic engine a lane could be switched to. */
+  engines(): PanelChoice[];
+  /** The presets that engine offers. Empty for an engine that ships none. */
+  presets(engineId: string): PanelChoice[];
+  /** Swap a lane's instrument. Goes through the host's ONE engine-swap path,
+   *  so a panel cannot leave a lane half-swapped in a way the session grid
+   *  would not survive. */
+  setEngine(laneId: string, engineId: string): void;
+  /** Apply a preset to a lane, through the host's own preset path. */
+  setPreset(laneId: string, presetId: string): void;
   /** A macro's current value, 0..1. Unknown ids read 0. */
   macro(id: string): number;
   /** Move a macro. Goes through the same door automation uses, so a panel
@@ -199,6 +233,14 @@ export interface PanelContext {
   barPhase(): number;
   /** Whether the transport is running. */
   isPlaying(): boolean;
+  /** How far along that lane's own loop is. Read it per frame from the same
+   *  rAF that drives everything else a panel animates.
+   *
+   *  Per LANE rather than per scene because that is the question a weave asks:
+   *  lanes here hold loops of different lengths on purpose, and one scene-wide
+   *  number would hide exactly the thing worth seeing. A lane the host knows
+   *  nothing about reads `silent`, never undefined. */
+  loopPhase(laneId: string): PanelLoopPhase;
 }
 
 export type ComponentManifest =
@@ -287,6 +329,14 @@ export interface LoomApi {
       values: number[]; label?: string;
       onChange(index: number, value: number): void;
     }): { el: HTMLElement; set(values: number[]): void };
+    /** The countdown ring, the same one the master strip carries. It keeps no
+     *  clock of its own — whoever mounts it calls `set` from a frame loop it
+     *  already has, so a panel does not grow a second timer that can disagree
+     *  with the first about where the beat is. */
+    loopRing(opts?: { label?: string }): {
+      el: HTMLElement;
+      set(phase: PanelLoopPhase): void;
+    };
   };
 }
 

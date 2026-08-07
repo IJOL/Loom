@@ -33,7 +33,7 @@ import { renderElement } from '../core/lit-fragment';
 import { renderPerformanceView } from '../performance/performance-ui';
 import { wirePanelViews, type PanelViewHandle } from './panel-views';
 import { createPanelContext } from './panel-context';
-import { defaultWeaveState } from '../weave/weave-state';
+import { defaultWeaveState, type WeaveState } from '../weave/weave-state';
 import { buildMiniMaster } from '../core/master-strip';
 import { createLevelMeter } from '../core/level-meter';
 import { arrangementFromSession } from '../performance/arrangement-from-session';
@@ -75,6 +75,18 @@ export interface PerformanceFeatureDeps {
     ranges: ReadonlyMap<string, { min: number; max: number }>,
   ) => void;
   getTargetRanges?: () => ReadonlyMap<string, { min: number; max: number }>;
+  /** Handed straight to a panel plugin's context. main supplies its OWN
+   *  undoable engine-swap wrapper and its own preset path, so a panel goes
+   *  through the same doors the lane selectors do rather than getting a second
+   *  set of its own. */
+  swapLaneEngine?: (laneId: string, engineId: string) => void;
+  applyLanePreset?: (laneId: string, presetName: string) => void;
+  /** The ONE weave state, shared with the session host's gate. Absent in test
+   *  fixtures, which get a fresh one. */
+  weave?: WeaveState;
+  /** Called after a macro moves: drops the cached gates so the next tick folds
+   *  against the new value instead of answering from the old one. */
+  onWeaveChanged?: () => void;
 }
 
 export interface PerformanceFeature {
@@ -352,12 +364,22 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         arrangement.loopEndBar = g.endBar;
       }
     }
-    if (seq.isPlaying()) seq.stop();
-    if (arrangementPlayState.isPlaying) stopArrangement(arrangementPlayState);
-    // seq.stop()/stopArrangement only halt FUTURE look-ahead triggers; a clip's
-    // already-scheduled whole-loop source (the 'audio' channel) plays on. Silence
-    // live voices so switching modes doesn't leave an audio/stem clip ringing.
-    stopAll(sessionHost.laneStates, sessionHost.deps.liveVoices, ctx.currentTime);
+    // Session and Performance are two different playback engines, so moving
+    // between them has to stop the one being left. A PANEL is not a third
+    // engine — it is a control surface over the session that is already
+    // playing — so entering or leaving one must not silence anything. Stopping
+    // there was the difference between "I pressed play, opened Weave, and
+    // nothing sounds" and an instrument you can actually perform with.
+    const isPanel = (m: string) => panelViews.ids.includes(m);
+    const enginesChanged = !isPanel(mode) && !isPanel(next);
+    if (enginesChanged) {
+      if (seq.isPlaying()) seq.stop();
+      if (arrangementPlayState.isPlaying) stopArrangement(arrangementPlayState);
+      // seq.stop()/stopArrangement only halt FUTURE look-ahead triggers; a clip's
+      // already-scheduled whole-loop source (the 'audio' channel) plays on. Silence
+      // live voices so switching modes doesn't leave an audio/stem clip ringing.
+      stopAll(sessionHost.laneStates, sessionHost.deps.liveVoices, ctx.currentTime);
+    }
     mode = next;
     document.querySelectorAll('#mode-toggle .mode-btn').forEach((b) => {
       b.classList.toggle('on', (b as HTMLElement).dataset.mode === next);
@@ -374,11 +396,11 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
 
   // Built AFTER the plugins have loaded, so their buttons exist before this
   // listener sweep picks them up.
-  // The weave lives here for now. Its real home is the SessionState, so it
-  // saves and undoes like everything else — that is the one slice of this
-  // feature still outstanding, and it is deliberately not faked with a module
-  // variable somewhere less visible.
-  const weave = defaultWeaveState();
+  // The weave state is OWNED by app/weave-wiring, which the session host also
+  // reads — the panel and the scheduler have to see the same object or a knob
+  // would move a copy nobody plays. It still does not persist; that is the
+  // slice left, and its home is the SessionState.
+  const weave = deps.weave ?? defaultWeaveState();
 
   // Deliberately NOT wired here. loadPlugins() resolves long after this
   // function runs, so a registry read now would find nothing and the tabs would
@@ -390,7 +412,12 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     panelViews.dispose();
     panelViews = wirePanelViews(
       (id) => setMode(id),
-      (refresh) => createPanelContext({ sessionHost, seq, ctx, weave, refresh }),
+      (refresh) => createPanelContext({
+        sessionHost, seq, ctx, weave, refresh,
+        onMacroChanged: () => deps.onWeaveChanged?.(),
+        swapLaneEngine: deps.swapLaneEngine,
+        applyLanePreset: deps.applyLanePreset,
+      }),
     );
   }
 

@@ -42,6 +42,19 @@ test('the panel draws one row per lane', async ({ page }) => {
   await expect(page.locator(`${PANEL} .weave-lane`)).toHaveCount(before + 1);
 });
 
+test('every lane row carries a loop ring', async ({ page }) => {
+  await openWeave(page);
+  const rows = await page.locator(`${PANEL} .weave-lane`).count();
+
+  // The ring is built by the HOST and handed over through Loom.controls, so a
+  // ring per row is the only proof in a real browser that the catalogue reached
+  // the plugin — a missing factory would leave the rows looking otherwise fine.
+  await expect(page.locator(`${PANEL} .loop-ring`)).toHaveCount(rows);
+  // Silent until something plays: a wedge with no sound behind it would read as
+  // a loop that is running.
+  await expect(page.locator(`${PANEL} .loop-ring`).first()).toHaveClass(/silent/);
+});
+
 test('the panel offers the six macros', async ({ page }) => {
   await openWeave(page);
   await expect(page.locator(`${PANEL} .weave-macro`)).toHaveCount(6);
