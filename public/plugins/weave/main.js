@@ -469,20 +469,21 @@ function mountWeave(host, ctx) {
   const engineChoices = ctx.engines();
   const laneRows = ctx.lanes().map((lane) => buildLaneRow(lane, ctx, engineChoices));
   for (const r of laneRows) lanes.appendChild(r.el);
+  const addRow = el2("div", "weave-empty");
   if (laneRows.length === 0) {
     head2.remove();
-    const empty = el2("div", "weave-empty");
     const msg = el2("p", "");
     msg.textContent = "Nothing to weave yet.";
-    const add = el2("button", "weave-add");
-    add.textContent = "+ Weaving track";
-    add.title = "Add a track already weaving two loops from the library";
-    add.addEventListener("click", () => {
-      ctx.addLane("subtractive");
-    });
-    empty.append(msg, add);
-    lanes.appendChild(empty);
+    addRow.appendChild(msg);
   }
+  const add = el2("button", "weave-add");
+  add.textContent = "+ Weaving track";
+  add.title = "Add a track already weaving two loops from the library";
+  add.addEventListener("click", () => {
+    ctx.addLane("subtractive");
+  });
+  addRow.appendChild(add);
+  lanes.appendChild(addRow);
   const macros = el2("div", "weave-macros");
   for (const m of MACROS) {
     const knob = macroKnob(m, ctx);

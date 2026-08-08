@@ -21,7 +21,8 @@ function harness(
 ) {
   const state = {
     lanes: laneIds.map(lane),
-    scenes: [],
+    // One row, the way onAddLane's ensureScenesForRows leaves it.
+    scenes: [{ id: 'scene1', name: 'Scene 1', clipPerLane: {} as Record<string, number | null> }],
     musicality: { ...DEFAULT_MUSICALITY },
   } as unknown as SessionState;
 
@@ -146,6 +147,18 @@ describe('createPanelContext — adding a weaving track', () => {
     const id = h.ctx.addLane('subtractive');
     expect(id).not.toBe('');
     expect(h.weave.lanes[id]?.weave).not.toBe(null);
+  });
+
+  it('gives it a clip to carry the weave', () => {
+    // The weave REPLACES a clip's notes rather than existing beside them, and
+    // the scheduler skips a lane with nothing playing — so a track with a weave
+    // and no clip is silent however well the weave folds. This is the exact bug
+    // "New Session -> add a track -> play" would have shown.
+    const h = harness([]);
+    const id = h.ctx.addLane('subtractive');
+    const made = h.state.lanes.find((l) => l.id === id)!;
+    expect(made.clips).toHaveLength(1);
+    expect(h.state.scenes[0].clipPerLane[id]).toBe(0);
   });
 
   it('reports nothing when the host refuses', () => {

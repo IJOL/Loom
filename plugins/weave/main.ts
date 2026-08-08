@@ -350,18 +350,19 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   // telling you to go somewhere else would be a dead end on the screen you play
   // from. The button makes a track that arrives already weaving two loops from
   // the library, so New Session → open WEAVE → play is a path that makes sound.
+  const addRow = el('div', 'weave-empty');
   if (laneRows.length === 0) {
     head2.remove();
-    const empty = el('div', 'weave-empty');
     const msg = el('p', '');
     msg.textContent = 'Nothing to weave yet.';
-    const add = el('button', 'weave-add');
-    add.textContent = '+ Weaving track';
-    add.title = 'Add a track already weaving two loops from the library';
-    add.addEventListener('click', () => { ctx.addLane('subtractive'); });
-    empty.append(msg, add);
-    lanes.appendChild(empty);
+    addRow.appendChild(msg);
   }
+  const add = el('button', 'weave-add');
+  add.textContent = '+ Weaving track';
+  add.title = 'Add a track already weaving two loops from the library';
+  add.addEventListener('click', () => { ctx.addLane('subtractive'); });
+  addRow.appendChild(add);
+  lanes.appendChild(addRow);
 
   // ── macros ───────────────────────────────────────────────────────────────
   const macros = el('div', 'weave-macros');

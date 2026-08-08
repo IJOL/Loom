@@ -15,6 +15,7 @@ import { STYLE_CATALOG, SCALE_CATALOG, rootName, type StyleId } from '../core/mu
 import type { MusicalityState } from '../session/session-types';
 import { isHarmonic } from '../plugins/capabilities';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
+import { emptyClip } from '../session/session';
 import type { SessionHost } from '../session/session-host';
 import type { LanePlayState } from '../session/session-runtime';
 import type { Sequencer } from '../core/sequencer';
@@ -333,6 +334,17 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       deps.sessionHost.callbacks.onAddLane?.(engineId);
       const made = deps.sessionHost.state.lanes.find((l) => !before.has(l.id));
       if (!made) return '';
+
+      // A clip to carry it. The weave REPLACES a clip's notes rather than
+      // existing beside them, and the scheduler skips a lane with nothing
+      // playing — so a track with a weave and no clip is silent, however well
+      // the weave folds. The clip is the vessel: one bar, no notes, and the
+      // weave fills it every tick.
+      const clip = emptyClip(1);
+      clip.name = 'Weave';
+      made.clips.push(clip);
+      const row = deps.sessionHost.state.scenes[0];
+      if (row) row.clipPerLane[made.id] = 0;
 
       // Born weaving. A lane that arrived empty would leave the panel exactly as
       // useless as it was, and picking the first two loops for you is the whole
