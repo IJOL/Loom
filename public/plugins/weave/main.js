@@ -661,7 +661,7 @@ function mountWeave(host, ctx) {
   const SILENT = { state: "silent", frac: 0, bars: 0, centerText: "" };
   const frame = () => {
     raf = requestAnimationFrame(frame);
-    const phase = ctx.barPhase();
+    const phase = ctx.bypassed() ? -1 : ctx.barPhase();
     for (const l of laneRows) l.followWeave(phase);
     if (phase < 0) {
       if (lastStep !== -1) {

@@ -432,7 +432,13 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
 
   const frame = () => {
     raf = requestAnimationFrame(frame);
-    const phase = ctx.barPhase();
+    // Unplugged reads as stopped, and it has to: the panel went on pulsing,
+    // sweeping its rings and running its playheads while contributing nothing,
+    // which is a screen claiming to be alive. Whatever the transport is doing,
+    // this panel is not part of it — so it settles through exactly the branch
+    // below that a stopped clock settles through, rather than growing a second
+    // way to look switched off.
+    const phase = ctx.bypassed() ? -1 : ctx.barPhase();
 
     // BEFORE the stopped-transport branch below, because this is not animation.
     // Each lane follows its own position and redraws its bar, and both have to
