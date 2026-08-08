@@ -209,6 +209,17 @@ export interface PanelLaneTransport {
   soloed: boolean;
 }
 
+/** Where the master flow stands.
+ *
+ *  `position` is read off the lanes rather than remembered beside the speed:
+ *  with a journey running it is the host that moves them, and a second number
+ *  would be the one the panel shows while the music followed the other. */
+export interface PanelFlow {
+  position: number;
+  drift: string;
+  speedBars: number;
+}
+
 /** Which loops a lane is weaving, and where between them it sits.
  *
  *  Loops are named by ID, never by their notes: a panel holds a flat summary of
@@ -306,6 +317,21 @@ export interface PanelContext {
   /** Choose loops or move the position. Passing null clears the lane back to
    *  playing its clip untouched. */
   setLaneWeave(laneId: string, weave: PanelWeave | null): void;
+  /** Move EVERY lane's cross-fade at once.
+   *
+   *  The difference between a panel you operate and a panel you play: dragging
+   *  one lane's fader is an edit, this is a performance gesture. `drift` decides
+   *  how the lanes relate while it moves — all together, fanned out, or each
+   *  keeping its own place and merely nudged.
+   *
+   *  `speedBars` hands the journey over to the HOST: above zero, the flow keeps
+   *  travelling on the audio clock, one lap every that many bars, whether or not
+   *  the panel is open or its animation is running. Zero — the default — means
+   *  it only moves when a hand is on it. */
+  setFlow(position: number, drift: string, speedBars: number): void;
+  /** Where the master flow stands. Read it per frame: with a speed set, the host
+   *  is moving it and the panel is following, not driving. */
+  flow(): PanelFlow;
   /** Freeze what the weave is playing RIGHT NOW into a new scene.
    *
    *  An output, never the goal: the panel exists so the music keeps moving, and

@@ -7,7 +7,8 @@
 
 import type { PanelContext, PanelLane, PanelLoopPhase, PanelWeave } from '@loom/plugin-sdk';
 import { defaultLaneSelection } from '../weave/weave-state';
-import { retopologise } from '../weave/weave-selection';
+import { retopologise, positionOf } from '../weave/weave-selection';
+import { applyFlow, asDrift } from '../weave/flow';
 import { weaveLoopChoices, weaveLoopContext, type WeaveLoopContext } from './weave-loops';
 import { stylesWithPatterns } from '../patterns/pattern-library';
 import { STYLE_CATALOG, type StyleId } from '../core/musicality';
@@ -259,6 +260,37 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
       deps.weave.lanes[laneId] = { ...cur, weave };
       deps.onWeaveChanged?.(laneId);
+    },
+
+    flow() {
+      const f = deps.weave.flow;
+      // The position is read off the LANES, not kept beside the speed: the auto-
+      // advance writes lane positions, and a second number remembered here would
+      // be the one the panel shows while the music followed the other.
+      const first = deps.sessionHost.state.lanes
+        .map((l) => deps.weave.lanes[l.id]?.weave)
+        .find((w) => w != null);
+      return {
+        position: positionOf(first),
+        drift: f?.drift ?? 'together',
+        speedBars: f?.speedBars ?? 0,
+      };
+    },
+
+    setFlow(position, drift, speedBars) {
+      const mode = asDrift(drift);
+      deps.weave.flow = { drift: mode, speedBars: Math.max(0, speedBars || 0) };
+      // The SAME writer the auto-advance uses. A hand on the fader and a clock
+      // driving it must mean the same thing, or the scene would jump the moment
+      // the transport started. No base: a gesture counts from where the lanes
+      // are, which is what makes 'free' a nudge.
+      applyFlow(
+        deps.weave.lanes,
+        deps.sessionHost.state.lanes.map((l) => l.id),
+        position,
+        mode,
+      );
+      deps.onWeaveChanged?.('*');
     },
 
     printScene() {

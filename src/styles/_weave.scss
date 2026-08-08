@@ -97,6 +97,24 @@
 
 .weave-flow input[type='range'] { flex: 1 1 0; min-width: 0; }
 
+// Travelling on its own, the fader is a readout: it keeps moving and stops
+// taking the hand, and it has to LOOK like that or it reads as a broken control.
+.weave-flow input[type='range']:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.weave-drift,
+.weave-speed {
+  flex: 0 0 auto;
+  background: var(--panel-2, #1a1a1e);
+  color: var(--text, #ddd);
+  border: 1px solid var(--line, #3a3a42);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-size: 10.5px;
+}
+
 .weave-readout {
   font-variant-numeric: tabular-nums;
   color: var(--amber);

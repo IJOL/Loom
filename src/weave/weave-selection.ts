@@ -61,6 +61,20 @@ export function retopologise(
   return defaultSelection(kind, named.length > 0 ? named : loopIds);
 }
 
+/** Where along its journey a selection currently sits, 0..1.
+ *
+ *  The cloud has TWO axes and this reads the horizontal one, because that is
+ *  what a single master control can move: fanning a scene along x is a gesture,
+ *  and dragging every pad diagonally is not. */
+export function positionOf(sel: PanelWeave | null | undefined): number {
+  return sel ? sel.x : 0;
+}
+
+// A `withPosition` used to sit here. `applyFlow` in ./flow is the ONE writer of
+// a position now — the panel's gesture and the host's auto-advance both go
+// through it — and a second way to move one was how the two would have ended up
+// disagreeing about what a drift mode means.
+
 /** Every loop id a selection names, in order, without duplicates. */
 export function selectionLoopIds(sel: PanelWeave): string[] {
   const ids = sel.kind === 'ab' ? [sel.a, sel.b]

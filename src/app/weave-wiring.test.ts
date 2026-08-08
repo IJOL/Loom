@@ -148,6 +148,73 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
     expect(state.musicality.scale).toBe(before);
   });
 
+  describe('the master flow travels on the clock', () => {
+    // A bar at 120 bpm in 4/4. The wiring derives this itself from the meter and
+    // the tempo; spelling it out here is what makes "half a lap" checkable.
+    const BAR_SEC = 2;
+
+    const flowing = (speedBars: number, drift: 'together' | 'offset' | 'free' = 'together') => {
+      const w = createWeaveWiring({
+        getLaneStates: () => new Map<string, LanePlayState>(),
+        getMeter: () => DEFAULT_METER,
+        getBpm: () => 120,
+        getState: () => session(),
+      });
+      w.state.lanes.lane1 = {
+        weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
+        locked: false, harmonyLeader: false,
+      };
+      w.state.flow = { drift, speedBars };
+      return w;
+    };
+    const posOf = (w: ReturnType<typeof flowing>) => (w.state.lanes.lane1.weave as { x: number }).x;
+
+    it('stands still at speed OFF, which is the default', () => {
+      // The default matters more than the arithmetic: a panel that started
+      // travelling the moment it was opened would change a session nobody
+      // touched.
+      const w = flowing(0);
+      w.advance(BAR_SEC * 4);
+      expect(posOf(w)).toBe(0);
+    });
+
+    it('is half way round after half the journey', () => {
+      const w = flowing(8);
+      w.advance(BAR_SEC * 4);
+      expect(posOf(w)).toBeCloseTo(0.5, 3);
+    });
+
+    it('wraps rather than arriving and stopping', () => {
+      // Stopping at the end would be the static scene this whole panel exists
+      // to avoid.
+      const w = flowing(8);
+      w.advance(BAR_SEC * 12);
+      expect(posOf(w)).toBeCloseTo(0.5, 3);
+    });
+
+    it('drops the cached sources so the next tick folds the new position', () => {
+      // The bug this guards is the quiet one: the number moves, the panel
+      // follows it, and the music keeps playing the fold from before.
+      const w = flowing(8);
+      const first = w.notesFor('lane1');
+      w.advance(BAR_SEC * 2);
+      expect(w.notesFor('lane1')).not.toBe(first);
+    });
+
+    it('forgets its starting line when the speed goes back to OFF', () => {
+      // 'free' counts from where the lanes were when the journey began. Keeping
+      // that after the journey ends would make the NEXT one start somewhere the
+      // user cannot see.
+      const w = flowing(8, 'free');
+      w.advance(BAR_SEC * 2);
+      const travelled = posOf(w);
+      expect(travelled).toBeGreaterThan(0);
+      w.state.flow = { drift: 'free', speedBars: 0 };
+      w.advance(BAR_SEC * 3);
+      expect(posOf(w)).toBe(travelled);
+    });
+  });
+
   it('leaves the lane untouched when its loops no longer exist', () => {
     // A save from another machine, or a deleted clip. Silence would be worse
     // than ignoring the weave.

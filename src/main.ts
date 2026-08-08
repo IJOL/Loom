@@ -395,6 +395,7 @@ const activeLaneStore = createActiveLaneStore();
 const weaveWiring = createWeaveWiring({
   getLaneStates: () => sessionHost.laneStates,
   getMeter: () => seq.meter,
+  getBpm: () => seq.bpm,
   // A getter, not the state: New and Open replace the whole object, and a
   // pinned reference would keep weaving the session the user just closed.
   getState: () => sessionHost.state,
@@ -671,7 +672,13 @@ wireKnobAutomationMenu({ onRegisterKnob, destinations, sessionHost, seq, perform
 (sessionHost.deps as { recHooks?: import('./session/session-runtime').RecHooks }).recHooks =
   performanceFeature.recHooks;
 (sessionHost.deps as { onAfterTick?: (n: number, l: number) => void }).onAfterTick =
-  performanceFeature.onLookahead;
+  (now, lookahead) => {
+    // The master flow travels on the AUDIO clock, from the same tick that
+    // schedules the notes — not from the panel's animation, which stops when the
+    // panel is closed and throttles when the tab goes to the background.
+    weaveWiring.advance(now);
+    performanceFeature.onLookahead(now, lookahead);
+  };
 
 // Performance needs the SAME look-ahead engine as Session: tickArrangement and
 // the per-lane tickSession both run from seq.tick → onLookahead, so the engine

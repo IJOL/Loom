@@ -11,6 +11,7 @@ import { abWeights, type AbState } from './topology-ab';
 import { queueWeights, type QueueState } from './topology-queue';
 import { cloudWeights, type CloudState } from './topology-cloud';
 import { WEAVE_MACROS } from './weave-catalog';
+import type { DriftMode } from './flow';
 
 export type LaneWeave =
   | { kind: 'ab'; state: AbState }
@@ -48,12 +49,23 @@ export function defaultLaneSelection(): LaneSelection {
   return { weave: null, locked: false, harmonyLeader: false };
 }
 
+/** The master flow: one journey the whole scene travels.
+ *
+ *  `speedBars` is how long a lap takes, and 0 — the default — means the flow
+ *  does not move on its own. That default is deliberate: a panel that started
+ *  travelling the moment it was opened would change a session nobody touched. */
+export interface FlowState {
+  drift: DriftMode;
+  speedBars: number;
+}
+
 export interface WeaveState {
   lanes: Record<string, LaneSelection>;
   macros: Record<string, number>;
   /** Seeds the style draw, so re-rendering a panel or repainting a curve never
    *  moves a lane to a different style behind the user's back. */
   seed: number;
+  flow: FlowState;
 }
 
 export function defaultWeaveState(): WeaveState {
@@ -61,7 +73,7 @@ export function defaultWeaveState(): WeaveState {
   // one session's edits leak into the next.
   const macros: Record<string, number> = {};
   for (const m of WEAVE_MACROS) macros[m.id] = m.neutral;
-  return { lanes: {}, macros, seed: 1 };
+  return { lanes: {}, macros, seed: 1, flow: { drift: 'together', speedBars: 0 } };
 }
 
 /** The ONE place that knows which topology a lane uses. Everything downstream

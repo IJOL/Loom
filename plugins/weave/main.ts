@@ -216,12 +216,63 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   flow.step = '0.01';
   flow.id = 'weave-flow';
   flow.setAttribute('aria-label', 'Master flow');
-  flow.value = String(ctx.macro('flow'));
+  const flowNow = ctx.flow();
+  flow.value = String(flowNow.position);
   const flowOut = el('span', 'weave-readout');
-  const showFlow = () => { flowOut.textContent = Number(flow.value).toFixed(2).replace('.', ','); };
+  const showFlow = () => { flowOut.textContent = Number(flow.value).toFixed(2); };
   showFlow();
-  flow.addEventListener('input', () => { ctx.setMacro('flow', Number(flow.value)); showFlow(); });
-  flowRow.append(flowLabel, flow, flowOut);
+
+  // How the lanes relate while the flow moves them. Three musical intentions,
+  // not three settings: everything turning over at once is a section change;
+  // fanned out means something is always mid-transition; free means the flow
+  // only nudges a scene the user placed by hand.
+  const drift = document.createElement('select');
+  drift.className = 'weave-drift';
+  drift.setAttribute('aria-label', 'How the lanes drift apart');
+  for (const [id, label, hint] of [
+    ['together', 'Together', 'Every lane crosses at the same moment — a section change.'],
+    ['offset', 'Offset', 'Lanes fanned out, so something is always mid-transition.'],
+    ['free', 'Free', 'Each lane keeps its own position; the flow only nudges it.'],
+  ]) {
+    const o = document.createElement('option');
+    o.value = id;
+    o.textContent = label;
+    o.title = hint;
+    drift.appendChild(o);
+  }
+
+  // How long a full journey takes. OFF by default — a panel that started
+  // travelling the moment it was opened would change a session nobody touched.
+  const speed = document.createElement('select');
+  speed.className = 'weave-speed';
+  speed.setAttribute('aria-label', 'How long a full journey takes');
+  for (const bars of [0, 4, 8, 16, 32, 64]) {
+    const o = document.createElement('option');
+    o.value = String(bars);
+    o.textContent = bars === 0 ? 'Off' : `${bars} bars`;
+    speed.appendChild(o);
+  }
+
+  drift.value = flowNow.drift;
+  speed.value = String(flowNow.speedBars);
+
+  const pushFlow = () => {
+    ctx.setFlow(Number(flow.value), drift.value, Number(speed.value));
+    // Travelling on its own, the fader is a readout and not a handle. Left live
+    // it would fight the host for the position every frame.
+    flow.disabled = Number(speed.value) > 0;
+    showFlow();
+  };
+  flow.disabled = flowNow.speedBars > 0;
+  flow.addEventListener('input', pushFlow);
+  drift.addEventListener('change', pushFlow);
+  speed.addEventListener('change', pushFlow);
+
+  const driftLabel = el('span', 'weave-label');
+  driftLabel.textContent = 'Drift';
+  const speedLabel = el('span', 'weave-label');
+  speedLabel.textContent = 'Speed';
+  flowRow.append(flowLabel, flow, flowOut, driftLabel, drift, speedLabel, speed);
 
   // ── lanes ────────────────────────────────────────────────────────────────
   const lanes = el('div', 'weave-lanes');
@@ -290,6 +341,17 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     // Every frame, not every step: the wedge is a sweep, and quantising it to
     // sixteenths would turn the one continuous thing on screen into a stutter.
     for (const l of laneRows) l.ring.set(ctx.loopPhase(l.laneId));
+
+    // With a journey running the host owns the position and the fader FOLLOWS.
+    // Reading it back rather than counting bars here is what keeps the control
+    // showing where the music actually is, not where the panel thinks it put it.
+    if (flow.disabled) {
+      const pos = ctx.flow().position;
+      if (Math.abs(pos - Number(flow.value)) >= 0.005) {
+        flow.value = String(pos);
+        showFlow();
+      }
+    }
 
     const step = Math.floor(phase * 16) % 16;
     if (step !== lastStep) {

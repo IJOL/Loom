@@ -18,6 +18,8 @@ import { isHarmonic } from '../plugins/capabilities';
 import { LAYERS_ENGINE_ID } from '../engines/layers-engine';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { ticksPerBar, type TimeSignature } from '../core/meter';
+import { applyFlow, flowAt } from '../weave/flow';
+import { TICKS_PER_QUARTER } from '../core/notes';
 import type { NoteEvent } from '../core/notes';
 import type { SessionState } from '../session/session';
 import type { LanePlayState } from '../session/session-runtime';
@@ -32,6 +34,13 @@ export interface WeaveWiring {
    *  the topology changes, so the next tick rebuilds against the new value
    *  rather than answering from the old fold. */
   invalidate: () => void;
+  /** Advance the master flow to where the clock now says it is.
+   *
+   *  Called per look-ahead tick, from the AUDIO clock rather than from the
+   *  panel's animation: a weave that stopped travelling because the panel was
+   *  closed — or because the tab went to the background and rAF throttled —
+   *  would be a scene that quietly freezes behind your back. */
+  advance: (nowSec: number) => void;
   /** Adopt a loaded weave, IN PLACE.
    *
    *  The state object is shared by reference with the panel and with the session
@@ -44,6 +53,12 @@ export interface WeaveWiring {
 export interface WeaveWiringDeps {
   getLaneStates: () => Map<string, LanePlayState>;
   getMeter: () => TimeSignature;
+  /** The tempo the flow measures its journey in. A getter for the same reason
+   *  as the meter: both move while the transport runs. */
+  getBpm?: () => number;
+  /** Called after the flow moved the lanes on its own, so whoever paints the
+   *  panel can follow. Absent in fixtures with no UI. */
+  onFlowAdvanced?: () => void;
   /** The session itself, for the clips a lane's selection names. A getter, not
    *  a value: New and Open replace the whole object. */
   getState?: () => SessionState;
@@ -168,8 +183,47 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     );
   };
 
+  // Where 'free' counts its journey from: the positions as they were when the
+  // flow was last still. Held here rather than in WeaveState because it is not
+  // a setting — it is a starting line, and it is re-drawn every time the speed
+  // is turned off and on again.
+  let base: Map<string, number> | null = null;
+  let lastFlow = -1;
+
   return {
     state,
+
+    advance(nowSec) {
+      const speed = state.flow?.speedBars ?? 0;
+      if (!(speed > 0)) {
+        // Speed off: the next journey starts from wherever the user leaves the
+        // lanes, so the starting line is forgotten rather than kept.
+        base = null;
+        lastFlow = -1;
+        return;
+      }
+      const bpm = deps.getBpm?.() ?? 120;
+      const barSec = ticksPerBar(deps.getMeter()) * ((60 / bpm) / TICKS_PER_QUARTER);
+      if (!(barSec > 0)) return;
+
+      const laneIds = (deps.getState?.().lanes ?? []).map((l) => l.id);
+      if (base === null) {
+        base = new Map(laneIds.map((id) => [id, state.lanes[id]?.weave?.x ?? 0]));
+      }
+
+      const pos = flowAt(nowSec / barSec, speed);
+      // A lap of 64 bars moves the position by ~0.0005 per tick, which is below
+      // what any topology can act on and still costs a full source rebuild. The
+      // journey is quantised to a thousandth so the ticks that change nothing
+      // cost one compare.
+      if (Math.abs(pos - lastFlow) < 0.001) return;
+      lastFlow = pos;
+
+      if (applyFlow(state.lanes, laneIds, pos, state.flow.drift, base)) {
+        sources.clear();
+        deps.onFlowAdvanced?.();
+      }
+    },
 
     notesFor(laneId) {
       if (sources.has(laneId)) return sources.get(laneId);
@@ -195,6 +249,11 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       for (const k of Object.keys(state.macros)) delete state.macros[k];
       Object.assign(state.macros, next.macros ?? {});
       state.seed = Number.isFinite(next.seed) ? next.seed : 1;
+      // Unconditional, like the rest: a save with no flow must CLEAR the live
+      // one, not leave the previous session still travelling.
+      state.flow = next.flow ?? { drift: 'together', speedBars: 0 };
+      base = null;
+      lastFlow = -1;
       sources.clear();
     },
   };
