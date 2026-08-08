@@ -33,6 +33,16 @@ export interface WeaveLoopContext {
    *  every pattern arrives exactly as its author wrote it — and in acid those
    *  chromatic notes ARE the line. */
   lock: boolean;
+  /** Set when DARKNESS has chosen the scale above, rather than the session.
+   *
+   *  It decides the same thing the lock does — whether a drawn loop is pulled
+   *  into `scale` — and it has to, because the two answer different questions.
+   *  The lock is about whether the SESSION's key may overwrite what an author
+   *  wrote, and leaving it open is right. Darkness is the user reaching for a
+   *  colour on purpose, and riding on the lock made it a knob that worked in
+   *  the middle of a crossfade and did nothing at either end: the ends emit a
+   *  loop unchanged, so there was no interpolation for it to colour. */
+  darkened: boolean;
 }
 
 /** Where the two macros that move MUSICAL state land.
@@ -82,6 +92,7 @@ export function weaveLoopContext(
       ? scaleForDarkness(macros.darkness)
       : musicality.scale,
     lock: musicality.lock,
+    darkened: !!macros && macros.darkness !== 0.5,
   };
 }
 
@@ -149,7 +160,15 @@ export function weaveLoopNotes(id: string, c: WeaveLoopContext): NoteEvent[] | u
     // Drums are never snapped — a GM drum note picks a voice, not a pitch — and
     // patternNotes already refuses to snap them. Passing the lock through keeps
     // the rule in ONE place instead of two that can disagree.
-    c.lock ? { key: c.key, scale: c.scale } : undefined,
+    //
+    // `darkened` counts for the same thing as the lock and is a different
+    // question. The lock asks whether the SESSION's key may overwrite what an
+    // author wrote — open is the right default, since in acid the chromatic
+    // notes ARE the line. Darkness is the user reaching for a colour on
+    // purpose. Riding on the lock made it a knob that worked in the middle of a
+    // crossfade and did nothing at either end, because an end emits its loop
+    // unchanged and there is no interpolation there to colour.
+    c.lock || c.darkened ? { key: c.key, scale: c.scale } : undefined,
   );
   // An index the library does not have comes back empty; that is a loop that is
   // gone, not a silent one.

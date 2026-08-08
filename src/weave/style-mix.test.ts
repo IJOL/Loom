@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { styleForLane, scaleForDarkness, DARKNESS_SCALES } from './style-mix';
-import { STYLE_CATALOG } from '../core/musicality';
+import { STYLE_CATALOG, scaleIntervals } from '../core/musicality';
 
 describe('style mix', () => {
   it('gives every lane the base style when the mix is zero', () => {
@@ -74,6 +74,36 @@ describe('darkness', () => {
   it('is the brightest at the floor and the darkest at the ceiling', () => {
     expect(scaleForDarkness(0)).toBe(DARKNESS_SCALES[0]);
     expect(scaleForDarkness(1)).toBe(DARKNESS_SCALES[DARKNESS_SCALES.length - 1]);
+  });
+
+  it('moves exactly ONE note per step, which is why it reads as a fade', () => {
+    // Reported as "darkness es casi un switch". It was four scales and
+    // major→dorian flattened TWO degrees at once — twice the size of every
+    // other step, and the one that sounded like a channel change. Mixolydian
+    // was the missing rung.
+    //
+    // A scale control cannot be continuous: notes are a semitone apart, and a
+    // third of a semitone is detuning rather than colour. Steps this small are
+    // the most it can offer, so the property worth pinning is the step SIZE.
+    for (let i = 1; i < DARKNESS_SCALES.length; i++) {
+      const before = new Set(scaleIntervals(DARKNESS_SCALES[i - 1]));
+      const after = scaleIntervals(DARKNESS_SCALES[i]);
+      expect(before.size).toBe(after.length);       // seven-note modes throughout
+      const moved = after.filter((n) => !before.has(n));
+      expect(moved).toHaveLength(1);
+    }
+  });
+
+  it('darkens by FLATTENING, never by raising', () => {
+    // "Darker" has to mean something, or the ladder is just an ordering. Each
+    // step replaces one degree with a lower one.
+    for (let i = 1; i < DARKNESS_SCALES.length; i++) {
+      const before = scaleIntervals(DARKNESS_SCALES[i - 1]);
+      const after = scaleIntervals(DARKNESS_SCALES[i]);
+      const gone = before.find((n) => !after.includes(n))!;
+      const added = after.find((n) => !before.includes(n))!;
+      expect(added).toBeLessThan(gone);
+    }
   });
 
   it('never runs off the end of the table at exactly 1', () => {

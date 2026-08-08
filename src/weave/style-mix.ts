@@ -40,8 +40,20 @@ export function styleForLane(
   return others[i].id;
 }
 
-/** Brightest first, so a HIGH darkness lands at the dark end. */
-export const DARKNESS_SCALES: readonly ScaleId[] = ['major', 'dorian', 'minor', 'phrygian'];
+/** Brightest first, so a HIGH darkness lands at the dark end.
+ *
+ *  Every step down this ladder flattens exactly ONE degree — lydian ♮4→ major
+ *  ♭7→ mixolydian ♭3→ dorian ♭6→ minor ♭2→ phrygian — which is what makes the
+ *  knob read as a gradual darkening. It was four scales and major→dorian moved
+ *  TWO notes at once, twice the size of every other step: reported as "darkness
+ *  is almost a switch". Mixolydian is the missing rung; lydian extends the
+ *  bright end by the same single-degree rule rather than by taste.
+ *
+ *  It cannot be made continuous, and that is not a defect to work around: notes
+ *  are a semitone apart and a third of a semitone is detuning, not colour. The
+ *  most a scale control can offer is steps this small. */
+export const DARKNESS_SCALES: readonly ScaleId[] =
+  ['lydian', 'major', 'mixolydian', 'dorian', 'minor', 'phrygian'];
 
 export function scaleForDarkness(darkness: number): ScaleId {
   const d = Math.min(1, Math.max(0, darkness));

@@ -19,7 +19,13 @@ export const WEAVE_MACROS: readonly MacroSpec[] = [
   // middle of the range.
   { id: 'density', label: 'Density', neutral: 0.5, color: 'var(--knob-cyan)' },
   { id: 'energy', label: 'Energy', neutral: 0.5, color: 'var(--knob-yellow)' },
-  { id: 'darkness', label: 'Darkness', neutral: 0.5, color: 'var(--knob-purple)' },
+  // "Mood" on the outside, `darkness` in the data. The knob moves the scene
+  // from luminous to sombre, and "darkness" is the theory word for that — a
+  // conservatory word, which named the mechanism and not the result: nobody
+  // reaching for a knob mid-take is thinking about how many degrees are
+  // flattened. The id stays, because it is what a saved macro is called and
+  // renaming it would buy nothing a reader of this line does not already have.
+  { id: 'darkness', label: 'Mood', neutral: 0.5, color: 'var(--knob-purple)' },
   // Additive: these three only ever add, so doing nothing is the floor.
   { id: 'space', label: 'Space', neutral: 0, color: 'var(--knob-blue)' },
   { id: 'motion', label: 'Motion', neutral: 0, color: 'var(--knob-orange)' },

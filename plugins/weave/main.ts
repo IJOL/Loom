@@ -18,7 +18,8 @@ import { buildLaneRow } from './lane-row';
 const MACROS = [
   { id: 'density', label: 'Density', color: 'var(--knob-cyan)' },
   { id: 'energy', label: 'Energy', color: 'var(--knob-yellow)' },
-  { id: 'darkness', label: 'Darkness', color: 'var(--knob-purple)' },
+  // 'Mood' on the outside, `darkness` in the data — see weave-catalog for why.
+  { id: 'darkness', label: 'Mood', color: 'var(--knob-purple)' },
   { id: 'space', label: 'Space', color: 'var(--knob-blue)' },
   { id: 'motion', label: 'Motion', color: 'var(--knob-orange)' },
   { id: 'styleMix', label: 'Style mix', color: 'var(--knob-red)' },

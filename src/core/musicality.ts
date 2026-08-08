@@ -3,7 +3,9 @@
 // no audio. Consumed by the piano-roll (highlight + lock), generators,
 // and the example gallery.
 
-export type ScaleId = 'minor' | 'major' | 'pentMinor' | 'phrygian' | 'dorian' | 'chromatic';
+export type ScaleId =
+  | 'minor' | 'major' | 'pentMinor' | 'phrygian' | 'dorian' | 'chromatic'
+  | 'lydian' | 'mixolydian';
 // Style ids are the genre keys of the pattern library, verbatim, so a lookup is
 // `patterns[style]` with no translation table to drift. The five original ids
 // were combined styles ("Acid / Techno", "Lo-fi / Ambient"); the library splits
@@ -15,23 +17,32 @@ export type StyleId =
   | 'glitch' | 'electro' | 'downtempo' | 'dubstep' | 'lo-fi' | 'synthwave'
   | 'deep-house' | 'psytrance';
 
+// The seven-note modes are listed BRIGHTEST FIRST, and each one differs from
+// the line above it by exactly ONE flattened degree: lydian ♮4→ major ♭7→
+// mixolydian ♭3→ dorian ♭6→ minor ♭2→ phrygian. That ladder is what lets the
+// weave's Darkness macro read as a gradual darkening rather than a switch —
+// every step it takes changes a single note.
 const INTERVALS: Record<ScaleId, number[]> = {
-  major:     [0, 2, 4, 5, 7, 9, 11],
-  minor:     [0, 2, 3, 5, 7, 8, 10],
-  pentMinor: [0, 3, 5, 7, 10],
-  phrygian:  [0, 1, 3, 5, 7, 8, 10],
-  dorian:    [0, 2, 3, 5, 7, 9, 10],
-  chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+  lydian:     [0, 2, 4, 6, 7, 9, 11],
+  major:      [0, 2, 4, 5, 7, 9, 11],
+  mixolydian: [0, 2, 4, 5, 7, 9, 10],
+  dorian:     [0, 2, 3, 5, 7, 9, 10],
+  minor:      [0, 2, 3, 5, 7, 8, 10],
+  phrygian:   [0, 1, 3, 5, 7, 8, 10],
+  pentMinor:  [0, 3, 5, 7, 10],
+  chromatic:  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
 };
 
 export interface ScaleEntry { id: ScaleId; label: string; mood: string; hint: string; }
 export const SCALE_CATALOG: ScaleEntry[] = [
-  { id: 'minor',     label: 'minor',            mood: '🌙 Dark / tense',                hint: 'the classic acid/techno sound' },
-  { id: 'pentMinor', label: 'pentatonic minor',  mood: '🛡️ Safe (almost anything fits)', hint: 'hard to sound wrong; riffs & basslines' },
-  { id: 'major',     label: 'major',            mood: '☀️ Bright / open',               hint: 'pop, most "happy" music' },
-  { id: 'phrygian',  label: 'phrygian',         mood: '🔥 Mysterious / hypnotic',       hint: 'dark acid, EBM' },
-  { id: 'dorian',    label: 'dorian',           mood: '🌊 Groovy / swung',              hint: 'house & funk' },
-  { id: 'chromatic', label: 'chromatic',        mood: '🎛️ Anything goes (no net)',      hint: 'any note; no safety net' },
+  { id: 'minor',      label: 'minor',            mood: '🌙 Dark / tense',                hint: 'the classic acid/techno sound' },
+  { id: 'pentMinor',  label: 'pentatonic minor',  mood: '🛡️ Safe (almost anything fits)', hint: 'hard to sound wrong; riffs & basslines' },
+  { id: 'major',      label: 'major',            mood: '☀️ Bright / open',               hint: 'pop, most "happy" music' },
+  { id: 'lydian',     label: 'lydian',           mood: '✨ Bright / floating',           hint: 'major with a raised 4th; wide-open, filmic' },
+  { id: 'mixolydian', label: 'mixolydian',       mood: '🌇 Warm / bluesy',               hint: 'major with a flat 7th; funk, house, dub' },
+  { id: 'phrygian',   label: 'phrygian',         mood: '🔥 Mysterious / hypnotic',       hint: 'dark acid, EBM' },
+  { id: 'dorian',     label: 'dorian',           mood: '🌊 Groovy / swung',              hint: 'house & funk' },
+  { id: 'chromatic',  label: 'chromatic',        mood: '🎛️ Anything goes (no net)',      hint: 'any note; no safety net' },
 ];
 
 export interface StyleEntry { id: StyleId; label: string; }
