@@ -8,6 +8,9 @@ import { defaultWeaveState } from '../weave/weave-state';
 import { DEFAULT_METER } from '../core/meter';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { setLibrary } from '../patterns/pattern-library';
+import {
+  registerEngineCapabilities, unregisterEngineCapabilities,
+} from '../plugins/capabilities';
 import type { SessionState } from '../session/session';
 import type { LanePlayState } from '../session/session-runtime';
 import type { MusicalityState } from '../session/session-types';
@@ -200,6 +203,54 @@ describe('createPanelContext — adding a weaving track', () => {
     // rather than reading a lane id that names nothing.
     const h = harness([], { addLane: false });
     expect(h.ctx.addLane('subtractive')).toBe('');
+  });
+});
+
+describe('createPanelContext — swapping a lane\'s instrument', () => {
+  it('re-picks the loops when the shelves move under the lane', () => {
+    // A melodic lane reads bass and lead; a drum machine reads drums. A
+    // selection left naming bass loops on a drum lane still RESOLVES — the id
+    // carries the kind — so it would quietly play a bassline through the drum
+    // voices. Nothing about that looks like a bug from the outside.
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      const id = 'lane1';
+      h.weave.lanes[id] = {
+        weave: { kind: 'ab', a: 'lib:acid-techno:bass:0', b: 'lib:acid-techno:bass:1', x: 0 },
+        locked: false, harmonyLeader: false,
+      };
+      // Declared non-harmonic, the way the drums engine declares itself. The
+      // capability door defaults an UNKNOWN id to "ordinary melodic
+      // instrument", so a fixture that skipped this would be asserting nothing.
+      registerEngineCapabilities('drums-machine', {
+        harmonic: false, clipContent: 'notes', shortLabel: 'DR', outputTrim: 1,
+      });
+      try {
+        // The swap itself is the host's; what matters is what happens after.
+        h.state.lanes[0].engineId = 'drums-machine';
+        h.ctx.setEngine(id, 'drums-machine');
+      } finally {
+        unregisterEngineCapabilities('drums-machine');
+      }
+      const sel = h.weave.lanes[id]?.weave as { a: string } | null;
+      expect(sel?.a).not.toBe('lib:acid-techno:bass:0');
+    });
+  });
+
+  it('keeps a selection whose loops are still on offer', () => {
+    // Swapping between two melodic engines changes nothing about the shelves,
+    // and the loops the user picked are the user's.
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      h.weave.lanes.lane1 = {
+        weave: { kind: 'ab', a: 'lib:acid-techno:bass:0', b: 'lib:acid-techno:bass:1', x: 0.3 },
+        locked: false, harmonyLeader: false,
+      };
+      h.ctx.setEngine('lane1', 'fm');
+      const sel = h.weave.lanes.lane1?.weave as { a: string; x: number };
+      expect(sel.a).toBe('lib:acid-techno:bass:0');
+      expect(sel.x).toBe(0.3);
+    });
   });
 });
 

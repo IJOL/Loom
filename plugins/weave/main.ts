@@ -357,11 +357,16 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     msg.textContent = 'Nothing to weave yet.';
     addRow.appendChild(msg);
   }
+  // WHICH instrument, because the answer is not always a synth: a weave with no
+  // drums in it is half a scene, and the button used to be able to make one kind
+  // of track only.
+  const addWhat = pick('weave-add-engine', engineChoices, 'subtractive');
+  addWhat.setAttribute('aria-label', 'Instrument for the new track');
   const add = el('button', 'weave-add');
   add.textContent = '+ Weaving track';
   add.title = 'Add a track already weaving two loops from the library';
-  add.addEventListener('click', () => { ctx.addLane('subtractive'); });
-  addRow.appendChild(add);
+  add.addEventListener('click', () => { ctx.addLane(addWhat.value); });
+  addRow.append(add, addWhat);
   lanes.appendChild(addRow);
 
   // ── macros ───────────────────────────────────────────────────────────────

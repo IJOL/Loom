@@ -7,7 +7,9 @@
 
 import type { PanelContext, PanelLane, PanelLoopPhase, PanelWeave } from '@loom/plugin-sdk';
 import { defaultLaneSelection } from '../weave/weave-state';
-import { retopologise, positionOf, defaultSelection } from '../weave/weave-selection';
+import {
+  retopologise, positionOf, defaultSelection, selectionLoopIds,
+} from '../weave/weave-selection';
 import { applyFlow, asDrift } from '../weave/flow';
 import { weaveLoopChoices, weaveLoopContext, type WeaveLoopContext } from './weave-loops';
 import { stylesWithPatterns } from '../patterns/pattern-library';
@@ -110,6 +112,35 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     );
   };
 
+  /** The library loops this lane may weave, in list order and nothing else.
+   *  Rotated by where the lane sits so two tracks added in a row are not
+   *  weaving the same pair. */
+  const libraryFor = (laneId: string): string[] => {
+    const lanes = deps.sessionHost.state.lanes;
+    const library = weaveLoopChoices(loopContext(laneId))
+      .map((c) => c.id)
+      .filter((id) => id.startsWith('lib:'));
+    const i = Math.max(0, lanes.findIndex((l) => l.id === laneId));
+    const at = (2 * i) % (library.length || 1);
+    return [...library.slice(at), ...library.slice(0, at)];
+  };
+
+  /** Re-pick a lane's loops when the shelves it reads have moved under it.
+   *
+   *  Only when one of its named loops is no longer OFFERED: a selection that
+   *  still lists is the user's choice and must survive. This is deliberately not
+   *  "the engine changed" — an id that resolves to the wrong kind of material is
+   *  the failure, and that is a question about the LIST, not about the id. */
+  const reseedLaneIfLoopsMoved = (laneId: string): void => {
+    const sel = deps.weave.lanes[laneId]?.weave;
+    if (!sel) return;
+    const offered = new Set(weaveLoopChoices(loopContext(laneId)).map((c) => c.id));
+    if (selectionLoopIds(sel).every((id) => offered.has(id))) return;
+    const next = defaultSelection(sel.kind, libraryFor(laneId));
+    deps.weave.lanes[laneId] = { ...deps.weave.lanes[laneId]!, weave: next };
+    deps.onWeaveChanged?.(laneId);
+  };
+
   return {
     lanes(): PanelLane[] {
       // A flat, serialisable summary. Handing the real lane objects over would
@@ -151,6 +182,11 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // main's undoable wrapper around swapLaneEngineFlow — one engine-swap
       // path in the app, and a swap made here undoes like one made in the grid.
       deps.swapLaneEngine?.(laneId, engineId);
+      // Which library shelves this lane reads may have just changed: melodic
+      // lanes get bass and lead, a drum machine gets drums. A selection left
+      // naming bass loops on a drum lane still RESOLVES — the id carries the
+      // kind — so it would quietly play a bassline through the drum voices.
+      reseedLaneIfLoopsMoved(laneId);
       deps.refresh();
     },
 
@@ -349,19 +385,11 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // Born weaving. A lane that arrived empty would leave the panel exactly as
       // useless as it was, and picking the first two loops for you is the whole
       // difference between "add a track" and "start weaving".
-      // From the LIBRARY only. The carrier clip above is now in this lane's loop
-      // list too, and it is empty by construction — picked as an end of the
-      // crossfade it would make one extreme of the fader silence, which looks
-      // exactly like a broken weave.
-      const library = weaveLoopChoices(loopContext(made.id))
-        .map((c) => c.id)
-        .filter((id) => id.startsWith('lib:'));
-      // Rotated by where this track sits, so the second one you add is weaving
-      // something else. Adding three and hearing one line three times over is
-      // not a demonstration of anything.
-      const at = (2 * Math.max(0, deps.sessionHost.state.lanes.indexOf(made))) % (library.length || 1);
-      const loopIds = [...library.slice(at), ...library.slice(0, at)];
-      const sel = defaultSelection('ab', loopIds);
+      // From the LIBRARY only, rotated by position. The carrier clip above is in
+      // this lane's loop list too, and it is empty by construction — picked as an
+      // end of the crossfade it would make one extreme of the fader silence,
+      // which looks exactly like a broken weave.
+      const sel = defaultSelection('ab', libraryFor(made.id));
       if (sel) {
         deps.weave.lanes[made.id] = { ...defaultLaneSelection(), weave: sel };
         deps.onWeaveChanged?.(made.id);

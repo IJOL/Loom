@@ -515,13 +515,15 @@ function mountWeave(host, ctx) {
     msg.textContent = "Nothing to weave yet.";
     addRow.appendChild(msg);
   }
+  const addWhat = pick("weave-add-engine", engineChoices, "subtractive");
+  addWhat.setAttribute("aria-label", "Instrument for the new track");
   const add = el2("button", "weave-add");
   add.textContent = "+ Weaving track";
   add.title = "Add a track already weaving two loops from the library";
   add.addEventListener("click", () => {
-    ctx.addLane("subtractive");
+    ctx.addLane(addWhat.value);
   });
-  addRow.appendChild(add);
+  addRow.append(add, addWhat);
   lanes.appendChild(addRow);
   const macros = el2("div", "weave-macros");
   for (const m of MACROS) {
