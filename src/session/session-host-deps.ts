@@ -22,13 +22,18 @@ export interface SessionHostDeps {
   onStopAll?: () => void;
   /** Single per-lane trigger entry — encapsulates engineId dispatch +
    *  laneResources lookup. Replaces the old bassTriggerDirect /
-   *  bassTriggerForArp / polyTriggerDirect trio. */
-  triggerForLane: (
-    laneId: string, note: number, time: number, gate: number, accent: boolean, slidingIn: boolean,
-    sample?: import('./session').ClipSample,
-    velocity?: number,
-    offsetSec?: number,
-  ) => void;
+   *  bassTriggerForArp / polyTriggerDirect trio.
+   *
+   *  THE type, not a second copy of it. It was spelled out here and fell one
+   *  argument behind the real one: `layerIndex` was added to the trigger and
+   *  never to this, so the host both forwarded eight of ten arguments and had a
+   *  signature that agreed with the mistake. A LAYERS lane therefore never
+   *  learned which loop a note came from, fell back to the keyboard zones — full
+   *  range by default — and played every note on every layer.
+   *
+   *  A duplicated signature is a claim that has to be re-made true by hand every
+   *  time the original moves. Importing it means the compiler makes it. */
+  triggerForLane: import('./session-runtime').LaneTriggerFn;
   /** Per-lane live-voice registry shared with the trigger dispatch. The stop
    *  seams (stopLane/stopAll) pass it as the `silence` hook so they release a
    *  lane's still-sounding voices immediately — chiefly the long 'audio' channel

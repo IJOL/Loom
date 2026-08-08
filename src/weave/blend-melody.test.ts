@@ -119,3 +119,46 @@ describe('blendMelody', () => {
     expect(midis(blendMelody([], a, 1, BAR, KEY, 'minor', OCT))).toEqual([45]);
   });
 });
+
+describe('whose note a shared onset is', () => {
+  // Anything riding on a note survives the blend by riding on the object that
+  // comes out — chiefly the layer that sends each loop to its own instrument.
+  // A shared onset has to pick a side, and picking the same one every time was
+  // the bug: with two loops that agree on every position, every note came out
+  // claiming loop A, so a LAYERS lane played the whole bar on A's instrument at
+  // every point of the fader and the sound never crossed over at all.
+  const tagged = (step: number, midi: number, from: number) =>
+    ({ ...note(step, midi), from });
+  // Steps 0, 4, 8 and 15: the downbeat, two beats, and the very last sixteenth.
+  // Deliberately NOT four quarter notes — those are all metrically strong, and a
+  // fixture made of them says nothing about an ORDER of handover. (My first one
+  // was, and it read as the fix not working.)
+  const STEPS = [0, 4, 8, 15];
+  const A = STEPS.map((s) => tagged(s, 45, 0));
+  const B = STEPS.map((s) => tagged(s, 47, 1));
+  const owners = (x: number) =>
+    (blendMelody(A, B, x, BAR, KEY, 'minor', OCT) as { from?: number }[]).map((n) => n.from);
+
+  it('is entirely A at the A end', () => {
+    expect(new Set(owners(0))).toEqual(new Set([0]));
+  });
+
+  it('is entirely B at the B end', () => {
+    expect(new Set(owners(1))).toEqual(new Set([1]));
+  });
+
+  it('is SHARED in between — the whole point of routing by origin', () => {
+    const mid = owners(0.5);
+    expect(mid).toContain(0);
+    expect(mid).toContain(1);
+  });
+
+  it('hands the weak positions over before the strong ones', () => {
+    // The rule the rest of the blend already runs on. The downbeat is the last
+    // thing to change instrument, which is what makes the crossover sound like
+    // a transition rather than a switch.
+    const early = owners(0.3);
+    expect(early[0]).toBe(0);                    // the downbeat is still A's
+    expect(early[early.length - 1]).toBe(1);     // the weakest has gone over
+  });
+});

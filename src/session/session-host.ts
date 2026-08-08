@@ -584,8 +584,21 @@ export class SessionHost {
       }
       tickSession(
         this.laneStates, this.state, now, look, this.deps.seq.bpm,
-        (laneId, midi, scheduleTime, gateSec, accent, slidingIn, sample, velocity) =>
-          this.deps.triggerForLane(laneId, midi, scheduleTime, gateSec, accent, slidingIn, sample, velocity),
+        // The function ITSELF, not a hand-written forwarder. This used to name
+        // its eight arguments and pass those on, which silently dropped the two
+        // that came later — `offsetSec` and `layerIndex`. The layer is what
+        // sends each loop of a weave to its own instrument, so a LAYERS lane
+        // fell back to the keyboard zones, those span the whole keyboard by
+        // default, and EVERY note played on EVERY layer: twice the level, and
+        // moving the crossfade changed the pattern while the timbre stood still.
+        //
+        // Measured before and after in the browser — same loop at both ends, so
+        // only the layer differed: peak 0.9609/0.9609, RMS 0.6694/0.6706,
+        // centroid 1343/1342 Hz. Identical, because the layer never arrived.
+        //
+        // A forwarder that repeats a signature is a copy of it, and this one was
+        // a copy that stopped being true. Passing the reference cannot drift.
+        (...args) => this.deps.triggerForLane(...args),
         (laneId, _clipId, _stepInClip, stepTime) =>
           this.deps.markTrackActive(laneId, stepTime),
         this.deps.recHooks,
