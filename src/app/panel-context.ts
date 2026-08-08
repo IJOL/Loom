@@ -349,7 +349,13 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // Born weaving. A lane that arrived empty would leave the panel exactly as
       // useless as it was, and picking the first two loops for you is the whole
       // difference between "add a track" and "start weaving".
-      const loopIds = weaveLoopChoices(loopContext(made.id)).map((c) => c.id);
+      // From the LIBRARY only. The carrier clip above is now in this lane's loop
+      // list too, and it is empty by construction — picked as an end of the
+      // crossfade it would make one extreme of the fader silence, which looks
+      // exactly like a broken weave.
+      const loopIds = weaveLoopChoices(loopContext(made.id))
+        .map((c) => c.id)
+        .filter((id) => id.startsWith('lib:'));
       const sel = defaultSelection('ab', loopIds);
       if (sel) {
         deps.weave.lanes[made.id] = { ...defaultLaneSelection(), weave: sel };

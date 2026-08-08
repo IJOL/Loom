@@ -7,6 +7,7 @@ import { createPanelContext } from './panel-context';
 import { defaultWeaveState } from '../weave/weave-state';
 import { DEFAULT_METER } from '../core/meter';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
+import { setLibrary } from '../patterns/pattern-library';
 import type { SessionState } from '../session/session';
 import type { LanePlayState } from '../session/session-runtime';
 import type { MusicalityState } from '../session/session-types';
@@ -56,6 +57,21 @@ function harness(
   });
 
   return { ctx, state, weave, written, added, changed };
+}
+
+/** Run `fn` with a two-pattern library installed for the default style, then put
+ *  the library back. Two, because that is the fewest that can be the two ends of
+ *  a crossfade — the point of the test is WHICH ids get picked, not what they
+ *  sound like. */
+function withLibrary(fn: () => void): void {
+  const step = (semi: number) => ({ semi, vel: 0.8, slide: false });
+  const style = DEFAULT_MUSICALITY.style;
+  setLibrary({
+    synth: {}, drums: {},
+    bass: { [style]: [[step(0), null, step(7), null], [step(3), step(5), null, null]] },
+    catalog: {},
+  } as never);
+  try { fn(); } finally { setLibrary(null as never); }
 }
 
 /** A lane weaving two loops, sitting at `x`. */
@@ -140,13 +156,31 @@ describe('createPanelContext — adding a weaving track', () => {
     expect(h.added).toEqual(['subtractive']);
   });
 
-  it('arrives already weaving', () => {
+  it('arrives already weaving two LIBRARY loops', () => {
     // A track that arrived empty would leave the panel exactly as useless as it
     // was — that is the whole difference from "add a track" in the grid.
+    //
+    // And never the carrier clip, which is empty by construction: as an end of
+    // the crossfade it would make one extreme of the fader silence, which looks
+    // exactly like a broken weave. Seen in the browser, not in a test — all
+    // three new tracks came up weaving "Weave" -> a library loop.
+    withLibrary(() => {
+      const h = harness([]);
+      const id = h.ctx.addLane('subtractive');
+      expect(id).not.toBe('');
+      const sel = h.weave.lanes[id]?.weave as { a: string; b: string } | undefined;
+      expect(sel?.a.startsWith('lib:')).toBe(true);
+      expect(sel?.b.startsWith('lib:')).toBe(true);
+    });
+  });
+
+  it('weaves NOTHING when the library has no loops for the style', () => {
+    // Rather than pressing the empty carrier clip into service. The lane then
+    // plays its clip untouched, which is honest — a fader whose one end is
+    // silence is not.
     const h = harness([]);
     const id = h.ctx.addLane('subtractive');
-    expect(id).not.toBe('');
-    expect(h.weave.lanes[id]?.weave).not.toBe(null);
+    expect(h.weave.lanes[id]).toBeUndefined();
   });
 
   it('gives it a clip to carry the weave', () => {
