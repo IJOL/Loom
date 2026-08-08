@@ -293,11 +293,12 @@
 // name belongs to which corner needs no counting.
 .weave-cloud {
   display: grid;
-  grid-template-columns: minmax(0, 104px) 74px minmax(0, 104px);
+  // The sides take whatever the row has spare: these are loop NAMES, and a
+  // fixed 104px cut most of them in half.
+  grid-template-columns: minmax(0, 1fr) 74px minmax(0, 1fr);
   grid-template-rows: auto auto;
   gap: 3px 6px;
   align-items: center;
-  justify-items: stretch;
 
   .cn-tl { grid-area: 1 / 1; }
   .cn-tr { grid-area: 1 / 3; }
@@ -305,9 +306,11 @@
   .cn-br { grid-area: 2 / 3; }
   .cn-pad { grid-area: 1 / 2 / 3 / 3; }
 
-  // Each name reads toward its own side, which is the cheapest way to say
-  // "this box is over there".
-  .cn-tr, .cn-br { text-align: right; direction: rtl; }
+  // No `direction: rtl` on the right-hand pair. It was there to make each name
+  // read toward its own side and it truncated them from the LEFT instead —
+  // "edm synth #18" came out "m synth #18". The grid position already says which
+  // corner this is; nothing else has to.
+  .weave-slot { max-width: none; }
 }
 
 .weave-hint {
