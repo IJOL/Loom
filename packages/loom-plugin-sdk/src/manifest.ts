@@ -359,6 +359,13 @@ export interface PanelContext {
   keys(): PanelChoice[];
   /** Every scale the blends can walk. */
   scales(): PanelChoice[];
+  /** Add a track, through the host's own add-lane path, and start it weaving:
+   *  it arrives with its first two library loops already chosen.
+   *
+   *  Returns the new lane's id, or '' if the host refused. A lane that arrived
+   *  empty would leave the panel exactly as useless as it was — picking the
+   *  loops is the difference between "add a track" and "start weaving". */
+  addLane(engineId: string): string;
   /** Re-draw which style each lane strays to. The style MIX stays where it is —
    *  this shuffles the deal, it does not change how far from home the lanes are
    *  allowed to wander. */

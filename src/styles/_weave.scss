@@ -365,8 +365,26 @@
 .weave-empty {
   color: var(--text-faint);
   font-size: 11.5px;
-  margin: 0;
-  padding: 8px;
+  padding: 14px 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  p { margin: 0; }
+}
+
+// The way OUT of the empty state, not a notice about it: this is the screen you
+// play from, and sending you elsewhere to add a track is a dead end.
+.weave-add {
+  background: transparent;
+  color: var(--amber);
+  border: 1px solid var(--amber-soft);
+  border-radius: 3px;
+  padding: 4px 12px;
+  font-size: 11.5px;
+  cursor: pointer;
+
+  &:hover { background: var(--amber-glow); }
 }
 
 // ── macros ─────────────────────────────────────────────────────────────────

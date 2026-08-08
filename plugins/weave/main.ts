@@ -354,10 +354,20 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   const laneRows = ctx.lanes().map((lane) => buildLaneRow(lane, ctx, engineChoices));
   for (const r of laneRows) lanes.appendChild(r.el);
 
+  // A fresh session has no tracks, and a panel that answered that with a notice
+  // telling you to go somewhere else would be a dead end on the screen you play
+  // from. The button makes a track that arrives already weaving two loops from
+  // the library, so New Session → open WEAVE → play is a path that makes sound.
   if (laneRows.length === 0) {
     head2.remove();
-    const empty = el('p', 'weave-empty');
-    empty.textContent = 'No lanes yet. Add one in Session and it will appear here.';
+    const empty = el('div', 'weave-empty');
+    const msg = el('p', '');
+    msg.textContent = 'Nothing to weave yet.';
+    const add = el('button', 'weave-add');
+    add.textContent = '+ Weaving track';
+    add.title = 'Add a track already weaving two loops from the library';
+    add.addEventListener('click', () => { ctx.addLane('subtractive'); });
+    empty.append(msg, add);
     lanes.appendChild(empty);
   }
 

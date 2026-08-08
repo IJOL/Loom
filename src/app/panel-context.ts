@@ -7,7 +7,7 @@
 
 import type { PanelContext, PanelLane, PanelLoopPhase, PanelWeave } from '@loom/plugin-sdk';
 import { defaultLaneSelection } from '../weave/weave-state';
-import { retopologise, positionOf } from '../weave/weave-selection';
+import { retopologise, positionOf, defaultSelection } from '../weave/weave-selection';
 import { applyFlow, asDrift } from '../weave/flow';
 import { weaveLoopChoices, weaveLoopContext, type WeaveLoopContext } from './weave-loops';
 import { stylesWithPatterns } from '../patterns/pattern-library';
@@ -331,6 +331,28 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
 
     scales() {
       return SCALE_CATALOG.map((s) => ({ id: s.id, name: s.label }));
+    },
+
+    addLane(engineId) {
+      // The host's own add-lane path — undoable, allocates the strip and the
+      // engine, seeds a launchable scene. A panel that pushed a lane onto the
+      // array itself would get a row in the grid with no audio behind it.
+      const before = new Set(deps.sessionHost.state.lanes.map((l) => l.id));
+      deps.sessionHost.callbacks.onAddLane?.(engineId);
+      const made = deps.sessionHost.state.lanes.find((l) => !before.has(l.id));
+      if (!made) return '';
+
+      // Born weaving. A lane that arrived empty would leave the panel exactly as
+      // useless as it was, and picking the first two loops for you is the whole
+      // difference between "add a track" and "start weaving".
+      const loopIds = weaveLoopChoices(loopContext(made.id)).map((c) => c.id);
+      const sel = defaultSelection('ab', loopIds);
+      if (sel) {
+        deps.weave.lanes[made.id] = { ...defaultLaneSelection(), weave: sel };
+        deps.onWeaveChanged?.(made.id);
+      }
+      deps.refresh();
+      return made.id;
     },
 
     reseed() {

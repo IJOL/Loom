@@ -15,7 +15,10 @@ const lane = (id: string) => ({
   id, engineId: 'subtractive', name: id, clips: [], inserts: [],
 });
 
-function harness(laneIds: string[] = ['lane1', 'lane2']) {
+function harness(
+  laneIds: string[] = ['lane1', 'lane2'],
+  opts: { addLane?: boolean } = {},
+) {
   const state = {
     lanes: laneIds.map(lane),
     scenes: [],
@@ -24,15 +27,25 @@ function harness(laneIds: string[] = ['lane1', 'lane2']) {
 
   const written: MusicalityState[] = [];
   const bpms: number[] = [];
+  const added: string[] = [];
   const weave = defaultWeaveState();
   const changed: string[] = [];
+
+  // A fixture with no callbacks stands in for a host that refuses — the panel
+  // has to tell the difference rather than report a lane id that names nothing.
+  const callbacks = opts.addLane === false ? {} : {
+    onAddLane: (engineId: string) => {
+      added.push(engineId);
+      state.lanes.push(lane(`new${state.lanes.length + 1}`) as never);
+    },
+  };
 
   const ctx = createPanelContext({
     sessionHost: {
       state,
       laneStates: new Map<string, LanePlayState>(),
       renderWithMixer: () => {},
-      callbacks: {},
+      callbacks,
     } as never,
     seq: { bpm: 128, meter: DEFAULT_METER, isPlaying: () => false } as never,
     ctx: { currentTime: 0 } as never,
@@ -43,7 +56,7 @@ function harness(laneIds: string[] = ['lane1', 'lane2']) {
     setBpm: (b) => bpms.push(b),
   });
 
-  return { ctx, state, weave, written, bpms, changed };
+  return { ctx, state, weave, written, bpms, added, changed };
 }
 
 /** A lane weaving two loops, sitting at `x`. */
@@ -120,6 +133,32 @@ describe('createPanelContext — reshuffle', () => {
     h.weave.macros.styleMix = 0.7;
     h.ctx.reseed();
     expect(h.weave.macros.styleMix).toBe(0.7);
+  });
+});
+
+describe('createPanelContext — adding a weaving track', () => {
+  it('goes through the host\'s add-lane path', () => {
+    // Pushing a lane onto the array here would give a row in the grid with no
+    // strip and no engine behind it.
+    const h = harness([]);
+    h.ctx.addLane('subtractive');
+    expect(h.added).toEqual(['subtractive']);
+  });
+
+  it('arrives already weaving', () => {
+    // A track that arrived empty would leave the panel exactly as useless as it
+    // was — that is the whole difference from "add a track" in the grid.
+    const h = harness([]);
+    const id = h.ctx.addLane('subtractive');
+    expect(id).not.toBe('');
+    expect(h.weave.lanes[id]?.weave).not.toBe(null);
+  });
+
+  it('reports nothing when the host refuses', () => {
+    // A fixture with no session callbacks. The caller must be able to tell,
+    // rather than reading a lane id that names nothing.
+    const h = harness([], { addLane: false });
+    expect(h.ctx.addLane('subtractive')).toBe('');
   });
 });
 
