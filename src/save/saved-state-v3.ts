@@ -4,6 +4,7 @@ import type { SessionState } from '../session/session';
 import type { LaneAllocator } from '../app/lane-allocator';
 import type { ArrangementState } from '../performance/performance';
 import { resolveMeter, formatMeter, type TimeSignature } from '../core/meter';
+import { defaultWeaveState } from '../weave/weave-state';
 
 export interface SavedStateV3 {
   schemaVersion: 3;
@@ -28,6 +29,15 @@ export interface SavedStateV3 {
    *  restore side falls back rather than trusting it. */
   mode?: string;
   arrangement?: ArrangementState;
+  /** WEAVE — optional/additive; absent ⇒ nothing is weaving, which is what a
+   *  save from before the panel existed means.
+   *
+   *  It holds loop IDS, not notes: `clip:<id>` resolves against the clips in
+   *  `sessionState` (saved right here, with their ids intact) and `lib:` ids
+   *  are stable by construction. A loop that no longer resolves is substituted
+   *  rather than blanking the lane, so a save carrying a deleted clip still
+   *  plays. */
+  weave?: import('../weave/weave-state').WeaveState;
 }
 
 // Phase G: SavedStateV3Deps no longer holds direct synth/drums/polysynth
@@ -60,6 +70,10 @@ export interface SavedStateV3Deps {
   getArrangement?: () => ArrangementState;
   setMode?: (m: string) => void;
   setArrangement?: (a: ArrangementState) => void;
+  /** WEAVE persistence — optional; absent and the weave is neither saved nor
+   *  restored, which is how every caller without a panel keeps working. */
+  getWeave?: () => import('../weave/weave-state').WeaveState;
+  setWeave?: (w: import('../weave/weave-state').WeaveState) => void;
 }
 
 export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
@@ -77,6 +91,10 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
   };
   if (deps.getMode) state.mode = deps.getMode();
   if (deps.getArrangement) state.arrangement = deps.getArrangement();
+  // Deep-copied, because the live weave keeps moving: a save holding the panel's
+  // own object would go on changing after it was written, and what landed on
+  // disk would be wherever the fader stopped rather than where it was.
+  if (deps.getWeave) state.weave = structuredClone(deps.getWeave());
   return state;
 }
 
@@ -111,6 +129,12 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
     migrateArrangementCurves(s.arrangement);
     deps.setArrangement(s.arrangement);
   }
+  // AFTER replaceSession, because the weave names clips by id and those clips
+  // have to exist before anything resolves them. Restored UNCONDITIONALLY when
+  // the caller can: a save with no weave must CLEAR the live one, or loading an
+  // untouched session would inherit whatever the previous one was weaving.
+  deps.setWeave?.(s.weave ?? defaultWeaveState());
+
   if (s.mode && deps.setMode) deps.setMode(s.mode);
 }
 

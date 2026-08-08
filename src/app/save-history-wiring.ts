@@ -31,6 +31,7 @@ import type { InsertChain } from '../core/insert-chain';
 import type { SessionHost } from '../session/session-host';
 import type { LaneAllocator } from './lane-allocator';
 import type { PerformanceFeature } from './performance-feature';
+import type { WeaveWiring } from './weave-wiring';
 import { createHistory } from '../core/history';
 import { createAutoHistory, type AutoHistory } from '../save/auto-history';
 import { wireHistoryKeyboard, type HistoryDeps } from '../save/history-wiring';
@@ -64,6 +65,8 @@ export interface SaveAndHistoryDeps {
    *  shaper cache their state in their own panels. */
   refreshMasterComp: () => void;
   refreshMasterShaper: () => void;
+  /** The ONE weave, so a save records what the panel is actually holding. */
+  weave: WeaveWiring;
 }
 
 export interface SaveAndHistory {
@@ -116,6 +119,12 @@ export function createSaveAndHistory(deps: SaveAndHistoryDeps): SaveAndHistory {
     getArrangement: () => getPerformanceFeature().arrangement,
     setMode: (m) => getPerformanceFeature().setMode(m),
     setArrangement: (a) => getPerformanceFeature().setArrangement(a),
+    // The weave rides with save/load and NOT with undo, for the same reason the
+    // take does: it is a live performance control, and its fader moves
+    // continuously. One undo entry per frame of a crossfade would bury every
+    // real edit in the history.
+    getWeave: () => deps.weave.state,
+    setWeave: (w) => deps.weave.replace(w),
     onAfterApply: () => autoHistory.markClean(),
   };
   // History (undo/redo) snapshots session state only — no perf accessors, so a

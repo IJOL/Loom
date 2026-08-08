@@ -32,6 +32,13 @@ export interface WeaveWiring {
    *  the topology changes, so the next tick rebuilds against the new value
    *  rather than answering from the old fold. */
   invalidate: () => void;
+  /** Adopt a loaded weave, IN PLACE.
+   *
+   *  The state object is shared by reference with the panel and with the session
+   *  host — that is what stops a knob moving a copy nobody plays — so replacing
+   *  it wholesale would leave both holding the old one. Its contents are swapped
+   *  instead, and every cached source dropped. */
+  replace: (next: WeaveState) => void;
 }
 
 export interface WeaveWiringDeps {
@@ -176,6 +183,18 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     },
 
     invalidate() {
+      sources.clear();
+    },
+
+    replace(next) {
+      // Mutated, not reassigned: `state` is handed out by reference to the panel
+      // and to the session host at boot, and swapping the variable here would
+      // leave both of them reading the object nobody writes any more.
+      for (const k of Object.keys(state.lanes)) delete state.lanes[k];
+      Object.assign(state.lanes, next.lanes ?? {});
+      for (const k of Object.keys(state.macros)) delete state.macros[k];
+      Object.assign(state.macros, next.macros ?? {});
+      state.seed = Number.isFinite(next.seed) ? next.seed : 1;
       sources.clear();
     },
   };

@@ -880,6 +880,9 @@ const { autoHistory, historyDeps, saveWiringDeps } = createSaveAndHistory({
   getPerformanceFeature: () => performanceFeature,
   refreshMasterComp,
   refreshMasterShaper,
+  // The ONE weave: the same object the panel edits and the scheduler reads, so a
+  // save records what is actually playing.
+  weave: weaveWiring,
 });
 // Stem separation + transcription (see src/app/stems-feature.ts). Installs the
 // clip header's transcribe-this-loop seam as it is built, which is why the call

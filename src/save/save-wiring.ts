@@ -44,6 +44,11 @@ export interface SaveWiringDeps {
   getArrangement?: () => ArrangementState;
   setMode?: (m: string) => void;
   setArrangement?: (a: ArrangementState) => void;
+  /** WEAVE persistence — save/load only, for the same reason the take is: the
+   *  fader moves continuously, and one undo entry per frame of a cross-fade
+   *  would bury every real edit in the history. */
+  getWeave?: () => import('../weave/weave-state').WeaveState;
+  setWeave?: (w: import('../weave/weave-state').WeaveState) => void;
   /** Called after a save file is applied (load/autosave). Used to resync the
    *  AutoHistory baseline so the loaded state is the new clean baseline. */
   onAfterApply?: () => void;
