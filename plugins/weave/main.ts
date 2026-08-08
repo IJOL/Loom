@@ -175,8 +175,21 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   surge.addEventListener('pointerleave', release);
   window.addEventListener('blur', release);
 
+  // Printing is an OUTPUT, not the goal: the weave carries on folding after it.
+  // The button says what happened, because writing a scene leaves nothing on
+  // this screen to look at — the new row is over in Session.
   const print = el('button', 'weave-print');
   print.textContent = '▣ Print to scene';
+  print.title = 'Freeze what is playing right now into a new scene';
+  let printTimer = 0;
+  print.addEventListener('click', () => {
+    const n = ctx.printScene();
+    print.textContent = n > 0
+      ? `▣ Printed ${n} track${n === 1 ? '' : 's'}`
+      : '▣ Nothing weaving';
+    clearTimeout(printTimer);
+    printTimer = window.setTimeout(() => { print.textContent = '▣ Print to scene'; }, 1800);
+  });
   head.append(logo, surge, print);
 
   // ── the pulse: a bar of sixteen cells that lights on the beat ────────────
@@ -304,6 +317,9 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
 
   return () => {
     cancelAnimationFrame(raf);
+    // The print button's "what happened" message is on a timer that outlives
+    // this zone; left running, it writes into a node the panel no longer owns.
+    clearTimeout(printTimer);
     // The blur listener is on WINDOW, so it outlives this zone unless it is
     // taken off explicitly — a panel that leaks one would restore a macro that
     // no longer has a panel behind it.

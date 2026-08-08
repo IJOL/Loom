@@ -306,6 +306,13 @@ export interface PanelContext {
   /** Choose loops or move the position. Passing null clears the lane back to
    *  playing its clip untouched. */
   setLaneWeave(laneId: string, weave: PanelWeave | null): void;
+  /** Freeze what the weave is playing RIGHT NOW into a new scene.
+   *
+   *  An output, never the goal: the panel exists so the music keeps moving, and
+   *  a printed scene is a snapshot you can go back to — the weave carries on
+   *  folding either way. Returns how many lanes were written, so a panel can say
+   *  "nothing was weaving" instead of appearing to do nothing. */
+  printScene(): number;
   /** Put a lane on a topology, KEEPING the loops it already names.
    *
    *  A door of its own rather than something a panel assembles, because which

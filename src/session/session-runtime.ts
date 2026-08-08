@@ -2,10 +2,10 @@
 // queue, and the tick-side scheduler that is called from the main 25 ms loop.
 
 import type { SessionClip, SessionState, LaunchQuantize, SessionLane, ClipSample, SessionScene } from './session';
-import { emptyScene, clipRowCount, cloneClipWithNewId } from './session';
+import { emptyScene, emptyClip, clipRowCount, cloneClipWithNewId } from './session';
 import { tickLane, noteTrigger } from '../core/lane-scheduler';
 import type { WeaveSource } from '../weave/weave-runtime';
-import { TICKS_PER_STEP } from '../core/notes';
+import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
 import { DEFAULT_METER, type TimeSignature } from '../core/meter';
 import { envelopeSubIndex } from '../core/clip-envelope-length';
 import { clipLoopSec, nextLoopEnd, sceneSwitchBoundary } from '../core/launch-timing';
@@ -87,6 +87,49 @@ export function captureSceneFromPlaying(
   while (state.scenes.length <= newRow) {
     state.scenes.push(emptyScene(`Scene ${state.scenes.length + 1}`));
   }
+  return state.scenes[newRow];
+}
+
+/** Write a set of per-lane NOTES into a new scene row.
+ *
+ *  The sibling of `captureSceneFromPlaying`, sharing its row-and-scene
+ *  bookkeeping deliberately: "make a new bottom row and a scene for it" is one
+ *  operation with one set of edge cases, and a second copy would be the one that
+ *  forgot to pad a lane's clips array.
+ *
+ *  What differs is where the notes come from. Capture clones what is PLAYING;
+ *  this takes notes a caller computed — WEAVE's cross-fade at its current
+ *  position, which is not any clip in the session and never will be.
+ *
+ *  A lane with no notes gets an empty slot rather than a silent clip, so the new
+ *  scene reads as "these lanes were weaving" instead of "everything, some of it
+ *  mute". Returns null without mutating when nothing was handed over.
+ */
+export function printScene(
+  state: SessionState,
+  notesByLane: ReadonlyMap<string, NoteEvent[]>,
+  name: string,
+  lengthBars = 1,
+): SessionScene | null {
+  const written = state.lanes.filter((l) => (notesByLane.get(l.id)?.length ?? 0) > 0);
+  if (written.length === 0) return null;
+
+  const newRow = clipRowCount(state);
+  for (const lane of written) {
+    while (lane.clips.length <= newRow) lane.clips.push(null);
+    lane.clips[newRow] = {
+      ...emptyClip(lengthBars),
+      name,
+      // Copied, not referenced: the weave keeps folding after this, and a clip
+      // that shared its array would keep changing under the user — which is the
+      // opposite of what printing is for.
+      notes: notesByLane.get(lane.id)!.map((n) => ({ ...n })),
+    };
+  }
+  while (state.scenes.length <= newRow) {
+    state.scenes.push(emptyScene(`Scene ${state.scenes.length + 1}`));
+  }
+  state.scenes[newRow].name = name;
   return state.scenes[newRow];
 }
 

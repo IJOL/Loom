@@ -346,6 +346,16 @@ function mountWeave(host, ctx) {
   window.addEventListener("blur", release);
   const print = el2("button", "weave-print");
   print.textContent = "\u25A3 Print to scene";
+  print.title = "Freeze what is playing right now into a new scene";
+  let printTimer = 0;
+  print.addEventListener("click", () => {
+    const n = ctx.printScene();
+    print.textContent = n > 0 ? `\u25A3 Printed ${n} track${n === 1 ? "" : "s"}` : "\u25A3 Nothing weaving";
+    clearTimeout(printTimer);
+    printTimer = window.setTimeout(() => {
+      print.textContent = "\u25A3 Print to scene";
+    }, 1800);
+  });
   head.append(logo, surge, print);
   const pulse = el2("div", "weave-pulse");
   const cells = [];
@@ -437,6 +447,7 @@ function mountWeave(host, ctx) {
   frame();
   return () => {
     cancelAnimationFrame(raf);
+    clearTimeout(printTimer);
     window.removeEventListener("blur", release);
     host.replaceChildren();
   };

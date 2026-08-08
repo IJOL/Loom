@@ -17,6 +17,8 @@ import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
 import { createWeaveWiring } from './app/weave-wiring';
 import { applyWeaveParamMacros } from './app/weave-param-macros';
+import { printScene } from './session/session-runtime';
+import type { NoteEvent } from './core/notes';
 import { wireLayersRack } from './engines/layers-rack-ui';
 import { LAYERS_ENGINE_ID } from './engines/layers-engine';
 import { createRecordingFeature } from './app/recording-feature';
@@ -618,6 +620,21 @@ const performanceFeature = createPerformanceFeature({
   // The desk's mute/solo, shared by reference: a panel's M and S and the
   // mixer's are the same two buttons, not two that can disagree.
   muteState, soloState, applyMuteSolo,
+  // Freeze what the weave is playing right now into a new scene. It asks the
+  // SAME source the scheduler plays from, so the printed bar is the bar you
+  // were hearing rather than a re-derivation that could disagree with it.
+  printWeaveScene: () => withUndo(_discreteHistoryDeps!, () => {
+    const notes = new Map<string, NoteEvent[]>();
+    for (const lane of sessionHost.state.lanes) {
+      const woven = weaveWiring.notesFor(lane.id)?.();
+      if (woven?.length) notes.set(lane.id, woven);
+    }
+    const scene = printScene(sessionHost.state, notes, 'Weave');
+    if (!scene) return 0;
+    sessionHost.renderWithMixer();
+    sessionHost.deps.saveSession?.();
+    return notes.size;
+  }),
   swapLaneEngine: onEngineChangeUndoable,
   // The host's OWN applyPresetForLane, not a fresh call to applyPresetToEngine:
   // that closure also mirrors the recalled base values into engineState, which

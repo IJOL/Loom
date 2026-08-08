@@ -49,6 +49,10 @@ export interface PanelContextDeps {
   swapLaneEngine?: (laneId: string, engineId: string) => void;
   /** Apply a preset to a lane, likewise through the host's own path. */
   applyLanePreset?: (laneId: string, presetName: string) => void;
+  /** Freeze the weave into a new scene. Returns how many lanes were written.
+   *  Absent in fixtures with no session — the button then reports nothing
+   *  written rather than pretending. */
+  printWeaveScene?: () => number;
   /** The mixer's OWN mute and solo tables, not copies. A panel that toggled a
    *  private flag would let a lane read soloed here and muted at the desk.
    *  Absent in fixtures with no audio graph — the buttons then do nothing
@@ -255,6 +259,10 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
       deps.weave.lanes[laneId] = { ...cur, weave };
       deps.onWeaveChanged?.(laneId);
+    },
+
+    printScene() {
+      return deps.printWeaveScene?.() ?? 0;
     },
 
     setLaneTopology(laneId, kind) {

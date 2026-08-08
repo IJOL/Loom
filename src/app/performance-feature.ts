@@ -81,6 +81,8 @@ export interface PerformanceFeatureDeps {
    *  set of its own. */
   swapLaneEngine?: (laneId: string, engineId: string) => void;
   applyLanePreset?: (laneId: string, presetName: string) => void;
+  /** Freeze the weave into a new scene; returns how many lanes were written. */
+  printWeaveScene?: () => number;
   /** Passed through to a panel's context: the mixer's own mute/solo tables, so
    *  a panel's M and S buttons and the desk's are the same two buttons. */
   muteState?: Record<string, boolean>;
@@ -423,6 +425,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         onWeaveChanged: () => deps.onWeaveChanged?.(),
         swapLaneEngine: deps.swapLaneEngine,
         applyLanePreset: deps.applyLanePreset,
+        printWeaveScene: deps.printWeaveScene,
         // The desk's own tables, by reference. A panel muting a copy would look
         // like it worked and change nothing.
         muteState: deps.muteState,
