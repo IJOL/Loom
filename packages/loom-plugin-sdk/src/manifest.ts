@@ -353,6 +353,10 @@ export interface PanelContext {
    *  the fan, so locking one does not re-space the others under it. */
   laneLocked(laneId: string): boolean;
   setLaneLocked(laneId: string, locked: boolean): void;
+  /** Whether the weave is bypassed: set, it contributes nothing and every lane
+   *  schedules exactly as it did before the panel existed. */
+  bypassed(): boolean;
+  setBypassed(on: boolean): void;
   /** The bar this lane is about to play, as it stands RIGHT NOW.
    *
    *  Folded by the same source the scheduler reads, so what a panel draws and

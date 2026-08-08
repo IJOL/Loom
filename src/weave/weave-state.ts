@@ -12,6 +12,7 @@ import { queueWeights, type QueueState } from './topology-queue';
 import { cloudWeights, type CloudState } from './topology-cloud';
 import { WEAVE_MACROS } from './weave-catalog';
 import type { DriftMode } from './flow';
+import type { StepMode } from '../automation/automation-steps';
 
 export type LaneWeave =
   | { kind: 'ab'; state: AbState }
@@ -72,6 +73,41 @@ export interface FlowState {
   base?: Record<string, number>;
 }
 
+/** A curve you draw that keeps playing after you let go.
+ *
+ *  The engine is the painter's — `automation/automation-steps` — and so is the
+ *  grid; what is different here is WHERE it lives. The clip painter attaches a
+ *  curve to a CLIP, and in this panel there are no clips to speak of: the lane's
+ *  clip is a vessel the weave fills, and the material is a loop. A curve tied to
+ *  the vessel would be tied to the one thing that does not matter.
+ *
+ *  So it belongs to the weave. It is saved with it, travels with it, and does
+ *  not care which clip happens to be in the grid. */
+export interface WeaveSteps {
+  /** A destination id in the catalogue's own vocabulary. Empty means the curve
+   *  is drawn and lands nowhere — a legitimate state: you sketch a shape first
+   *  and decide what it moves after. */
+  destId: string;
+  /** 0..1 each. Their COUNT is the step count; a second number to keep in step
+   *  with the array is a second number that can disagree with it. */
+  values: number[];
+  mode: StepMode;
+  /** Off by default. Every other control here is one you hold; this is the one
+   *  that goes on writing after your hand leaves, so it starts silent. */
+  on: boolean;
+}
+
+export function defaultWeaveSteps(): WeaveSteps {
+  // A rise rather than a flat line: flat is the one shape that cannot show you
+  // whether the curve is running.
+  return {
+    destId: '',
+    values: Array.from({ length: 16 }, (_, i) => i / 15),
+    mode: 'hold',
+    on: false,
+  };
+}
+
 export interface WeaveState {
   lanes: Record<string, LaneSelection>;
   macros: Record<string, number>;
@@ -79,6 +115,18 @@ export interface WeaveState {
    *  moves a lane to a different style behind the user's back. */
   seed: number;
   flow: FlowState;
+  steps: WeaveSteps;
+  /** WEAVE unplugged from the clock: it contributes no notes and does not
+   *  travel. Everything else in Loom carries on exactly as it does with this
+   *  panel closed — the transport plays, the lanes play their own clips, the
+   *  desk is untouched.
+   *
+   *  For a while it also stopped and MUTED the lanes it drives, on the reasoning
+   *  that silence you can hear beats silence you deduce. Wrong twice: it reached
+   *  into the mixer to answer a question about this panel, and it left a session
+   *  saved silent with the button unable to undo it. A switch that unplugs one
+   *  thing must not reach for another. */
+  bypass: boolean;
 }
 
 export function defaultWeaveState(): WeaveState {
@@ -86,7 +134,12 @@ export function defaultWeaveState(): WeaveState {
   // one session's edits leak into the next.
   const macros: Record<string, number> = {};
   for (const m of WEAVE_MACROS) macros[m.id] = m.neutral;
-  return { lanes: {}, macros, seed: 1, flow: { drift: 'together', speedBars: 0 } };
+  return {
+    lanes: {}, macros, seed: 1,
+    flow: { drift: 'together', speedBars: 0 },
+    steps: defaultWeaveSteps(),
+    bypass: false,
+  };
 }
 
 /** The ONE place that knows which topology a lane uses. Everything downstream

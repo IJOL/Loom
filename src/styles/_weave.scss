@@ -189,6 +189,27 @@
 
 .weave-rack.bars-open .weave-bar { height: 54px; }
 
+// Silence you can HEAR, not deduce. Red because it is the one control here that
+// takes something away, and it has to be findable without reading.
+.weave-halt {
+  background: transparent;
+  color: var(--red, #ff5c5c);
+  border: 1px solid var(--red, #ff5c5c);
+  border-radius: 3px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+
+  &:hover { background: var(--red-soft, rgba(255, 92, 92, 0.15)); }
+  &.on {
+    background: var(--red, #ff5c5c);
+    border-color: var(--red, #ff5c5c);
+    color: var(--bg);
+  }
+}
+
 .weave-bars-toggle {
   background: transparent;
   color: var(--text-dim, #9a9aa2);

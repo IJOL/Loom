@@ -201,6 +201,11 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     state,
 
     advance(nowSec) {
+      // Disconnected means disconnected: not contributing AND not travelling.
+      // A flow that went on moving lane positions while the panel was off would
+      // be changing the scene behind the user's back, and they would find it
+      // somewhere else entirely when they switched back on.
+      if (state.bypass) { lastFlow = -1; return; }
       const speed = state.flow?.speedBars ?? 0;
       if (!(speed > 0)) {
         lastFlow = -1;
@@ -239,6 +244,11 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     },
 
     notesFor(laneId) {
+      // Bypassed, the panel contributes NOTHING: every lane schedules exactly as
+      // it did before WEAVE existed. Checked here rather than inside the source
+      // because "nothing to say" is already this function's own answer — the
+      // additive path is the one that was always there.
+      if (state.bypass) return undefined;
       if (sources.has(laneId)) return sources.get(laneId);
       const source = build(laneId);
       // Only real sources are cached. "Nothing to say" costs one map read and

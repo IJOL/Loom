@@ -253,15 +253,39 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   };
   bars.addEventListener('click', () => { rack.classList.toggle('bars-open'); paintBars(); });
 
+  // WEAVE's connection to the clock, on and off. That is the whole of it.
+  //
+  // It stopped and muted the lanes for a while, and that was wrong twice: it
+  // reached into the mixer to answer a question about this panel, and it left a
+  // session saved silent with no way back. Loom has to behave exactly as it does
+  // with this panel closed — the transport plays, the lanes play their clips,
+  // the desk is untouched. Off, the weave simply does not contribute and does
+  // not travel; press the transport and nothing here starts up.
+  const halt = el('button', 'weave-halt');
+  const paintHalt = () => {
+    const off = ctx.bypassed();
+    halt.textContent = off ? '⏻ WEAVE OFF' : '⏻ WEAVE ON';
+    halt.classList.toggle('on', off);
+    halt.title = off
+      ? 'Connect the weave back to the clock'
+      : 'Disconnect the weave from the clock — the rest of Loom carries on as normal';
+    halt.setAttribute('aria-pressed', String(off));
+  };
+  halt.addEventListener('click', () => {
+    ctx.setBypassed(!ctx.bypassed());
+    paintHalt();
+  });
+
   const spacer = el('span', 'weave-head-spacer');
 
   head.append(
     logo,
     field('Key', keySel, scaleSel),
     field('Style', styleSel),
-    spacer, bars, reseed, surge, print,
+    spacer, bars, reseed, halt, surge, print,
   );
   paintBars();
+  paintHalt();
 
   // ── the pulse: a bar of sixteen cells that lights on the beat ────────────
   //

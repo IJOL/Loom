@@ -329,6 +329,26 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // would rebuild every source to fold exactly the same notes.
     },
 
+    bypassed() {
+      return deps.weave.bypass === true;
+    },
+
+    setBypassed(on) {
+      // Unplug the weave from the clock, and NOTHING else.
+      //
+      // It muted and stopped the lanes for a while, which was wrong twice over:
+      // it reached into the mixer to answer a question about the weave, and it
+      // left a session saved silent. Loom must behave exactly as it does with
+      // this panel closed — the lanes keep playing their own clips, the desk is
+      // untouched, and the only thing that changes is that WEAVE stops
+      // contributing and stops travelling.
+      deps.weave.bypass = on;
+      // Every cached fold is now answering the wrong question, and the next tick
+      // has to ask again — off, so the lanes weave once more; on, so nothing is
+      // left holding a source the gate no longer consults.
+      deps.onWeaveChanged?.('*');
+    },
+
     laneNotes(laneId) {
       // The SAME source the scheduler reads. Folding again here would be a
       // picture of a bar nobody plays — and this drawing exists precisely to be

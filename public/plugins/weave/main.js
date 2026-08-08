@@ -530,6 +530,18 @@ function mountWeave(host, ctx) {
     rack.classList.toggle("bars-open");
     paintBars();
   });
+  const halt = el2("button", "weave-halt");
+  const paintHalt = () => {
+    const off = ctx.bypassed();
+    halt.textContent = off ? "\u23FB WEAVE OFF" : "\u23FB WEAVE ON";
+    halt.classList.toggle("on", off);
+    halt.title = off ? "Connect the weave back to the clock" : "Disconnect the weave from the clock \u2014 the rest of Loom carries on as normal";
+    halt.setAttribute("aria-pressed", String(off));
+  };
+  halt.addEventListener("click", () => {
+    ctx.setBypassed(!ctx.bypassed());
+    paintHalt();
+  });
   const spacer = el2("span", "weave-head-spacer");
   head.append(
     logo,
@@ -538,10 +550,12 @@ function mountWeave(host, ctx) {
     spacer,
     bars,
     reseed,
+    halt,
     surge,
     print
   );
   paintBars();
+  paintHalt();
   const pulse = el2("div", "weave-pulse");
   const cells = [];
   for (let i = 0; i < 16; i++) {
