@@ -59,11 +59,29 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *  edited in place, the lane's style changes, the key changes. */
   const notesOf = (laneId: string) => (loopId: string): NoteEvent[] | undefined => {
     const session = deps.getState?.();
-    return weaveLoopNotes(loopId, weaveLoopContext(
-      session?.lanes.find((l) => l.id === laneId),
+    return weaveLoopNotes(loopId, loopContext(laneId));
+  };
+
+  /** The lane's loop context, macros included. Built here and in panel-context
+   *  from the SAME function, because one lists the loops and the other resolves
+   *  them: a lane that strayed to another style in one and not the other would
+   *  offer loops it then refuses to play. */
+  const loopContext = (laneId: string) => {
+    const session = deps.getState?.();
+    const lanes = session?.lanes ?? [];
+    return weaveLoopContext(
+      lanes.find((l) => l.id === laneId),
       session?.musicality ?? DEFAULT_MUSICALITY,
       state.lanes[laneId]?.forcedStyle,
-    ));
+      {
+        styleMix: macro('styleMix'),
+        darkness: macro('darkness'),
+        // The lane's POSITION, so the draw is stable while the session is: a
+        // lane must not change style because another was renamed.
+        laneIndex: Math.max(0, lanes.findIndex((l) => l.id === laneId)),
+        seed: state.seed,
+      },
+    );
   };
 
   /** The two macros that rewrite notes. A getter, so a knob moved while the
@@ -107,7 +125,10 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
           locked: state.lanes[laneId]?.locked ?? false,
           harmonyLeader: state.lanes[laneId]?.harmonyLeader ?? false,
         };
-        const m = musicality();
+        // The lane's own context, so the scale Darkness chose is the scale the
+        // melodic blend walks its degrees in. Reading the session's here instead
+        // would let Darkness pick the loops and then blend them in another key.
+        const m = loopContext(laneId);
         // A lane whose instrument HAS layers gets its notes routed by origin:
         // the merged bar comes out shared between the loops' own instruments
         // rather than played by one. Asked of the lane's engine, so it costs

@@ -77,11 +77,28 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
   /** Everything the loop list and the loop resolver need about a lane, gathered
    *  once. Built per call rather than cached: the style, the key and the lock
    *  all move, and a stale copy would list loops the lane no longer draws. */
-  const loopContext = (laneId: string): WeaveLoopContext => weaveLoopContext(
-    deps.sessionHost.state.lanes.find((l) => l.id === laneId),
-    deps.sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
-    deps.weave.lanes[laneId]?.forcedStyle,
-  );
+  const loopContext = (laneId: string): WeaveLoopContext => {
+    const lanes = deps.sessionHost.state.lanes;
+    const macro = (id: string) => {
+      const v = deps.weave.macros[id];
+      return Number.isFinite(v) ? v : macroNeutral(id);
+    };
+    return weaveLoopContext(
+      lanes.find((l) => l.id === laneId),
+      deps.sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
+      deps.weave.lanes[laneId]?.forcedStyle,
+      // The macros are passed here for the same reason the scheduler passes
+      // them: this LISTS the loops and that RESOLVES them, so a lane that
+      // strayed to another style in one and not the other would offer loops it
+      // then refuses to play.
+      {
+        styleMix: macro('styleMix'),
+        darkness: macro('darkness'),
+        laneIndex: Math.max(0, lanes.findIndex((l) => l.id === laneId)),
+        seed: deps.weave.seed,
+      },
+    );
+  };
 
   return {
     lanes(): PanelLane[] {

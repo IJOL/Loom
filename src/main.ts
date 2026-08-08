@@ -16,6 +16,7 @@ import { createKnobMounter } from './app/knob-mounting';
 import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
 import { createWeaveWiring } from './app/weave-wiring';
+import { applyWeaveParamMacros } from './app/weave-param-macros';
 import { wireLayersRack } from './engines/layers-rack-ui';
 import { LAYERS_ENGINE_ID } from './engines/layers-engine';
 import { createRecordingFeature } from './app/recording-feature';
@@ -598,7 +599,22 @@ const performanceFeature = createPerformanceFeature({
   // One weave state, shared with the host's gate: a knob that moved a copy
   // would change a panel and play nothing.
   weave: weaveWiring.state,
-  onWeaveChanged: () => weaveWiring.invalidate(),
+  onWeaveChanged: () => {
+    // Two halves, because the six macros reach the sound two different ways.
+    // Density and Energy rewrite NOTES, so dropping the cached weave source is
+    // all they need — the next tick refolds. Space and Motion write PARAMS, and
+    // a param only moves when something writes it.
+    weaveWiring.invalidate();
+    // On the change, never per tick: a param written sixty times a second with
+    // the same value is sixty ramps the smoother chases for nothing.
+    applyWeaveParamMacros(weaveWiring.state.macros, {
+      destinations: () => destinations.list(),
+      // Playback semantics — the value reaches the audio and NOT the lane's
+      // saved sound. The macro owns it; the weave's own state is what should
+      // persist, and that is a separate slice.
+      write: (id, v, ranges) => writes?.applyPlaybackUnmountedWrite(id, v, ranges),
+    });
+  },
   // The desk's mute/solo, shared by reference: a panel's M and S and the
   // mixer's are the same two buttons, not two that can disagree.
   muteState, soloState, applyMuteSolo,

@@ -131,6 +131,23 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
     expect(w.notesFor('lane1')).toBeUndefined();
   });
 
+  it('lets Darkness choose the scale the blend walks, without touching the session', () => {
+    // The toolbar's key and scale are the user's. A macro that overwrote them
+    // would give one number two owners AND leave the scene in whatever scale
+    // the knob happened to stop on.
+    const state = session();
+    const w = wiring(state);
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
+      locked: false, harmonyLeader: false,
+    };
+    const before = state.musicality.scale;
+    w.state.macros.darkness = 1;
+    w.invalidate();
+    expect(w.notesFor('lane1')).toBeDefined();
+    expect(state.musicality.scale).toBe(before);
+  });
+
   it('leaves the lane untouched when its loops no longer exist', () => {
     // A save from another machine, or a deleted clip. Silence would be worse
     // than ignoring the weave.

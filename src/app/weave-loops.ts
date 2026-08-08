@@ -16,6 +16,7 @@ import type { ScaleId, StyleId } from '../core/musicality';
 import type { SessionLane } from '../session/session';
 import { isHarmonic } from '../plugins/capabilities';
 import { formatLoopId, parseLoopId } from '../weave/loop-ids';
+import { scaleForDarkness, styleForLane } from '../weave/style-mix';
 import { patternNotes, patternsFor, type PatternKind } from '../patterns/pattern-library';
 
 export interface WeaveLoopContext {
@@ -33,6 +34,24 @@ export interface WeaveLoopContext {
   lock: boolean;
 }
 
+/** Where the two macros that move MUSICAL state land.
+ *
+ *  Deliberately local to the weave rather than written into the session: the
+ *  toolbar's key and scale are the user's, and a macro that overwrote them would
+ *  give one number two owners — and leave the scene in whatever scale the knob
+ *  happened to stop on. Here they colour what the weave DRAWS and BLENDS, and
+ *  the session says what it always said. */
+export interface WeaveMusicalMacros {
+  /** 0 ⇒ every lane stays on the session's style. Above it, some lanes stray. */
+  styleMix: number;
+  /** Chooses the scale the blend walks its degrees in, brightest to darkest. */
+  darkness: number;
+  /** Which lane this is, and the session's seed. Together they make the draw
+   *  repeatable: a lane must not change style because a curve was repainted. */
+  laneIndex: number;
+  seed: number;
+}
+
 /** Everything the list and the resolver need about a lane, gathered ONCE.
  *
  *  Both callers must agree exactly — the panel LISTS these loops and the
@@ -40,20 +59,27 @@ export interface WeaveLoopContext {
  *  same three fallbacks written twice. An id that lists but resolves differently
  *  is a loop that shows in the dropdown and plays something else.
  *
- *  `forcedStyle` is the lane's own choice; absent, it inherits the session's. */
+ *  `forcedStyle` is the lane's own choice, and it beats the macro: the override
+ *  exists precisely so the user can stop a lane straying. */
 export function weaveLoopContext(
   lane: SessionLane | undefined,
   musicality: { key: number; scale: ScaleId; style: StyleId; lock: boolean },
   forcedStyle: StyleId | undefined,
+  macros?: WeaveMusicalMacros,
 ): WeaveLoopContext {
   return {
     lane,
-    style: forcedStyle ?? musicality.style,
+    style: macros
+      ? styleForLane(musicality.style, macros.styleMix, macros.laneIndex, macros.seed, forcedStyle)
+      : forcedStyle ?? musicality.style,
     // Asked through the capability door, so a plugin drum machine answers for
     // itself rather than the core keeping a list of ids that mean "drums".
     harmonic: lane ? isHarmonic(lane.engineId) : true,
     key: musicality.key,
-    scale: musicality.scale,
+    // At the neutral, darkness has no opinion and the session's scale stands.
+    scale: macros && macros.darkness !== 0.5
+      ? scaleForDarkness(macros.darkness)
+      : musicality.scale,
     lock: musicality.lock,
   };
 }
