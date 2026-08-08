@@ -194,11 +194,13 @@
   color: var(--text-faint);
 }
 
-// Shorter here than the control's own default: a lane row is a strip, and 54px
-// of pad per lane stacks into something you have to scroll.
+// SQUARE, and big enough to aim at. It was 60x44, and a rectangle is the wrong
+// shape for this control by construction: the same diagonal drag meant a
+// different amount on each axis, which is why the cloud read as incomprehensible
+// rather than merely small.
 .weave-lane .pad2d {
-  height: 44px;
-  width: 60px;
+  height: 74px;
+  width: 74px;
   border-color: var(--border);
 }
 
@@ -208,7 +210,7 @@
 // at this size — at 20px there is no room for a word.
 .weave-transport {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 2px;
 }
 
@@ -223,6 +225,9 @@
   &.play.on   { background: var(--green); border-color: var(--green); color: var(--bg); }
   &.mute.on   { background: var(--amber); border-color: var(--amber); color: var(--bg); }
   &.solo.on   { background: var(--blue, #4a9eff); border-color: var(--blue, #4a9eff); color: var(--bg); }
+  // Held, not silenced: a locked lane is still playing, so it must not borrow
+  // mute's colour. Purple says "this one is not travelling".
+  &.lock.on   { background: var(--knob-purple, #a77ad9); border-color: var(--knob-purple, #a77ad9); color: var(--bg); }
 }
 
 // ── topology: which control this lane is played with ───────────────────────
@@ -284,10 +289,25 @@
 
 // Four corners drawn WHERE THEY ARE, so the user is not matching names to
 // corners by counting.
-.weave-corners {
+// The cloud: four pickers at four corners with the pad between them, so which
+// name belongs to which corner needs no counting.
+.weave-cloud {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 96px));
-  gap: 2px;
+  grid-template-columns: minmax(0, 104px) 74px minmax(0, 104px);
+  grid-template-rows: auto auto;
+  gap: 3px 6px;
+  align-items: center;
+  justify-items: stretch;
+
+  .cn-tl { grid-area: 1 / 1; }
+  .cn-tr { grid-area: 1 / 3; }
+  .cn-bl { grid-area: 2 / 1; }
+  .cn-br { grid-area: 2 / 3; }
+  .cn-pad { grid-area: 1 / 2 / 3 / 3; }
+
+  // Each name reads toward its own side, which is the cheapest way to say
+  // "this box is over there".
+  .cn-tr, .cn-br { text-align: right; direction: rtl; }
 }
 
 .weave-hint {

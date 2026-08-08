@@ -254,6 +254,48 @@ describe('createPanelContext — swapping a lane\'s instrument', () => {
   });
 });
 
+describe('createPanelContext — pointing a lane at another style', () => {
+  it('re-picks the loops, because that is what the control is FOR', () => {
+    // Left alone the selection went on naming the old style's ids — which still
+    // RESOLVE, so the lane kept playing the style you had just left while every
+    // picker read as a dash. Reported as "switching Session and Weave loses what
+    // I had in cloud": the style change orphaned it, and the remount showed it.
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      h.weave.lanes.lane1 = {
+        weave: { kind: 'ab', a: 'lib:acid-techno:bass:0', b: 'lib:acid-techno:bass:1', x: 0 },
+        locked: false, harmonyLeader: false,
+      };
+      h.ctx.setLaneStyle('lane1', 'house');
+      const sel = h.weave.lanes.lane1?.weave as { a: string } | null;
+      expect(sel?.a).not.toBe('lib:acid-techno:bass:0');
+    });
+  });
+});
+
+describe('createPanelContext — the lane lock', () => {
+  it('round-trips, and survives switching topology', () => {
+    // Beside mute and solo rather than inside the weaving control, because it is
+    // the same kind of decision — what this one track does while the rest carry
+    // on — and rebuilding the cell must not unlock it.
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      h.ctx.setLaneLocked('lane1', true);
+      expect(h.ctx.laneLocked('lane1')).toBe(true);
+      h.ctx.setLaneTopology('lane1', 'cloud');
+      expect(h.ctx.laneLocked('lane1')).toBe(true);
+    });
+  });
+
+  it('does not invalidate the weave — the lock changes nothing PLAYING', () => {
+    // Only whether the flow may move this lane next tick. Invalidating would
+    // rebuild every source to fold exactly the same notes.
+    const h = harness(['lane1']);
+    h.ctx.setLaneLocked('lane1', true);
+    expect(h.changed).toEqual([]);
+  });
+});
+
 describe('createPanelContext — the master flow', () => {
   it('reports where the lanes actually are', () => {
     // Read off the LANES rather than remembered beside the speed: with a journey

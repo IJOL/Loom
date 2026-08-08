@@ -140,6 +140,34 @@ describe('applyFlow', () => {
     expect(lanes.l0.weave!.x).toBeCloseTo(0.5);
   });
 
+  it('holds a LOCKED lane where it is', () => {
+    // The way to keep one part still while the rest of the scene travels. The
+    // field existed and nothing read it, so the lock was a promise the panel
+    // could not keep.
+    const lanes: Record<string, { weave?: { x: number } | null; locked?: boolean }> = {
+      l0: { weave: { x: 0.2 }, locked: true },
+      l1: { weave: { x: 0.2 } },
+    };
+    applyFlow(lanes, ['l0', 'l1'], 0.9, 'together');
+    expect(lanes.l0.weave!.x).toBe(0.2);
+    expect(lanes.l1.weave!.x).toBeCloseTo(0.9);
+  });
+
+  it('still counts a locked lane in the fan', () => {
+    // Locking one lane must not re-space the others under it: the lock is a lane
+    // sitting out the journey, not a lane leaving the scene.
+    const spaced = (locked: boolean) => {
+      const lanes: Record<string, { weave?: { x: number } | null; locked?: boolean }> = {
+        l0: { weave: { x: 0 }, locked },
+        l1: { weave: { x: 0 } },
+        l2: { weave: { x: 0 } },
+      };
+      applyFlow(lanes, ['l0', 'l1', 'l2'], 0, 'offset');
+      return [lanes.l1.weave!.x, lanes.l2.weave!.x];
+    };
+    expect(spaced(true)).toEqual(spaced(false));
+  });
+
   it('leaves the rest of a selection alone — moving is travelling, not re-choosing', () => {
     const lanes: Record<string, { weave?: { x: number; a?: string } | null }> =
       { l0: { weave: { x: 0, a: 'lib:house:bass:2' } } };

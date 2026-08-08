@@ -288,7 +288,24 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     setLaneStyle(laneId, styleId) {
       const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
       deps.weave.lanes[laneId] = { ...cur, forcedStyle: styleId as StyleId };
+      // The whole point of this control is WHICH shelf the lane draws from, so
+      // the loops have to move with it. Left alone the selection went on naming
+      // the old style's ids — which still RESOLVE, so the lane kept playing the
+      // style you just left while every picker showed a dash.
+      reseedLaneIfLoopsMoved(laneId);
       deps.onWeaveChanged?.(laneId);
+    },
+
+    laneLocked(laneId) {
+      return deps.weave.lanes[laneId]?.locked ?? false;
+    },
+
+    setLaneLocked(laneId, locked) {
+      const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
+      deps.weave.lanes[laneId] = { ...cur, locked };
+      // No onWeaveChanged: the lock does not change what this lane is PLAYING
+      // right now, only whether the flow may move it next tick. Invalidating
+      // would rebuild every source to fold exactly the same notes.
     },
 
     laneWeave(laneId) {

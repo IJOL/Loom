@@ -40,6 +40,25 @@ const el = (tag: string, cls?: string, text?: string) => {
   return n;
 };
 
+/** A readable name for a loop the current list does not offer.
+ *
+ *  Parsed from the id rather than looked up, because the whole situation IS "the
+ *  host is not offering this one" — there is nowhere to look it up. `lib:` ids
+ *  read `style:kind:index`; a clip id is shown as a clip. Split from the right:
+ *  a clip id may contain colons. */
+function offShelfLabel(id: string): string | undefined {
+  if (id.startsWith('clip:')) return 'Another clip';
+  // Only LOOP ids. This picker also draws the engine and the preset columns,
+  // and inventing a name for an unknown preset would have the row claim a
+  // preset the lane is not on — the very thing the dash is right about.
+  if (!id.startsWith('lib:')) return undefined;
+  const parts = id.split(':');
+  const index = parts[parts.length - 1];
+  const kind = parts[parts.length - 2];
+  const style = parts.slice(1, -2).join(':');
+  return `${style} ${kind} #${Number(index) + 1}`;
+}
+
 /** A dropdown of host-supplied choices, with `current` selected.
  *
  *  A lane whose current value the host cannot name gets no selection rather than
@@ -61,9 +80,16 @@ export function picker(
     return sel;
   }
 
-  if (current === undefined || !choices.some((c) => c.id === current)) {
-    const o = el('option', undefined, '—') as HTMLOptionElement;
-    o.value = '';
+  const offered = current !== undefined && choices.some((c) => c.id === current);
+  if (!offered) {
+    // A dash means NOTHING IS CHOSEN. When something IS chosen and merely is not
+    // on the shelf this list shows — a lane pointed at another style, a save from
+    // a session with other clips — the dash was a lie: the loop went on playing
+    // while four pickers read as empty. Show it, marked as off-shelf.
+    const named = current ? offShelfLabel(current) : undefined;
+    const o = el('option', undefined, named ?? '—') as HTMLOptionElement;
+    o.value = named ? current! : '';
+    o.selected = true;
     sel.appendChild(o);
   }
   // Grouped when the host says so. The pattern library runs to hundreds of
@@ -192,20 +218,29 @@ function weaveCell(
   // Cloud: four corners round a pad, laid out where they actually are. A list of
   // four names beside the box would leave the user matching names to corners by
   // counting.
-  const corners = el('div', 'weave-corners');
-  for (let i = 0; i < 4; i++) {
-    corners.appendChild(slot(i, sel.corners[i] ?? '', (id) => ({
+  // Each picker sits AT its corner, with the pad between them. A 2x2 block of
+  // dropdowns beside the box was the first arrangement and it left the user
+  // matching names to corners by counting — which is most of why the cloud read
+  // as incomprehensible.
+  const AT = ['cn-tl', 'cn-tr', 'cn-bl', 'cn-br'];
+  const cloud = el('div', 'weave-cloud');
+  const pickers = Array.from({ length: 4 }, (_, i) => {
+    const p = slot(i, sel.corners[i] ?? '', (id) => ({
       ...sel,
       corners: sel.corners.map((c, k) => (k === i ? id : c)),
-    })));
-  }
+    }));
+    p.classList.add(AT[i]);
+    return p;
+  });
   const pad = Loom.controls.pad2d({
     x: sel.x,
     y: sel.y,
-    label: 'Weave position between the four loops',
+    label: 'Drag: how much of each of the four loops is playing',
     onChange: (x, y) => { ctx.setLaneWeave(laneId, { ...sel, x, y }); },
   });
-  cell.append(corners, pad.el);
+  pad.el.classList.add('cn-pad');
+  cloud.append(pickers[0], pad.el, pickers[1], pickers[2], pickers[3]);
+  cell.appendChild(cloud);
   let at = { x: sel.x, y: sel.y };
   return {
     el: cell,
@@ -267,6 +302,14 @@ export function buildLaneRow(
     ctx.setLaneSoloed(lane.id, !ctx.laneTransport(lane.id).soloed);
     syncTransport();
   });
+  // The way to keep one part STILL while the rest of the scene travels. Beside
+  // mute and solo because it is the same kind of decision — what this one track
+  // does while the others carry on — and not a property of the weaving control,
+  // which is why it survives switching topology.
+  const lock = tbtn('lock', '🔒', 'Hold this track where it is — the flow moves everything else', () => {
+    ctx.setLaneLocked(lane.id, !ctx.laneLocked(lane.id));
+    syncTransport();
+  });
 
   const syncTransport = () => {
     const t = ctx.laneTransport(lane.id);
@@ -274,6 +317,7 @@ export function buildLaneRow(
     stop.disabled = !t.playing;
     mute.classList.toggle('on', t.muted);
     solo.classList.toggle('on', t.soloed);
+    lock.classList.toggle('on', ctx.laneLocked(lane.id));
   };
   syncTransport();
 

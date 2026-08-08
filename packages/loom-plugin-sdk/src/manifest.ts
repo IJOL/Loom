@@ -326,6 +326,13 @@ export interface PanelContext {
   /** Point a lane at another style. Its loops change; what it is weaving does
    *  not, until the user picks again. */
   setLaneStyle(laneId: string, styleId: string): void;
+  /** Whether this lane sits out the master flow's journey.
+   *
+   *  A locked lane holds its position while everything else travels — the way
+   *  you keep one part still and let the rest move around it. It still counts in
+   *  the fan, so locking one does not re-space the others under it. */
+  laneLocked(laneId: string): boolean;
+  setLaneLocked(laneId: string, locked: boolean): void;
   /** What the lane is weaving, or null when no loops have been chosen. */
   laneWeave(laneId: string): PanelWeave | null;
   /** Choose loops or move the position. Passing null clears the lane back to

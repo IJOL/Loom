@@ -10,6 +10,15 @@ var el = (tag, cls, text) => {
   if (text !== void 0) n.textContent = text;
   return n;
 };
+function offShelfLabel(id) {
+  if (id.startsWith("clip:")) return "Another clip";
+  if (!id.startsWith("lib:")) return void 0;
+  const parts = id.split(":");
+  const index = parts[parts.length - 1];
+  const kind = parts[parts.length - 2];
+  const style = parts.slice(1, -2).join(":");
+  return `${style} ${kind} #${Number(index) + 1}`;
+}
 function picker(cls, label, choices, current, onPick) {
   const sel = document.createElement("select");
   sel.className = cls;
@@ -19,9 +28,12 @@ function picker(cls, label, choices, current, onPick) {
     sel.disabled = true;
     return sel;
   }
-  if (current === void 0 || !choices.some((c) => c.id === current)) {
-    const o = el("option", void 0, "\u2014");
-    o.value = "";
+  const offered = current !== void 0 && choices.some((c) => c.id === current);
+  if (!offered) {
+    const named = current ? offShelfLabel(current) : void 0;
+    const o = el("option", void 0, named ?? "\u2014");
+    o.value = named ? current : "";
+    o.selected = true;
     sel.appendChild(o);
   }
   const groups = /* @__PURE__ */ new Map();
@@ -119,22 +131,27 @@ function weaveCell(laneId, ctx, loops, onChanged) {
       }
     };
   }
-  const corners = el("div", "weave-corners");
-  for (let i = 0; i < 4; i++) {
-    corners.appendChild(slot(i, sel.corners[i] ?? "", (id) => ({
+  const AT = ["cn-tl", "cn-tr", "cn-bl", "cn-br"];
+  const cloud = el("div", "weave-cloud");
+  const pickers = Array.from({ length: 4 }, (_, i) => {
+    const p = slot(i, sel.corners[i] ?? "", (id) => ({
       ...sel,
       corners: sel.corners.map((c, k) => k === i ? id : c)
-    })));
-  }
+    }));
+    p.classList.add(AT[i]);
+    return p;
+  });
   const pad = Loom.controls.pad2d({
     x: sel.x,
     y: sel.y,
-    label: "Weave position between the four loops",
+    label: "Drag: how much of each of the four loops is playing",
     onChange: (x, y) => {
       ctx.setLaneWeave(laneId, { ...sel, x, y });
     }
   });
-  cell.append(corners, pad.el);
+  pad.el.classList.add("cn-pad");
+  cloud.append(pickers[0], pad.el, pickers[1], pickers[2], pickers[3]);
+  cell.appendChild(cloud);
   let at = { x: sel.x, y: sel.y };
   return {
     el: cell,
@@ -191,12 +208,17 @@ function buildLaneRow(lane, ctx, engines) {
     ctx.setLaneSoloed(lane.id, !ctx.laneTransport(lane.id).soloed);
     syncTransport();
   });
+  const lock = tbtn("lock", "\u{1F512}", "Hold this track where it is \u2014 the flow moves everything else", () => {
+    ctx.setLaneLocked(lane.id, !ctx.laneLocked(lane.id));
+    syncTransport();
+  });
   const syncTransport = () => {
     const t = ctx.laneTransport(lane.id);
     play.classList.toggle("on", t.playing);
     stop.disabled = !t.playing;
     mute.classList.toggle("on", t.muted);
     solo.classList.toggle("on", t.soloed);
+    lock.classList.toggle("on", ctx.laneLocked(lane.id));
   };
   syncTransport();
   const cellHost = el("div", "weave-cell-host");

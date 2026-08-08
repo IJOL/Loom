@@ -88,7 +88,7 @@ export function flowAt(bars: number, barsPerLap: number): number {
  *  Returns whether anything actually moved, so a caller running per tick can
  *  skip the invalidation when it did not. */
 export function applyFlow(
-  lanes: Record<string, { weave?: PositionedWeave | null } | undefined>,
+  lanes: Record<string, { weave?: PositionedWeave | null; locked?: boolean } | undefined>,
   laneIds: readonly string[],
   flow: number,
   drift: DriftMode,
@@ -104,6 +104,10 @@ export function applyFlow(
   laneIds.forEach((id, i) => {
     const entry = lanes[id];
     const sel = entry?.weave;
+    // A LOCKED lane holds where it is. It still counts in the fan above, so
+    // locking one lane does not re-space the others under it — the lock is a
+    // lane sitting out the journey, not a lane leaving the scene.
+    if (entry?.locked) return;
     if (!entry || !sel || sel.x === next[i]) return;
     lanes[id] = { ...entry, weave: { ...sel, x: next[i] } };
     moved = true;
