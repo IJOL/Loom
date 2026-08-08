@@ -190,7 +190,70 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     clearTimeout(printTimer);
     printTimer = window.setTimeout(() => { print.textContent = '▣ Print to scene'; }, 1800);
   });
-  head.append(logo, surge, print);
+  // ── the project's musical ground ─────────────────────────────────────────
+  //
+  // Key, scale, style and tempo are NOT the panel's: these are the session's
+  // own, the same ones Project Options and the toolbar chip show. They sit here
+  // because this is the screen you play from, and walking to a dialog to change
+  // key mid-performance is the reason the mockup put them in the header.
+  const field = (label: string, ...controls: HTMLElement[]) => {
+    const f = el('span', 'weave-field');
+    const l = el('span', 'weave-label');
+    l.textContent = label;
+    f.append(l, ...controls);
+    return f;
+  };
+  const pick = (cls: string, choices: { id: string; name: string }[], value: string) => {
+    const s = document.createElement('select');
+    s.className = cls;
+    for (const c of choices) {
+      const o = document.createElement('option');
+      o.value = c.id;
+      o.textContent = c.name;
+      s.appendChild(o);
+    }
+    s.value = value;
+    return s;
+  };
+
+  const mus = ctx.musicality();
+  const keySel = pick('weave-key', ctx.keys(), String(mus.key));
+  const scaleSel = pick('weave-scale', ctx.scales(), mus.scale);
+  const styleSel = pick('weave-style', ctx.styles(), mus.style);
+  const pushMus = () =>
+    ctx.setMusicality(Number(keySel.value), scaleSel.value, styleSel.value);
+  for (const s of [keySel, scaleSel, styleSel]) s.addEventListener('change', pushMus);
+
+  const bpm = document.createElement('input');
+  bpm.type = 'number';
+  bpm.className = 'weave-bpm';
+  bpm.min = '20';
+  bpm.max = '300';
+  bpm.value = String(Math.round(mus.bpm));
+  bpm.setAttribute('aria-label', 'Tempo');
+  bpm.addEventListener('change', () => {
+    const v = Number(bpm.value);
+    if (Number.isFinite(v) && v >= 20 && v <= 300) ctx.setBpm(v);
+    else bpm.value = String(Math.round(ctx.musicality().bpm));
+  });
+
+  // A different deal from the same deck: which style each lane strays to is
+  // re-drawn, while HOW FAR it may stray — the Style knob — stays where the
+  // user put it.
+  const reseed = el('button', 'weave-reseed');
+  reseed.textContent = '⟳ Reshuffle';
+  reseed.title = 'Deal the lane styles again — the Style amount stays where it is';
+  reseed.addEventListener('click', () => ctx.reseed());
+
+  const spacer = el('span', 'weave-head-spacer');
+
+  head.append(
+    logo,
+    field('Key', keySel, scaleSel),
+    field('Style', styleSel),
+    field('BPM', bpm),
+    spacer, reseed, surge, print,
+  );
 
   // ── the pulse: a bar of sixteen cells that lights on the beat ────────────
   //

@@ -209,6 +209,20 @@ export interface PanelLaneTransport {
   soloed: boolean;
 }
 
+/** The project's musical ground: the key everything is written in, the scale the
+ *  blends walk their degrees in, the style the library draws from, and the
+ *  tempo.
+ *
+ *  A panel READS and WRITES the session's own values here — it does not get a
+ *  copy. The dialog, the toolbar chip and the panel are three views of one
+ *  datum, which is the only arrangement in which they cannot disagree. */
+export interface PanelMusicality {
+  key: number;
+  scale: string;
+  style: string;
+  bpm: number;
+}
+
 /** Where the master flow stands.
  *
  *  `position` is read off the lanes rather than remembered beside the speed:
@@ -332,6 +346,23 @@ export interface PanelContext {
   /** Where the master flow stands. Read it per frame: with a speed set, the host
    *  is moving it and the panel is following, not driving. */
   flow(): PanelFlow;
+  /** The project's key, scale, style and tempo — the session's own, not a copy. */
+  musicality(): PanelMusicality;
+  /** Move them. Goes through the host's ONE musicality path, so a change made
+   *  here undoes exactly like one made in Project Options and the toolbar chip
+   *  follows it. */
+  setMusicality(key: number, scale: string, style: string): void;
+  /** Set the tempo, through the transport's own path — a panel does not get a
+   *  second clock. */
+  setBpm(bpm: number): void;
+  /** The twelve roots, named the way the rest of the app names them. */
+  keys(): PanelChoice[];
+  /** Every scale the blends can walk. */
+  scales(): PanelChoice[];
+  /** Re-draw which style each lane strays to. The style MIX stays where it is —
+   *  this shuffles the deal, it does not change how far from home the lanes are
+   *  allowed to wander. */
+  reseed(): void;
   /** Freeze what the weave is playing RIGHT NOW into a new scene.
    *
    *  An output, never the goal: the panel exists so the music keeps moving, and

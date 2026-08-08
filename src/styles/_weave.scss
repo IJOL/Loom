@@ -35,6 +35,51 @@
   text-shadow: 0 0 calc(6px + 10px * var(--weave-pulse)) var(--amber-glow);
 }
 
+// The project's key/scale/style/BPM. They read quieter than the panel's own
+// controls on purpose: they belong to the session, and the panel is showing
+// them rather than owning them.
+.weave-field {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.weave-key,
+.weave-scale,
+.weave-style,
+.weave-drift,
+.weave-speed,
+.weave-bpm {
+  background: var(--surface-2, #17171b);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 10.5px;
+  max-width: 11ch;
+}
+
+.weave-bpm {
+  width: 5.5ch;
+  font-variant-numeric: tabular-nums;
+}
+
+// Pushes Reshuffle / Surge / Print to the right edge, so the session's values
+// and the panel's actions read as two groups rather than one long row.
+.weave-head-spacer { flex: 1 1 auto; }
+
+.weave-reseed {
+  background: transparent;
+  color: var(--text-dim, #9a9aa2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 9px;
+  font-size: 11px;
+  cursor: pointer;
+
+  &:hover { color: var(--amber); border-color: var(--amber-soft); }
+}
+
 // A HELD button, and it has to LOOK held — a momentary gesture with no visible
 // state is indistinguishable from a broken one.
 .weave-surge {

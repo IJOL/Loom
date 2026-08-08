@@ -356,7 +356,58 @@ function mountWeave(host, ctx) {
       print.textContent = "\u25A3 Print to scene";
     }, 1800);
   });
-  head.append(logo, surge, print);
+  const field = (label, ...controls) => {
+    const f = el2("span", "weave-field");
+    const l = el2("span", "weave-label");
+    l.textContent = label;
+    f.append(l, ...controls);
+    return f;
+  };
+  const pick = (cls, choices, value) => {
+    const s = document.createElement("select");
+    s.className = cls;
+    for (const c of choices) {
+      const o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = c.name;
+      s.appendChild(o);
+    }
+    s.value = value;
+    return s;
+  };
+  const mus = ctx.musicality();
+  const keySel = pick("weave-key", ctx.keys(), String(mus.key));
+  const scaleSel = pick("weave-scale", ctx.scales(), mus.scale);
+  const styleSel = pick("weave-style", ctx.styles(), mus.style);
+  const pushMus = () => ctx.setMusicality(Number(keySel.value), scaleSel.value, styleSel.value);
+  for (const s of [keySel, scaleSel, styleSel]) s.addEventListener("change", pushMus);
+  const bpm = document.createElement("input");
+  bpm.type = "number";
+  bpm.className = "weave-bpm";
+  bpm.min = "20";
+  bpm.max = "300";
+  bpm.value = String(Math.round(mus.bpm));
+  bpm.setAttribute("aria-label", "Tempo");
+  bpm.addEventListener("change", () => {
+    const v = Number(bpm.value);
+    if (Number.isFinite(v) && v >= 20 && v <= 300) ctx.setBpm(v);
+    else bpm.value = String(Math.round(ctx.musicality().bpm));
+  });
+  const reseed = el2("button", "weave-reseed");
+  reseed.textContent = "\u27F3 Reshuffle";
+  reseed.title = "Deal the lane styles again \u2014 the Style amount stays where it is";
+  reseed.addEventListener("click", () => ctx.reseed());
+  const spacer = el2("span", "weave-head-spacer");
+  head.append(
+    logo,
+    field("Key", keySel, scaleSel),
+    field("Style", styleSel),
+    field("BPM", bpm),
+    spacer,
+    reseed,
+    surge,
+    print
+  );
   const pulse = el2("div", "weave-pulse");
   const cells = [];
   for (let i = 0; i < 16; i++) {

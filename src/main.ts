@@ -486,23 +486,28 @@ sessionHost.init();
 laneHost.setLookupEngineId((laneId) =>
   sessionHost.state.lanes.find((l) => l.id === laneId)?.engineId ?? 'subtractive');
 
+// The ONE writer of the project's key/scale/style. Project Options, the toolbar
+// chip and the WEAVE panel are three VIEWS of it — a second writer is how two of
+// them would end up showing different keys for the same session.
+const setProjectMusicality = (next: import('./session/session-types').MusicalityState) => {
+  const run = () => {
+    sessionHost.state.musicality = next;
+    sessionHost.renderWithMixer();
+    // renderWithMixer() does not fire onStateApplied, so refresh the toolbar
+    // chip explicitly (statusChips is declared later in this file, but this
+    // closure only runs on user interaction, long after boot completes —
+    // same late-binding pattern as the MIDI refresh below).
+    statusChips.refreshMusicality();
+  };
+  if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
+};
+
 // ── Project Options dialog (File ▸ Project Options: name + key/style) ──────────
 const projectOptions = renderProjectOptionsDialog({
   getName: () => sessionHost.state.name ?? 'Untitled',
   setName: (n) => sessionHost.callbacks.onRenameProject?.(n),   // undoable, re-renders
   getMusicality: () => sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
-  setMusicality: (next) => {
-    const run = () => {
-      sessionHost.state.musicality = next;
-      sessionHost.renderWithMixer();
-      // renderWithMixer() does not fire onStateApplied, so refresh the toolbar
-      // chip explicitly (statusChips is declared later in this file, but this
-      // closure only runs on user interaction, long after boot completes —
-      // same late-binding pattern as the MIDI refresh below).
-      statusChips.refreshMusicality();
-    };
-    if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
-  },
+  setMusicality: setProjectMusicality,
   // A MACHINE preference, not the project's: it lives in localStorage and never
   // travels in a save file. Turning it on writes the recovery copy immediately,
   // so the switch means something the moment it is flipped rather than at the
@@ -615,6 +620,10 @@ const performanceFeature = createPerformanceFeature({
   // One weave state, shared with the host's gate: a knob that moved a copy
   // would change a panel and play nothing.
   weave: weaveWiring.state,
+  // The project's musical ground and the tempo, through the writers the dialog
+  // and the transport already use. The panel is a second view, not a second copy.
+  setMusicality: (m) => setProjectMusicality(m),
+  setBpm: (bpm) => setTransportBpm(bpm),
   onWeaveChanged: () => {
     // Two halves, because the six macros reach the sound two different ways.
     // Density and Energy rewrite NOTES, so dropping the cached weave source is

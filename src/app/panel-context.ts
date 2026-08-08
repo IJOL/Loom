@@ -11,7 +11,8 @@ import { retopologise, positionOf } from '../weave/weave-selection';
 import { applyFlow, asDrift } from '../weave/flow';
 import { weaveLoopChoices, weaveLoopContext, type WeaveLoopContext } from './weave-loops';
 import { stylesWithPatterns } from '../patterns/pattern-library';
-import { STYLE_CATALOG, type StyleId } from '../core/musicality';
+import { STYLE_CATALOG, SCALE_CATALOG, rootName, type StyleId } from '../core/musicality';
+import type { MusicalityState } from '../session/session-types';
 import { isHarmonic } from '../plugins/capabilities';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import type { SessionHost } from '../session/session-host';
@@ -61,6 +62,11 @@ export interface PanelContextDeps {
   muteState?: Record<string, boolean>;
   soloState?: Record<string, boolean>;
   applyMuteSolo?: () => void;
+  /** The project's key/scale/style, through main's ONE undoable writer — the
+   *  same one Project Options uses. Absent in fixtures with no session. */
+  setMusicality?: (m: MusicalityState) => void;
+  /** The transport's own tempo setter, which also tells the worklet. */
+  setBpm?: (bpm: number) => void;
 }
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -291,6 +297,49 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         mode,
       );
       deps.onWeaveChanged?.('*');
+    },
+
+    musicality() {
+      const m = deps.sessionHost.state.musicality ?? DEFAULT_MUSICALITY;
+      return { key: m.key, scale: m.scale, style: m.style, bpm: deps.seq.bpm };
+    },
+
+    setMusicality(key, scale, style) {
+      const m = deps.sessionHost.state.musicality ?? DEFAULT_MUSICALITY;
+      // The host's own path, so this undoes like a change made in Project
+      // Options and repaints the toolbar chip. `lock` is carried through
+      // untouched: it is a different decision and the panel does not show it.
+      deps.setMusicality?.({
+        key, lock: m.lock,
+        scale: scale as MusicalityState['scale'],
+        style: style as StyleId,
+      });
+      // Which style each lane draws from moved, so the loop lists and every
+      // built source are stale.
+      deps.onWeaveChanged?.('*');
+    },
+
+    setBpm(bpm) {
+      // The transport's own setter, which also tells the worklet. A panel that
+      // wrote seq.bpm directly would change the number and not the sound.
+      deps.setBpm?.(bpm);
+    },
+
+    keys() {
+      return Array.from({ length: 12 }, (_, pc) => ({ id: String(pc), name: rootName(pc) }));
+    },
+
+    scales() {
+      return SCALE_CATALOG.map((s) => ({ id: s.id, name: s.label }));
+    },
+
+    reseed() {
+      // A different deal from the same deck. The style MIX is untouched: how far
+      // the lanes may wander is the user's setting, and re-dealing must not
+      // quietly widen or narrow it.
+      deps.weave.seed = (deps.weave.seed % 1_000_000) + 1;
+      deps.onWeaveChanged?.('*');
+      deps.refresh();
     },
 
     printScene() {
