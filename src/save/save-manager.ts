@@ -82,6 +82,19 @@ export async function loadEntry(id: string): Promise<unknown | null> {
   }
 }
 
+/** Write the recovery copy ALONE — no named entry, no index row.
+ *
+ *  Until this existed the autosave was only ever written as a side effect of a
+ *  named save, which is fine for "save, and leave a recovery point" and wrong
+ *  for an autosave: one that also created an entry would fill the list with a
+ *  row every few seconds.
+ *
+ *  Rejects like its sibling if the payload cannot be stored, so a caller can
+ *  tell the difference between "saved" and "the quota is full". */
+export async function writeAutosave(state: unknown): Promise<void> {
+  await putPayload(AUTOSAVE_ID, JSON.stringify(state));
+}
+
 export async function loadAutosave(): Promise<unknown | null> {
   try {
     return parse(await getPayload(AUTOSAVE_ID));

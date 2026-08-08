@@ -10,6 +10,14 @@ export interface ProjectOptionsDeps {
   setName(name: string): void;
   getMusicality(): MusicalityState;
   setMusicality(m: MusicalityState): void;
+  /** THIS MACHINE's preferences, kept visibly apart from the project's own.
+   *
+   *  They share a dialog because building a second one for a single checkbox is
+   *  more UI than the setting needs — but they must not read as project state: a
+   *  project travels, and loading someone else's session must not turn your
+   *  autosave on. Optional so callers without the prefs store keep working. */
+  getAutosave?(): boolean;
+  setAutosave?(on: boolean): void;
 }
 
 export function renderProjectOptionsDialog(deps: ProjectOptionsDeps): { open(): void; refresh(): void } {
@@ -32,6 +40,19 @@ export function renderProjectOptionsDialog(deps: ProjectOptionsDeps): { open(): 
     <label class="po-row"><span>Scale</span><select data-po="scale" @change=${commitMus}>${SCALE_CATALOG.map((s) => html`<option value=${s.id}>${`${s.mood} — ${s.label} · ${s.hint}`}</option>`)}</select></label>
     <label class="po-row"><span>Style</span><select data-po="style" @change=${commitMus}>${STYLE_CATALOG.map((s) => html`<option value=${s.id}>${s.label}</option>`)}</select></label>
     <label class="po-row"><span>Lock notes to key</span><input type="checkbox" data-po="lock" title="When ON, notes you place snap to the project key" @change=${commitMus} /></label>
+    ${deps.setAutosave ? html`
+      <div class="po-group">This computer</div>
+      <label class="po-row">
+        <span>Autosave</span>
+        <input
+          type="checkbox"
+          data-po="autosave"
+          title="Keep the recovery copy up to date as you work. Off by default: it overwrites the ONE recovery slot, and the moment you most want that slot is the moment after something went wrong."
+          @change=${() => deps.setAutosave?.(autosaveChk.checked)}
+        />
+      </label>
+      <p class="po-note">Overwrites the single recovery copy as you work. Your named saves are never touched.</p>
+    ` : ''}
   `, body);
 
   const nameInput = body.querySelector<HTMLInputElement>('input[data-po="name"]')!;
@@ -39,11 +60,15 @@ export function renderProjectOptionsDialog(deps: ProjectOptionsDeps): { open(): 
   const scaleSel  = body.querySelector<HTMLSelectElement>('select[data-po="scale"]')!;
   const styleSel  = body.querySelector<HTMLSelectElement>('select[data-po="style"]')!;
   const lockChk   = body.querySelector<HTMLInputElement>('input[data-po="lock"]')!;
+  const autosaveChk = body.querySelector<HTMLInputElement>('input[data-po="autosave"]')!;
 
   const refresh = () => {
     nameInput.value = deps.getName();
     const m = deps.getMusicality();
     rootSel.value = String(m.key); scaleSel.value = m.scale; styleSel.value = m.style; lockChk.checked = m.lock;
+    // Read on every open rather than trusted from the last write: another tab
+    // shares this preference, and it is stored outside the session.
+    if (autosaveChk) autosaveChk.checked = deps.getAutosave?.() ?? false;
   };
 
   return { open: () => { refresh(); modal.open(); }, refresh };

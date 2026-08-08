@@ -40,6 +40,10 @@ import { bindAboutDialog } from './app/about-dialog';
 import { applyPresetToEngine } from './presets/preset-apply';
 import { commitEngineBaseValues } from './engines/engine-param-commit';
 import { wireSaveManager, bootRecoveryLoad } from './save/save-wiring';
+import { appPrefs, setAppPrefs } from './save/app-prefs';
+import { createAutosave, type Autosave } from './save/autosave';
+import { writeAutosave } from './save/save-manager';
+import { buildSavedStateV3 } from './save/saved-state-v3';
 import { createSaveAndHistory } from './app/save-history-wiring';
 import {
   withUndo, isTextEditTarget, type HistoryDeps,
@@ -498,6 +502,15 @@ const projectOptions = renderProjectOptionsDialog({
     };
     if (_discreteHistoryDeps) withUndo(_discreteHistoryDeps, run); else run();
   },
+  // A MACHINE preference, not the project's: it lives in localStorage and never
+  // travels in a save file. Turning it on writes the recovery copy immediately,
+  // so the switch means something the moment it is flipped rather than at the
+  // next edit.
+  getAutosave: () => appPrefs().autosave,
+  setAutosave: (on) => {
+    setAppPrefs({ autosave: on });
+    if (on) void autosave?.flush();
+  },
 });
 // Refresh the dialog whenever a new session is applied (boot demo, demo
 // picker, save-load, new-session) so the displayed name/tonality stays in sync.
@@ -607,6 +620,10 @@ const performanceFeature = createPerformanceFeature({
     // all they need — the next tick refolds. Space and Motion write PARAMS, and
     // a param only moves when something writes it.
     weaveWiring.invalidate();
+    // The weave is deliberately NOT an undo entry, so nothing else would ever
+    // tell the autosave it moved — and a weave is exactly the kind of live state
+    // a crash should not cost you.
+    autosave?.request();
     // On the change, never per tick: a param written sixty times a second with
     // the same value is sixty ramps the smoother chases for nothing.
     applyWeaveParamMacros(weaveWiring.state.macros, {
@@ -884,6 +901,21 @@ const { autoHistory, historyDeps, saveWiringDeps } = createSaveAndHistory({
   // save records what is actually playing.
   weave: weaveWiring,
 });
+
+// ── Autosave ───────────────────────────────────────────────────────────────
+// Opt-in, off by default, and it writes the recovery copy ALONE — never a named
+// entry. It builds `saveWiringDeps`, not the undo deps, so the copy carries
+// everything a real save does: the weave and the Performance take included.
+const autosave: Autosave = createAutosave({
+  enabled: () => appPrefs().autosave,
+  buildState: () => buildSavedStateV3(saveWiringDeps),
+  write: writeAutosave,
+  onError: (err) => console.warn('[autosave] could not write:', err),
+});
+// Every deduped, gesture-free change the history already noticed. Piggybacking
+// on it rather than listening to the DOM again means the autosave fires on real
+// edits and not on a pointer moving across the page.
+autoHistory.onChange(() => autosave.request());
 // Stem separation + transcription (see src/app/stems-feature.ts). Installs the
 // clip header's transcribe-this-loop seam as it is built, which is why the call
 // sits here and not with the rest of the dialogs.
