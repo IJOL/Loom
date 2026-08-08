@@ -52,7 +52,7 @@ function weaveCell(laneId, ctx, loops, onChanged) {
   const sel = ctx.laneWeave(laneId);
   if (!sel) {
     cell.appendChild(el("span", "weave-hint", loops.length === 0 ? "No clips on this lane yet" : "Pick a topology to start weaving"));
-    return cell;
+    return { el: cell };
   }
   const nameOf = (id) => loops.find((l) => l.id === id)?.name ?? id;
   const slot = (i, current, apply) => picker("weave-slot", `Loop ${i + 1} for this lane`, loops, current, (id) => {
@@ -76,7 +76,14 @@ function weaveCell(laneId, ctx, loops, onChanged) {
       fader,
       slot(1, sel.b, (id) => ({ ...sel, b: id }))
     );
-    return cell;
+    return {
+      el: cell,
+      follow: () => {
+        const now = ctx.laneWeave(laneId);
+        if (!now || document.activeElement === fader) return;
+        if (Math.abs(now.x - Number(fader.value)) >= 2e-3) fader.value = String(now.x);
+      }
+    };
   }
   if (sel.kind === "queue") {
     const between = el("span", "weave-between");
@@ -100,7 +107,17 @@ function weaveCell(laneId, ctx, loops, onChanged) {
     };
     paintBetween(sel.x);
     cell.append(q.el, between);
-    return cell;
+    let shown = sel.x;
+    return {
+      el: cell,
+      follow: () => {
+        const now = ctx.laneWeave(laneId);
+        if (!now || Math.abs(now.x - shown) < 2e-3) return;
+        shown = now.x;
+        q.set(now.x);
+        paintBetween(now.x);
+      }
+    };
   }
   const corners = el("div", "weave-corners");
   for (let i = 0; i < 4; i++) {
@@ -118,7 +135,17 @@ function weaveCell(laneId, ctx, loops, onChanged) {
     }
   });
   cell.append(corners, pad.el);
-  return cell;
+  let at = { x: sel.x, y: sel.y };
+  return {
+    el: cell,
+    follow: () => {
+      const now = ctx.laneWeave(laneId);
+      if (!now || now.kind !== "cloud") return;
+      if (Math.abs(now.x - at.x) < 2e-3 && Math.abs(now.y - at.y) < 2e-3) return;
+      at = { x: now.x, y: now.y };
+      pad.set(now.x, now.y);
+    }
+  };
 }
 function buildLaneRow(lane, ctx, engines) {
   const row = el("div", "weave-lane");
@@ -173,8 +200,10 @@ function buildLaneRow(lane, ctx, engines) {
   };
   syncTransport();
   const cellHost = el("div", "weave-cell-host");
+  let cell = { el: cellHost };
   const repaintCell = () => {
-    cellHost.replaceChildren(weaveCell(lane.id, ctx, ctx.loops(lane.id), repaintCell));
+    cell = weaveCell(lane.id, ctx, ctx.loops(lane.id), repaintCell);
+    cellHost.replaceChildren(cell.el);
   };
   const style = picker(
     "weave-style",
@@ -209,7 +238,17 @@ function buildLaneRow(lane, ctx, engines) {
   paintTopo();
   repaintCell();
   row.append(led, ring.el, name, transport, engine, preset, style, topo, cellHost);
-  return { laneId: lane.id, el: row, led, ring, syncTransport };
+  return {
+    laneId: lane.id,
+    el: row,
+    led,
+    ring,
+    syncTransport,
+    // Called from the panel's rAF while the master flow is travelling: the host
+    // owns the position then, and the row FOLLOWS it. Without this the lanes sat
+    // at whatever they were built with while the music crossed away underneath.
+    followWeave: () => cell.follow?.()
+  };
 }
 
 // plugins/weave/main.ts
@@ -518,6 +557,7 @@ function mountWeave(host, ctx) {
         flow.value = String(pos);
         showFlow();
       }
+      for (const l of laneRows) l.followWeave();
     }
     const step = Math.floor(phase * 16) % 16;
     if (step !== lastStep) {

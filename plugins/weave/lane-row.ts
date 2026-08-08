@@ -21,6 +21,10 @@ export interface LaneRowHandle {
    *  grid, from a scene launch or from a MIDI controller — none of which pass
    *  through this row. */
   syncTransport(): void;
+  /** Move the weaving control to where the lane's position now sits, without
+   *  writing back. Called from the same rAF while the master flow is
+   *  travelling: the host owns the position then and the row FOLLOWS it. */
+  followWeave(): void;
 }
 
 const TOPOS: { kind: PanelWeave['kind']; label: string; title: string }[] = [
@@ -88,9 +92,18 @@ export function picker(
  *  Rebuilt rather than mutated when the topology changes: three controls with
  *  three shapes have nothing to diff, and the alternative is a cell that
  *  remembers which widgets it once held. */
+interface WeaveCell {
+  el: HTMLElement;
+  /** Move the control to where the lane's selection now sits, WITHOUT writing
+   *  back. The master flow moves lane positions from the host's clock, and a
+   *  cell that only ever showed the value it was built with would sit still
+   *  while the music travelled. */
+  follow?: () => void;
+}
+
 function weaveCell(
   laneId: string, ctx: PanelContext, loops: PanelChoice[], onChanged: () => void,
-): HTMLElement {
+): WeaveCell {
   const cell = el('div', 'weave-cell');
   const sel = ctx.laneWeave(laneId);
 
@@ -98,7 +111,7 @@ function weaveCell(
     cell.appendChild(el('span', 'weave-hint', loops.length === 0
       ? 'No clips on this lane yet'
       : 'Pick a topology to start weaving'));
-    return cell;
+    return { el: cell };
   }
 
   const nameOf = (id: string) => loops.find((l) => l.id === id)?.name ?? id;
@@ -129,7 +142,16 @@ function weaveCell(
       fader,
       slot(1, sel.b, (id) => ({ ...sel, b: id })),
     );
-    return cell;
+    return {
+      el: cell,
+      follow: () => {
+        const now = ctx.laneWeave(laneId);
+        // Only while the pointer is elsewhere: writing .value under a drag
+        // fights the hand that is holding it.
+        if (!now || document.activeElement === fader) return;
+        if (Math.abs(now.x - Number(fader.value)) >= 0.002) fader.value = String(now.x);
+      },
+    };
   }
 
   if (sel.kind === 'queue') {
@@ -154,7 +176,17 @@ function weaveCell(
     };
     paintBetween(sel.x);
     cell.append(q.el, between);
-    return cell;
+    let shown = sel.x;
+    return {
+      el: cell,
+      follow: () => {
+        const now = ctx.laneWeave(laneId);
+        if (!now || Math.abs(now.x - shown) < 0.002) return;
+        shown = now.x;
+        q.set(now.x);
+        paintBetween(now.x);
+      },
+    };
   }
 
   // Cloud: four corners round a pad, laid out where they actually are. A list of
@@ -174,7 +206,17 @@ function weaveCell(
     onChange: (x, y) => { ctx.setLaneWeave(laneId, { ...sel, x, y }); },
   });
   cell.append(corners, pad.el);
-  return cell;
+  let at = { x: sel.x, y: sel.y };
+  return {
+    el: cell,
+    follow: () => {
+      const now = ctx.laneWeave(laneId);
+      if (!now || now.kind !== 'cloud') return;
+      if (Math.abs(now.x - at.x) < 0.002 && Math.abs(now.y - at.y) < 0.002) return;
+      at = { x: now.x, y: now.y };
+      pad.set(now.x, now.y);
+    },
+  };
 }
 
 export function buildLaneRow(
@@ -239,8 +281,10 @@ export function buildLaneRow(
   // which shelf of the library this lane draws from, and a captured list would
   // keep offering the loops of the style the user just left.
   const cellHost = el('div', 'weave-cell-host');
+  let cell: WeaveCell = { el: cellHost };
   const repaintCell = () => {
-    cellHost.replaceChildren(weaveCell(lane.id, ctx, ctx.loops(lane.id), repaintCell));
+    cell = weaveCell(lane.id, ctx, ctx.loops(lane.id), repaintCell);
+    cellHost.replaceChildren(cell.el);
   };
 
   // Which shelf of the pattern library this lane reads. It is the reason the
@@ -276,5 +320,11 @@ export function buildLaneRow(
   repaintCell();
 
   row.append(led, ring.el, name, transport, engine, preset, style, topo, cellHost);
-  return { laneId: lane.id, el: row, led, ring, syncTransport };
+  return {
+    laneId: lane.id, el: row, led, ring, syncTransport,
+    // Called from the panel's rAF while the master flow is travelling: the host
+    // owns the position then, and the row FOLLOWS it. Without this the lanes sat
+    // at whatever they were built with while the music crossed away underneath.
+    followWeave: () => cell.follow?.(),
+  };
 }

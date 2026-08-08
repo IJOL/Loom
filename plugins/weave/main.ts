@@ -417,6 +417,10 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
         flow.value = String(pos);
         showFlow();
       }
+      // And the lanes themselves, each following its own position — with Offset
+      // drift they are all at DIFFERENT points of the journey, so one master
+      // readout cannot stand in for them.
+      for (const l of laneRows) l.followWeave();
     }
 
     const step = Math.floor(phase * 16) % 16;
