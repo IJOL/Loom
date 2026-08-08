@@ -306,6 +306,23 @@ describe('createPanelContext — the master flow', () => {
     expect(h.ctx.flow().position).toBeCloseTo(0.4);
   });
 
+  it('reads the position off a TRAVELLING lane, not a locked one', () => {
+    // Reading the first lane with a selection pinned the master readout to a
+    // locked lane: the number sat frozen while the rest of the scene crossed,
+    // which reads as a broken control.
+    const h = harness();
+    h.weave.lanes.lane1 = { ...weaving(0.05), locked: true };
+    h.weave.lanes.lane2 = weaving(0.7);
+    expect(h.ctx.flow().position).toBeCloseTo(0.7);
+  });
+
+  it('falls back to a locked lane when EVERY lane is locked', () => {
+    // Then the frozen number is honest — the journey really is moving nothing.
+    const h = harness();
+    h.weave.lanes.lane1 = { ...weaving(0.05), locked: true };
+    expect(h.ctx.flow().position).toBeCloseTo(0.05);
+  });
+
   it('moves every lane at once', () => {
     const h = harness();
     h.weave.lanes.lane1 = weaving(0);

@@ -325,9 +325,16 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // The position is read off the LANES, not kept beside the speed: the auto-
       // advance writes lane positions, and a second number remembered here would
       // be the one the panel shows while the music followed the other.
-      const first = deps.sessionHost.state.lanes
-        .map((l) => deps.weave.lanes[l.id]?.weave)
-        .find((w) => w != null);
+      //
+      // From the first lane that is TRAVELLING. Reading the first lane with a
+      // selection pinned the master readout to a LOCKED one — a number frozen at
+      // 0.04 while the rest of the scene crossed, which reads as a broken
+      // control. All locked falls back to the first, which is then honest: the
+      // journey really is not moving anything.
+      const withWeave = deps.sessionHost.state.lanes
+        .filter((l) => deps.weave.lanes[l.id]?.weave != null);
+      const lead = withWeave.find((l) => !deps.weave.lanes[l.id]?.locked) ?? withWeave[0];
+      const first = lead ? deps.weave.lanes[lead.id]?.weave : null;
       return {
         position: positionOf(first),
         drift: f?.drift ?? 'together',
