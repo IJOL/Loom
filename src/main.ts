@@ -400,6 +400,12 @@ const weaveWiring = createWeaveWiring({
   // A getter, not the state: New and Open replace the whole object, and a
   // pinned reference would keep weaving the session the user just closed.
   getState: () => sessionHost.state,
+  // One step of the row landing on its destination, through the PLAYBACK door —
+  // the same one Space and Motion use. The row owns the value, so it must not
+  // mirror into the lane's saved sound: a curve's momentary position stamped
+  // into a preset is the bug that door exists to avoid.
+  writeStep: (destId, v) =>
+    writes?.applyPlaybackUnmountedWrite(destId, v, writes.targetRanges()),
 });
 
 const sessionHost = new SessionHost({

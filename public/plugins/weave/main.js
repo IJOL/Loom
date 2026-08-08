@@ -647,13 +647,89 @@ function mountWeave(host, ctx) {
   });
   addRow.append(add, addWhat);
   lanes.appendChild(addRow);
+  const stepsRow = el2("div", "weave-steps");
+  const st = ctx.steps();
+  const destPick = document.createElement("select");
+  destPick.className = "weave-step-dest";
+  destPick.setAttribute("aria-label", "What the step row moves");
+  {
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = "\u2014 nothing yet \u2014";
+    destPick.appendChild(none);
+    const groups = /* @__PURE__ */ new Map();
+    for (const d of ctx.destinations()) {
+      const o = document.createElement("option");
+      o.value = d.id;
+      o.textContent = d.name;
+      if (!d.group) {
+        destPick.appendChild(o);
+        continue;
+      }
+      let g = groups.get(d.group);
+      if (!g) {
+        g = document.createElement("optgroup");
+        g.label = d.group;
+        groups.set(d.group, g);
+        destPick.appendChild(g);
+      }
+      g.appendChild(o);
+    }
+    destPick.value = st.destId;
+  }
+  destPick.addEventListener("change", () => ctx.setStepsDest(destPick.value));
+  const stepsOn = el2("button", "weave-step-on");
+  const paintStepsOn = () => {
+    const on = ctx.steps().on;
+    stepsOn.textContent = on ? "\u25CF RUNNING" : "\u25CB OFF";
+    stepsOn.classList.toggle("on", on);
+    stepsOn.setAttribute("aria-pressed", String(on));
+  };
+  stepsOn.addEventListener("click", () => {
+    ctx.setStepsOn(!ctx.steps().on);
+    paintStepsOn();
+  });
+  const modePick = document.createElement("select");
+  modePick.className = "weave-step-mode";
+  modePick.setAttribute("aria-label", "How a step reaches the next");
+  for (const [v, label] of [["hold", "Step"], ["ramp", "Glide"]]) {
+    const o = document.createElement("option");
+    o.value = v;
+    o.textContent = label;
+    modePick.appendChild(o);
+  }
+  modePick.value = st.mode;
+  modePick.addEventListener("change", () => ctx.setStepsMode(modePick.value));
+  const grid = Loom.controls.steps({
+    values: st.values,
+    label: "The step row",
+    onChange: (i, v) => ctx.setStep(i, v)
+  });
+  grid.el.classList.add("weave-step-grid");
+  const tools = el2("div", "weave-step-tools");
+  for (const [kind, label] of [["up", "\u2197"], ["down", "\u2198"], ["invert", "\u21C5"], ["random", "\u2684"]]) {
+    const b = el2("button", "weave-step-tool");
+    b.textContent = label;
+    b.title = { up: "Ramp up", down: "Ramp down", invert: "Invert", random: "Randomise" }[kind];
+    b.addEventListener("click", () => {
+      ctx.stepsTool(kind);
+      grid.set(ctx.steps().values);
+    });
+    tools.appendChild(b);
+  }
+  const stepsHead = el2("div", "weave-step-head");
+  const stepsLabel = el2("span", "weave-label");
+  stepsLabel.textContent = "Steps";
+  stepsHead.append(stepsLabel, destPick, modePick, stepsOn, tools);
+  stepsRow.append(stepsHead, grid.el);
+  paintStepsOn();
   const macros = el2("div", "weave-macros");
   for (const m of MACROS) {
     const knob = macroKnob(m, ctx);
     macros.appendChild(knob.el);
     repaintMacros.push(knob.paint);
   }
-  rack.append(head, pulse, flowRow, lanes, macros);
+  rack.append(head, pulse, flowRow, lanes, stepsRow, macros);
   host.appendChild(rack);
   let raf = 0;
   let lastStep = -1;

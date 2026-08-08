@@ -11,6 +11,7 @@ import {
   retopologise, positionOf, defaultSelection, selectionLoopIds,
 } from '../weave/weave-selection';
 import { applyFlow, asDrift } from '../weave/flow';
+import { stepPreset } from '../automation/automation-steps';
 import { weaveLoopChoices, weaveLoopContext, type WeaveLoopContext } from './weave-loops';
 import { stylesWithPatterns } from '../patterns/pattern-library';
 import { STYLE_CATALOG, SCALE_CATALOG, rootName, type StyleId } from '../core/musicality';
@@ -68,6 +69,9 @@ export interface PanelContextDeps {
   /** The project's key/scale/style, through main's ONE undoable writer — the
    *  same one Project Options uses. Absent in fixtures with no session. */
   setMusicality?: (m: MusicalityState) => void;
+  /** The ONE destination catalogue, read at ask time. A stale list offers a
+   *  destination that is gone. */
+  destinations?: () => readonly import('../automation/automation-targets').AutomationTarget[];
   /** The weave's own note source, the one the scheduler reads. Handed in so a
    *  panel can DRAW the bar that is about to play — from the same fold, never a
    *  second one. Absent in fixtures with no weave wiring. */
@@ -347,6 +351,44 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // has to ask again — off, so the lanes weave once more; on, so nothing is
       // left holding a source the gate no longer consults.
       deps.onWeaveChanged?.('*');
+    },
+
+    steps() {
+      const s = deps.weave.steps;
+      return { destId: s.destId, values: [...s.values], mode: s.mode, on: s.on };
+    },
+
+    setStep(index, value) {
+      const s = deps.weave.steps;
+      if (index < 0 || index >= s.values.length) return;
+      s.values[index] = Math.min(1, Math.max(0, value));
+      // No onWeaveChanged: a step is a PARAM write, not material. Dropping every
+      // cached fold because a knob-row moved would rebuild the notes of every
+      // lane for a value that has nothing to do with them.
+    },
+
+    setStepsDest(destId) { deps.weave.steps.destId = destId; },
+    setStepsOn(on) { deps.weave.steps.on = on; },
+    setStepsMode(mode) { deps.weave.steps.mode = mode === 'ramp' ? 'ramp' : 'hold'; },
+
+    stepsTool(tool) {
+      const s = deps.weave.steps;
+      // The painter's own presets, not a second set: there is one right answer
+      // to "what does invert mean" and it already lives in automation-steps.
+      // `Math.random` is injected there so a test can pin the random one; a
+      // live press is the case that genuinely wants the dice.
+      s.values = stepPreset(tool, s.values.length, s.values, Math.random);
+      deps.refresh();
+    },
+
+    destinations() {
+      // The ONE catalogue. Enumerating knobs or building a parallel list here is
+      // how four inconsistent pickers happened once already.
+      return (deps.destinations?.() ?? []).map((d) => ({
+        id: d.id,
+        name: d.label,
+        group: d.laneName,
+      }));
     },
 
     laneNotes(laneId) {

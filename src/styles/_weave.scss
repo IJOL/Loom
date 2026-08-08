@@ -462,6 +462,69 @@
   &:hover { background: var(--amber-glow); }
 }
 
+// ── the step row ───────────────────────────────────────────────────────────
+// A line of values that moves ONE parameter in time with the loop — the row of
+// knobs the old sequencers put under the pattern.
+.weave-steps {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.weave-step-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weave-step-dest {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 320px;
+}
+
+.weave-step-dest,
+.weave-step-mode {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 10.5px;
+}
+
+// It keeps writing after your hand leaves, so it has to say whether it is.
+.weave-step-on {
+  background: transparent;
+  color: var(--text-dim, #9a9aa2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 10px;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+
+  &.on { color: var(--green); border-color: var(--green); }
+}
+
+.weave-step-tools { display: flex; gap: 2px; }
+
+.weave-step-tool {
+  background: transparent;
+  color: var(--text-dim, #9a9aa2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+
+  &:hover { color: var(--amber); border-color: var(--amber-soft); }
+}
+
+.weave-step-grid { width: 100%; }
+
 // ── macros ─────────────────────────────────────────────────────────────────
 .weave-macros {
   display: grid;

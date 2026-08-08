@@ -73,33 +73,32 @@ export interface FlowState {
   base?: Record<string, number>;
 }
 
-/** A curve you draw that keeps playing after you let go.
+/** A row of steps that moves a PARAMETER in time with the loop — a cutoff, a
+ *  resonance, anything the catalogue can name. What the old sequencers did with
+ *  a row of knobs under the pattern.
  *
- *  The engine is the painter's — `automation/automation-steps` — and so is the
- *  grid; what is different here is WHERE it lives. The clip painter attaches a
- *  curve to a CLIP, and in this panel there are no clips to speak of: the lane's
- *  clip is a vessel the weave fills, and the material is a loop. A curve tied to
- *  the vessel would be tied to the one thing that does not matter.
- *
- *  So it belongs to the weave. It is saved with it, travels with it, and does
- *  not care which clip happens to be in the grid. */
+ *  The curve engine is the clip painter's (`automation/automation-steps`) and so
+ *  is the grid; what is different is WHERE it lives. The painter attaches a
+ *  curve to a CLIP, and in this panel there are barely any clips: a weaving
+ *  lane's clip is a vessel the loops fill, so a curve tied to it would be tied
+ *  to the one thing that does not matter. This belongs to the weave, saves with
+ *  it, and follows the loop. */
 export interface WeaveSteps {
-  /** A destination id in the catalogue's own vocabulary. Empty means the curve
-   *  is drawn and lands nowhere — a legitimate state: you sketch a shape first
-   *  and decide what it moves after. */
+  /** A destination id in the catalogue's own vocabulary. Empty means the shape
+   *  is drawn and lands nowhere — you sketch first and choose after. */
   destId: string;
-  /** 0..1 each. Their COUNT is the step count; a second number to keep in step
-   *  with the array is a second number that can disagree with it. */
+  /** 0..1 each. Their COUNT is the step count: a separate number would be a
+   *  second one that can disagree with the array. */
   values: number[];
   mode: StepMode;
   /** Off by default. Every other control here is one you hold; this is the one
-   *  that goes on writing after your hand leaves, so it starts silent. */
+   *  that keeps writing after your hand leaves. */
   on: boolean;
 }
 
 export function defaultWeaveSteps(): WeaveSteps {
-  // A rise rather than a flat line: flat is the one shape that cannot show you
-  // whether the curve is running.
+  // A rise, not a flat line: flat is the one shape that cannot show you whether
+  // the row is running.
   return {
     destId: '',
     values: Array.from({ length: 16 }, (_, i) => i / 15),
@@ -115,7 +114,6 @@ export interface WeaveState {
    *  moves a lane to a different style behind the user's back. */
   seed: number;
   flow: FlowState;
-  steps: WeaveSteps;
   /** WEAVE unplugged from the clock: it contributes no notes and does not
    *  travel. Everything else in Loom carries on exactly as it does with this
    *  panel closed — the transport plays, the lanes play their own clips, the
@@ -127,6 +125,7 @@ export interface WeaveState {
    *  saved silent with the button unable to undo it. A switch that unplugs one
    *  thing must not reach for another. */
   bypass: boolean;
+  steps: WeaveSteps;
 }
 
 export function defaultWeaveState(): WeaveState {
@@ -137,8 +136,8 @@ export function defaultWeaveState(): WeaveState {
   return {
     lanes: {}, macros, seed: 1,
     flow: { drift: 'together', speedBars: 0 },
-    steps: defaultWeaveSteps(),
     bypass: false,
+    steps: defaultWeaveSteps(),
   };
 }
 

@@ -243,6 +243,15 @@ export interface PanelMusicality {
   bpm: number;
 }
 
+/** A row of steps that moves one parameter in time with the loop. */
+export interface PanelSteps {
+  destId: string;
+  /** 0..1 each; the count IS the step count. */
+  values: number[];
+  mode: 'hold' | 'ramp';
+  on: boolean;
+}
+
 /** Where the master flow stands.
  *
  *  `position` is read off the lanes rather than remembered beside the speed:
@@ -357,6 +366,24 @@ export interface PanelContext {
    *  schedules exactly as it did before the panel existed. */
   bypassed(): boolean;
   setBypassed(on: boolean): void;
+  /** The step row: a line of values that moves ONE parameter in time with the
+   *  loop, the way the old sequencers put a row of knobs under the pattern. */
+  steps(): PanelSteps;
+  /** Draw one step. `index` into the row, `value` 0..1 — normalised, because
+   *  what it means in hertz or decibels is the destination's business. */
+  setStep(index: number, value: number): void;
+  /** Point the row at a destination, switch it on, or change how a step reaches
+   *  the next. An empty id parks the row: drawn, landing nowhere. */
+  setStepsDest(destId: string): void;
+  setStepsOn(on: boolean): void;
+  setStepsMode(mode: 'hold' | 'ramp'): void;
+  /** Reshape the whole row. The four the old boxes had, and they COMPOSE —
+   *  each takes what is there rather than replacing it with a stored shape. */
+  stepsTool(tool: 'up' | 'down' | 'invert' | 'random'): void;
+  /** Everything a curve can be pointed at, from the ONE catalogue the rest of
+   *  Loom automates through — so a step row can move anything a knob can, and
+   *  nothing it cannot. */
+  destinations(): PanelChoice[];
   /** The bar this lane is about to play, as it stands RIGHT NOW.
    *
    *  Folded by the same source the scheduler reads, so what a panel draws and

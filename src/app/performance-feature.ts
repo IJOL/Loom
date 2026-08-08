@@ -442,6 +442,10 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         // The weave source, so the panel can DRAW the bar it is about to play
         // from the same fold the scheduler reads.
         weaveNotesFor: deps.weaveNotesFor,
+        // The ONE catalogue, already here for the timeline's own automation
+        // picker. The step row asks the same list, so it can move anything a
+        // knob can and nothing it cannot.
+        destinations: () => destinations.list(),
       }),
     );
   }

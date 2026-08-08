@@ -18,6 +18,7 @@ import { isHarmonic } from '../plugins/capabilities';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { ticksPerBar, type TimeSignature } from '../core/meter';
 import { applyFlow, flowAt } from '../weave/flow';
+import { fillSteps } from '../automation/automation-steps';
 import { TICKS_PER_QUARTER } from '../core/notes';
 import type { NoteEvent } from '../core/notes';
 import type { SessionState } from '../session/session';
@@ -61,6 +62,10 @@ export interface WeaveWiringDeps {
   // per tick and the only way a panel that is closed costs nothing.
   /** The session itself, for the clips a lane's selection names. A getter, not
    *  a value: New and Open replace the whole object. */
+  /** Land one step of the row on its destination. Through the host's playback
+   *  door, the same one the Space and Motion macros use. Absent in fixtures
+   *  with no audio graph, where the row simply writes nowhere. */
+  writeStep?: (destId: string, normalised: number) => void;
   getState?: () => SessionState;
 }
 
@@ -197,6 +202,39 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
   // added to the answer of the last. One journey, one line.
   let lastFlow = -1;
 
+  /** The step row, evaluated against the bar and written to its destination.
+   *
+   *  A row of knobs under the pattern is what the old sequencers gave you, and
+   *  the point is that it moves a PARAMETER — a cutoff, a resonance — in time
+   *  with the loop rather than in time with a curve of its own.
+   *
+   *  The shape comes from `fillSteps`, the clip painter's, because there is only
+   *  one right answer to "what is the value between two steps" and it already
+   *  lives somewhere. The write goes through the destination catalogue by the
+   *  PLAYBACK door — the same one Space and Motion use — so the value reaches
+   *  the audio object and never the lane's saved sound: the row owns the value,
+   *  and stamping its momentary position into a preset is the bug that door
+   *  exists to avoid. */
+  let lastStepWritten = -1;
+  const tickSteps = (bars: number) => {
+    const s = state.steps;
+    if (!s?.on || !s.destId || s.values.length === 0) { lastStepWritten = -1; return; }
+
+    const phase = bars - Math.floor(bars);
+    // Resolved at the resolution of the row itself: asking fillSteps for one
+    // value per step and reading the one under the playhead. Any finer is a
+    // number nothing can hear, and every tick that lands on the same step is a
+    // write nobody needs.
+    const n = s.values.length;
+    const idx = Math.min(n - 1, Math.floor(phase * n));
+    const sub = s.mode === 'hold' ? idx : Math.min(255, Math.floor(phase * 256));
+    if (sub === lastStepWritten) return;
+    lastStepWritten = sub;
+
+    const curve = fillSteps(s.values, s.mode, s.mode === 'hold' ? n : 256);
+    deps.writeStep?.(s.destId, curve[sub] ?? 0);
+  };
+
   return {
     state,
 
@@ -206,14 +244,22 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       // be changing the scene behind the user's back, and they would find it
       // somewhere else entirely when they switched back on.
       if (state.bypass) { lastFlow = -1; return; }
+
+      const bpm = deps.getBpm?.() ?? 120;
+      const barSec = ticksPerBar(deps.getMeter()) * ((60 / bpm) / TICKS_PER_QUARTER);
+      if (!(barSec > 0)) return;
+
+      // The step row runs off the SAME clock reading as the flow, and before
+      // it: it moves a parameter in time with the loop, which is a different
+      // job from moving the loops, and it must keep running while the flow sits
+      // at a speed of Off.
+      tickSteps(nowSec / barSec);
+
       const speed = state.flow?.speedBars ?? 0;
       if (!(speed > 0)) {
         lastFlow = -1;
         return;
       }
-      const bpm = deps.getBpm?.() ?? 120;
-      const barSec = ticksPerBar(deps.getMeter()) * ((60 / bpm) / TICKS_PER_QUARTER);
-      if (!(barSec > 0)) return;
 
       const laneIds = (deps.getState?.().lanes ?? []).map((l) => l.id);
       // The SAME starting line the panel's own gesture uses, out of the state
@@ -238,6 +284,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       };
 
       if (applyFlow(state.lanes, laneIds, pos, state.flow.drift, base, rehook)) {
+
         sources.clear();
 
       }
