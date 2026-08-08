@@ -56,6 +56,11 @@ export interface SessionLifecycleDeps {
   performanceFeature: PerformanceFeature;
   /** Stops the clock AND silences every lane. New calls it before wiping. */
   stopTransport(): void;
+  /** Wipe the weave back to nothing. New has to say this out loud: the weave
+   *  lives beside the session rather than inside it, so `replaceSession` alone
+   *  left the macros, the flow and every dead lane's selection alive in a
+   *  session that no longer had those lanes. Absent in fixtures with no panel. */
+  resetWeave?(): void;
 }
 
 export interface SessionLifecycle {
@@ -141,6 +146,10 @@ export function wireSessionLifecycle(deps: SessionLifecycleDeps): SessionLifecyc
     // every band turned into an orphaned "missing" (clipEvents pointing at the
     // just-deleted clips).
     performanceFeature.resetArrangement();
+    // And the weave, which is neither in the session state nor in the
+    // arrangement. Without this, New kept the previous scene's macros, its
+    // master flow and its speed — a "new" session that was already travelling.
+    deps.resetWeave?.();
     markClean();
   }
   document.getElementById('new-session')?.addEventListener('click', () => { void newSession(); });

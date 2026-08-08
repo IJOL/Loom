@@ -353,9 +353,14 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // list too, and it is empty by construction — picked as an end of the
       // crossfade it would make one extreme of the fader silence, which looks
       // exactly like a broken weave.
-      const loopIds = weaveLoopChoices(loopContext(made.id))
+      const library = weaveLoopChoices(loopContext(made.id))
         .map((c) => c.id)
         .filter((id) => id.startsWith('lib:'));
+      // Rotated by where this track sits, so the second one you add is weaving
+      // something else. Adding three and hearing one line three times over is
+      // not a demonstration of anything.
+      const at = (2 * Math.max(0, deps.sessionHost.state.lanes.indexOf(made))) % (library.length || 1);
+      const loopIds = [...library.slice(at), ...library.slice(0, at)];
       const sel = defaultSelection('ab', loopIds);
       if (sel) {
         deps.weave.lanes[made.id] = { ...defaultLaneSelection(), weave: sel };

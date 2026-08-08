@@ -16,6 +16,7 @@ import { createKnobMounter } from './app/knob-mounting';
 import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
 import { createWeaveWiring } from './app/weave-wiring';
+import { defaultWeaveState } from './weave/weave-state';
 import { applyWeaveParamMacros } from './app/weave-param-macros';
 import { printScene } from './session/session-runtime';
 import type { NoteEvent } from './core/notes';
@@ -886,6 +887,10 @@ const { demos: DEMOS, newSession } = wireSessionLifecycle({
   sessionHost, presetsLoaded, workletReady, setTransportBpm,
   markClean: () => autoHistory.markClean(),
   performanceFeature, stopTransport,
+  // The weave lives beside the session, so New has to wipe it explicitly — the
+  // same door a load uses, which is what keeps "New" and "New + load" the one
+  // reset contract.
+  resetWeave: () => weaveWiring.replace(defaultWeaveState()),
 });
 
 // App is always in session mode — seq.sessionMode must be true at boot.

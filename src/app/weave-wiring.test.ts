@@ -3,6 +3,7 @@
 // "no gate at all" looks like from the outside.
 import { describe, it, expect } from 'vitest';
 import { createWeaveWiring } from './weave-wiring';
+import { defaultWeaveState } from '../weave/weave-state';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { DEFAULT_METER, ticksPerBar } from '../core/meter';
 import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
@@ -213,6 +214,28 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       w.advance(BAR_SEC * 3);
       expect(posOf(w)).toBe(travelled);
     });
+  });
+
+  it('a default weave CLEARS a travelling one — this is what New Session does', () => {
+    // The weave lives beside the session rather than inside it, so
+    // replaceSession alone left the previous scene's macros, its master flow and
+    // its speed alive: a "new" session that was already travelling. Seen in the
+    // browser — New Session came up with Drift Offset and Speed 8 bars still
+    // set, from a scene that no longer existed.
+    const w = wiring(session());
+    w.state.macros.energy = 0.94;
+    w.state.flow = { drift: 'offset', speedBars: 8 };
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0.7 },
+      locked: false, harmonyLeader: false,
+    };
+
+    w.replace(defaultWeaveState());
+
+    expect(w.state.flow.speedBars).toBe(0);
+    expect(w.state.flow.drift).toBe('together');
+    expect(w.state.macros.energy).toBe(0.5);
+    expect(w.state.lanes.lane1).toBeUndefined();
   });
 
   it('leaves the lane untouched when its loops no longer exist', () => {
