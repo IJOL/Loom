@@ -115,14 +115,29 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
   /** The library loops this lane may weave, in list order and nothing else.
    *  Rotated by where the lane sits so two tracks added in a row are not
    *  weaving the same pair. */
-  const libraryFor = (laneId: string): string[] => {
+  const libraryFor = (laneId: string, offset = 0): string[] => {
     const lanes = deps.sessionHost.state.lanes;
     const library = weaveLoopChoices(loopContext(laneId))
       .map((c) => c.id)
       .filter((id) => id.startsWith('lib:'));
     const i = Math.max(0, lanes.findIndex((l) => l.id === laneId));
-    const at = (2 * i) % (library.length || 1);
+    const at = (2 * i + offset) % (library.length || 1);
     return [...library.slice(at), ...library.slice(0, at)];
+  };
+
+  /** How far into its shelf a lane starts, for a given roll of the dice.
+   *
+   *  A hash and not a counter, and seeded by the SCENE's seed, so a re-roll is
+   *  reproducible: the same session dealt the same way twice. Per lane, so one
+   *  press moves every lane somewhere different rather than sliding them all by
+   *  the same amount — which would keep whatever relationship they had and read
+   *  as no roll at all. */
+  const rollOffset = (laneId: string): number => {
+    let v = 2166136261;
+    for (const s of [String(deps.weave.seed), laneId]) {
+      for (let i = 0; i < s.length; i++) v = Math.imul(v ^ s.charCodeAt(i), 16777619) >>> 0;
+    }
+    return v % 4096;
   };
 
   /** Re-pick a lane's loops when the shelves it reads have moved under it.
@@ -423,10 +438,35 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     },
 
     reseed() {
-      // A different deal from the same deck. The style MIX is untouched: how far
-      // the lanes may wander is the user's setting, and re-dealing must not
-      // quietly widen or narrow it.
+      // The dice, and it deals LOOPS.
+      //
+      // It used to move the seed and nothing else, which fed exactly one thing:
+      // styleForLane — and that returns the base style untouched whenever Style
+      // mix sits at 0, its neutral and its default. So the button did nothing at
+      // all in the configuration everyone starts in. mpump's MIX is the whole
+      // creative loop of that program; a dice that no-ops is worse than none.
       deps.weave.seed = (deps.weave.seed % 1_000_000) + 1;
+
+      for (const lane of deps.sessionHost.state.lanes) {
+        const entry = deps.weave.lanes[lane.id];
+        // LOCKED lanes are the point of the dice. You roll, you keep what you
+        // like by locking it, you roll again — that loop is what lets someone
+        // arrive at a scene without ever opening a list, and it only works if
+        // the lock is what the dice obeys.
+        if (!entry?.weave || entry.locked) continue;
+        const cur = entry.weave;
+        const next = defaultSelection(cur.kind, libraryFor(lane.id, rollOffset(lane.id)));
+        // The MATERIAL is re-dealt; WHERE the scene is in its journey is not.
+        // Rolling the dice mid-crossfade must not snap every lane back to the
+        // start — that would be a cut, and a cut is the one thing this panel is
+        // for avoiding.
+        if (!next) continue;
+        const kept = cur.kind === 'cloud' && next.kind === 'cloud'
+          ? { ...next, x: cur.x, y: cur.y }
+          : { ...next, x: cur.x };
+        deps.weave.lanes[lane.id] = { ...entry, weave: kept };
+      }
+
       deps.onWeaveChanged?.('*');
       deps.refresh();
     },

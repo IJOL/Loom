@@ -71,6 +71,103 @@ function runBar(
   return fired;
 }
 
+/** Every fired note's layer, in order. The transport hands the layer to the
+ *  trigger as its LAST argument, and that is the seam this measures: the
+ *  renderer routes correctly when it is told, so "the sound does not change"
+ *  can only mean it is never told. */
+function runBarLayers(
+  state: SessionState,
+  laneStates: Map<string, LanePlayState>,
+  notesFor?: (laneId: string) => ReturnType<ReturnType<typeof createWeaveWiring>['notesFor']>,
+) {
+  const layers: (number | undefined)[] = [];
+  for (let t = 0; t < SEC_PER_BAR - LOOK; t += LOOK) {
+    tickSession(
+      laneStates, state, t, LOOK, BPM,
+      (_laneId, _midi, _time, _gate, _accent, _sliding, _sample, _vel, _off, layerIndex) => {
+        layers.push(layerIndex);
+      },
+      () => {},
+      undefined, undefined, undefined, undefined, undefined, notesFor,
+    );
+  }
+  return layers;
+}
+
+describe('a woven note reaches the LAYER its loop names', () => {
+  // Reported from the browser: "el sonido no cambia, cambia solo el loop". The
+  // renderer is proven right by layers-routing.dsp.test — index 0 and index 1
+  // render differently — so a scene where both ends sound the same means the
+  // index never arrived and LAYERS fell back to the zones, which by default
+  // span the whole keyboard and let every note through to every layer.
+
+  it('carries the layer on every note of a LAYERS lane', () => {
+    const { state, laneStates, weave } = fixture('layers');
+    weave.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0.5 },
+      locked: false, harmonyLeader: false,
+    };
+    const layers = runBarLayers(state, laneStates, (id) => weave.notesFor(id));
+    expect(layers.length).toBeGreaterThan(0);
+    expect(layers.every((l) => l !== undefined)).toBe(true);
+  });
+
+  it('names the loop each end came from', () => {
+    // The ends first, because they are unambiguous: at 0 everything is A's, at 1
+    // everything is B's. If these disagree the index itself is wrong, and no
+    // amount of looking at the middle would say so.
+    const at = (x: number) => {
+      const { state, laneStates, weave } = fixture('layers');
+      weave.state.lanes.lane1 = {
+        weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x },
+        locked: false, harmonyLeader: false,
+      };
+      return new Set(runBarLayers(state, laneStates, (id) => weave.notesFor(id)));
+    };
+    expect(at(0)).toEqual(new Set([0]));
+    expect(at(1)).toEqual(new Set([1]));
+  });
+
+  it('has BOTH instruments playing somewhere across the crossfade', () => {
+    // The point of routing by origin: for part of the journey the merged bar is
+    // shared between two instruments. Swept rather than sampled at 0.5, because
+    // this fixture is deliberately lopsided — A sits entirely on weak steps and
+    // B entirely on strong ones, so the exact midpoint is not where the mixture
+    // has to be.
+    // A FRESH fixture per point. Reusing one walks the lane's play state on a
+    // bar every pass, so every measurement after the first was reading a
+    // transport that had already left — my own first sweep said "never mixed"
+    // for that reason and not the blend's.
+    const layersAt = (x: number) => {
+      const { state, laneStates, weave } = fixture('layers');
+      weave.state.lanes.lane1 = {
+        weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x },
+        locked: false, harmonyLeader: false,
+      };
+      return new Set(runBarLayers(state, laneStates, (id) => weave.notesFor(id)));
+    };
+    const mixed: number[] = [];
+    for (let i = 1; i <= 9; i++) {
+      const x = i / 10;
+      const seen = layersAt(x);
+      if (seen.has(0) && seen.has(1)) mixed.push(x);
+    }
+    expect(mixed.length).toBeGreaterThan(0);
+  });
+
+  it('carries NO layer on a lane whose instrument is not layered', () => {
+    // It must stay free for every other engine: an index on an ordinary lane is
+    // a number the renderer would have to remember to ignore.
+    const { state, laneStates, weave } = fixture('subtractive');
+    weave.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0.5 },
+      locked: false, harmonyLeader: false,
+    };
+    const layers = runBarLayers(state, laneStates, (id) => weave.notesFor(id));
+    expect(layers.every((l) => l === undefined)).toBe(true);
+  });
+});
+
 describe('a weave reaches the transport', () => {
   it('fires every hit when no weave is configured', () => {
     const { state, laneStates, weave } = fixture();
