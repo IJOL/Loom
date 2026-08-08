@@ -374,17 +374,52 @@ function mountWeave(host, ctx) {
   flow.step = "0.01";
   flow.id = "weave-flow";
   flow.setAttribute("aria-label", "Master flow");
-  flow.value = String(ctx.macro("flow"));
+  const flowNow = ctx.flow();
+  flow.value = String(flowNow.position);
   const flowOut = el2("span", "weave-readout");
   const showFlow = () => {
-    flowOut.textContent = Number(flow.value).toFixed(2).replace(".", ",");
+    flowOut.textContent = Number(flow.value).toFixed(2);
   };
   showFlow();
-  flow.addEventListener("input", () => {
-    ctx.setMacro("flow", Number(flow.value));
+  const drift = document.createElement("select");
+  drift.className = "weave-drift";
+  drift.setAttribute("aria-label", "How the lanes drift apart");
+  for (const [id, label, hint] of [
+    ["together", "Together", "Every lane crosses at the same moment \u2014 a section change."],
+    ["offset", "Offset", "Lanes fanned out, so something is always mid-transition."],
+    ["free", "Free", "Each lane keeps its own position; the flow only nudges it."]
+  ]) {
+    const o = document.createElement("option");
+    o.value = id;
+    o.textContent = label;
+    o.title = hint;
+    drift.appendChild(o);
+  }
+  const speed = document.createElement("select");
+  speed.className = "weave-speed";
+  speed.setAttribute("aria-label", "How long a full journey takes");
+  for (const bars of [0, 4, 8, 16, 32, 64]) {
+    const o = document.createElement("option");
+    o.value = String(bars);
+    o.textContent = bars === 0 ? "Off" : `${bars} bars`;
+    speed.appendChild(o);
+  }
+  drift.value = flowNow.drift;
+  speed.value = String(flowNow.speedBars);
+  const pushFlow = () => {
+    ctx.setFlow(Number(flow.value), drift.value, Number(speed.value));
+    flow.disabled = Number(speed.value) > 0;
     showFlow();
-  });
-  flowRow.append(flowLabel, flow, flowOut);
+  };
+  flow.disabled = flowNow.speedBars > 0;
+  flow.addEventListener("input", pushFlow);
+  drift.addEventListener("change", pushFlow);
+  speed.addEventListener("change", pushFlow);
+  const driftLabel = el2("span", "weave-label");
+  driftLabel.textContent = "Drift";
+  const speedLabel = el2("span", "weave-label");
+  speedLabel.textContent = "Speed";
+  flowRow.append(flowLabel, flow, flowOut, driftLabel, drift, speedLabel, speed);
   const lanes = el2("div", "weave-lanes");
   const head2 = el2("div", "weave-lane weave-lane-head");
   for (const label of ["", "", "Lane", "", "Instrument", "Preset", "Style", "Topology", "Loops"]) {
@@ -430,6 +465,13 @@ function mountWeave(host, ctx) {
       return;
     }
     for (const l of laneRows) l.ring.set(ctx.loopPhase(l.laneId));
+    if (flow.disabled) {
+      const pos = ctx.flow().position;
+      if (Math.abs(pos - Number(flow.value)) >= 5e-3) {
+        flow.value = String(pos);
+        showFlow();
+      }
+    }
     const step = Math.floor(phase * 16) % 16;
     if (step !== lastStep) {
       lastStep = step;
