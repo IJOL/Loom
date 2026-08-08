@@ -71,8 +71,29 @@ describe('LAYERS — a note goes to the layer its loop names', () => {
   });
 
   it('plays NOTHING for an index past the end of the rack', () => {
-    // Silence is a bug you find; a note that quietly plays on the wrong
-    // instrument is one you ship.
-    expect(render(note(60, 3))).toBe(0);
+    // Out of RANGE is a corrupt message — it can only come from a build that
+    // does not agree with this one — and silence is a bug you find, while a
+    // note on the wrong instrument is one you ship.
+    expect(render(note(60, 9))).toBe(0);
+  });
+
+  it('shares the loops out when the rack has fewer instruments than loops', () => {
+    // An EMPTY slot in range is not corruption: it is the ordinary state of a
+    // rack nobody has finished filling. Two loops and one instrument means both
+    // loops play on that instrument.
+    //
+    // Found by hitting it — a lane with only slot 1 filled went dead at the
+    // right-hand end of its crossfade, measured at peak 0.0000, and nothing on
+    // screen said why.
+    const oneOnly = readRack([{ engineId: 'test-a', lo: 0, hi: 127, gain: 1 }]);
+    const one = (n: NoteSpec) =>
+      new LayersRenderer(n, {}, 48000, oneOnly, n.layerIndex).renderSample(0);
+    expect(one(note(60, 0))).toBeCloseTo(A_LEVEL, 6);
+    expect(one(note(60, 1))).toBeCloseTo(A_LEVEL, 6);
+  });
+
+  it('still plays nothing when the rack is entirely empty', () => {
+    const none = readRack([]);
+    expect(new LayersRenderer(note(60, 0), {}, 48000, none, 0).renderSample(0)).toBe(0);
   });
 });

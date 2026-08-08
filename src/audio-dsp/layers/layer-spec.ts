@@ -59,7 +59,23 @@ export function pickLayers(
 ): number[] {
   const live = (i: number) => i >= 0 && i < layers.length && layers[i].engineId !== '';
 
-  if (layerIndex !== undefined) return live(layerIndex) ? [layerIndex] : [];
+  if (layerIndex !== undefined) {
+    if (live(layerIndex)) return [layerIndex];
+    // Out of RANGE is a corrupt message and still plays nothing: silence is a
+    // bug you find, a note on the wrong instrument is one you ship.
+    if (layerIndex < 0 || layerIndex >= layers.length) return [];
+    // In range but the slot is EMPTY is a different thing entirely — it is the
+    // ordinary state of a rack the user has not finished filling, and it must
+    // not be silence. Two loops and one instrument means both loops play on
+    // that instrument; four loops and two means they share out. The routing
+    // goes as far as the rack can and no further.
+    //
+    // Found by hitting it: a LAYERS lane with only slot 1 filled went dead at
+    // the right-hand end of its crossfade, with nothing on screen saying why.
+    const filled: number[] = [];
+    for (let i = 0; i < layers.length; i++) if (live(i)) filled.push(i);
+    return filled.length === 0 ? [] : [filled[layerIndex % filled.length]];
+  }
 
   const out: number[] = [];
   for (let i = 0; i < layers.length; i++) {

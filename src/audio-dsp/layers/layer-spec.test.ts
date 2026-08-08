@@ -59,8 +59,24 @@ describe('pickLayers — by index', () => {
     expect(pickLayers(two, 64, -1)).toEqual([]);
   });
 
-  it('an index pointing at an empty slot sounds nothing', () => {
-    expect(pickLayers([layer({}), emptyLayer()], 64, 1)).toEqual([]);
+  it('an index pointing at an EMPTY slot shares out the instruments there are', () => {
+    // This used to be silence, and the rule was wrong — not the reasoning above
+    // it, which is about a corrupt index, but the case it was applied to. An
+    // empty slot IN RANGE is the ordinary state of a rack nobody has finished
+    // filling, and it is reached the moment someone weaves two loops on a lane
+    // holding one instrument. Silence at one end of a crossfade with nothing on
+    // screen to explain it reads as the whole feature being broken — which is
+    // exactly how it was reported.
+    //
+    // So: the routing goes as far as the rack can and no further. Two loops and
+    // one instrument means both play on it.
+    expect(pickLayers([layer({}), emptyLayer()], 64, 1)).toEqual([0]);
+  });
+
+  it('sounds nothing when the rack holds no instrument at all', () => {
+    // Nothing to share out. This one really is silence, and it is honest: the
+    // user has not chosen an instrument yet.
+    expect(pickLayers([emptyLayer(), emptyLayer()], 64, 0)).toEqual([]);
   });
 });
 
