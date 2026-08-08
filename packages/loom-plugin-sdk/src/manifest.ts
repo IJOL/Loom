@@ -352,9 +352,9 @@ export interface PanelContext {
    *  here undoes exactly like one made in Project Options and the toolbar chip
    *  follows it. */
   setMusicality(key: number, scale: string, style: string): void;
-  /** Set the tempo, through the transport's own path — a panel does not get a
-   *  second clock. */
-  setBpm(bpm: number): void;
+  // No setBpm. The transport's own BPM input is on screen above every panel and
+  // already editable, so an ABI method for it would be a promise the host has to
+  // keep forever in exchange for a control nothing should draw.
   /** The twelve roots, named the way the rest of the app names them. */
   keys(): PanelChoice[];
   /** Every scale the blends can walk. */

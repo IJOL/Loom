@@ -381,18 +381,6 @@ function mountWeave(host, ctx) {
   const styleSel = pick("weave-style", ctx.styles(), mus.style);
   const pushMus = () => ctx.setMusicality(Number(keySel.value), scaleSel.value, styleSel.value);
   for (const s of [keySel, scaleSel, styleSel]) s.addEventListener("change", pushMus);
-  const bpm = document.createElement("input");
-  bpm.type = "number";
-  bpm.className = "weave-bpm";
-  bpm.min = "20";
-  bpm.max = "300";
-  bpm.value = String(Math.round(mus.bpm));
-  bpm.setAttribute("aria-label", "Tempo");
-  bpm.addEventListener("change", () => {
-    const v = Number(bpm.value);
-    if (Number.isFinite(v) && v >= 20 && v <= 300) ctx.setBpm(v);
-    else bpm.value = String(Math.round(ctx.musicality().bpm));
-  });
   const reseed = el2("button", "weave-reseed");
   reseed.textContent = "\u27F3 Reshuffle";
   reseed.title = "Deal the lane styles again \u2014 the Style amount stays where it is";
@@ -402,7 +390,6 @@ function mountWeave(host, ctx) {
     logo,
     field("Key", keySel, scaleSel),
     field("Style", styleSel),
-    field("BPM", bpm),
     spacer,
     reseed,
     surge,

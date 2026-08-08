@@ -65,8 +65,6 @@ export interface PanelContextDeps {
   /** The project's key/scale/style, through main's ONE undoable writer — the
    *  same one Project Options uses. Absent in fixtures with no session. */
   setMusicality?: (m: MusicalityState) => void;
-  /** The transport's own tempo setter, which also tells the worklet. */
-  setBpm?: (bpm: number) => void;
 }
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -317,12 +315,6 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // Which style each lane draws from moved, so the loop lists and every
       // built source are stale.
       deps.onWeaveChanged?.('*');
-    },
-
-    setBpm(bpm) {
-      // The transport's own setter, which also tells the worklet. A panel that
-      // wrote seq.bpm directly would change the number and not the sound.
-      deps.setBpm?.(bpm);
     },
 
     keys() {

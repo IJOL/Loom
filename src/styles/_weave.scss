@@ -35,7 +35,7 @@
   text-shadow: 0 0 calc(6px + 10px * var(--weave-pulse)) var(--amber-glow);
 }
 
-// The project's key/scale/style/BPM. They read quieter than the panel's own
+// The project's key, scale and style. They read quieter than the panel's own
 // controls on purpose: they belong to the session, and the panel is showing
 // them rather than owning them.
 .weave-field {
@@ -46,22 +46,14 @@
 
 .weave-key,
 .weave-scale,
-.weave-style,
-.weave-drift,
-.weave-speed,
-.weave-bpm {
-  background: var(--surface-2, #17171b);
+.weave-style {
+  background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 3px;
   padding: 2px 4px;
   font-size: 10.5px;
   max-width: 11ch;
-}
-
-.weave-bpm {
-  width: 5.5ch;
-  font-variant-numeric: tabular-nums;
 }
 
 // Pushes Reshuffle / Surge / Print to the right edge, so the session's values

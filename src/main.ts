@@ -623,7 +623,6 @@ const performanceFeature = createPerformanceFeature({
   // The project's musical ground and the tempo, through the writers the dialog
   // and the transport already use. The panel is a second view, not a second copy.
   setMusicality: (m) => setProjectMusicality(m),
-  setBpm: (bpm) => setTransportBpm(bpm),
   onWeaveChanged: () => {
     // Two halves, because the six macros reach the sound two different ways.
     // Density and Energy rewrite NOTES, so dropping the cached weave source is

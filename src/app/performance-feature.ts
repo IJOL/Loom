@@ -91,8 +91,6 @@ export interface PerformanceFeatureDeps {
   /** The app's ONE writer of the project's key/scale/style — the same one
    *  Project Options uses, undo and toolbar chip included. */
   setMusicality?: (m: import('../session/session-types').MusicalityState) => void;
-  /** The transport's own tempo setter. */
-  setBpm?: (bpm: number) => void;
   /** The ONE weave state, shared with the session host's gate. Absent in test
    *  fixtures, which get a fresh one. */
   weave?: WeaveState;
@@ -439,7 +437,6 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         // The project's musical ground and the tempo, through the app's own
         // writers. The panel is a second VIEW of them, never a second copy.
         setMusicality: deps.setMusicality,
-        setBpm: deps.setBpm,
       }),
     );
   }

@@ -224,18 +224,11 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     ctx.setMusicality(Number(keySel.value), scaleSel.value, styleSel.value);
   for (const s of [keySel, scaleSel, styleSel]) s.addEventListener('change', pushMus);
 
-  const bpm = document.createElement('input');
-  bpm.type = 'number';
-  bpm.className = 'weave-bpm';
-  bpm.min = '20';
-  bpm.max = '300';
-  bpm.value = String(Math.round(mus.bpm));
-  bpm.setAttribute('aria-label', 'Tempo');
-  bpm.addEventListener('change', () => {
-    const v = Number(bpm.value);
-    if (Number.isFinite(v) && v >= 20 && v <= 300) ctx.setBpm(v);
-    else bpm.value = String(Math.round(ctx.musicality().bpm));
-  });
+  // No BPM field here, though the mockup drew one. The mockup was a standalone
+  // picture; in the app the transport's own BPM input sits forty pixels above
+  // this row and is already editable, so a second one would be duplication you
+  // can see both of at once. Key and style stay, because up there they are a
+  // CHIP that opens a dialog — these are the same values, one click closer.
 
   // A different deal from the same deck: which style each lane strays to is
   // re-drawn, while HOW FAR it may stray — the Style knob — stays where the
@@ -251,7 +244,6 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     logo,
     field('Key', keySel, scaleSel),
     field('Style', styleSel),
-    field('BPM', bpm),
     spacer, reseed, surge, print,
   );
 

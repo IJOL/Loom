@@ -26,7 +26,6 @@ function harness(
   } as unknown as SessionState;
 
   const written: MusicalityState[] = [];
-  const bpms: number[] = [];
   const added: string[] = [];
   const weave = defaultWeaveState();
   const changed: string[] = [];
@@ -53,10 +52,9 @@ function harness(
     refresh: () => {},
     onWeaveChanged: (id) => changed.push(id),
     setMusicality: (m) => { written.push(m); state.musicality = m; },
-    setBpm: (b) => bpms.push(b),
   });
 
-  return { ctx, state, weave, written, bpms, added, changed };
+  return { ctx, state, weave, written, added, changed };
 }
 
 /** A lane weaving two loops, sitting at `x`. */
@@ -102,13 +100,9 @@ describe('createPanelContext — the project\'s musical ground', () => {
     expect(h.changed).toContain('*');
   });
 
-  it('sets the tempo through the transport, never seq.bpm', () => {
-    // Writing the field would change the number and not the sound: the worklet
-    // hears about the tempo from the transport's own setter.
-    const h = harness();
-    h.ctx.setBpm(140);
-    expect(h.bpms).toEqual([140]);
-  });
+  // The tempo is READ here and not written: the transport's own BPM input sits
+  // on screen above every panel and is already editable, so the ABI carries no
+  // setter for it. `musicality().bpm` above is what a panel gets.
 
   it('offers the twelve roots and every scale', () => {
     const h = harness();
