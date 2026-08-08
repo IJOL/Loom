@@ -209,6 +209,26 @@ export interface PanelLaneTransport {
   soloed: boolean;
 }
 
+/** One note of the bar a lane is about to play.
+ *
+ *  The RESULT, not the material: what comes out of the fold at the position the
+ *  lane sits at right now. A panel that can only show the names of two loops is
+ *  showing its inputs and hiding the one thing it makes. */
+export interface PanelNote {
+  /** Where in the bar, 0..1. Normalised so a panel needs no idea what a tick is
+   *  or how long a bar happens to be. */
+  at: number;
+  /** How much of the bar it lasts, 0..1. */
+  length: number;
+  midi: number;
+  /** 0..127. */
+  velocity: number;
+  /** Which loop it survived from, when the lane's weave names one. This is what
+   *  lets a drawing SHOW the handover: colour by origin and the crossfade stops
+   *  being a number and becomes something you watch move. */
+  from?: number;
+}
+
 /** The project's musical ground: the key everything is written in, the scale the
  *  blends walk their degrees in, the style the library draws from, and the
  *  tempo.
@@ -333,6 +353,15 @@ export interface PanelContext {
    *  the fan, so locking one does not re-space the others under it. */
   laneLocked(laneId: string): boolean;
   setLaneLocked(laneId: string, locked: boolean): void;
+  /** The bar this lane is about to play, as it stands RIGHT NOW.
+   *
+   *  Folded by the same source the scheduler reads, so what a panel draws and
+   *  what you hear cannot disagree — a second fold here would be a picture of a
+   *  bar nobody plays. Empty for a lane weaving nothing.
+   *
+   *  Read it when the weave moves, not per frame: the fold is cached and the
+   *  answer only changes when the position, the loops or a macro do. */
+  laneNotes(laneId: string): PanelNote[];
   /** What the lane is weaving, or null when no loops have been chosen. */
   laneWeave(laneId: string): PanelWeave | null;
   /** Choose loops or move the position. Passing null clears the lane back to

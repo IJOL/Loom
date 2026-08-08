@@ -349,6 +349,33 @@ describe('createPanelContext — the master flow', () => {
     expect(h.ctx.flow().drift).toBe('free');
   });
 
+  it('does not compound under a DRAG in free drift', () => {
+    // Reported as "en free hace cosas raras". A slider sends its absolute value
+    // on every pointer move, and 'free' positions each lane relative to where it
+    // already was — so with no fixed starting line every move added to the
+    // answer of the last and the lanes ran away. Dragging 0 -> 0.3 in ten steps
+    // has to land exactly where one step to 0.3 lands.
+    const dragged = (steps: number) => {
+      const h = harness(['lane1']);
+      h.weave.lanes.lane1 = weaving(0.2);
+      for (let i = 1; i <= steps; i++) h.ctx.setFlow((0.3 * i) / steps, 'free', 0);
+      return h.weave.lanes.lane1.weave!.x;
+    };
+    expect(dragged(10)).toBeCloseTo(dragged(1), 6);
+    expect(dragged(10)).toBeCloseTo(0.5, 6);   // 0.2 where it was, plus 0.3
+  });
+
+  it('re-draws the starting line when free drift is ENTERED', () => {
+    // Leaving and coming back has to count from where the lanes are now, or the
+    // second journey starts somewhere the user cannot see.
+    const h = harness(['lane1']);
+    h.weave.lanes.lane1 = weaving(0.2);
+    h.ctx.setFlow(0.3, 'free', 0);            // -> 0.5
+    h.ctx.setFlow(0.5, 'together', 0);        // -> 0.5, and the line is dropped
+    h.ctx.setFlow(0.25, 'free', 0);           // counts from 0.5, not from 0.2
+    expect(h.weave.lanes.lane1.weave!.x).toBeCloseTo(0.75, 6);
+  });
+
   it('refuses a nonsense speed rather than storing it', () => {
     const h = harness();
     h.ctx.setFlow(0, 'together', -4);

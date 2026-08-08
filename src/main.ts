@@ -624,6 +624,10 @@ const performanceFeature = createPerformanceFeature({
   // The project's musical ground and the tempo, through the writers the dialog
   // and the transport already use. The panel is a second view, not a second copy.
   setMusicality: (m) => setProjectMusicality(m),
+  // The weave's own note source. A panel draws the bar it is about to play from
+  // THIS fold — the one the scheduler reads — so the picture and the sound
+  // cannot tell different stories.
+  weaveNotesFor: (laneId) => weaveWiring.notesFor(laneId),
   onWeaveChanged: () => {
     // Two halves, because the six macros reach the sound two different ways.
     // Density and Energy rewrite NOTES, so dropping the cached weave source is

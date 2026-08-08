@@ -15,7 +15,6 @@ import { resolveSelection } from '../weave/weave-selection';
 import { weaveLoopNotes, weaveLoopContext, rehookOnArrival } from './weave-loops';
 import { macroNeutral } from '../weave/weave-catalog';
 import { isHarmonic } from '../plugins/capabilities';
-import { LAYERS_ENGINE_ID } from '../engines/layers-engine';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { ticksPerBar, type TimeSignature } from '../core/meter';
 import { applyFlow, flowAt } from '../weave/flow';
@@ -117,8 +116,10 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
   const noteMacrosAreNeutral = () =>
     macro('density') === macroNeutral('density') && macro('energy') === macroNeutral('energy');
 
-  const lanesEngineId = (laneId: string): string | undefined =>
-    deps.getState?.().lanes.find((l) => l.id === laneId)?.engineId;
+  // A `lanesEngineId` used to sit here, for the one question this file asked
+  // about a lane's instrument: is it LAYERS. That question is gone — every
+  // woven note names its loop now, and routing by that name is LAYERS' own
+  // business — so the helper and its import went with it.
 
   const melodicLane = (laneId: string): boolean => {
     const lane = deps.getState?.().lanes.find((l) => l.id === laneId);
@@ -152,11 +153,16 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
         // melodic blend walks its degrees in. Reading the session's here instead
         // would let Darkness pick the loops and then blend them in another key.
         const m = loopContext(laneId);
-        // A lane whose instrument HAS layers gets its notes routed by origin:
-        // the merged bar comes out shared between the loops' own instruments
-        // rather than played by one. Asked of the lane's engine, so it costs
-        // nothing on every other lane.
-        const layered = lanesEngineId(laneId) === LAYERS_ENGINE_ID;
+        // EVERY woven note says which loop it survived from, on every lane.
+        //
+        // It used to be asked of the engine — only a LAYERS lane was tagged,
+        // since only LAYERS routes by it — and that was the wrong question. The
+        // tag is one field on a note that every other engine ignores; what is
+        // exclusive to LAYERS is ROUTING by it, and that decision belongs where
+        // the routing happens. Asking here meant the panel could only COLOUR the
+        // handover on a layered lane, and the handover is the whole point of the
+        // drawing: on an ordinary lane every hit came out the same colour and
+        // showed nothing about what the fader was doing.
         return createWeaveSource(cfg, {
           barTicks,
           melodic: melodicLane(laneId),
@@ -166,7 +172,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
           // only has to agree with itself, since both sides of a pair are
           // converted through the same base.
           octaveBase: 3,
-        }, layered, noteMacros);
+        }, true, noteMacros);
       }
     }
 
@@ -184,11 +190,11 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     );
   };
 
-  // Where 'free' counts its journey from: the positions as they were when the
-  // flow was last still. Held here rather than in WeaveState because it is not
-  // a setting — it is a starting line, and it is re-drawn every time the speed
-  // is turned off and on again.
-  let base: Map<string, number> | null = null;
+  // The starting line 'free' counts from lives in WeaveState now, not here.
+  // There were two of them — this one for the clock, none for the hand — and
+  // "cosas raras" is what a hand on the fader looked like: a slider sends its
+  // absolute value on every pointer move, and with no starting line each move
+  // added to the answer of the last. One journey, one line.
   let lastFlow = -1;
 
   return {
@@ -197,9 +203,6 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     advance(nowSec) {
       const speed = state.flow?.speedBars ?? 0;
       if (!(speed > 0)) {
-        // Speed off: the next journey starts from wherever the user leaves the
-        // lanes, so the starting line is forgotten rather than kept.
-        base = null;
         lastFlow = -1;
         return;
       }
@@ -208,9 +211,9 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       if (!(barSec > 0)) return;
 
       const laneIds = (deps.getState?.().lanes ?? []).map((l) => l.id);
-      if (base === null) {
-        base = new Map(laneIds.map((id) => [id, state.lanes[id]?.weave?.x ?? 0]));
-      }
+      // The SAME starting line the panel's own gesture uses, out of the state
+      // both share. Only 'free' has one; the other two say where a lane IS.
+      const base = state.flow.base && new Map(Object.entries(state.flow.base));
 
       const pos = flowAt(nowSec / barSec, speed);
       // A lap of 64 bars moves the position by ~0.0005 per tick, which is below
@@ -262,7 +265,6 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       // Unconditional, like the rest: a save with no flow must CLEAR the live
       // one, not leave the previous session still travelling.
       state.flow = next.flow ?? { drift: 'together', speedBars: 0 };
-      base = null;
       lastFlow = -1;
       sources.clear();
     },

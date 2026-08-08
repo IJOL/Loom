@@ -164,6 +164,44 @@
 // ── lanes ──────────────────────────────────────────────────────────────────
 .weave-lanes { display: flex; flex-direction: column; gap: 5px; }
 
+// A lane is a row of controls and, under it, the bar those controls produce.
+.weave-lane-wrap {
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 2px;
+}
+
+// The OUTPUT: the bar this track is about to play, hits coloured by which loop
+// they survived from. It is the one thing on screen that shows what the panel
+// actually makes — everything above it is inputs.
+//
+// COMPACT by default. It is also the one thing that adds a second line to every
+// lane, and eight lanes of tall piano rolls is a screen you scroll rather than
+// read. The header's Notes button trades size for detail when asked.
+.weave-bar {
+  display: block;
+  width: 100%;
+  height: 16px;
+  background: var(--surface-3);
+  border-top: 1px solid var(--border-soft);
+  transition: height 120ms ease;
+}
+
+.weave-rack.bars-open .weave-bar { height: 54px; }
+
+.weave-bars-toggle {
+  background: transparent;
+  color: var(--text-dim, #9a9aa2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 9px;
+  font-size: 11px;
+  cursor: pointer;
+
+  &:hover { color: var(--amber); border-color: var(--amber-soft); }
+  &.on { color: var(--amber); border-color: var(--amber); }
+}
+
 .weave-lane {
   display: grid;
   // Nine columns: lamp, ring, name, transport, instrument, preset, style,

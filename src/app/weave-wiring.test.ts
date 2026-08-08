@@ -80,13 +80,18 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
     expect(w.notesFor('lane1')!()!.map((n) => n.midi)).toEqual([40]);
   });
 
-  it('carries no layer on a lane whose instrument has none', () => {
+  it('names the loop on EVERY lane, layered or not', () => {
+    // This used to assert the opposite, and asking the engine was the wrong
+    // question. The tag is one field that every engine but LAYERS ignores; what
+    // is exclusive to LAYERS is ROUTING by it. Tagging only there meant the
+    // panel could colour the handover on a layered lane and nowhere else — and
+    // on an ordinary lane the drawing showed nothing about what the fader does.
     const w = wiring(session('subtractive'));
     w.state.lanes.lane1 = {
       weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
       locked: false, harmonyLeader: false,
     };
-    expect(w.notesFor('lane1')!()![0].layerIndex).toBeUndefined();
+    expect(w.notesFor('lane1')!()![0].layerIndex).toBe(0);
   });
 
   it('names the loop on a LAYERS lane, so each note reaches its own instrument', () => {

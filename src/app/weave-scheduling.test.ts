@@ -155,16 +155,20 @@ describe('a woven note reaches the LAYER its loop names', () => {
     expect(mixed.length).toBeGreaterThan(0);
   });
 
-  it('carries NO layer on a lane whose instrument is not layered', () => {
-    // It must stay free for every other engine: an index on an ordinary lane is
-    // a number the renderer would have to remember to ignore.
+  it('carries the layer on an ORDINARY lane too, all the way to the trigger', () => {
+    // It used to be tagged only on a LAYERS lane, and that was the wrong
+    // question: routing by the tag is what belongs to LAYERS, while the tag
+    // itself is one field every other engine ignores. Tagging everywhere is what
+    // lets the panel colour the handover on any lane — and the handover is the
+    // whole argument of the instrument.
     const { state, laneStates, weave } = fixture('subtractive');
     weave.state.lanes.lane1 = {
       weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0.5 },
       locked: false, harmonyLeader: false,
     };
     const layers = runBarLayers(state, laneStates, (id) => weave.notesFor(id));
-    expect(layers.every((l) => l === undefined)).toBe(true);
+    expect(layers.length).toBeGreaterThan(0);
+    expect(layers.every((l) => l !== undefined)).toBe(true);
   });
 });
 

@@ -90,7 +90,9 @@ export interface PerformanceFeatureDeps {
   applyMuteSolo?: () => void;
   /** The app's ONE writer of the project's key/scale/style — the same one
    *  Project Options uses, undo and toolbar chip included. */
-  setMusicality?: (m: import('../session/session-types').MusicalityState) => void;
+  setMusicality?: (m: import("../session/session-types").MusicalityState) => void;
+  /** WEAVE's note source, threaded to a panel so it can draw the woven bar. */
+  weaveNotesFor?: (laneId: string) => (() => readonly { start: number; duration: number; midi: number; velocity: number }[] | undefined) | undefined;
   /** The ONE weave state, shared with the session host's gate. Absent in test
    *  fixtures, which get a fresh one. */
   weave?: WeaveState;
@@ -437,6 +439,9 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         // The project's musical ground and the tempo, through the app's own
         // writers. The panel is a second VIEW of them, never a second copy.
         setMusicality: deps.setMusicality,
+        // The weave source, so the panel can DRAW the bar it is about to play
+        // from the same fold the scheduler reads.
+        weaveNotesFor: deps.weaveNotesFor,
       }),
     );
   }

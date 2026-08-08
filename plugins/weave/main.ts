@@ -239,14 +239,29 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   reseed.title = 'Deal the lane styles again — the Style amount stays where it is';
   reseed.addEventListener('click', () => ctx.reseed());
 
+  // The bars are COMPACT by default and open on request. They are the one thing
+  // here that shows what the panel makes, and they are also the one thing that
+  // adds a second line to every lane — so they earn their place at a size you
+  // can read at a glance and give up more only when asked.
+  const bars = el('button', 'weave-bars-toggle');
+  const paintBars = () => {
+    const open = rack.classList.contains('bars-open');
+    bars.textContent = open ? '▤ Notes' : '▤ Notes';
+    bars.classList.toggle('on', open);
+    bars.title = open ? 'Shrink the note bars' : 'Enlarge the note bars';
+    bars.setAttribute('aria-pressed', String(open));
+  };
+  bars.addEventListener('click', () => { rack.classList.toggle('bars-open'); paintBars(); });
+
   const spacer = el('span', 'weave-head-spacer');
 
   head.append(
     logo,
     field('Key', keySel, scaleSel),
     field('Style', styleSel),
-    spacer, reseed, surge, print,
+    spacer, bars, reseed, surge, print,
   );
+  paintBars();
 
   // ── the pulse: a bar of sixteen cells that lights on the beat ────────────
   //
@@ -395,6 +410,15 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     raf = requestAnimationFrame(frame);
     const phase = ctx.barPhase();
 
+    // BEFORE the stopped-transport branch below, because this is not animation.
+    // Each lane follows its own position and redraws its bar, and both have to
+    // happen whether or not the clock is running: the master flow, the dice and
+    // undo all move lanes with the transport stopped, and every one of them used
+    // to leave the panel showing the values it was built with. Reported as the
+    // master slider doing nothing — it moved the weave and the screen sat still,
+    // which is indistinguishable from a dead control.
+    for (const l of laneRows) l.followWeave(phase);
+
     if (phase < 0) {
       // Stopped: everything settles rather than freezing mid-flash, so a still
       // panel looks deliberate instead of hung. The rings go silent explicitly
@@ -423,12 +447,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
         flow.value = String(pos);
         showFlow();
       }
-      // And the lanes themselves, each following its own position — with Offset
-      // drift they are all at DIFFERENT points of the journey, so one master
-      // readout cannot stand in for them.
-      for (const l of laneRows) l.followWeave();
     }
-
     const step = Math.floor(phase * 16) % 16;
     if (step !== lastStep) {
       lastStep = step;

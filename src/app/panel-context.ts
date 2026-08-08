@@ -68,6 +68,12 @@ export interface PanelContextDeps {
   /** The project's key/scale/style, through main's ONE undoable writer — the
    *  same one Project Options uses. Absent in fixtures with no session. */
   setMusicality?: (m: MusicalityState) => void;
+  /** The weave's own note source, the one the scheduler reads. Handed in so a
+   *  panel can DRAW the bar that is about to play — from the same fold, never a
+   *  second one. Absent in fixtures with no weave wiring. */
+  weaveNotesFor?: (laneId: string) => (() => readonly {
+    start: number; duration: number; midi: number; velocity: number;
+  }[] | undefined) | undefined;
 }
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
@@ -323,6 +329,23 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // would rebuild every source to fold exactly the same notes.
     },
 
+    laneNotes(laneId) {
+      // The SAME source the scheduler reads. Folding again here would be a
+      // picture of a bar nobody plays — and this drawing exists precisely to be
+      // trusted: it is the only place the result of all this is visible.
+      const notes = deps.weaveNotesFor?.(laneId)?.();
+      if (!notes || notes.length === 0) return [];
+      const bar = ticksPerBar(deps.seq.meter);
+      if (!(bar > 0)) return [];
+      return notes.map((n) => ({
+        at: n.start / bar,
+        length: Math.max(1, n.duration) / bar,
+        midi: n.midi,
+        velocity: n.velocity,
+        from: (n as { layerIndex?: number }).layerIndex,
+      }));
+    },
+
     laneWeave(laneId) {
       return deps.sessionHost.state.lanes.some((l) => l.id === laneId)
         ? deps.weave.lanes[laneId]?.weave ?? null
@@ -359,16 +382,30 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
 
     setFlow(position, drift, speedBars) {
       const mode = asDrift(drift);
-      deps.weave.flow = { drift: mode, speedBars: Math.max(0, speedBars || 0) };
-      // The SAME writer the auto-advance uses. A hand on the fader and a clock
-      // driving it must mean the same thing, or the scene would jump the moment
-      // the transport started. No base: a gesture counts from where the lanes
-      // are, which is what makes 'free' a nudge.
+      const was = deps.weave.flow;
+
+      // 'free' positions each lane relative to where it ALREADY was, so it needs
+      // a fixed starting line or every call compounds the last one. A slider
+      // sends its absolute value on every pointer move, so without this a single
+      // drag added the same amount dozens of times and the lanes ran away.
+      //
+      // Captured when the mode is ENTERED and kept until it is left. The other
+      // two modes say where a lane IS, so they carry no base at all.
+      const base = mode !== 'free' ? undefined
+        : was?.drift === 'free' && was.base ? was.base
+          : Object.fromEntries(deps.sessionHost.state.lanes.map((l) =>
+            [l.id, positionOf(deps.weave.lanes[l.id]?.weave)]));
+
+      deps.weave.flow = { drift: mode, speedBars: Math.max(0, speedBars || 0), base };
+      // The SAME writer the auto-advance uses, with the SAME starting line. A
+      // hand on the fader and a clock driving it are one journey; two answers
+      // would make the scene jump the moment the transport started.
       applyFlow(
         deps.weave.lanes,
         deps.sessionHost.state.lanes.map((l) => l.id),
         position,
         mode,
+        base && new Map(Object.entries(base)),
       );
       deps.onWeaveChanged?.('*');
     },

@@ -168,6 +168,67 @@ function weaveCell(laneId, ctx, loops, onChanged) {
     }
   };
 }
+function noteStrip(laneId, ctx) {
+  const cv = document.createElement("canvas");
+  cv.className = "weave-bar";
+  cv.setAttribute("aria-label", "The bar this track is about to play");
+  let sig = "";
+  const draw = (phase) => {
+    const notes = ctx.laneNotes(laneId);
+    const head = phase < 0 ? -1 : Math.round(phase * 100);
+    const next = `${head}|` + notes.map((n) => `${n.at.toFixed(3)}:${n.midi}:${n.from ?? "-"}`).join(",");
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (next === sig && cv.width === Math.round(w * devicePixelRatio)) return;
+    sig = next;
+    if (w === 0 || h === 0) return;
+    cv.width = Math.round(w * devicePixelRatio);
+    cv.height = Math.round(h * devicePixelRatio);
+    const g = cv.getContext("2d");
+    if (!g) return;
+    g.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    g.clearRect(0, 0, w, h);
+    g.strokeStyle = "rgba(255,255,255,0.07)";
+    g.lineWidth = 1;
+    for (let i = 1; i < 4; i++) {
+      const x = Math.round(i / 4 * w) + 0.5;
+      g.beginPath();
+      g.moveTo(x, 0);
+      g.lineTo(x, h);
+      g.stroke();
+    }
+    if (phase >= 0) {
+      g.fillStyle = "rgba(255,255,255,0.10)";
+      g.fillRect(0, 0, phase * w, h);
+      g.strokeStyle = "var(--amber)";
+      g.strokeStyle = "#ffb02e";
+      g.beginPath();
+      g.moveTo(Math.round(phase * w) + 0.5, 0);
+      g.lineTo(Math.round(phase * w) + 0.5, h);
+      g.stroke();
+    }
+    if (notes.length === 0) return;
+    let lo = Infinity, hi = -Infinity;
+    for (const n of notes) {
+      if (n.midi < lo) lo = n.midi;
+      if (n.midi > hi) hi = n.midi;
+    }
+    const span = Math.max(12, hi - lo);
+    const mid = (lo + hi) / 2;
+    const top = mid + span / 2;
+    const PAD = Math.max(2, Math.round(h * 0.1));
+    const NOTE_H = Math.max(2, Math.round(h * 0.09));
+    for (const n of notes) {
+      const x = n.at * w;
+      const wdt = Math.max(2, n.length * w - 1);
+      const y = PAD + (top - n.midi) / span * (h - PAD * 2 - NOTE_H);
+      const hue = n.from === void 0 ? 40 : [40, 205, 300, 120][n.from % 4];
+      const a = 0.35 + 0.65 * Math.min(1, n.velocity / 110);
+      g.fillStyle = `hsla(${hue}, 85%, 60%, ${a})`;
+      g.fillRect(x, y, wdt, NOTE_H);
+    }
+  };
+  return { el: cv, draw };
+}
 function buildLaneRow(lane, ctx, engines) {
   const row = el("div", "weave-lane");
   const led = el("span", "weave-led");
@@ -264,16 +325,22 @@ function buildLaneRow(lane, ctx, engines) {
   paintTopo();
   repaintCell();
   row.append(led, ring.el, name, transport, engine, preset, style, topo, cellHost);
+  const strip = noteStrip(lane.id, ctx);
+  const wrap = el("div", "weave-lane-wrap");
+  wrap.append(row, strip.el);
   return {
     laneId: lane.id,
-    el: row,
+    el: wrap,
     led,
     ring,
     syncTransport,
     // Called from the panel's rAF while the master flow is travelling: the host
     // owns the position then, and the row FOLLOWS it. Without this the lanes sat
     // at whatever they were built with while the music crossed away underneath.
-    followWeave: () => cell.follow?.()
+    followWeave: (phase) => {
+      cell.follow?.();
+      strip.draw(phase);
+    }
   };
 }
 
@@ -451,16 +518,30 @@ function mountWeave(host, ctx) {
   reseed.textContent = "\u27F3 Reshuffle";
   reseed.title = "Deal the lane styles again \u2014 the Style amount stays where it is";
   reseed.addEventListener("click", () => ctx.reseed());
+  const bars = el2("button", "weave-bars-toggle");
+  const paintBars = () => {
+    const open = rack.classList.contains("bars-open");
+    bars.textContent = open ? "\u25A4 Notes" : "\u25A4 Notes";
+    bars.classList.toggle("on", open);
+    bars.title = open ? "Shrink the note bars" : "Enlarge the note bars";
+    bars.setAttribute("aria-pressed", String(open));
+  };
+  bars.addEventListener("click", () => {
+    rack.classList.toggle("bars-open");
+    paintBars();
+  });
   const spacer = el2("span", "weave-head-spacer");
   head.append(
     logo,
     field("Key", keySel, scaleSel),
     field("Style", styleSel),
     spacer,
+    bars,
     reseed,
     surge,
     print
   );
+  paintBars();
   const pulse = el2("div", "weave-pulse");
   const cells = [];
   for (let i = 0; i < 16; i++) {
@@ -502,10 +583,10 @@ function mountWeave(host, ctx) {
   const speed = document.createElement("select");
   speed.className = "weave-speed";
   speed.setAttribute("aria-label", "How long a full journey takes");
-  for (const bars of [0, 4, 8, 16, 32, 64]) {
+  for (const bars2 of [0, 4, 8, 16, 32, 64]) {
     const o = document.createElement("option");
-    o.value = String(bars);
-    o.textContent = bars === 0 ? "Off" : `${bars} bars`;
+    o.value = String(bars2);
+    o.textContent = bars2 === 0 ? "Off" : `${bars2} bars`;
     speed.appendChild(o);
   }
   drift.value = flowNow.drift;
@@ -567,6 +648,7 @@ function mountWeave(host, ctx) {
   const frame = () => {
     raf = requestAnimationFrame(frame);
     const phase = ctx.barPhase();
+    for (const l of laneRows) l.followWeave(phase);
     if (phase < 0) {
       if (lastStep !== -1) {
         lastStep = -1;
@@ -586,7 +668,6 @@ function mountWeave(host, ctx) {
         flow.value = String(pos);
         showFlow();
       }
-      for (const l of laneRows) l.followWeave();
     }
     const step = Math.floor(phase * 16) % 16;
     if (step !== lastStep) {

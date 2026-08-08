@@ -57,6 +57,19 @@ export function defaultLaneSelection(): LaneSelection {
 export interface FlowState {
   drift: DriftMode;
   speedBars: number;
+  /** Where the lanes were when the current journey began, per lane id.
+   *
+   *  Only 'free' needs it, and it needs it badly: that mode positions each lane
+   *  relative to where it already was, so without a fixed starting line every
+   *  call adds to the answer of the last one. A slider sends its absolute value
+   *  on every pointer move, so dragging it across the panel meant adding the
+   *  same amount dozens of times and the lanes ran away — reported as "en free
+   *  hace cosas raras".
+   *
+   *  Shared by the hand and the clock, because they are the same journey. Absent
+   *  outside 'free', where the flow says where a lane IS rather than how far it
+   *  has come. */
+  base?: Record<string, number>;
 }
 
 export interface WeaveState {
