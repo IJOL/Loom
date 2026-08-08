@@ -10,7 +10,8 @@
 // and the scheduler RESOLVES them, and an id that lists but does not resolve is
 // a loop that shows in the dropdown and plays silence.
 
-import type { PanelChoice } from '@loom/plugin-sdk';
+import type { PanelChoice, PanelWeave } from '@loom/plugin-sdk';
+import { abAdvance } from '../weave/topology-ab';
 import type { NoteEvent } from '../core/notes';
 import type { ScaleId, StyleId } from '../core/musicality';
 import type { SessionLane } from '../session/session';
@@ -153,4 +154,57 @@ export function weaveLoopNotes(id: string, c: WeaveLoopContext): NoteEvent[] | u
   // An index the library does not have comes back empty; that is a loop that is
   // gone, not a silent one.
   return notes.length > 0 ? notes : undefined;
+}
+
+/** Re-hook a lane that has just completed a lap onto a FRESH loop.
+ *
+ *  This is what makes A→B endless, and what the topology's own header always
+ *  claimed it was: on arrival B becomes the new A and another loop is drawn, so
+ *  the journey never ends and never returns to where it started. Without it a
+ *  lap simply wrapped — the position jumped from the far end back to the near
+ *  one and the same two loops crossed again, which is the "static on purpose"
+ *  the panel exists to avoid.
+ *
+ *  Only A→B. The queue is a finite list the user ordered and the cloud's four
+ *  corners are four choices; re-drawing either behind the user's back would be
+ *  changing the material rather than continuing the journey.
+ *
+ *  The draw is DETERMINISTIC — seeded by the scene, the lane and the loop just
+ *  arrived at — for the same reason the style draw is: the same scene has to
+ *  travel the same way twice, and a Math.random here would make a session
+ *  impossible to return to.
+ *
+ *  Returns null when there is nothing to do, so a caller running per tick can
+ *  skip the write. */
+export function rehookOnArrival(
+  sel: PanelWeave | null | undefined,
+  c: WeaveLoopContext,
+  seed: number,
+  laneId: string,
+): PanelWeave | null {
+  if (!sel || sel.kind !== 'ab') return null;
+
+  // The library only. The lane's own clips are in the choices too, and drawing
+  // one of those — the empty carrier clip included — would land the journey on
+  // silence with no way to tell why.
+  const pool = weaveLoopChoices(c).map((ch) => ch.id).filter((id) => id.startsWith('lib:'));
+  if (pool.length === 0) return null;
+
+  // A hash rather than a counter: nothing stores how many laps a lane has run,
+  // and the loop it just arrived at stands in for "where the journey is" — it
+  // differs on every leg by construction, since the draw never picks the loop it
+  // came from.
+  const pick = (n: number) => {
+    let v = 2166136261;
+    for (const s of [String(seed), laneId, sel.b]) {
+      for (let i = 0; i < s.length; i++) v = Math.imul(v ^ s.charCodeAt(i), 16777619) >>> 0;
+    }
+    return v % Math.max(1, n);
+  };
+
+  const next = abAdvance({ a: sel.a, b: sel.b, x: 1 }, 1, pool, pick);
+  // The POSITION stays the flow's: it has already wrapped to the near end of the
+  // next leg. Writing abAdvance's own 0 here would yank the lane back a fraction
+  // of a bar every lap.
+  return { ...sel, a: next.a, b: next.b };
 }

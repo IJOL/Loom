@@ -93,6 +93,13 @@ export function applyFlow(
   flow: number,
   drift: DriftMode,
   base?: ReadonlyMap<string, number>,
+  /** Called for a lane whose position WRAPPED past the end of its journey.
+   *
+   *  That is what "arrived" means once a speed is set: `flowAt` folds 1 back to
+   *  0, so the position never lands on exactly 1 and a `>= 1` test would never
+   *  fire. A lane that wrapped has completed a lap, which is where A→B re-hooks
+   *  onto a fresh loop. */
+  onWrap?: (laneId: string) => void,
 ): boolean {
   const current = laneIds.map((id) => {
     const stored = lanes[id]?.weave;
@@ -109,8 +116,19 @@ export function applyFlow(
     // lane sitting out the journey, not a lane leaving the scene.
     if (entry?.locked) return;
     if (!entry || !sel || sel.x === next[i]) return;
+    // Backwards by more than half a lap is a WRAP, not a rewind: the journey
+    // only ever goes forward, so a big drop is the far end folding round to the
+    // near one. Half a lap is the threshold because a tick can legitimately move
+    // a lane a long way — a fast speed, or a hand on the master fader — and
+    // anything short of that is just travelling.
+    const wrapped = next[i] < sel.x - 0.5;
     lanes[id] = { ...entry, weave: { ...sel, x: next[i] } };
     moved = true;
+    // AFTER the write, never before. Called first, whatever the handler put in
+    // the map was immediately overwritten by the line above — which still held
+    // the entry captured at the top of this iteration. The re-hook happened and
+    // vanished in the same tick.
+    if (wrapped) onWrap?.(id);
   });
   return moved;
 }

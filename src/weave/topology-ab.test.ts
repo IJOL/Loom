@@ -3,8 +3,14 @@ import { abWeights, abAdvance, type AbState } from './topology-ab';
 import type { LoopRef } from './topology-types';
 
 const loop = (id: string): LoopRef => ({ id, notes: [] });
-const POOL = [loop('p0'), loop('p1'), loop('p2'), loop('p3')];
 const state = (x: number): AbState => ({ a: loop('a'), b: loop('b'), x });
+
+// The re-hook works on what a lane STORES — a pair of ids — while the weights
+// work on what a lane PLAYS: the same pair resolved to notes. Two fixtures
+// because they are genuinely two layers, and the mismatch between them is what
+// left abAdvance with a test and no caller for so long.
+const IDS = ['p0', 'p1', 'p2', 'p3'];
+const leg = (x: number) => ({ a: 'a', b: 'b', x });
 
 describe('A to B with re-hook', () => {
   it('weights only A at x=0', () => {
@@ -34,16 +40,16 @@ describe('A to B with re-hook', () => {
   });
 
   it('does not re-hook before the journey ends', () => {
-    const next = abAdvance(state(0), 0.9, POOL, () => 0);
-    expect(next.a.id).toBe('a');
-    expect(next.b.id).toBe('b');
+    const next = abAdvance(leg(0), 0.9, IDS, () => 0);
+    expect(next.a).toBe('a');
+    expect(next.b).toBe('b');
     expect(next.x).toBeCloseTo(0.9);
   });
 
   it('makes B the new A on arrival and draws a fresh B', () => {
-    const next = abAdvance(state(0.9), 1, POOL, () => 2);
-    expect(next.a.id).toBe('b');
-    expect(next.b.id).toBe('p2');
+    const next = abAdvance(leg(0.9), 1, IDS, () => 2);
+    expect(next.a).toBe('b');
+    expect(next.b).toBe('p2');
     expect(next.x).toBe(0);
   });
 
@@ -51,21 +57,27 @@ describe('A to B with re-hook', () => {
     // The picker below always wants index 1. If the pool were not filtered
     // first, that would be p1 -- which is exactly the loop now sitting in A,
     // and the next leg would be a crossfade from a loop to itself.
-    const s: AbState = { a: loop('a'), b: POOL[1], x: 0.99 };
-    const next = abAdvance(s, 1, POOL, () => 1);
-    expect(next.b.id).not.toBe(next.a.id);
+    const next = abAdvance({ a: 'a', b: IDS[1], x: 0.99 }, 1, IDS, () => 1);
+    expect(next.b).not.toBe(next.a);
   });
 
   it('survives a picker that answers out of range', () => {
-    expect(abAdvance(state(1), 1, POOL, () => 99).b).toBeDefined();
-    expect(abAdvance(state(1), 1, POOL, () => -5).b).toBeDefined();
+    expect(abAdvance(leg(1), 1, IDS, () => 99).b).toBeDefined();
+    expect(abAdvance(leg(1), 1, IDS, () => -5).b).toBeDefined();
   });
 
   it('keeps playing when the pool holds only the loop it arrived at', () => {
-    const only = [loop('b')];
-    const next = abAdvance(state(1), 1, only, () => 0);
-    expect(next.a.id).toBe('b');
-    expect(next.b.id).toBe('b');
+    const next = abAdvance(leg(1), 1, ['b'], () => 0);
+    expect(next.a).toBe('b');
+    expect(next.b).toBe('b');
+  });
+
+  it('carries whatever else the stored selection holds', () => {
+    // It advances a SELECTION, not just a pair: `kind` and anything a later
+    // version adds must survive the re-hook, or a lane would come back from a
+    // lap having forgotten what topology it was on.
+    const next = abAdvance({ kind: 'ab' as const, a: 'a', b: 'b', x: 1 }, 1, IDS, () => 0);
+    expect(next.kind).toBe('ab');
   });
 
   it('carries the notes of each loop through to the weights', () => {

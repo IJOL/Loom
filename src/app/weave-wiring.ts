@@ -12,7 +12,7 @@
 import { defaultWeaveState, type WeaveState, type LaneWeaveConfig } from '../weave/weave-state';
 import { createWeaveSource, createMacroSource, type WeaveSource } from '../weave/weave-runtime';
 import { resolveSelection } from '../weave/weave-selection';
-import { weaveLoopNotes, weaveLoopContext } from './weave-loops';
+import { weaveLoopNotes, weaveLoopContext, rehookOnArrival } from './weave-loops';
 import { macroNeutral } from '../weave/weave-catalog';
 import { isHarmonic } from '../plugins/capabilities';
 import { LAYERS_ENGINE_ID } from '../engines/layers-engine';
@@ -56,9 +56,10 @@ export interface WeaveWiringDeps {
   /** The tempo the flow measures its journey in. A getter for the same reason
    *  as the meter: both move while the transport runs. */
   getBpm?: () => number;
-  /** Called after the flow moved the lanes on its own, so whoever paints the
-   *  panel can follow. Absent in fixtures with no UI. */
-  onFlowAdvanced?: () => void;
+  // There was an `onFlowAdvanced` here, for whoever paints the panel to follow
+  // the journey. Nobody ever passed it, and nobody should: the panel reads the
+  // position from its OWN animation frame, which is both cheaper than a callback
+  // per tick and the only way a panel that is closed costs nothing.
   /** The session itself, for the clips a lane's selection names. A getter, not
    *  a value: New and Open replace the whole object. */
   getState?: () => SessionState;
@@ -219,9 +220,18 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       if (Math.abs(pos - lastFlow) < 0.001) return;
       lastFlow = pos;
 
-      if (applyFlow(state.lanes, laneIds, pos, state.flow.drift, base)) {
+      // A lane that wrapped has finished a leg: A→B re-hooks onto a fresh loop
+      // rather than crossing the same two again, which is the difference
+      // between an endless journey and a loop of a loop.
+      const rehook = (laneId: string) => {
+        const entry = state.lanes[laneId];
+        const next = rehookOnArrival(entry?.weave, loopContext(laneId), state.seed, laneId);
+        if (next && entry) state.lanes[laneId] = { ...entry, weave: next };
+      };
+
+      if (applyFlow(state.lanes, laneIds, pos, state.flow.drift, base, rehook)) {
         sources.clear();
-        deps.onFlowAdvanced?.();
+
       }
     },
 

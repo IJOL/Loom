@@ -4,6 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import { createWeaveWiring } from './weave-wiring';
 import { defaultWeaveState } from '../weave/weave-state';
+import { setLibrary } from '../patterns/pattern-library';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { DEFAULT_METER, ticksPerBar } from '../core/meter';
 import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
@@ -200,6 +201,43 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       const first = w.notesFor('lane1');
       w.advance(BAR_SEC * 2);
       expect(w.notesFor('lane1')).not.toBe(first);
+    });
+
+    it('re-hooks onto a fresh loop when a lap completes', () => {
+      // What makes A→B endless, and what the topology's header always claimed
+      // it was. Without it a lap wrapped and the SAME two loops crossed again —
+      // a loop of a loop, which is the static scene the panel exists to avoid.
+      //
+      // The lane weaves library ids here rather than the fixture's clips: the
+      // draw comes from the library, because landing the journey on the empty
+      // carrier clip would be silence with no way to tell why.
+      setLibrary({
+        synth: {}, drums: {},
+        bass: {
+          [DEFAULT_MUSICALITY.style]: [
+            [{ semi: 0, vel: 0.8, slide: false }],
+            [{ semi: 3, vel: 0.8, slide: false }],
+            [{ semi: 7, vel: 0.8, slide: false }],
+          ],
+        },
+        catalog: {},
+      } as never);
+      try {
+        const w = flowing(4);
+        const style = DEFAULT_MUSICALITY.style;
+        w.state.lanes.lane1 = {
+          weave: { kind: 'ab', a: `lib:${style}:bass:0`, b: `lib:${style}:bass:1`, x: 0.97 },
+          locked: false, harmonyLeader: false,
+        };
+        // Just past a whole lap, so the position folds back to the near end.
+        w.advance(BAR_SEC * 4.02);
+        const sel = w.state.lanes.lane1.weave as { a: string; b: string };
+        // What it arrived at is what it now leaves from.
+        expect(sel.a).toBe(`lib:${style}:bass:1`);
+        expect(sel.b).not.toBe(sel.a);
+      } finally {
+        setLibrary(null as never);
+      }
     });
 
     it('forgets its starting line when the speed goes back to OFF', () => {

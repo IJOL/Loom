@@ -93,6 +93,10 @@ function weaveCell(laneId, ctx, loops, onChanged) {
       follow: () => {
         const now = ctx.laneWeave(laneId);
         if (!now || document.activeElement === fader) return;
+        if (now.kind === "ab" && (now.a !== sel.a || now.b !== sel.b)) {
+          onChanged();
+          return;
+        }
         if (Math.abs(now.x - Number(fader.value)) >= 2e-3) fader.value = String(now.x);
       }
     };

@@ -168,6 +168,24 @@ describe('applyFlow', () => {
     expect(spaced(true)).toEqual(spaced(false));
   });
 
+  it('reports a lane that WRAPPED past the end of its journey', () => {
+    // "Arrived" cannot be `x >= 1`: flowAt folds 1 back to 0, so the position
+    // never lands on exactly 1 and that test would never fire. A lap shows up as
+    // the position dropping from the far end to the near one.
+    const lanes = lanesWith(0.97);
+    const wrapped: string[] = [];
+    applyFlow(lanes, ids(1), 0.02, 'together', undefined, (id) => wrapped.push(id));
+    expect(wrapped).toEqual(['l0']);
+  });
+
+  it('does not call a small step backwards a lap', () => {
+    // Dragging the master fader back is a rewind, not an arrival.
+    const lanes = lanesWith(0.6);
+    const wrapped: string[] = [];
+    applyFlow(lanes, ids(1), 0.4, 'together', undefined, (id) => wrapped.push(id));
+    expect(wrapped).toEqual([]);
+  });
+
   it('leaves the rest of a selection alone — moving is travelling, not re-choosing', () => {
     const lanes: Record<string, { weave?: { x: number; a?: string } | null }> =
       { l0: { weave: { x: 0, a: 'lib:house:bass:2' } } };

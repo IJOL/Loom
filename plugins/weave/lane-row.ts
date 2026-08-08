@@ -175,6 +175,12 @@ function weaveCell(
         // Only while the pointer is elsewhere: writing .value under a drag
         // fights the hand that is holding it.
         if (!now || document.activeElement === fader) return;
+        // A completed lap re-hooks A→B onto a fresh loop, so the two NAMES
+        // change and not just the position. Rebuilding is the honest response —
+        // the option lists are built per style and a bare `.value =` with an id
+        // they do not carry would blank the picker. Once a lap, not once a
+        // frame: the ids only move when the journey comes round.
+        if (now.kind === 'ab' && (now.a !== sel.a || now.b !== sel.b)) { onChanged(); return; }
         if (Math.abs(now.x - Number(fader.value)) >= 0.002) fader.value = String(now.x);
       },
     };
