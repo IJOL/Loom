@@ -30,7 +30,8 @@ import { shouldCloseClipEditorOnLaneSwitch } from './session-host-util';
 import { loadAllExamples, renderExampleNotes, clipToExample, exampleToJson, saveUserExample, type Example } from './example-loader';
 import { renderChordComp } from '../core/harmony';
 import { emptyClip } from './session';
-import { scaleClipTempo } from '../core/clip-time-scale';
+import { scaleClipTempo, applyClipLength } from '../core/clip-time-scale';
+import type { LengthMode } from '../weave/clip-length';
 import { html, render } from 'lit-html';
 import { renderElement } from '../core/lit-fragment';
 import { isHarmonic, isAudioEngine } from '../plugins/capabilities';
@@ -372,6 +373,18 @@ export class SessionInspector {
     halfBtn.hidden = !isNoteClip;
     dblBtn.onclick  = () => this.applyTempoScale(2);   // double tempo (compress)
     halfBtn.onclick = () => this.applyTempoScale(0.5); // halve tempo (stretch)
+
+    // LENGTH, which is a different question from tempo: how much longer, and
+    // what fills the new room. Same visibility rule — an audio clip has no notes
+    // to repeat or stretch.
+    const lengthGroup = document.querySelector<HTMLElement>('.clip-length-group');
+    if (lengthGroup) lengthGroup.hidden = !isNoteClip;
+    const modeSel = document.getElementById('insp-length-mode') as HTMLSelectElement | null;
+    for (const btn of document.querySelectorAll<HTMLButtonElement>('.clip-length-group [data-len]')) {
+      btn.onclick = () => this.applyLengthScale(
+        Number(btn.dataset.len), (modeSel?.value ?? 'repeat') as LengthMode,
+      );
+    }
 
     document.getElementById('insp-duplicate')!.onclick = () => {
       if (!this.selectedClip) return;
@@ -780,6 +793,22 @@ export class SessionInspector {
    *  the clip length. Then re-render the editor (new patternTicks), the Length
    *  field, and the grid. */
   private applyTempoScale(tempoMult: number): void {
+    this.rescaleOpenClip((clip, barTicks) => scaleClipTempo(clip, tempoMult, barTicks));
+  }
+
+  /** Make the open clip `factor` times as long, `mode` deciding what fills the
+   *  new room: repeat the groove, stretch the notes, or repeat with a different
+   *  weak hit dropped each time round. A different question from tempo, which is
+   *  why it is a different control. */
+  private applyLengthScale(factor: number, mode: LengthMode): void {
+    this.rescaleOpenClip((clip, barTicks) => applyClipLength(clip, factor, mode, barTicks));
+  }
+
+  /** The shared half of both: find the open clip, one undo entry, and the three
+   *  repaints a time change needs. Extracted when the second caller arrived —
+   *  the octave preservation in particular is the sort of thing a copy forgets,
+   *  and then one of the two buttons quietly jumps the piano-roll to C4. */
+  private rescaleOpenClip(apply: (clip: SessionClip, barTicks: number) => void): void {
     if (!this.selectedClip) return;
     const lane = this.deps.state.lanes.find((l) => l.id === this.selectedClip!.laneId);
     const clip = lane?.clips[this.selectedClip.clipIdx];
@@ -789,7 +818,7 @@ export class SessionInspector {
       // Preserve the editor octave across the rebuild (renderEditor recreates the
       // piano-roll, which resets its octave base to C4) — mirrors insp-random-notes.
       const octaveBase = this.roll?.getOctaveBase?.() ?? 60;
-      scaleClipTempo(clip, tempoMult, ticksPerBar(this.deps.seq.meter));
+      apply(clip, ticksPerBar(this.deps.seq.meter));
       const lenEl = document.getElementById('insp-length') as HTMLInputElement | null;
       if (lenEl) lenEl.value = String(clip.lengthBars);
       this.renderEditor();

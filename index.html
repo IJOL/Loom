@@ -258,6 +258,21 @@
             <label>Length (bars) <input id="insp-length" type="number" min="1" step="1" /></label>
             <button class="rnd" id="insp-tempo-double" title="Double tempo — compress notes &amp; repeat to fill (length unchanged)">*2</button>
             <button class="rnd" id="insp-tempo-halve" title="Halve tempo — stretch notes &amp; grow the clip length">/2</button>
+            <!-- LENGTH is a different question from TEMPO, and the answer needs
+                 two parts: how much longer, and what fills the new room. The
+                 mode is a visible choice rather than a hidden rule, because the
+                 same press wants to repeat on drums and stretch on a pad. -->
+            <span class="clip-length-group">
+              <span class="clip-length-label">Length</span>
+              <button class="rnd" data-len="3" title="Three times as long">&times;3</button>
+              <button class="rnd" data-len="2" title="Twice as long">&times;2</button>
+              <button class="rnd" data-len="0.5" title="Half as long">&divide;2</button>
+              <select id="insp-length-mode" title="What fills the new room when a clip grows">
+                <option value="repeat">Repeat</option>
+                <option value="stretch">Stretch notes</option>
+                <option value="vary">Repeat &amp; vary</option>
+              </select>
+            </span>
             <label>Launch
               <select id="insp-quantize">
                 <option value="">Default (lane/global)</option>

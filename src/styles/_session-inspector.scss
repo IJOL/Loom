@@ -19,6 +19,19 @@
  * so re-assert `display:none` here or the row would stay visible despite the
  * attribute. */
 .clip-edit-row[hidden] { display: none; }
+/* LENGTH and its mode read as one control with two parts, because they are:
+   "how much longer" is meaningless without "filled with what". Same reason the
+   row above needs the rule — an author display beats the UA [hidden] one. */
+.clip-length-group {
+  display: flex; align-items: center; gap: 4px;
+  padding-left: 10px; border-left: 1px solid var(--border);
+}
+.clip-length-group[hidden] { display: none; }
+.clip-length-label {
+  font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-faint); margin-right: 2px;
+}
+.clip-length-group select { font-size: 11px; }
 .clip-edit-row {
   margin-top: 8px;
   border-top: 1px solid var(--border);

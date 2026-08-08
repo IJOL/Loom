@@ -12,6 +12,7 @@
 
 import type { SessionClip } from '../session/session';
 import { envelopeValueLengthFromBarTicks } from './clip-envelope-length';
+import { scaleClipLength, type LengthMode } from '../weave/clip-length';
 
 /** Resample an envelope value array to `newLen` by phase (nearest-neighbor).
  *  Stretching repeats samples; compressing decimates. Robust to any old length
@@ -81,5 +82,54 @@ export function scaleClipTempo(clip: SessionClip, tempoMult: number, barTicks: n
     const targetLen = envelopeValueLengthFromBarTicks(newLengthBars, barTicks);
     for (const env of clip.envelopes) env.values = resampleEnvelope(env.values, targetLen);
   }
+  clip.lengthBars = newLengthBars;
+}
+
+/** Change a clip's LENGTH by `factor`, saying how.
+ *
+ *  `scaleClipTempo` above conflates two musical operations: *2 compresses AND
+ *  tiles, /2 stretches AND grows. That is why the same press feels right on
+ *  drums and wrong on a pad. This separates them — `mode` decides whether the
+ *  groove is repeated, lengthened, or repeated with variation — and takes any
+ *  factor rather than only two.
+ *
+ *  The NOTE arithmetic is `weave/clip-length.ts`, pure and tested on its own.
+ *  What lives here is everything that has to stay in step with it: the clip's
+ *  bar count, its loop region and its automation curves. Building the new
+ *  controls on the pure function ALONE would have been a second clip-time
+ *  system, and the one that forgot the envelopes — a clip whose automation
+ *  silently stopped lining up with its notes.
+ *
+ *  Mutates `clip` in place. The caller snapshots for undo BEFORE calling. */
+export function applyClipLength(
+  clip: SessionClip, factor: number, mode: LengthMode, barTicks: number,
+): void {
+  if (!Number.isFinite(factor) || factor <= 0) return;
+
+  const srcTicks = clip.lengthBars * barTicks;
+  clip.notes = scaleClipLength(clip.notes, factor, mode, srcTicks);
+
+  // Every mode makes the clip factor× as long — that is what "length" means
+  // here. What differs is what fills the new room.
+  const newLengthBars = Math.max(1, Math.round(clip.lengthBars * factor));
+
+  // A loop region is a window on the OLD span; scaled with it, it keeps meaning
+  // the same fraction of the clip. Left alone, growing a clip would silently
+  // shrink the loop to its first part.
+  if (clip.loopStartTick !== undefined) clip.loopStartTick = Math.round(clip.loopStartTick * factor);
+  if (clip.loopEndTick !== undefined) clip.loopEndTick = Math.round(clip.loopEndTick * factor);
+
+  if (clip.envelopes) {
+    const targetLen = envelopeValueLengthFromBarTicks(newLengthBars, barTicks);
+    const copies = Math.max(1, Math.round(factor));
+    for (const env of clip.envelopes) {
+      // Repeating the notes repeats the curve; stretching them stretches it.
+      // The automation has to describe the same music the notes do.
+      env.values = mode === 'stretch'
+        ? resampleEnvelope(env.values, targetLen)
+        : tileEnvelope(env.values, copies, targetLen);
+    }
+  }
+
   clip.lengthBars = newLengthBars;
 }
