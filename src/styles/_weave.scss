@@ -378,7 +378,26 @@
   &:disabled { color: var(--text-faint); }
 }
 
-.weave-fader { flex: 1 1 0; min-width: 60px; }
+// The endless dial, master and lane alike. A journey with no end needs a
+// control with no ends: the ring says how far into the current leg you are, and
+// turning past the top is the next lap rather than a jump back to the start.
+.weave-dial {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+
+  svg { cursor: ns-resize; touch-action: none; }
+  svg:focus-visible { outline: 1px solid var(--amber); outline-offset: 2px; }
+
+  .knob-arc { stroke: var(--amber); }
+
+  // Travelling on the clock, the dial is a READOUT. Dimmed so the difference
+  // between "you are holding this" and "you are watching this" is visible
+  // rather than deduced from the Speed box.
+  &.following svg { cursor: default; opacity: 0.75; }
+}
 
 .weave-between {
   font-size: 9.5px;

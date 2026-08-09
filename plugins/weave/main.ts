@@ -13,6 +13,7 @@
 import type { PanelContext, PanelLoopPhase } from '@loom/plugin-sdk';
 import { buildLaneRow } from './lane-row';
 import { buildStepRack } from './step-rack';
+import { endlessDial } from './endless-dial';
 
 /** The six macros, in the order the panel shows them. Colours match the knob
  *  palette the rest of Loom uses, so a WEAVE knob reads as a Loom knob. */
@@ -305,17 +306,30 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   const flowRow = el('div', 'weave-flow');
   const flowLabel = el('span', 'weave-label');
   flowLabel.textContent = 'Flow';
-  const flow = document.createElement('input');
-  flow.type = 'range';
-  flow.min = '0';
-  flow.max = '1';
-  flow.step = '0.01';
-  flow.id = 'weave-flow';
-  flow.setAttribute('aria-label', 'Master flow');
+  // A DIAL, not a fader. A linear control promises two ends, and EVOLVE has
+  // none: arriving hands over and the journey starts again, so the fader had to
+  // jump back to zero every lap. Reported, and rightly — a control that leaps
+  // is a control that lies about what it is doing. The ring says how far into
+  // the current leg you are and turning past the top is simply the next lap.
   const flowNow = ctx.flow();
-  flow.value = String(flowNow.position);
   const flowOut = el('span', 'weave-readout');
-  const showFlow = () => { flowOut.textContent = Number(flow.value).toFixed(2); };
+  // What the hand has wound in — it grows past 1 and keeps counting, which is
+  // how the host tells a completed lap from a hand turning back. The READOUT
+  // takes the dial's own shown value instead, or the two disagree at the far
+  // end: wound 1 folds to 0 and the number would read zero on a full ring.
+  let flowWound = flowNow.position;
+  const showFlow = () => { flowOut.textContent = flowDial.shown().toFixed(2); };
+
+  const flowDial = endlessDial({
+    value: flowNow.position,
+    label: 'Master flow',
+    onChange: (v) => {
+      flowWound = v;
+      pushFlow(v);
+    },
+    size: 46,
+  });
+  flowDial.el.id = 'weave-flow';
   showFlow();
 
   // How the lanes relate while the flow moves them. Three musical intentions,
@@ -369,27 +383,32 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   };
   paintEvolve();
   evolve.addEventListener('click', () => {
-    ctx.setFlow(Number(flow.value), drift.value, Number(speed.value), !ctx.flow().evolve);
+    ctx.setFlow(flowWound, drift.value, Number(speed.value), !ctx.flow().evolve);
     paintEvolve();
   });
 
-  const pushFlow = () => {
-    ctx.setFlow(Number(flow.value), drift.value, Number(speed.value), !!ctx.flow().evolve);
-    // Travelling on its own, the fader is a readout and not a handle. Left live
+  // `wound` is what the DIAL has turned in — it grows past 1 and keeps counting,
+  // so the host can tell a completed lap from a hand turning back. The other two
+  // controls re-send wherever the dial currently stands.
+  function pushFlow(wound: number) {
+    ctx.setFlow(wound, drift.value, Number(speed.value), !!ctx.flow().evolve);
+    // Travelling on its own, the dial is a readout and not a handle. Left live
     // it would fight the host for the position every frame.
-    flow.disabled = Number(speed.value) > 0;
+    following = Number(speed.value) > 0;
+    flowDial.el.classList.toggle('following', following);
     showFlow();
-  };
-  flow.disabled = flowNow.speedBars > 0;
-  flow.addEventListener('input', pushFlow);
-  drift.addEventListener('change', pushFlow);
-  speed.addEventListener('change', pushFlow);
+  }
+  let following = flowNow.speedBars > 0;
+  flowDial.el.classList.toggle('following', following);
+  const resend = () => pushFlow(flowWound);
+  drift.addEventListener('change', resend);
+  speed.addEventListener('change', resend);
 
   const driftLabel = el('span', 'weave-label');
   driftLabel.textContent = 'Drift';
   const speedLabel = el('span', 'weave-label');
   speedLabel.textContent = 'Speed';
-  flowRow.append(flowLabel, flow, flowOut, driftLabel, drift, speedLabel, speed, evolve);
+  flowRow.append(flowLabel, flowDial.el, flowOut, driftLabel, drift, speedLabel, speed, evolve);
 
   // ── lanes ────────────────────────────────────────────────────────────────
   const lanes = el('div', 'weave-lanes');
@@ -504,13 +523,13 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     // sixteenths would turn the one continuous thing on screen into a stutter.
     for (const l of laneRows) l.ring.set(ctx.loopPhase(l.laneId));
 
-    // With a journey running the host owns the position and the fader FOLLOWS.
+    // With a journey running the host owns the position and the dial FOLLOWS.
     // Reading it back rather than counting bars here is what keeps the control
     // showing where the music actually is, not where the panel thinks it put it.
-    if (flow.disabled) {
+    if (following) {
       const pos = ctx.flow().position;
-      if (Math.abs(pos - Number(flow.value)) >= 0.005) {
-        flow.value = String(pos);
+      if (Math.abs(pos - flowDial.shown()) >= 0.005) {
+        flowDial.set(pos);
         showFlow();
       }
     }

@@ -10,6 +10,7 @@
 // rule with a home in the host (`setLaneTopology`); this file asks.
 
 import type { PanelChoice, PanelContext, PanelLoopPhase, PanelWeave } from '@loom/plugin-sdk';
+import { endlessDial } from './endless-dial';
 
 export interface LaneRowHandle {
   laneId: string;
@@ -151,40 +152,45 @@ function weaveCell(
     });
 
   if (sel.kind === 'ab') {
-    // The loop names ARE the pickers, one at each end of the fader. A separate
+    // The loop names ARE the pickers, one at each end of the dial. A separate
     // label plus a separate dropdown would say the same thing twice in a row
     // that has no room to say anything twice.
-    const fader = document.createElement('input');
-    fader.type = 'range';
-    fader.min = '0';
-    fader.max = '1';
-    fader.step = '0.001';
-    fader.value = String(sel.x);
-    fader.className = 'weave-fader';
-    fader.setAttribute('aria-label', `Weave position between ${nameOf(sel.a)} and ${nameOf(sel.b)}`);
-    fader.addEventListener('input', () => {
-      ctx.setLaneWeave(laneId, { ...sel, x: Number(fader.value) });
+    //
+    // A DIAL rather than a fader, for the same reason the master flow is one:
+    // a linear control promises two ends, and with the scene evolving there are
+    // none — arriving hands over and the leg starts again. The names stay put
+    // either side as from → to, and the ring says how far across you are.
+    const fader = endlessDial({
+      value: sel.x,
+      label: `Weave position between ${nameOf(sel.a)} and ${nameOf(sel.b)}`,
+      onChange: (v) => {
+        // The dial winds past 1 and keeps counting so the HOST can tell a lap
+        // from a hand turning back; a lane's stored position is always inside
+        // its leg, so it takes the fraction.
+        ctx.setLaneWeave(laneId, { ...sel, x: ((v % 1) + 1) % 1 });
+      },
+      size: 40,
     });
 
     cell.append(
       slot(0, sel.a, (id) => ({ ...sel, a: id })),
-      fader,
+      fader.el,
       slot(1, sel.b, (id) => ({ ...sel, b: id })),
     );
     return {
       el: cell,
       follow: () => {
         const now = ctx.laneWeave(laneId);
-        // Only while the pointer is elsewhere: writing .value under a drag
+        // Only while the pointer is elsewhere: writing the value under a drag
         // fights the hand that is holding it.
-        if (!now || document.activeElement === fader) return;
+        if (!now || fader.held()) return;
         // A completed lap re-hooks A→B onto a fresh loop, so the two NAMES
         // change and not just the position. Rebuilding is the honest response —
         // the option lists are built per style and a bare `.value =` with an id
         // they do not carry would blank the picker. Once a lap, not once a
         // frame: the ids only move when the journey comes round.
         if (now.kind === 'ab' && (now.a !== sel.a || now.b !== sel.b)) { onChanged(); return; }
-        if (Math.abs(now.x - Number(fader.value)) >= 0.002) fader.value = String(now.x);
+        fader.set(now.x);
       },
     };
   }

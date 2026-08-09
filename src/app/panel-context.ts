@@ -117,11 +117,15 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     return lead ? deps.weave.lanes[lead.id]?.weave ?? null : null;
   };
 
-  /** The delta the last 'free' gesture carried, so the next one can tell a drag
-   *  forward from a drag back. Only 'free' needs it: there the flow is a delta
-   *  from a fixed base rather than a position, so a lane's own x says nothing
-   *  about which way the hand is going. */
-  let lastFreeDelta: number | undefined;
+  /** The last flow the PANEL sent, so the next one can tell a hand going forward
+   *  from a hand going back.
+   *
+   *  Against the panel's own previous number rather than against a lane's
+   *  position, because they are not the same thing: the panel's dial winds past
+   *  1 and keeps counting, a lane's position always folds into 0..1, and in
+   *  'free' the flow is a delta from a fixed base rather than a position at all.
+   *  Comparing across those was right for exactly one of the three. */
+  let lastFlowSent: number | undefined;
 
   /** Everything the loop list and the loop resolver need about a lane, gathered
    *  once. Built per call rather than cached: the style, the key and the lock
@@ -528,14 +532,19 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // browser: dragging from 0.95 to 0.20 in one move handed over, so rewinding
       // the fader quietly changed the material under you.
       //
-      // The leader's position is what the panel shows as the flow, so comparing
-      // against it is comparing like with like. In 'free' the flow is a DELTA
-      // from a fixed base rather than a position, so it is compared against the
-      // delta the last call carried, not against where a lane sits.
-      const advancing = mode === 'free'
-        ? position >= (lastFreeDelta ?? 0)
-        : position >= positionOf(leadWeave()) - 1e-9;
-      lastFreeDelta = mode === 'free' ? position : undefined;
+      // The FIRST gesture cannot have crossed anything, so it does not hand
+      // over; after that the panel's own previous number says which way the
+      // hand went.
+      //
+      // And a call that merely FLIPS the switch never hands over, whatever the
+      // numbers say. Seen in the browser: turned to the far end in STATIC, then
+      // pressed EVOLVE, and the pair advanced on the spot — because the newly
+      // wrapping position folded 1 to 0, which looks exactly like a lap. Reading
+      // a mode change as travel is wrong on its own terms: nothing moved.
+      const modeChanged = !!was?.evolve !== evolving;
+      const advancing = !modeChanged
+        && lastFlowSent !== undefined && position >= lastFlowSent - 1e-9;
+      lastFlowSent = position;
 
       const rehook = (laneId: string) => {
         const entry = deps.weave.lanes[laneId];

@@ -1,3 +1,120 @@
+// plugins/weave/endless-dial.ts
+var SWEEP = 360;
+var START = 0;
+var svgEl = (tag) => document.createElementNS("http://www.w3.org/2000/svg", tag);
+function polar(deg, radius, cx, cy) {
+  const rad = (deg - 90) * Math.PI / 180;
+  return [cx + radius * Math.cos(rad), cy + radius * Math.sin(rad)];
+}
+function endlessDial(o) {
+  const size = o.size ?? 58;
+  const cx = size / 2, cy = size / 2;
+  const r = size * 0.38;
+  const hubR = size * 0.19;
+  const wrap = document.createElement("div");
+  wrap.className = "weave-dial";
+  const s = svgEl("svg");
+  s.setAttribute("viewBox", `0 0 ${size} ${size}`);
+  s.setAttribute("width", String(size));
+  s.setAttribute("height", String(size));
+  s.setAttribute("role", "slider");
+  s.setAttribute("tabindex", "0");
+  s.setAttribute("aria-label", o.label);
+  s.setAttribute("aria-valuemin", "0");
+  s.setAttribute("aria-valuemax", "1");
+  const circumference = 2 * Math.PI * r;
+  const track = svgEl("circle");
+  track.setAttribute("class", "knob-track");
+  track.setAttribute("cx", String(cx));
+  track.setAttribute("cy", String(cy));
+  track.setAttribute("r", r.toFixed(2));
+  track.setAttribute("fill", "none");
+  const arc = svgEl("circle");
+  arc.setAttribute("class", "knob-arc");
+  arc.setAttribute("cx", String(cx));
+  arc.setAttribute("cy", String(cy));
+  arc.setAttribute("r", r.toFixed(2));
+  arc.setAttribute("fill", "none");
+  arc.setAttribute("stroke-dasharray", circumference.toFixed(3));
+  arc.setAttribute("transform", `rotate(-90 ${cx} ${cy})`);
+  const hub = svgEl("circle");
+  hub.setAttribute("class", "knob-hub");
+  hub.setAttribute("cx", String(cx));
+  hub.setAttribute("cy", String(cy));
+  hub.setAttribute("r", hubR.toFixed(2));
+  const tick = svgEl("line");
+  tick.setAttribute("class", "knob-tick");
+  s.append(track, arc, hub, tick);
+  wrap.append(s);
+  let wound = Math.min(1, Math.max(0, o.value));
+  const shown = () => (wound % 1 + 1) % 1;
+  const paint = () => {
+    const value = shown();
+    arc.setAttribute("stroke-dashoffset", (circumference * (1 - value)).toFixed(3));
+    const [x1, y1] = polar(START + SWEEP * value, hubR * 0.3, cx, cy);
+    const [x2, y2] = polar(START + SWEEP * value, hubR * 0.92, cx, cy);
+    tick.setAttribute("x1", x1.toFixed(2));
+    tick.setAttribute("y1", y1.toFixed(2));
+    tick.setAttribute("x2", x2.toFixed(2));
+    tick.setAttribute("y2", y2.toFixed(2));
+    s.setAttribute("aria-valuenow", value.toFixed(3));
+  };
+  paint();
+  const move = (delta) => {
+    wound += delta;
+    paint();
+    o.onChange(wound);
+  };
+  let lastY = 0;
+  let holding = false;
+  s.addEventListener("pointerdown", (e) => {
+    const ev = e;
+    holding = true;
+    lastY = ev.clientY;
+    if (typeof ev.pointerId === "number" && s.setPointerCapture) {
+      try {
+        s.setPointerCapture(ev.pointerId);
+      } catch {
+      }
+    }
+  });
+  const letGo = () => {
+    holding = false;
+  };
+  s.addEventListener("pointerup", letGo);
+  s.addEventListener("pointercancel", letGo);
+  s.addEventListener("lostpointercapture", letGo);
+  s.addEventListener("pointermove", (e) => {
+    const ev = e;
+    if (!ev.buttons) {
+      holding = false;
+      return;
+    }
+    move((lastY - ev.clientY) / 180);
+    lastY = ev.clientY;
+  });
+  s.addEventListener("keydown", (e) => {
+    const k = e.key;
+    const d = k === "ArrowUp" || k === "ArrowRight" ? 0.02 : k === "ArrowDown" || k === "ArrowLeft" ? -0.02 : 0;
+    if (!d) return;
+    e.preventDefault();
+    move(d);
+  });
+  return {
+    el: wrap,
+    set(v) {
+      if (holding) return;
+      const laps = Math.floor(wound);
+      const next = laps + Math.min(1, Math.max(0, v));
+      if (Math.abs(next - wound) < 5e-4) return;
+      wound = next;
+      paint();
+    },
+    shown,
+    held: () => holding
+  };
+}
+
 // plugins/weave/lane-row.ts
 var TOPOS = [
   { kind: "ab", label: "A\u2192B", title: "Two loops. Arrive at B and a fresh B is drawn \u2014 the journey never ends." },
@@ -72,32 +189,29 @@ function weaveCell(laneId, ctx, loops, onChanged) {
     onChanged();
   });
   if (sel.kind === "ab") {
-    const fader = document.createElement("input");
-    fader.type = "range";
-    fader.min = "0";
-    fader.max = "1";
-    fader.step = "0.001";
-    fader.value = String(sel.x);
-    fader.className = "weave-fader";
-    fader.setAttribute("aria-label", `Weave position between ${nameOf(sel.a)} and ${nameOf(sel.b)}`);
-    fader.addEventListener("input", () => {
-      ctx.setLaneWeave(laneId, { ...sel, x: Number(fader.value) });
+    const fader = endlessDial({
+      value: sel.x,
+      label: `Weave position between ${nameOf(sel.a)} and ${nameOf(sel.b)}`,
+      onChange: (v) => {
+        ctx.setLaneWeave(laneId, { ...sel, x: (v % 1 + 1) % 1 });
+      },
+      size: 40
     });
     cell.append(
       slot(0, sel.a, (id) => ({ ...sel, a: id })),
-      fader,
+      fader.el,
       slot(1, sel.b, (id) => ({ ...sel, b: id }))
     );
     return {
       el: cell,
       follow: () => {
         const now = ctx.laneWeave(laneId);
-        if (!now || document.activeElement === fader) return;
+        if (!now || fader.held()) return;
         if (now.kind === "ab" && (now.a !== sel.a || now.b !== sel.b)) {
           onChanged();
           return;
         }
-        if (Math.abs(now.x - Number(fader.value)) >= 2e-3) fader.value = String(now.x);
+        fader.set(now.x);
       }
     };
   }
@@ -479,16 +593,16 @@ var MACROS = [
 var R = 22;
 var CX = 29;
 var CY = 29;
-var SWEEP = 270;
-var START = 225;
-function polar(deg, radius) {
+var SWEEP2 = 270;
+var START2 = 225;
+function polar2(deg, radius) {
   const rad = (deg - 90) * Math.PI / 180;
   return [CX + radius * Math.cos(rad), CY + radius * Math.sin(rad)];
 }
 function arcPath(frac) {
-  const [x0, y0] = polar(START, R);
-  const [x1, y1] = polar(START + SWEEP * frac, R);
-  const large = SWEEP * frac > 180 ? 1 : 0;
+  const [x0, y0] = polar2(START2, R);
+  const [x1, y1] = polar2(START2 + SWEEP2 * frac, R);
+  const large = SWEEP2 * frac > 180 ? 1 : 0;
   return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
 }
 var svg = (tag) => document.createElementNS("http://www.w3.org/2000/svg", tag);
@@ -526,8 +640,8 @@ function macroKnob(spec, ctx) {
   const paint = () => {
     const v = ctx.macro(spec.id);
     arc.setAttribute("d", arcPath(v));
-    const [x1, y1] = polar(START + SWEEP * v, 3);
-    const [x2, y2] = polar(START + SWEEP * v, 10);
+    const [x1, y1] = polar2(START2 + SWEEP2 * v, 3);
+    const [x2, y2] = polar2(START2 + SWEEP2 * v, 10);
     tick.setAttribute("x1", x1.toFixed(2));
     tick.setAttribute("y1", y1.toFixed(2));
     tick.setAttribute("x2", x2.toFixed(2));
@@ -688,19 +802,22 @@ function mountWeave(host, ctx) {
   const flowRow = el3("div", "weave-flow");
   const flowLabel = el3("span", "weave-label");
   flowLabel.textContent = "Flow";
-  const flow = document.createElement("input");
-  flow.type = "range";
-  flow.min = "0";
-  flow.max = "1";
-  flow.step = "0.01";
-  flow.id = "weave-flow";
-  flow.setAttribute("aria-label", "Master flow");
   const flowNow = ctx.flow();
-  flow.value = String(flowNow.position);
   const flowOut = el3("span", "weave-readout");
+  let flowWound = flowNow.position;
   const showFlow = () => {
-    flowOut.textContent = Number(flow.value).toFixed(2);
+    flowOut.textContent = flowDial.shown().toFixed(2);
   };
+  const flowDial = endlessDial({
+    value: flowNow.position,
+    label: "Master flow",
+    onChange: (v) => {
+      flowWound = v;
+      pushFlow(v);
+    },
+    size: 46
+  });
+  flowDial.el.id = "weave-flow";
   showFlow();
   const drift = document.createElement("select");
   drift.className = "weave-drift";
@@ -738,23 +855,25 @@ function mountWeave(host, ctx) {
   };
   paintEvolve();
   evolve.addEventListener("click", () => {
-    ctx.setFlow(Number(flow.value), drift.value, Number(speed.value), !ctx.flow().evolve);
+    ctx.setFlow(flowWound, drift.value, Number(speed.value), !ctx.flow().evolve);
     paintEvolve();
   });
-  const pushFlow = () => {
-    ctx.setFlow(Number(flow.value), drift.value, Number(speed.value), !!ctx.flow().evolve);
-    flow.disabled = Number(speed.value) > 0;
+  function pushFlow(wound) {
+    ctx.setFlow(wound, drift.value, Number(speed.value), !!ctx.flow().evolve);
+    following = Number(speed.value) > 0;
+    flowDial.el.classList.toggle("following", following);
     showFlow();
-  };
-  flow.disabled = flowNow.speedBars > 0;
-  flow.addEventListener("input", pushFlow);
-  drift.addEventListener("change", pushFlow);
-  speed.addEventListener("change", pushFlow);
+  }
+  let following = flowNow.speedBars > 0;
+  flowDial.el.classList.toggle("following", following);
+  const resend = () => pushFlow(flowWound);
+  drift.addEventListener("change", resend);
+  speed.addEventListener("change", resend);
   const driftLabel = el3("span", "weave-label");
   driftLabel.textContent = "Drift";
   const speedLabel = el3("span", "weave-label");
   speedLabel.textContent = "Speed";
-  flowRow.append(flowLabel, flow, flowOut, driftLabel, drift, speedLabel, speed, evolve);
+  flowRow.append(flowLabel, flowDial.el, flowOut, driftLabel, drift, speedLabel, speed, evolve);
   const lanes = el3("div", "weave-lanes");
   const head2 = el3("div", "weave-lane weave-lane-head");
   for (const label of [
@@ -824,10 +943,10 @@ function mountWeave(host, ctx) {
       return;
     }
     for (const l of laneRows) l.ring.set(ctx.loopPhase(l.laneId));
-    if (flow.disabled) {
+    if (following) {
       const pos = ctx.flow().position;
-      if (Math.abs(pos - Number(flow.value)) >= 5e-3) {
-        flow.value = String(pos);
+      if (Math.abs(pos - flowDial.shown()) >= 5e-3) {
+        flowDial.set(pos);
         showFlow();
       }
     }

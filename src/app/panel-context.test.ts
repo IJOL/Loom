@@ -418,9 +418,14 @@ describe('panel context — the evolve flag', () => {
     // The bug the switch exists to fix, written down: dragging to the end used
     // to wrap back to the start AND leave the pair unchanged — the worst of
     // both. The far end is the far end whoever reached it.
+    //
+    // TWO calls, because that is what a gesture is: the first has no previous
+    // number to be going forward FROM, and a lone call out of nowhere must not
+    // be read as a lap. A real drag sends dozens.
     withLibrary(() => {
       const h = harness(['lane1']);
       h.weave.lanes.lane1 = weaving(0.9);
+      h.ctx.setFlow(0.9, 'together', 0, true);
       h.ctx.setFlow(1, 'together', 0, true);
       const after = h.weave.lanes.lane1.weave as unknown as { a: string; b: string };
       expect(after.a).toBe('clip:b');       // what it arrived at is what it leaves from
@@ -563,5 +568,36 @@ describe('the step rack — more than one row', () => {
     h.ctx.stepsTool(1, 'invert');
     expect(h.ctx.stepRows()[0].values).toEqual(before);
     expect(h.ctx.stepRows()[1].values).not.toEqual(before);
+  });
+});
+
+describe('flipping the switch is not travelling', () => {
+  it('turning EVOLVE on at the far end does not hand over on the spot', () => {
+    // Seen in the browser: dial wound to the top in STATIC, press EVOLVE, and
+    // the pair advanced immediately — the newly wrapping position folded 1 to
+    // 0, which looks exactly like a completed lap. Nothing moved; nothing
+    // should change.
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      h.weave.lanes.lane1 = weaving(0);
+      h.ctx.setFlow(0.9, 'together', 0, false);
+      h.ctx.setFlow(1, 'together', 0, false);        // at the top, STATIC
+      h.ctx.setFlow(1, 'together', 0, true);         // the switch, same position
+      const after = h.weave.lanes.lane1.weave as unknown as { a: string; b: string };
+      expect(after.a).toBe('clip:a');
+      expect(after.b).toBe('clip:b');
+    });
+  });
+
+  it('and the next real turn still hands over', () => {
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      h.weave.lanes.lane1 = weaving(0);
+      h.ctx.setFlow(0.9, 'together', 0, true);
+      h.ctx.setFlow(0.95, 'together', 0, true);
+      h.ctx.setFlow(1, 'together', 0, true);
+      const after = h.weave.lanes.lane1.weave as unknown as { a: string };
+      expect(after.a).toBe('clip:b');
+    });
   });
 });
