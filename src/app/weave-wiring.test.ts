@@ -36,11 +36,15 @@ function session(engineId = 'subtractive'): SessionState {
   } as unknown as SessionState;
 }
 
-function wiring(state: SessionState) {
+function wiring(
+  state: SessionState,
+  writeStep?: (destId: string, normalised: number) => void,
+) {
   return createWeaveWiring({
     getLaneStates: () => new Map<string, LanePlayState>(),
     getMeter: () => DEFAULT_METER,
     getState: () => state,
+    writeStep,
   });
 }
 
@@ -290,5 +294,83 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       locked: false, harmonyLeader: false,
     };
     expect(w.notesFor('lane1')).toBeUndefined();
+  });
+});
+
+// The step row is the LAST unpinned link of a chain whose every other link has
+// a test: writeStep -> applyPlaybackUnmountedWrite -> applyAutomationToSession
+// -> engine.setBaseValue -> worklet.setParams -> VoiceManager's live bag, which
+// live-params.dsp.test.ts proves moves the note already sounding. This closes
+// the near end. It also settles a question left open in the commit that added
+// the row: two browser attempts read "no change" and both were the measurement
+// failing (soloing the lane took the master to silence), not the code.
+describe('the step row moves a parameter in time with the bar', () => {
+  // 4/4 at the default 120bpm: one bar is exactly 2 seconds, so each of four
+  // steps owns half a second and the assertions can name instants, not windows.
+  const BAR_SEC = 2;
+  const VALUES = [0, 0.25, 0.5, 1];
+
+  function row(on = true, destId = 'lane1.filter.cutoff') {
+    const writes: Array<[string, number]> = [];
+    const w = wiring(session(), (id, v) => { writes.push([id, v]); });
+    w.state.steps = { destId, values: [...VALUES], mode: 'hold', on };
+    return { w, writes };
+  }
+
+  it('writes the value under the playhead, stepping with the bar', () => {
+    const { w, writes } = row();
+    for (const t of [0, 0.5, 1, 1.5, 2]) w.advance(t);
+
+    expect(writes.map(([, v]) => v)).toEqual([0, 0.25, 0.5, 1, 0]);
+    expect(writes.every(([id]) => id === 'lane1.filter.cutoff')).toBe(true);
+  });
+
+  it('does not rewrite while the playhead sits on the same step', () => {
+    // The row is ticked once per frame; a write per frame would be sixty
+    // identical values a second reaching the engine for no reason.
+    const { w, writes } = row();
+    w.advance(0.5);
+    w.advance(0.6);
+    w.advance(0.9);
+
+    expect(writes).toHaveLength(1);
+  });
+
+  it('off means off — the row is the one control that keeps writing unattended', () => {
+    const { w, writes } = row(false);
+    for (const t of [0, 0.5, 1]) w.advance(t);
+
+    expect(writes).toHaveLength(0);
+  });
+
+  it('a shape with nowhere to land writes nothing', () => {
+    // You sketch the curve first and choose the destination after, so an empty
+    // destId is an ordinary state and not an error.
+    const { w, writes } = row(true, '');
+    for (const t of [0, 0.5, 1]) w.advance(t);
+
+    expect(writes).toHaveLength(0);
+  });
+
+  it('unplugging WEAVE stops the row too', () => {
+    // Bypass has to mean the whole panel. A row that went on writing a cutoff
+    // while the switch said off is exactly the "am I sure it is not sounding?"
+    // doubt the switch exists to remove.
+    const { w, writes } = row();
+    w.advance(0);
+    w.state.bypass = true;
+    for (const t of [0.5, 1, 1.5]) w.advance(t);
+
+    expect(writes).toHaveLength(1);
+  });
+
+  it('runs while the flow sits at Off — they are different jobs', () => {
+    // Moving a parameter in time with the loop and moving the loops themselves
+    // are separate; the row must not need the flow travelling to work.
+    const { w, writes } = row();
+    expect(w.state.flow.speedBars).toBe(0);
+    for (const t of [0, BAR_SEC / 4]) w.advance(t);
+
+    expect(writes.map(([, v]) => v)).toEqual([0, 0.25]);
   });
 });
