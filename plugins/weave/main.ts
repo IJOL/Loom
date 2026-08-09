@@ -352,7 +352,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   speed.value = String(flowNow.speedBars);
 
   const pushFlow = () => {
-    ctx.setFlow(Number(flow.value), drift.value, Number(speed.value));
+    ctx.setFlow(Number(flow.value), drift.value, Number(speed.value), !!ctx.flow().evolve);
     // Travelling on its own, the fader is a readout and not a handle. Left live
     // it would fight the host for the position every frame.
     flow.disabled = Number(speed.value) > 0;

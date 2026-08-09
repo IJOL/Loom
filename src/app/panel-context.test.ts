@@ -327,7 +327,7 @@ describe('createPanelContext — the master flow', () => {
     const h = harness();
     h.weave.lanes.lane1 = weaving(0);
     h.weave.lanes.lane2 = weaving(0);
-    h.ctx.setFlow(0.6, 'together', 0);
+    h.ctx.setFlow(0.6, 'together', 0, false);
     expect(h.weave.lanes.lane1.weave!.x).toBeCloseTo(0.6);
     expect(h.weave.lanes.lane2.weave!.x).toBeCloseTo(0.6);
   });
@@ -336,7 +336,7 @@ describe('createPanelContext — the master flow', () => {
     const h = harness();
     h.weave.lanes.lane1 = weaving(0);
     h.weave.lanes.lane2 = weaving(0);
-    h.ctx.setFlow(0, 'offset', 0);
+    h.ctx.setFlow(0, 'offset', 0, false);
     expect(h.weave.lanes.lane1.weave!.x).not.toBeCloseTo(h.weave.lanes.lane2.weave!.x);
   });
 
@@ -344,7 +344,7 @@ describe('createPanelContext — the master flow', () => {
     // The panel stops driving and starts following: the speed lives in the
     // state the scheduler's tick reads.
     const h = harness();
-    h.ctx.setFlow(0.2, 'free', 16);
+    h.ctx.setFlow(0.2, 'free', 16, false);
     expect(h.ctx.flow().speedBars).toBe(16);
     expect(h.ctx.flow().drift).toBe('free');
   });
@@ -358,7 +358,7 @@ describe('createPanelContext — the master flow', () => {
     const dragged = (steps: number) => {
       const h = harness(['lane1']);
       h.weave.lanes.lane1 = weaving(0.2);
-      for (let i = 1; i <= steps; i++) h.ctx.setFlow((0.3 * i) / steps, 'free', 0);
+      for (let i = 1; i <= steps; i++) h.ctx.setFlow((0.3 * i) / steps, 'free', 0, false);
       return h.weave.lanes.lane1.weave!.x;
     };
     expect(dragged(10)).toBeCloseTo(dragged(1), 6);
@@ -370,15 +370,15 @@ describe('createPanelContext — the master flow', () => {
     // second journey starts somewhere the user cannot see.
     const h = harness(['lane1']);
     h.weave.lanes.lane1 = weaving(0.2);
-    h.ctx.setFlow(0.3, 'free', 0);            // -> 0.5
-    h.ctx.setFlow(0.5, 'together', 0);        // -> 0.5, and the line is dropped
-    h.ctx.setFlow(0.25, 'free', 0);           // counts from 0.5, not from 0.2
+    h.ctx.setFlow(0.3, 'free', 0, false);            // -> 0.5
+    h.ctx.setFlow(0.5, 'together', 0, false);        // -> 0.5, and the line is dropped
+    h.ctx.setFlow(0.25, 'free', 0, false);           // counts from 0.5, not from 0.2
     expect(h.weave.lanes.lane1.weave!.x).toBeCloseTo(0.75, 6);
   });
 
   it('refuses a nonsense speed rather than storing it', () => {
     const h = harness();
-    h.ctx.setFlow(0, 'together', -4);
+    h.ctx.setFlow(0, 'together', -4, false);
     expect(h.ctx.flow().speedBars).toBe(0);
   });
 
@@ -387,7 +387,55 @@ describe('createPanelContext — the master flow', () => {
     // set up.
     const h = harness();
     h.weave.lanes.lane1 = weaving(0);
-    h.ctx.setFlow(0.5, 'together', 0);
+    h.ctx.setFlow(0.5, 'together', 0, false);
     expect(h.weave.lanes.lane2).toBeUndefined();
+  });
+});
+
+describe('panel context — the evolve flag', () => {
+  it('setFlow carries the evolve flag into the state', () => {
+    const h = harness();
+    h.ctx.setFlow(0.5, 'together', 0, true);
+    expect(h.weave.flow.evolve).toBe(true);
+    expect(h.ctx.flow().evolve).toBe(true);
+  });
+
+  it('STATIC parks a lane at the end instead of sending it back to the start', () => {
+    const h = harness(['lane1']);
+    h.weave.lanes.lane1 = weaving(0);
+    h.ctx.setFlow(1, 'together', 0, false);
+    expect(h.weave.lanes.lane1.weave!.x).toBe(1);
+  });
+
+  it('EVOLVE wraps, which is what lets a lane hand over', () => {
+    const h = harness(['lane1']);
+    h.weave.lanes.lane1 = weaving(0);
+    h.ctx.setFlow(1, 'together', 0, true);
+    expect(h.weave.lanes.lane1.weave!.x).toBe(0);
+  });
+
+  it('a HAND that reaches the far end hands over too', () => {
+    // The bug the switch exists to fix, written down: dragging to the end used
+    // to wrap back to the start AND leave the pair unchanged — the worst of
+    // both. The far end is the far end whoever reached it.
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      h.weave.lanes.lane1 = weaving(0.9);
+      h.ctx.setFlow(1, 'together', 0, true);
+      const after = h.weave.lanes.lane1.weave as unknown as { a: string; b: string };
+      expect(after.a).toBe('clip:b');       // what it arrived at is what it leaves from
+      expect(after.b).not.toBe(after.a);
+    });
+  });
+
+  it('and in STATIC it does not, however far it is dragged', () => {
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      h.weave.lanes.lane1 = weaving(0.9);
+      h.ctx.setFlow(1, 'together', 0, false);
+      const after = h.weave.lanes.lane1.weave as unknown as { a: string; b: string };
+      expect(after.a).toBe('clip:a');
+      expect(after.b).toBe('clip:b');
+    });
   });
 });

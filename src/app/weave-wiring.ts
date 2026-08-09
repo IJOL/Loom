@@ -301,7 +301,14 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
         if (next && entry) state.lanes[laneId] = { ...entry, weave: next };
       };
 
-      if (applyFlow(state.lanes, laneIds, pos, state.flow.drift, base, rehook)) {
+      // STATIC travels and never hands over: the pair the user chose is the pair
+      // they keep, and the journey simply stops at each end instead of lapping.
+      const evolving = !!state.flow.evolve;
+      if (applyFlow(
+        state.lanes, laneIds, pos, state.flow.drift, base,
+        evolving ? rehook : undefined,
+        evolving,
+      )) {
 
         sources.clear();
 

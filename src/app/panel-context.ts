@@ -12,7 +12,9 @@ import {
 } from '../weave/weave-selection';
 import { applyFlow, asDrift } from '../weave/flow';
 import { stepPreset } from '../automation/automation-steps';
-import { weaveLoopChoices, weaveLoopContext, type WeaveLoopContext } from './weave-loops';
+import {
+  weaveLoopChoices, weaveLoopContext, rehookOnArrival, type WeaveLoopContext,
+} from './weave-loops';
 import { stylesWithPatterns } from '../patterns/pattern-library';
 import { STYLE_CATALOG, SCALE_CATALOG, rootName, type StyleId } from '../core/musicality';
 import type { MusicalityState } from '../session/session-types';
@@ -439,12 +441,14 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         position: positionOf(first),
         drift: f?.drift ?? 'together',
         speedBars: f?.speedBars ?? 0,
+        evolve: !!f?.evolve,
       };
     },
 
-    setFlow(position, drift, speedBars) {
+    setFlow(position, drift, speedBars, evolve) {
       const mode = asDrift(drift);
       const was = deps.weave.flow;
+      const evolving = !!evolve;
 
       // 'free' positions each lane relative to where it ALREADY was, so it needs
       // a fixed starting line or every call compounds the last one. A slider
@@ -458,16 +462,33 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
           : Object.fromEntries(deps.sessionHost.state.lanes.map((l) =>
             [l.id, positionOf(deps.weave.lanes[l.id]?.weave)]));
 
-      deps.weave.flow = { drift: mode, speedBars: Math.max(0, speedBars || 0), base };
+      deps.weave.flow = {
+        drift: mode, speedBars: Math.max(0, speedBars || 0), base, evolve: evolving,
+      };
       // The SAME writer the auto-advance uses, with the SAME starting line. A
       // hand on the fader and a clock driving it are one journey; two answers
       // would make the scene jump the moment the transport started.
+      //
+      // And the same handover, for the same reason: the far end is the far end
+      // whether the clock reached it or a hand dragged it there. Passing no
+      // re-hook here was the original bug written down — a hand wrapped back to
+      // the start AND the pair never advanced, which is the worst of both.
+      const rehook = (laneId: string) => {
+        const entry = deps.weave.lanes[laneId];
+        const next = rehookOnArrival(
+          entry?.weave, loopContext(laneId), deps.weave.seed, laneId,
+        );
+        if (next && entry) deps.weave.lanes[laneId] = { ...entry, weave: next };
+      };
+
       applyFlow(
         deps.weave.lanes,
         deps.sessionHost.state.lanes.map((l) => l.id),
         position,
         mode,
         base && new Map(Object.entries(base)),
+        evolving ? rehook : undefined,
+        evolving,
       );
       deps.onWeaveChanged?.('*');
     },

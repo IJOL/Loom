@@ -71,6 +71,10 @@ export interface FlowState {
    *  outside 'free', where the flow says where a lane IS rather than how far it
    *  has come. */
   base?: Record<string, number>;
+  /** OFF by default. On, arriving at the far end is a handover: the loop on the
+   *  right becomes the left and new material arrives. Off, the pair you chose is
+   *  the pair you keep and the fader simply has two ends. */
+  evolve?: boolean;
 }
 
 /** A row of steps that moves a PARAMETER in time with the loop — a cutoff, a
@@ -135,7 +139,7 @@ export function defaultWeaveState(): WeaveState {
   for (const m of WEAVE_MACROS) macros[m.id] = m.neutral;
   return {
     lanes: {}, macros, seed: 1,
-    flow: { drift: 'together', speedBars: 0 },
+    flow: { drift: 'together', speedBars: 0, evolve: false },
     bypass: false,
     steps: defaultWeaveSteps(),
   };

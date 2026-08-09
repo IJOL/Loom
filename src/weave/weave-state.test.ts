@@ -76,3 +76,9 @@ describe('laneWeights', () => {
     expect(laneWeights(frozen)[0].weight).toBeCloseTo(0.75);
   });
 });
+
+describe('defaultWeaveState — evolution', () => {
+  it('a fresh weave does not evolve — the pair you choose is the pair you keep', () => {
+    expect(defaultWeaveState().flow.evolve).toBe(false);
+  });
+});

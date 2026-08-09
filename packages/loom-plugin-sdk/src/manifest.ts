@@ -261,6 +261,8 @@ export interface PanelFlow {
   position: number;
   drift: string;
   speedBars: number;
+  /** Whether arriving at the far end hands over to new material. */
+  evolve: boolean;
 }
 
 /** Which loops a lane is weaving, and where between them it sits.
@@ -408,8 +410,14 @@ export interface PanelContext {
    *  `speedBars` hands the journey over to the HOST: above zero, the flow keeps
    *  travelling on the audio clock, one lap every that many bars, whether or not
    *  the panel is open or its animation is running. Zero — the default — means
-   *  it only moves when a hand is on it. */
-  setFlow(position: number, drift: string, speedBars: number): void;
+   *  it only moves when a hand is on it.
+   *
+   *  `evolve` is the panel's OTHER job. False — the default a session is saved
+   *  in — the pair of loops a lane holds is the pair it keeps, and the journey
+   *  simply has two ends. True, arriving at the far end is a handover: what was
+   *  on the right becomes the left and new material arrives on the right, so the
+   *  scene keeps moving instead of crossing the same two loops for ever. */
+  setFlow(position: number, drift: string, speedBars: number, evolve: boolean): void;
   /** Where the master flow stands. Read it per frame: with a speed set, the host
    *  is moving it and the panel is following, not driving. */
   flow(): PanelFlow;

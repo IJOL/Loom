@@ -164,7 +164,11 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
     // the tempo; spelling it out here is what makes "half a lap" checkable.
     const BAR_SEC = 2;
 
-    const flowing = (speedBars: number, drift: 'together' | 'offset' | 'free' = 'together') => {
+    const flowing = (
+      speedBars: number,
+      drift: 'together' | 'offset' | 'free' = 'together',
+      evolve = false,
+    ) => {
       const w = createWeaveWiring({
         getLaneStates: () => new Map<string, LanePlayState>(),
         getMeter: () => DEFAULT_METER,
@@ -175,7 +179,7 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
         weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
         locked: false, harmonyLeader: false,
       };
-      w.state.flow = { drift, speedBars };
+      w.state.flow = { drift, speedBars, evolve };
       return w;
     };
     const posOf = (w: ReturnType<typeof flowing>) => (w.state.lanes.lane1.weave as { x: number }).x;
@@ -212,7 +216,7 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       expect(w.notesFor('lane1')).not.toBe(first);
     });
 
-    it('re-hooks onto a fresh loop when a lap completes', () => {
+    it('re-hooks onto a fresh loop when a lap completes, EVOLVING', () => {
       // What makes A→B endless, and what the topology's header always claimed
       // it was. Without it a lap wrapped and the SAME two loops crossed again —
       // a loop of a loop, which is the static scene the panel exists to avoid.
@@ -232,7 +236,7 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
         catalog: {},
       } as never);
       try {
-        const w = flowing(4);
+        const w = flowing(4, 'together', true);
         const style = DEFAULT_MUSICALITY.style;
         w.state.lanes.lane1 = {
           weave: { kind: 'ab', a: `lib:${style}:bass:0`, b: `lib:${style}:bass:1`, x: 0.97 },
@@ -247,6 +251,22 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       } finally {
         setLibrary(null as never);
       }
+    });
+
+    it('STATIC travels a lap and keeps the pair it was given', () => {
+      // The other half of the switch, and the state a session is saved in: the
+      // scene still moves under the clock, it just never draws new material.
+      const w = flowing(4);
+      const style = DEFAULT_MUSICALITY.style;
+      w.state.lanes.lane1 = {
+        weave: { kind: 'ab', a: `lib:${style}:bass:0`, b: `lib:${style}:bass:1`, x: 0.97 },
+        locked: false, harmonyLeader: false,
+      };
+      w.advance(BAR_SEC * 4.02);
+      const sel = w.state.lanes.lane1.weave as { a: string; b: string; x: number };
+      expect(sel.a).toBe(`lib:${style}:bass:0`);
+      expect(sel.b).toBe(`lib:${style}:bass:1`);
+      expect(sel.x).toBeLessThan(0.5);   // it did travel
     });
 
     it('forgets its starting line when the speed goes back to OFF', () => {
