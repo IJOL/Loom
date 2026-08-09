@@ -393,10 +393,12 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   // ── lanes ────────────────────────────────────────────────────────────────
   const lanes = el('div', 'weave-lanes');
 
-  // Column headers. The row carries seven things now, and without a header the
+  // Column headers. The row carries eight things now, and without a header the
   // two dropdowns in the middle are guesswork.
   const head2 = el('div', 'weave-lane weave-lane-head');
-  for (const label of ['', '', 'Lane', '', 'Instrument', 'Preset', 'Style', 'Topology', 'Loops']) {
+  for (const label of [
+    '', '', 'Lane', '', 'Instrument', 'Preset', 'Style', 'Topology', 'Bars', 'Loops',
+  ]) {
     const c = el('span', 'weave-col');
     c.textContent = label;
     head2.appendChild(c);

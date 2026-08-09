@@ -315,6 +315,20 @@ function buildLaneRow(lane, ctx, engines) {
     topo.appendChild(b);
     return { kind: t.kind, b };
   });
+  const length = el("div", "weave-len");
+  for (const [label, factor, title] of [
+    ["\xF72", 0.5, "Halve this lane clip"],
+    ["\xD72", 2, "Double this lane clip, repeating the bar"]
+  ]) {
+    const b = el("button", "weave-len-btn", label);
+    b.type = "button";
+    b.title = title;
+    b.addEventListener("click", () => {
+      ctx.setClipLength(lane.id, factor);
+      repaintCell();
+    });
+    length.appendChild(b);
+  }
   const paintTopo = () => {
     const kind = ctx.laneWeave(lane.id)?.kind;
     for (const { kind: k, b } of buttons) {
@@ -324,7 +338,7 @@ function buildLaneRow(lane, ctx, engines) {
   };
   paintTopo();
   repaintCell();
-  row.append(led, ring.el, name, transport, engine, preset, style, topo, cellHost);
+  row.append(led, ring.el, name, transport, engine, preset, style, topo, length, cellHost);
   const strip = noteStrip(lane.id, ctx);
   const wrap = el("div", "weave-lane-wrap");
   wrap.append(row, strip.el);
@@ -635,7 +649,18 @@ function mountWeave(host, ctx) {
   flowRow.append(flowLabel, flow, flowOut, driftLabel, drift, speedLabel, speed, evolve);
   const lanes = el2("div", "weave-lanes");
   const head2 = el2("div", "weave-lane weave-lane-head");
-  for (const label of ["", "", "Lane", "", "Instrument", "Preset", "Style", "Topology", "Loops"]) {
+  for (const label of [
+    "",
+    "",
+    "Lane",
+    "",
+    "Instrument",
+    "Preset",
+    "Style",
+    "Topology",
+    "Bars",
+    "Loops"
+  ]) {
     const c = el2("span", "weave-col");
     c.textContent = label;
     head2.appendChild(c);

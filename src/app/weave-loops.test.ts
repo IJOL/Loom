@@ -129,7 +129,7 @@ describe('what a lane hands over TO', () => {
     const next = rehookOnArrival(
       { kind: 'ab', a: 'clip:c1', b: 'clip:c1', x: 1 } as never, c, 1, 'l1',
     );
-    expect(next!.b.startsWith('lib:')).toBe(true);
+    expect((next as { b: string }).b.startsWith('lib:')).toBe(true);
   });
 
   it('a library loop draws ANOTHER one, never the one just left', () => {

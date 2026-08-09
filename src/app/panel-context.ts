@@ -26,6 +26,7 @@ import type { LanePlayState } from '../session/session-runtime';
 import type { Sequencer } from '../core/sequencer';
 import { sceneCountdown } from '../core/scene-countdown';
 import { ticksPerBar } from '../core/meter';
+import { applyClipLength } from '../core/clip-time-scale';
 import { TICKS_PER_QUARTER } from '../core/notes';
 import { listEngines } from '../engines/registry';
 import { getCachedPresets } from '../presets/preset-loader';
@@ -491,6 +492,22 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         evolving,
       );
       deps.onWeaveChanged?.('*');
+    },
+
+    setClipLength(laneId, factor) {
+      // The clip editor's own operation, not a second one: applyClipLength keeps
+      // the bar count, the loop region and the automation curves in step with
+      // the notes. Building this on the note maths alone is how a clip ends up
+      // with automation that no longer lines up.
+      const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
+      const clip = lane?.clips.find((c) => c);
+      if (!clip) return;
+      applyClipLength(clip, factor, 'repeat', ticksPerBar(deps.seq.meter));
+      // The weave folds into a clip of a given length, so the phrase it plays
+      // just changed shape: the cached source has to go.
+      deps.onWeaveChanged?.(laneId);
+      repaintDesk();
+      deps.refresh();
     },
 
     musicality() {

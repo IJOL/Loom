@@ -439,3 +439,34 @@ describe('panel context — the evolve flag', () => {
     });
   });
 });
+
+describe('clip length from the panel', () => {
+  it('doubles the lane clip, repeating the bar rather than stretching it', () => {
+    const h = harness();
+    const id = h.ctx.addLane('subtractive');
+    const clip = h.state.lanes.find((l) => l.id === id)!.clips[0]!;
+    clip.notes = [{ start: 0, duration: 24, midi: 40, velocity: 100 }];
+    const bars = clip.lengthBars;
+
+    h.ctx.setClipLength(id, 2);
+
+    expect(clip.lengthBars).toBe(bars * 2);
+    expect(clip.notes).toHaveLength(2);
+    expect(clip.notes[1].duration).toBe(24);   // repeated, not stretched
+  });
+
+  it('halves it back', () => {
+    const h = harness();
+    const id = h.ctx.addLane('subtractive');
+    const clip = h.state.lanes.find((l) => l.id === id)!.clips[0]!;
+    const bars = clip.lengthBars;
+    h.ctx.setClipLength(id, 2);
+    h.ctx.setClipLength(id, 0.5);
+    expect(clip.lengthBars).toBe(bars);
+  });
+
+  it('says nothing about a lane that has no clip', () => {
+    const h = harness(['lane1']);
+    expect(() => h.ctx.setClipLength('lane1', 2)).not.toThrow();
+  });
+});

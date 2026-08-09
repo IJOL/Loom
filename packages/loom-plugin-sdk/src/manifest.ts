@@ -421,6 +421,15 @@ export interface PanelContext {
   /** Where the master flow stands. Read it per frame: with a speed set, the host
    *  is moving it and the panel is following, not driving. */
   flow(): PanelFlow;
+  /** Grow or shrink a lane's carrier clip by `factor` (2 doubles, 0.5 halves),
+   *  REPEATING the bar rather than stretching it — the same operation the clip
+   *  editor performs, through the same host function.
+   *
+   *  Length rather than tempo, because on a WEAVING lane the clip's own notes
+   *  are replaced every tick and only its LENGTH survives: a phrase twice as
+   *  long is a thing you can hear, a compressed set of notes nobody will play
+   *  is not. */
+  setClipLength(laneId: string, factor: number): void;
   /** The project's key, scale, style and tempo — the session's own, not a copy. */
   musicality(): PanelMusicality;
   /** Move them. Goes through the host's ONE musicality path, so a change made

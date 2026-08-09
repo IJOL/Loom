@@ -250,11 +250,11 @@
 
 .weave-lane {
   display: grid;
-  // Nine columns: lamp, ring, name, transport, instrument, preset, style,
-  // topology, loops. Only the last is elastic — the weaving control is where the
-  // row's spare width belongs, because it is the only cell whose contents
-  // change shape.
-  grid-template-columns: 14px 30px 74px 96px 96px 118px 106px 118px 1fr;
+  // Ten columns: lamp, ring, name, transport, instrument, preset, style,
+  // topology, bars, loops. Only the last is elastic — the weaving control is
+  // where the row's spare width belongs, because it is the only cell whose
+  // contents change shape.
+  grid-template-columns: 14px 30px 74px 96px 96px 118px 106px 118px 56px 1fr;
   gap: 10px;
   align-items: center;
   background: var(--surface-2);
@@ -335,6 +335,21 @@
   }
 
   &:disabled { opacity: 0.4; }
+}
+
+// ── how long the lane's phrase is ──────────────────────────────────────────
+// The same two gestures as the clip editor, on the row that plays the lane.
+.weave-len {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2px;
+}
+
+.weave-len-btn {
+  padding: 3px 0;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  min-width: 0;
 }
 
 // ── the weaving cell — a fader, a queue or a pad ───────────────────────────

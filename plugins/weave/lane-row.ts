@@ -462,6 +462,25 @@ export function buildLaneRow(
     topo.appendChild(b);
     return { kind: t.kind, b };
   });
+  // How long the lane's phrase is, in the same two gestures the clip editor
+  // uses. The weave replaces a clip's NOTES every tick and respects its LENGTH,
+  // so this is the one thing about the carrier clip that a weaving lane can
+  // still hear: half a phrase, or twice as much room for the loop to fill.
+  const length = el('div', 'weave-len');
+  for (const [label, factor, title] of [
+    ['÷2', 0.5, 'Halve this lane clip'],
+    ['×2', 2, 'Double this lane clip, repeating the bar'],
+  ] as [string, number, string][]) {
+    const b = el('button', 'weave-len-btn', label) as HTMLButtonElement;
+    b.type = 'button';
+    b.title = title;
+    b.addEventListener('click', () => {
+      ctx.setClipLength(lane.id, factor);
+      repaintCell();
+    });
+    length.appendChild(b);
+  }
+
   const paintTopo = () => {
     const kind = ctx.laneWeave(lane.id)?.kind;
     for (const { kind: k, b } of buttons) {
@@ -472,7 +491,7 @@ export function buildLaneRow(
   paintTopo();
   repaintCell();
 
-  row.append(led, ring.el, name, transport, engine, preset, style, topo, cellHost);
+  row.append(led, ring.el, name, transport, engine, preset, style, topo, length, cellHost);
 
   // The bar, under the controls and across the whole row. A second line rather
   // than a tenth column because it is the OUTPUT and the row above it is the
