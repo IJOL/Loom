@@ -193,3 +193,38 @@ describe('applyFlow', () => {
     expect(lanes.l0.weave!.a).toBe('lib:house:bass:2');
   });
 });
+
+describe('with wrapping off, the journey has ends', () => {
+  it('stops at 1 instead of folding back to 0', () => {
+    expect(flowPositions(1, 2, 'together', [], false)).toEqual([1, 1]);
+  });
+
+  it('still folds when wrapping is on — that is what a lap is', () => {
+    expect(flowPositions(1, 2, 'together')).toEqual([0, 0]);
+  });
+
+  it('clamps below zero too', () => {
+    expect(flowPositions(-0.25, 1, 'together', [], false)).toEqual([0]);
+  });
+
+  it('offset still fans, but each lane stops at its own end', () => {
+    // Two lanes half a lap apart: at flow 0.75 the second would be at 1.25.
+    const out = flowPositions(0.75, 2, 'offset', [], false);
+    expect(out[0]).toBeCloseTo(0.75, 6);
+    expect(out[1]).toBe(1);
+  });
+
+  it('free counts from the base and stops there too', () => {
+    expect(flowPositions(0.5, 1, 'free', [0.8], false)).toEqual([1]);
+  });
+
+  it('applyFlow leaves a lane parked at the end without calling onWrap', () => {
+    const lanes: Record<string, { weave: { x: number } }> = {
+      l1: { weave: { x: 0.99 } },
+    };
+    const wrapped: string[] = [];
+    applyFlow(lanes, ['l1'], 1, 'together', undefined, (id) => wrapped.push(id), false);
+    expect(lanes.l1.weave.x).toBe(1);
+    expect(wrapped).toEqual([]);
+  });
+});

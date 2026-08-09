@@ -30,6 +30,14 @@ export const asDrift = (v: string): DriftMode =>
  *  hand must come back exactly as it was, not a float's width away from it. */
 const wrap01 = (v: number) => (v >= 0 && v < 1 ? v : ((v % 1) + 1) % 1);
 
+/** Hold a position inside 0..1 by STOPPING at the ends.
+ *
+ *  The counterpart of `wrap01`, and the difference between the panel's two
+ *  jobs. A lap that never ends folds; a fader a hand is holding has to have a
+ *  far end, or dragging it all the way over lands you back where you started —
+ *  which is the bug this pair exists to fix. */
+const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
 /** Where each lane's cross-fade should sit for this flow position.
  *
  *  `current` is what the lanes hold now, and it only matters in 'free' — the
@@ -37,9 +45,13 @@ const wrap01 = (v: number) => (v >= 0 && v < 1 ? v : ((v % 1) + 1) % 1);
  *  makes them feel like one control rather than n. */
 export function flowPositions(
   flow: number, laneCount: number, drift: DriftMode, current: readonly number[] = [],
+  /** True — the default — folds 1 back to 0, which is what a lap does. False
+   *  stops at the ends, which is what a hand on the fader means. */
+  wrap = true,
 ): number[] {
   if (laneCount <= 0) return [];
-  const f = wrap01(flow);
+  const fold = wrap ? wrap01 : clamp01;
+  const f = fold(flow);
 
   if (drift === 'together') return Array.from({ length: laneCount }, () => f);
 
@@ -48,13 +60,13 @@ export function flowPositions(
     // and the last, or the two would coincide and the fan would read as
     // 'together' with extra steps.
     const span = laneCount === 1 ? 0 : 1 / laneCount;
-    return Array.from({ length: laneCount }, (_, i) => wrap01(f + i * span));
+    return Array.from({ length: laneCount }, (_, i) => fold(f + i * span));
   }
 
   // 'free': the flow is a DELTA, not a position. Each lane keeps where it is and
   // moves by the same amount, so a scene the user has hand-placed stays placed
   // and the master control still means something.
-  return Array.from({ length: laneCount }, (_, i) => wrap01((current[i] ?? 0) + f));
+  return Array.from({ length: laneCount }, (_, i) => fold((current[i] ?? 0) + f));
 }
 
 /** How far the flow has travelled after `bars`, given a journey of `barsPerLap`.
@@ -100,12 +112,15 @@ export function applyFlow(
    *  fire. A lane that wrapped has completed a lap, which is where A→B re-hooks
    *  onto a fresh loop. */
   onWrap?: (laneId: string) => void,
+  /** See flowPositions. With wrapping off no lane can ever wrap, so `onWrap`
+   *  cannot fire — which is exactly what STATIC means. */
+  wrap = true,
 ): boolean {
   const current = laneIds.map((id) => {
     const stored = lanes[id]?.weave;
     return base?.get(id) ?? (stored ? stored.x : 0);
   });
-  const next = flowPositions(flow, laneIds.length, drift, current);
+  const next = flowPositions(flow, laneIds.length, drift, current, wrap);
 
   let moved = false;
   laneIds.forEach((id, i) => {
