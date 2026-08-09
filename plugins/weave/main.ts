@@ -351,6 +351,27 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   drift.value = flowNow.drift;
   speed.value = String(flowNow.speedBars);
 
+  // Two jobs, one switch. STATIC is a scene you place by hand and it stays
+  // placed; EVOLVE is a scene that keeps finding new material. Default is
+  // STATIC because a panel that reshuffles a session nobody touched is the
+  // thing this whole feature has to not do.
+  const evolve = document.createElement('button');
+  evolve.className = 'weave-evolve';
+  evolve.id = 'weave-evolve';
+  const paintEvolve = () => {
+    const on = !!ctx.flow().evolve;
+    evolve.dataset.on = on ? '1' : '';
+    evolve.textContent = on ? '∞ EVOLVE' : '⏸ STATIC';
+    evolve.title = on
+      ? 'Arriving at the far end hands over: clips advance in order, library loops are drawn at random.'
+      : 'The pair you chose is the pair you keep. The fader has two ends.';
+  };
+  paintEvolve();
+  evolve.addEventListener('click', () => {
+    ctx.setFlow(Number(flow.value), drift.value, Number(speed.value), !ctx.flow().evolve);
+    paintEvolve();
+  });
+
   const pushFlow = () => {
     ctx.setFlow(Number(flow.value), drift.value, Number(speed.value), !!ctx.flow().evolve);
     // Travelling on its own, the fader is a readout and not a handle. Left live
@@ -367,7 +388,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   driftLabel.textContent = 'Drift';
   const speedLabel = el('span', 'weave-label');
   speedLabel.textContent = 'Speed';
-  flowRow.append(flowLabel, flow, flowOut, driftLabel, drift, speedLabel, speed);
+  flowRow.append(flowLabel, flow, flowOut, driftLabel, drift, speedLabel, speed, evolve);
 
   // ── lanes ────────────────────────────────────────────────────────────────
   const lanes = el('div', 'weave-lanes');

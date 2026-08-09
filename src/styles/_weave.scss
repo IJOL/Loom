@@ -161,6 +161,31 @@
   text-align: right;
 }
 
+// Which of the panel's two jobs is running. Lit means the scene is finding new
+// material on its own, which is worth seeing from across the room; unlit is the
+// default, and a quiet control is the honest look for "nothing is moving".
+.weave-evolve {
+  flex: 0 0 auto;
+  margin-left: auto;
+  background: transparent;
+  color: var(--text-dim, #9a9aa2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover { color: var(--amber); border-color: var(--amber-soft); }
+
+  &[data-on='1'] {
+    color: var(--amber);
+    border-color: var(--amber);
+    box-shadow: 0 0 10px var(--amber-soft);
+  }
+}
+
 // ── lanes ──────────────────────────────────────────────────────────────────
 .weave-lanes { display: flex; flex-direction: column; gap: 5px; }
 

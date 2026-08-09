@@ -605,8 +605,22 @@ function mountWeave(host, ctx) {
   }
   drift.value = flowNow.drift;
   speed.value = String(flowNow.speedBars);
+  const evolve = document.createElement("button");
+  evolve.className = "weave-evolve";
+  evolve.id = "weave-evolve";
+  const paintEvolve = () => {
+    const on = !!ctx.flow().evolve;
+    evolve.dataset.on = on ? "1" : "";
+    evolve.textContent = on ? "\u221E EVOLVE" : "\u23F8 STATIC";
+    evolve.title = on ? "Arriving at the far end hands over: clips advance in order, library loops are drawn at random." : "The pair you chose is the pair you keep. The fader has two ends.";
+  };
+  paintEvolve();
+  evolve.addEventListener("click", () => {
+    ctx.setFlow(Number(flow.value), drift.value, Number(speed.value), !ctx.flow().evolve);
+    paintEvolve();
+  });
   const pushFlow = () => {
-    ctx.setFlow(Number(flow.value), drift.value, Number(speed.value));
+    ctx.setFlow(Number(flow.value), drift.value, Number(speed.value), !!ctx.flow().evolve);
     flow.disabled = Number(speed.value) > 0;
     showFlow();
   };
@@ -618,7 +632,7 @@ function mountWeave(host, ctx) {
   driftLabel.textContent = "Drift";
   const speedLabel = el2("span", "weave-label");
   speedLabel.textContent = "Speed";
-  flowRow.append(flowLabel, flow, flowOut, driftLabel, drift, speedLabel, speed);
+  flowRow.append(flowLabel, flow, flowOut, driftLabel, drift, speedLabel, speed, evolve);
   const lanes = el2("div", "weave-lanes");
   const head2 = el2("div", "weave-lane weave-lane-head");
   for (const label of ["", "", "Lane", "", "Instrument", "Preset", "Style", "Topology", "Loops"]) {
