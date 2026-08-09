@@ -80,12 +80,12 @@ describe('pruneKnobRegistryToDestinations', () => {
   it('leaves mixer strip controls alone even when the destination set is empty', () => {
     const registry = new Map<string, KnobHandle>([
       ['poly1.bus.pan',       handle('poly1.bus.pan')],
-      ['poly1.bus.delaySend', handle('poly1.bus.delaySend')],
+      ['poly1.bus.sendA', handle('poly1.bus.sendA')],
       ['poly1.bus.level',     handle('poly1.bus.level')],
     ]);
     pruneKnobRegistryToDestinations(registry, new Set());
     expect([...registry.keys()].sort())
-      .toEqual(['poly1.bus.delaySend', 'poly1.bus.level', 'poly1.bus.pan']);
+      .toEqual(['poly1.bus.level', 'poly1.bus.pan', 'poly1.bus.sendA']);
   });
 
   it('leaves an engine param alone even when the destination set is empty', () => {

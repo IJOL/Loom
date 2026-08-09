@@ -40,8 +40,8 @@ describe('WorkletLaneEngine strip params', () => {
     engine.setBusStrip(strip);
 
     engine.setBaseValue('bus.level', 0.4);
-    engine.setBaseValue('bus.delaySend', 0.65);
-    engine.setBaseValue('bus.reverbSend', 0.2);
+    engine.setBaseValue('bus.sendA', 0.65);
+    engine.setBaseValue('bus.sendB', 0.2);
     engine.setBaseValue('bus.eq.low', -7.5);
     engine.setBaseValue('bus.eq.mid', 4);
     engine.setBaseValue('bus.eq.high', 11);
@@ -94,6 +94,9 @@ describe('WorkletLaneEngine strip params', () => {
     const { strip, engine } = fixture();
     engine.setBusStrip(strip);
     const shared = engine.getSharedAudioParams();
-    expect([...shared.keys()].sort()).toEqual(STRIP_PARAM_SPECS.map((s) => s.id).sort());
+    // The declared seven plus the two pre-rename send ids, which stay reachable
+    // so a modulation connection saved against them still binds.
+    const expected = [...STRIP_PARAM_SPECS.map((s) => s.id), 'bus.delaySend', 'bus.reverbSend'];
+    expect([...shared.keys()].sort()).toEqual(expected.sort());
   });
 });

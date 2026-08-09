@@ -82,7 +82,7 @@ describe('buildMixerColumn', () => {
     buildMixerColumn('poly1', deps);
     expect(deps.registered.map((k) => k.meta.id)).toEqual([
       'poly1.bus.eq.high', 'poly1.bus.eq.mid', 'poly1.bus.eq.low',
-      'poly1.bus.delaySend', 'poly1.bus.reverbSend', 'poly1.bus.pan',
+      'poly1.bus.sendA', 'poly1.bus.sendB', 'poly1.bus.pan',
       'poly1.bus.level',
     ]);
   });

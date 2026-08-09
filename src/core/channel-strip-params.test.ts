@@ -22,7 +22,7 @@ function makeStrip(): ChannelStrip {
 describe('STRIP_PARAM_SPECS', () => {
   it('declares exactly the seven channel-strip params the mixer column shows', () => {
     expect(STRIP_PARAM_SPECS.map((s) => s.id)).toEqual([
-      'bus.level', 'bus.pan', 'bus.delaySend', 'bus.reverbSend',
+      'bus.level', 'bus.pan', 'bus.sendA', 'bus.sendB',
       'bus.eq.low', 'bus.eq.mid', 'bus.eq.high',
     ]);
   });
@@ -37,8 +37,8 @@ describe('STRIP_PARAM_SPECS', () => {
     const byId = new Map(STRIP_PARAM_SPECS.map((s) => [s.id, s]));
     expect(byId.get('bus.level')).toMatchObject({ min: 0, max: 1.5, default: 1 });
     expect(byId.get('bus.pan')).toMatchObject({ min: -1, max: 1, default: 0 });
-    expect(byId.get('bus.delaySend')).toMatchObject({ min: 0, max: 1, default: 0 });
-    expect(byId.get('bus.reverbSend')).toMatchObject({ min: 0, max: 1, default: 0 });
+    expect(byId.get('bus.sendA')).toMatchObject({ min: 0, max: 1, default: 0 });
+    expect(byId.get('bus.sendB')).toMatchObject({ min: 0, max: 1, default: 0 });
     for (const band of ['bus.eq.low', 'bus.eq.mid', 'bus.eq.high']) {
       expect(byId.get(band)).toMatchObject({ min: -18, max: 18, default: 0 });
     }
@@ -60,7 +60,7 @@ describe('setStripParam / getStripParam', () => {
     // test below covers it. Everything else lands immediately.
     const strip = makeStrip();
     const values: Record<string, number> = {
-      'bus.level': 0.42, 'bus.delaySend': 0.3, 'bus.reverbSend': 0.7,
+      'bus.level': 0.42, 'bus.sendA': 0.3, 'bus.sendB': 0.7,
       'bus.eq.low': -6, 'bus.eq.mid': 3, 'bus.eq.high': 12,
     };
     for (const [id, v] of Object.entries(values)) {
@@ -90,7 +90,7 @@ describe('setStripParam / getStripParam', () => {
   it('lands on the audio nodes, not a side table', () => {
     const strip = makeStrip();
     setStripParam(strip, 'bus.level', 0.25);
-    setStripParam(strip, 'bus.delaySend', 0.6);
+    setStripParam(strip, 'bus.sendA', 0.6);
     setStripParam(strip, 'bus.eq.high', -9);
     expect(strip.level.gain.value).toBeCloseTo(0.25, 4);
     expect(strip.sendA.gain.value).toBeCloseTo(0.6, 4);
@@ -103,14 +103,47 @@ describe('setStripParam / getStripParam', () => {
     expect(setStripParam(strip, 'filter.cutoff', 1)).toBe(false);
     expect(getStripParam(strip, 'bus.nope')).toBeUndefined();
   });
+
+  // The sends were `bus.delaySend` / `bus.reverbSend` in this file alone, while
+  // ChannelState, the bus list and the mixer labels said A and B. Saved
+  // envelopes, saved connections and five shipped demos hold the old spelling,
+  // so it has to keep resolving — but only the NEW id is declared, which is
+  // what the catalogue and the pickers offer.
+  it('still answers to the ids the sends used to carry', () => {
+    const strip = makeStrip();
+    expect(setStripParam(strip, 'bus.delaySend', 0.4)).toBe(true);
+    expect(setStripParam(strip, 'bus.reverbSend', 0.6)).toBe(true);
+
+    expect(getStripParam(strip, 'bus.sendA')).toBeCloseTo(0.4, 4);
+    expect(getStripParam(strip, 'bus.sendB')).toBeCloseTo(0.6, 4);
+    expect(getStripParam(strip, 'bus.delaySend')).toBeCloseTo(0.4, 4);
+  });
+
+  it('declares only the new ids, so nothing offers the user two names for one send', () => {
+    const ids = STRIP_PARAM_SPECS.map((s) => s.id);
+    expect(ids).toContain('bus.sendA');
+    expect(ids).toContain('bus.sendB');
+    expect(ids).not.toContain('bus.delaySend');
+    expect(ids).not.toContain('bus.reverbSend');
+  });
 });
 
 describe('stripAudioParams', () => {
   it('exposes one AudioParam per declared param, under the same ids', () => {
     const strip = makeStrip();
     const params = stripAudioParams(strip);
-    expect([...params.keys()].sort()).toEqual(STRIP_PARAM_SPECS.map((s) => s.id).sort());
+    // The declared seven, plus the two ids the sends carried before the rename:
+    // this map is looked up BY a saved modulation connection's target.
+    const expected = [...STRIP_PARAM_SPECS.map((s) => s.id), 'bus.delaySend', 'bus.reverbSend'];
+    expect([...params.keys()].sort()).toEqual(expected.sort());
     for (const [, ap] of params) expect(typeof ap.value).toBe('number');
+  });
+
+  it('the old send ids point at the SAME nodes as the new ones', () => {
+    const strip = makeStrip();
+    const params = stripAudioParams(strip);
+    expect(params.get('bus.delaySend')).toBe(params.get('bus.sendA'));
+    expect(params.get('bus.reverbSend')).toBe(params.get('bus.sendB'));
   });
 
   it('hands out the strip own params, so a write through one is visible on the other', () => {

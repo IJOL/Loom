@@ -187,12 +187,12 @@ export function buildMixerColumn(trackId: string, deps: MixerColumnDeps): HTMLEl
       <div class="mix-section">
         <div class="mix-sec-label">SEND</div>
         ${knobEl(deps, {
-          id: stripParamId(trackId, 'bus.delaySend'), label: 'A', min: 0, max: 1, step: 0.01,
+          id: stripParamId(trackId, 'bus.sendA'), label: 'A', min: 0, max: 1, step: 0.01,
           value: state.sendA, defaultValue: 0, color: '#3498db', format: fmtPct,
           onChange: (v) => strip.setSendA(v),
         })}
         ${knobEl(deps, {
-          id: stripParamId(trackId, 'bus.reverbSend'), label: 'B', min: 0, max: 1, step: 0.01,
+          id: stripParamId(trackId, 'bus.sendB'), label: 'B', min: 0, max: 1, step: 0.01,
           value: state.sendB, defaultValue: 0, color: '#9b59b6', format: fmtPct,
           onChange: (v) => strip.setSendB(v),
         })}

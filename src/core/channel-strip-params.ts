@@ -27,9 +27,19 @@
 // its own parse branch, its own apply target and its own binder source. Reusing
 // `bus.*` needs none of that: they are ordinary engine params all the way down.
 //
-// NAMING, deliberately kept: `delaySend`/`reverbSend` rather than `sendA`/`sendB`
-// (what ChannelState calls them). Renaming would break every saved drum lane's
-// envelopes and connections, which DO contain these ids today.
+// NAMING: `bus.sendA` / `bus.sendB`, the names ChannelState, the SendBus list
+// and the mixer's own labels have always used. They were `bus.delaySend` /
+// `bus.reverbSend` here alone, kept out of fear of breaking saved drum lanes —
+// and that one divergence cost a whole feature: WEAVE's Space macro looked for
+// `.bus.sendA`, found nothing, and wrote to zero destinations forever while the
+// sends sat there loaded with a delay and a reverb. A name that only one file
+// spells its own way is a trap for every other file.
+//
+// The old ids keep working. `LEGACY_STRIP_IDS` below is read on every path that
+// takes an id from OUTSIDE this file — a saved envelope, a saved modulation
+// connection, a shipped demo — so nothing written before this rename stops
+// resolving. Only the DECLARED id changed, which is what the catalogue, the
+// pickers and the macros see.
 
 import type { EngineParamSpec } from '../engines/engine-params';
 import type { ChannelStrip } from './fx';
@@ -44,14 +54,28 @@ export function isStripParamId(id: string): boolean {
   return id.startsWith(STRIP_PARAM_PREFIX);
 }
 
+/** What the two sends were called while this file spelled them its own way.
+ *  Saved envelopes, saved modulation connections and the shipped demos all
+ *  carry these, so every path that accepts an id from outside resolves them. */
+const LEGACY_STRIP_IDS: Readonly<Record<string, string>> = {
+  'bus.delaySend': 'bus.sendA',
+  'bus.reverbSend': 'bus.sendB',
+};
+
+/** The id this file owns, given anything a save might hold. Identity for
+ *  everything else, so it is safe to call on an id that is not a strip param. */
+export function canonicalStripParamId(id: string): string {
+  return LEGACY_STRIP_IDS[id] ?? id;
+}
+
 /** The seven, in mixer-column order. Copied verbatim from what
  *  drums-worklet-engine declared inline, so drum lanes keep the ranges, labels
  *  and units their knobs and saved sessions were built with. */
 export const STRIP_PARAM_SPECS: readonly EngineParamSpec[] = [
   { id: 'bus.level',      label: 'Vol', kind: 'continuous', min: 0,   max: 1.5, default: 1 },
   { id: 'bus.pan',        label: 'Pan', kind: 'continuous', min: -1,  max: 1,   default: 0 },
-  { id: 'bus.delaySend',  label: 'A',   kind: 'continuous', min: 0,   max: 1,   default: 0 },
-  { id: 'bus.reverbSend', label: 'B',   kind: 'continuous', min: 0,   max: 1,   default: 0 },
+  { id: 'bus.sendA',      label: 'A',   kind: 'continuous', min: 0,   max: 1,   default: 0 },
+  { id: 'bus.sendB',      label: 'B',   kind: 'continuous', min: 0,   max: 1,   default: 0 },
   { id: 'bus.eq.low',     label: 'Lo',  kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
   { id: 'bus.eq.mid',     label: 'Mid', kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
   { id: 'bus.eq.high',    label: 'Hi',  kind: 'continuous', min: -18, max: 18,  default: 0, unit: 'dB' },
@@ -61,11 +85,11 @@ export const STRIP_PARAM_SPECS: readonly EngineParamSpec[] = [
  *  not own — the caller then knows to try the engine's own params. */
 export function getStripParam(strip: ChannelStrip, id: string): number | undefined {
   const s = strip.serialize();
-  switch (id) {
+  switch (canonicalStripParamId(id)) {
     case 'bus.level':      return s.level;
     case 'bus.pan':        return s.pan;
-    case 'bus.delaySend':  return s.sendA;
-    case 'bus.reverbSend': return s.sendB;
+    case 'bus.sendA':      return s.sendA;
+    case 'bus.sendB':      return s.sendB;
     case 'bus.eq.low':     return s.eqLow;
     case 'bus.eq.mid':     return s.eqMid;
     case 'bus.eq.high':    return s.eqHigh;
@@ -77,11 +101,11 @@ export function getStripParam(strip: ChannelStrip, id: string): number | undefin
  *  does not own, so a caller can fall through instead of swallowing the write —
  *  a silent no-op here reads to the user as "automation does nothing". */
 export function setStripParam(strip: ChannelStrip, id: string, v: number): boolean {
-  switch (id) {
+  switch (canonicalStripParamId(id)) {
     case 'bus.level':      strip.setLevel(v);  return true;
     case 'bus.pan':        strip.setPan(v);    return true;
-    case 'bus.delaySend':  strip.setSendA(v);  return true;
-    case 'bus.reverbSend': strip.setSendB(v);  return true;
+    case 'bus.sendA':      strip.setSendA(v);  return true;
+    case 'bus.sendB':      strip.setSendB(v);  return true;
     case 'bus.eq.low':     strip.setEqLow(v);  return true;
     case 'bus.eq.mid':     strip.setEqMid(v);  return true;
     case 'bus.eq.high':    strip.setEqHigh(v); return true;
@@ -107,11 +131,15 @@ export function stripAudioParams(strip: ChannelStrip): Map<string, AudioParam> {
   return new Map<string, AudioParam>([
     ['bus.level',      strip.levelMod.gain],
     ['bus.pan',        strip.getPanParam()],
-    ['bus.delaySend',  strip.sendAMod.gain],
-    ['bus.reverbSend', strip.sendBMod.gain],
+    ['bus.sendA',      strip.sendAMod.gain],
+    ['bus.sendB',      strip.sendBMod.gain],
     ['bus.eq.low',     strip.getEqGainParam('low')],
     ['bus.eq.mid',     strip.getEqGainParam('mid')],
     ['bus.eq.high',    strip.getEqGainParam('high')],
+    // The old names, on the same nodes: a modulation connection saved before
+    // the rename still names them, and this map is looked up BY that saved id.
+    ['bus.delaySend',  strip.sendAMod.gain],
+    ['bus.reverbSend', strip.sendBMod.gain],
   ]);
 }
 
@@ -124,11 +152,14 @@ export function stripAutomationParams(strip: ChannelStrip): Map<string, AudioPar
   return new Map<string, AudioParam>([
     ['bus.level',      strip.level.gain],
     ['bus.pan',        strip.getPanParam()],
-    ['bus.delaySend',  strip.sendA.gain],
-    ['bus.reverbSend', strip.sendB.gain],
+    ['bus.sendA',      strip.sendA.gain],
+    ['bus.sendB',      strip.sendB.gain],
     ['bus.eq.low',     strip.getEqGainParam('low')],
     ['bus.eq.mid',     strip.getEqGainParam('mid')],
     ['bus.eq.high',    strip.getEqGainParam('high')],
+    // As above: a saved timeline curve replays by the id it was written with.
+    ['bus.delaySend',  strip.sendA.gain],
+    ['bus.reverbSend', strip.sendB.gain],
   ]);
 }
 
@@ -144,9 +175,10 @@ export function stripAutomationParams(strip: ChannelStrip): Map<string, AudioPar
  *  Pan and EQ modulate over their declared range, which is already what a user
  *  means by "full depth". */
 export function stripModulationRange(id: string): { min: number; max: number } | undefined {
-  if (id === 'bus.level' || id === 'bus.delaySend' || id === 'bus.reverbSend') {
+  const canon = canonicalStripParamId(id);
+  if (canon === 'bus.level' || canon === 'bus.sendA' || canon === 'bus.sendB') {
     return { min: 0, max: 1 };
   }
-  const spec = STRIP_PARAM_SPECS.find((s) => s.id === id);
+  const spec = STRIP_PARAM_SPECS.find((s) => s.id === canon);
   return spec ? { min: spec.min, max: spec.max } : undefined;
 }
