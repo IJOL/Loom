@@ -394,3 +394,50 @@ describe('the step row moves a parameter in time with the bar', () => {
     expect(writes.map(([, v]) => v)).toEqual([0, 0.25]);
   });
 });
+
+// The blend walks pitches in scale DEGREES, and the conversion measures a note's
+// distance from the scale root sitting at `octaveBase` — which is a MIDI number,
+// not an octave index. This file passed 3, the only such value in the codebase:
+// every other caller passes a real MIDI (36, 48, 60). With 3 the distance lands
+// between the scale's intervals, the degree lookup fails, and the note comes out
+// somewhere else entirely. Heard as "scene 2 nunca se escucha limpio".
+describe('the weave does not transpose what it folds', () => {
+  const both = (): SessionState => ({
+    lanes: [{
+      id: 'lane1',
+      engineId: 'subtractive',
+      clips: [
+        // The SAME onset on both sides, so the fold actually converts a pitch —
+        // the fixture above deliberately shares no onsets and never would.
+        { id: 'clipA', name: 'A', color: '#fff', lengthBars: 1, notes: [hit(0, 45)], gridResolution: '1/16' },
+        { id: 'clipB', name: 'B', color: '#fff', lengthBars: 1, notes: [hit(0, 52)], gridResolution: '1/16' },
+      ],
+      inserts: [],
+    }],
+    scenes: [],
+    musicality: { ...DEFAULT_MUSICALITY },
+  } as unknown as SessionState);
+
+  const at = (x: number) => {
+    const w = wiring(both());
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x },
+      locked: false, harmonyLeader: false,
+    };
+    return w.notesFor('lane1')!()!.map((n) => n.midi);
+  };
+
+  it('hands back A\'s own pitch at one end', () => {
+    expect(at(0)).toEqual([45]);
+  });
+
+  it('and B\'s own pitch at the other', () => {
+    expect(at(1)).toEqual([52]);
+  });
+
+  it('and stays BETWEEN them in the middle, never outside', () => {
+    const mid = at(0.5)[0];
+    expect(mid).toBeGreaterThanOrEqual(45);
+    expect(mid).toBeLessThanOrEqual(52);
+  });
+});

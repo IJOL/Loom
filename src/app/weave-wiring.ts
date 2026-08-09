@@ -187,10 +187,23 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
           melodic: melodicLane(laneId),
           key: m.key,
           scale: m.scale,
-          // Where degree 0 sits. Three is the octave the blend counts from; it
-          // only has to agree with itself, since both sides of a pair are
-          // converted through the same base.
-          octaveBase: 3,
+          // Where degree 0 sits, as a MIDI note — not an octave index. The
+          // conversion measures a note's distance from the scale root sitting
+          // HERE, so anything that is not a multiple of twelve puts the root
+          // between the scale's own intervals: the degree lookup then fails and
+          // the note lands somewhere else entirely.
+          //
+          // This said 3, on the reasoning that the base "only has to agree with
+          // itself since both sides are converted through the same one". It
+          // does not: the conversion is only a round trip when the root is a
+          // real root. Measured after the fact — a lane weaving A3 against E4
+          // came out at F2 in the middle of the crossfade, which is what "scene
+          // 2 nunca se escucha limpio" was.
+          //
+          // Zero is the neutral choice and the one note-transform already uses
+          // for the same job: it imposes no octave of its own, and every degree
+          // is measured from the key's own root.
+          octaveBase: 0,
         }, true, noteMacros);
       }
     }
