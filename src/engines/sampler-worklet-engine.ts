@@ -247,6 +247,14 @@ export class SamplerWorkletEngine implements SynthEngine {
 
   get modulators(): ModulationHostImpl { return this.getModHost(); }
 
+  /** Make an edit to `modulators` audible now. The panel's knobs call it, and so
+   *  does an automation curve on a connection depth — which must not need the
+   *  panel open to be heard. The sampler modulates Web-Audio params, so the
+   *  connection binder is the whole of it. */
+  onModulationEdited(laneId: string): void {
+    reapplyLaneModulations(laneId);
+  }
+
   /** The lane's mixer strip is the engine's only shared Web-Audio surface:
    *  filtering a sampler lane is a `multifilter` insert, whose params are already
    *  destinations (`<laneId>.fx:<slotId>.<param>`), but level/pan/sends/EQ are
@@ -791,7 +799,7 @@ export class SamplerWorkletEngine implements SynthEngine {
       sessionState: ctx.sessionState,
       historyDeps: ctx.historyDeps,
       destinations: ctx.destinations,
-      onLiveEdit: () => { if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId); },
+      onLiveEdit: () => { if (this.currentLaneId) this.onModulationEdited(this.currentLaneId); },
       onChange: () => {
         if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId);
         renderModulatorsPanel(container, modDeps);

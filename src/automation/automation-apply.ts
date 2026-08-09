@@ -19,7 +19,8 @@ import { WEAVE_SCOPE } from '../weave/weave-catalog';
 export type ParsedParamId =
   | { scopeId: string; kind: 'engine'; paramId: string }
   | { scopeId: string; kind: 'insert'; slotId: string; paramId: string }
-  | { scopeId: string; kind: 'macro'; paramId: string };
+  | { scopeId: string; kind: 'macro'; paramId: string }
+  | { scopeId: string; kind: 'modDepth'; modId: string; connId: string };
 
 /** Split a canonical destination id. The insert marker is the first segment
  *  shaped `fx:<slotId>`; everything before it is the scope (which is itself
@@ -34,6 +35,12 @@ export function parseAutomationParamId(id: string): ParsedParamId | null {
     const paramId = id.slice(WEAVE_SCOPE.length + 1);
     if (paramId.length > 0) return { scopeId: WEAVE_SCOPE, kind: 'macro', paramId };
   }
+
+  // `<lane>.mod.<modId>.conn.<connId>.depth` — matched on its two literal
+  // markers rather than by counting dots, so a lane id with dots in it still
+  // parses and an engine param that merely starts with `mod.` still does not.
+  const mod = /^(.+)\.mod\.([^.]+)\.conn\.([^.]+)\.depth$/.exec(id);
+  if (mod) return { scopeId: mod[1], kind: 'modDepth', modId: mod[2], connId: mod[3] };
 
   const parts = id.split('.');
   if (parts.length < 2) return null;
@@ -56,6 +63,23 @@ interface ParamTarget {
   setBaseValue(id: string, v: number): void;
 }
 
+/** What a `modDepth` write needs of the engine it lands on: the modulation
+ *  state, and the one call that makes an edit to it audible.
+ *
+ *  Both halves matter. `setConnection` alone changes a number the worklet has
+ *  already been handed a copy of, so the sound would keep modulating at the old
+ *  depth — inert looking exactly like working, which is this file's own stated
+ *  worst failure. `onModulationEdited` is the same hook the modulation panel's
+ *  own depth knob fires, so an automation lane and a hand on that knob take the
+ *  identical path. */
+interface ModDepthTarget {
+  modulators?: {
+    modulators: { id: string; connections: { id: string }[] }[];
+    setConnection(modId: string, conn: unknown): void;
+  };
+  onModulationEdited?(laneId: string): void;
+}
+
 export interface AutomationApplyDeps {
   getInsertFx(scopeId: string, slotId: string): ParamTarget | undefined;
   getEngine(laneId: string): ParamTarget | undefined;
@@ -73,6 +97,24 @@ export function applyAutomationToSession(
 ): boolean {
   const parsed = parseAutomationParamId(id);
   if (!parsed) return false;
+
+  if (parsed.kind === 'modDepth') {
+    const engine = deps.getEngine(parsed.scopeId) as unknown as ModDepthTarget | undefined;
+    const host = engine?.modulators;
+    const range = deps.getRange(id);
+    if (!host || !range) return false;
+    // Resolved by id, never by position: a connection removed while a curve was
+    // running would otherwise silently rewrite whichever routing slid into its
+    // place. Gone means gone, and false says so.
+    const mod = host.modulators.find((m) => m.id === parsed.modId);
+    const conn = mod?.connections.find((c) => c.id === parsed.connId);
+    if (!conn) return false;
+    host.setConnection(parsed.modId, {
+      ...conn, depth: range.min + normalised * (range.max - range.min),
+    });
+    engine?.onModulationEdited?.(parsed.scopeId);
+    return true;
+  }
 
   const target = parsed.kind === 'insert'
     ? deps.getInsertFx(parsed.scopeId, parsed.slotId)

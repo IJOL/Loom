@@ -144,3 +144,47 @@ describe('the weave macros in the catalogue', () => {
     expect(groups.get('Weave')).toHaveLength(WEAVE_MACROS.length);
   });
 });
+
+/** A session whose one lane carries modulators, the shape `engineState` holds
+ *  them in. The catalogue reads the SESSION, so this is all it takes. */
+function sessionWithLaneModulators(laneId: string, mods: unknown[]): SessionState {
+  return {
+    ...emptySessionState(),
+    lanes: [{
+      id: laneId, name: laneId, engineId: 'subtractive', clips: [], inserts: [],
+      engineState: { modulators: mods },
+    }],
+  } as unknown as SessionState;
+}
+
+describe('a modulator depth is a destination like any other', () => {
+  const oneLfo = [{ id: 'lfo1', connections: [{ id: 'c1', paramId: 'filter.cutoff', depth: 0.5 }] }];
+
+  it('lists every modulator connection depth the session holds', () => {
+    const ids = listAutomationTargets(
+      sessionWithLaneModulators('L1', oneLfo), new Map(),
+    ).map((t) => t.id);
+    expect(ids).toContain('L1.mod.lfo1.conn.c1.depth');
+  });
+
+  it('a depth swings both ways — its range is bipolar', () => {
+    const t = listAutomationTargets(sessionWithLaneModulators('L1', oneLfo), new Map())
+      .find((x) => x.id.endsWith('.depth'))!;
+    expect(t.min).toBe(-1);
+    expect(t.max).toBe(1);
+  });
+
+  it('says which modulator drives which param, so a picker is readable', () => {
+    const t = listAutomationTargets(sessionWithLaneModulators('L1', oneLfo), new Map())
+      .find((x) => x.id.endsWith('.depth'))!;
+    expect(t.label).toContain('filter.cutoff');
+    expect(t.subGroup?.label).toBe('LFO1');
+  });
+
+  it('a modulator with no connections adds nothing', () => {
+    const ids = listAutomationTargets(
+      sessionWithLaneModulators('L1', [{ id: 'lfo1', connections: [] }]), new Map(),
+    ).map((t) => t.id);
+    expect(ids.some((id) => id.endsWith('.depth'))).toBe(false);
+  });
+});

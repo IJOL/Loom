@@ -54,6 +54,28 @@ export interface PanelCtx {
  *  step that makes the edit audible. Every control calls it after mutating. */
 export function sync(deps: ModulationUIDeps): void {
   deps.onLiveEdit?.();
+  mirrorToSession(deps);
+}
+
+/** Copy the live modulator set onto the lane, and tell the catalogue.
+ *
+ *  `lane.engineState.modulators` used to be written only by `getStateForSave`,
+ *  which made it a snapshot of the last save — fine while nothing read it in
+ *  between, and wrong the moment the destination catalogue started listing each
+ *  connection's DEPTH from it. Add a routing and its depth would not be
+ *  automatable until you saved; remove one and it would linger as a
+ *  destination that writes nowhere.
+ *
+ *  Cheap enough to run per edit: serialize() is a shallow-cloned array of small
+ *  objects, and this fires on a control gesture, not per frame. */
+export function mirrorToSession(deps: ModulationUIDeps): void {
+  const lane = deps.sessionState?.lanes.find((l) => l.id === deps.laneId);
+  if (!lane) return;
+  if (!lane.engineState) lane.engineState = {};
+  lane.engineState.modulators = deps.host.serialize();
+  // The SET of destinations may have changed — a connection added or removed.
+  // Every picker subscribes; none of them polls.
+  deps.destinations?.invalidate();
 }
 
 /** Runs a mutation bracketed as one undo entry when history is wired. Replaces

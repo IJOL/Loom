@@ -2,7 +2,7 @@
 // panel happens to be mounted. Before this, playback resolved destinations only
 // through the knob registry, so automation on an insert did nothing until you
 // opened that channel — the value silently vanished.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { parseAutomationParamId, applyAutomationToSession } from './automation-apply';
 import { insertParamId } from './automation-targets';
 
@@ -138,5 +138,66 @@ describe('the session scope (WEAVE macros)', () => {
     expect(parseAutomationParamId('session.weave:style.mix')).toEqual({
       scopeId: 'session.weave', kind: 'macro', paramId: 'style.mix',
     });
+  });
+});
+
+describe('a modulator depth', () => {
+  it('parses on its two markers, not by counting dots', () => {
+    expect(parseAutomationParamId('L1.mod.lfo1.conn.c1.depth'))
+      .toEqual({ scopeId: 'L1', kind: 'modDepth', modId: 'lfo1', connId: 'c1' });
+  });
+
+  it('is not confused with an engine param that mentions mod', () => {
+    expect(parseAutomationParamId('L1.mod.amount'))
+      .toEqual({ scopeId: 'L1', kind: 'engine', paramId: 'mod.amount' });
+  });
+
+  const engineWithLfo = () => {
+    const conn = { id: 'c1', paramId: 'filter.cutoff', depth: 0 };
+    const mod = { id: 'lfo1', connections: [conn] };
+    const set = vi.fn((modId: string, next: { id: string; depth: number }) => {
+      if (modId === 'lfo1' && next.id === 'c1') mod.connections[0] = next as never;
+    });
+    const edited = vi.fn();
+    return {
+      setBaseValue: vi.fn(), getBaseValue: () => 0,
+      modulators: { modulators: [mod], setConnection: set },
+      onModulationEdited: edited,
+      _mod: mod, _set: set, _edited: edited,
+    };
+  };
+
+  const deps = (engine: unknown) => ({
+    getInsertFx: () => undefined,
+    getEngine: () => engine as never,
+    getRange: () => ({ min: -1, max: 1 }),
+  });
+
+  it('reaches the modulation host, not the engine params', () => {
+    const engine = engineWithLfo();
+    const ok = applyAutomationToSession('L1.mod.lfo1.conn.c1.depth', 0.75, deps(engine));
+    expect(ok).toBe(true);
+    expect(engine.setBaseValue).not.toHaveBeenCalled();
+    expect(engine._set).toHaveBeenCalledWith('lfo1', expect.objectContaining({ id: 'c1', depth: 0.5 }));
+  });
+
+  it('tells the engine to make it audible now', () => {
+    // setConnection alone only edits state: the worklet keeps modulating at the
+    // old depth until the engine pushes the change across.
+    const engine = engineWithLfo();
+    applyAutomationToSession('L1.mod.lfo1.conn.c1.depth', 1, deps(engine));
+    expect(engine._edited).toHaveBeenCalled();
+  });
+
+  it('keeps the connection it is editing — target and id survive', () => {
+    const engine = engineWithLfo();
+    applyAutomationToSession('L1.mod.lfo1.conn.c1.depth', 0, deps(engine));
+    expect(engine._mod.connections[0]).toMatchObject({ id: 'c1', paramId: 'filter.cutoff', depth: -1 });
+  });
+
+  it('lands nowhere, honestly, when the connection is gone', () => {
+    const engine = engineWithLfo();
+    engine._mod.connections.length = 0;
+    expect(applyAutomationToSession('L1.mod.lfo1.conn.c1.depth', 1, deps(engine))).toBe(false);
   });
 });

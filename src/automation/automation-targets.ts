@@ -135,6 +135,23 @@ export function listAutomationTargets(
       push(`${lane.id}.${spec.id}`, spec.label, spec.min, spec.max, engine?.subGroupFor?.(spec.id));
     }
 
+    // A modulator's DEPTH is an automatable value like any other, and until now
+    // it was the one the catalogue did not offer — which is why WEAVE's Motion
+    // macro, which addresses destinations whose id ends in `.depth`, wrote to
+    // nothing at all. The id is the one the modulation panel's own knob already
+    // registers, so a mounted knob and an automation lane address the same
+    // thing rather than two.
+    for (const mod of lane.engineState?.modulators ?? []) {
+      for (const conn of mod.connections ?? []) {
+        push(
+          `${lane.id}.mod.${mod.id}.conn.${conn.id}.depth`,
+          `→ ${conn.paramId}`,
+          -1, 1,
+          { key: `mod:${mod.id}`, label: mod.id.toUpperCase() },
+        );
+      }
+    }
+
     const laneInsertSubs = insertSubGroups(lane.inserts);
     lane.inserts.forEach((slot) => {
       const subGroup = laneInsertSubs.get(slot.id);

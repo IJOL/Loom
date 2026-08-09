@@ -339,6 +339,14 @@ export class DrumsWorkletEngine implements SynthEngine {
   }
   get modulators() { return this.getModHost(); }
 
+  /** Make an edit to `modulators` audible now. The panel's knobs call it, and so
+   *  does an automation curve on a connection depth — which must not need the
+   *  panel open to be heard. Drums modulate Web-Audio bus params, so re-applying
+   *  the bindings is the whole of it. */
+  onModulationEdited(laneId: string): void {
+    reapplyLaneModulations(laneId);
+  }
+
   /** Tempo for LFO BPM sync. main.ts updates this when seq.bpm changes. */
   bpm = 120;
 
@@ -551,7 +559,7 @@ export class DrumsWorkletEngine implements SynthEngine {
       destinations: ctx.destinations,
       // Drums modulate Web-Audio bus params (main-thread): re-apply the bindings
       // so depth/on-off/rate tweaks take effect without rebuilding the panel.
-      onLiveEdit: () => { if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId); },
+      onLiveEdit: () => { if (this.currentLaneId) this.onModulationEdited(this.currentLaneId); },
       onChange: () => {
         if (this.currentLaneId) reapplyLaneModulations(this.currentLaneId);
         renderModulatorsPanel(container, modDeps);

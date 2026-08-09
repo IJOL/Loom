@@ -220,6 +220,21 @@ export class WorkletLaneEngine implements SynthEngine {
 
   get presets(): EnginePreset[] { return getCachedPresets(this.presetsKey); }
   get modulators(): ModulationHostImpl { return this.modHost; }
+
+  /** Make an edit to `modulators` audible NOW.
+   *
+   *  The modulation panel's own knobs call this through their deps, and so does
+   *  an automation curve writing a connection depth — the depth is a
+   *  destination like any other and must not need a panel open to be heard.
+   *  Without it, `setConnection` changes a number the worklet was handed a copy
+   *  of and the sound carries on at the old depth. */
+  onModulationEdited(laneId: string): void {
+    // postMods reaches the IN-WORKLET runtime (engine params); Web-Audio
+    // destinations — lane/master FX params — are bridged by the connection
+    // binder and need the reapply too.
+    this.postMods();
+    reapplyLaneModulations(laneId);
+  }
   /** Exposed for the global voice cap and for tests. */
   getWorkletNode(): LoomWorkletNode { return this.worklet; }
 
@@ -391,11 +406,7 @@ export class WorkletLaneEngine implements SynthEngine {
       sessionState: ctx.sessionState,
       historyDeps: ctx.historyDeps,
       destinations: ctx.destinations,
-      // postMods reaches the IN-WORKLET runtime (engine params). Web-Audio
-      // destinations — lane/master FX params — live on the other side of the
-      // worklet and are bridged by the connection binder, so they need the
-      // reapply too; without it those routings stay as they were at allocation.
-      onLiveEdit: () => { this.postMods(); reapplyLaneModulations(ctx.laneId); },
+      onLiveEdit: () => this.onModulationEdited(ctx.laneId),
       onChange: () => {
         this.postMods();
         reapplyLaneModulations(ctx.laneId);
