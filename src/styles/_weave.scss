@@ -502,9 +502,9 @@
   &:hover { background: var(--amber-glow); }
 }
 
-// ── the step row ───────────────────────────────────────────────────────────
-// A line of values that moves ONE parameter in time with the loop — the row of
-// knobs the old sequencers put under the pattern.
+// ── the step rack ──────────────────────────────────────────────────────────
+// Lines of values that move a parameter in time with the loop — the row of
+// knobs the old sequencers put under the pattern, one per parameter.
 .weave-steps {
   border-top: 1px solid var(--border);
   padding-top: 10px;
@@ -513,18 +513,71 @@
   gap: 6px;
 }
 
+// The rack's own line: what this section is, and the way to grow it.
+.weave-step-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weave-step-add {
+  background: transparent;
+  color: var(--text-dim, #9a9aa2);
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  padding: 2px 10px;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+
+  &:hover { color: var(--amber); border-color: var(--amber-soft); }
+}
+
+// One row is a group, so it reads as a unit rather than as four loose lines.
+.weave-step-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 3px;
+}
+
 .weave-step-head {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+// WHERE, then WHAT. The first narrows the second, which is the whole reason
+// there are two: one flat list of every destination in the session is a search,
+// not a choice.
+.weave-step-place {
+  flex: 0 0 auto;
+  max-width: 140px;
+}
+
 .weave-step-dest {
   flex: 1 1 0;
   min-width: 0;
-  max-width: 320px;
+  max-width: 260px;
 }
 
+.weave-step-drop {
+  margin-left: auto;
+  background: transparent;
+  color: var(--text-faint);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 2px 7px;
+  font-size: 11px;
+  cursor: pointer;
+
+  &:hover { color: var(--red, #ff5c5c); border-color: var(--red, #ff5c5c); }
+}
+
+.weave-step-place,
 .weave-step-dest,
 .weave-step-mode {
   background: var(--surface-2);

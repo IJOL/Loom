@@ -229,24 +229,28 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *  the audio object and never the lane's saved sound: the row owns the value,
    *  and stamping its momentary position into a preset is the bug that door
    *  exists to avoid. */
-  let lastStepWritten = -1;
+  // Per ROW, because the rack's rows have different step counts and different
+  // modes: one shared "last written" would let a sixteen-step row silence a
+  // four-step one that happened to land on the same index.
+  const lastStepWritten = new Map<number, number>();
   const tickSteps = (bars: number) => {
-    const s = state.steps;
-    if (!s?.on || !s.destId || s.values.length === 0) { lastStepWritten = -1; return; }
-
     const phase = bars - Math.floor(bars);
-    // Resolved at the resolution of the row itself: asking fillSteps for one
-    // value per step and reading the one under the playhead. Any finer is a
-    // number nothing can hear, and every tick that lands on the same step is a
-    // write nobody needs.
-    const n = s.values.length;
-    const idx = Math.min(n - 1, Math.floor(phase * n));
-    const sub = s.mode === 'hold' ? idx : Math.min(255, Math.floor(phase * 256));
-    if (sub === lastStepWritten) return;
-    lastStepWritten = sub;
+    state.steps.forEach((s, row) => {
+      if (!s?.on || !s.destId || s.values.length === 0) { lastStepWritten.delete(row); return; }
 
-    const curve = fillSteps(s.values, s.mode, s.mode === 'hold' ? n : 256);
-    deps.writeStep?.(s.destId, curve[sub] ?? 0);
+      // Resolved at the resolution of the row itself: asking fillSteps for one
+      // value per step and reading the one under the playhead. Any finer is a
+      // number nothing can hear, and every tick that lands on the same step is a
+      // write nobody needs.
+      const n = s.values.length;
+      const idx = Math.min(n - 1, Math.floor(phase * n));
+      const sub = s.mode === 'hold' ? idx : Math.min(255, Math.floor(phase * 256));
+      if (sub === lastStepWritten.get(row)) return;
+      lastStepWritten.set(row, sub);
+
+      const curve = fillSteps(s.values, s.mode, s.mode === 'hold' ? n : 256);
+      deps.writeStep?.(s.destId, curve[sub] ?? 0);
+    });
   };
 
   return {

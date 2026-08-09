@@ -111,6 +111,16 @@ export function defaultWeaveSteps(): WeaveSteps {
   };
 }
 
+/** The rows a fresh weave starts with: ONE, drawn and pointing nowhere.
+ *
+ *  A list rather than a single row, because one row is one parameter and a
+ *  scene worth playing moves several — a cutoff opening while a delay send
+ *  swells is two rows, not a compromise between them. Starting with one keeps
+ *  the panel as it reads today; the "+" is what makes it a rack. */
+export function defaultWeaveStepRows(): WeaveSteps[] {
+  return [defaultWeaveSteps()];
+}
+
 export interface WeaveState {
   lanes: Record<string, LaneSelection>;
   macros: Record<string, number>;
@@ -129,7 +139,8 @@ export interface WeaveState {
    *  saved silent with the button unable to undo it. A switch that unplugs one
    *  thing must not reach for another. */
   bypass: boolean;
-  steps: WeaveSteps;
+  /** The step rack: one row per parameter it moves. */
+  steps: WeaveSteps[];
 }
 
 export function defaultWeaveState(): WeaveState {
@@ -141,7 +152,7 @@ export function defaultWeaveState(): WeaveState {
     lanes: {}, macros, seed: 1,
     flow: { drift: 'together', speedBars: 0, evolve: false },
     bypass: false,
-    steps: defaultWeaveSteps(),
+    steps: defaultWeaveStepRows(),
   };
 }
 

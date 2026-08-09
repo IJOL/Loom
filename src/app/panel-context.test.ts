@@ -501,3 +501,67 @@ describe('a hand going BACKWARDS has not arrived anywhere', () => {
     });
   });
 });
+
+describe('the step rack — more than one row', () => {
+  it('starts with exactly one, drawn and pointing nowhere', () => {
+    const h = harness();
+    const rows = h.ctx.stepRows();
+    expect(rows).toHaveLength(1);
+    expect(rows[0].destId).toBe('');
+    expect(rows[0].on).toBe(false);
+  });
+
+  it('grows, and says where the new row landed', () => {
+    const h = harness();
+    expect(h.ctx.addStepRow()).toBe(1);
+    expect(h.ctx.stepRows()).toHaveLength(2);
+  });
+
+  it('edits the row it is told to and leaves its neighbour alone', () => {
+    const h = harness();
+    h.ctx.addStepRow();
+    h.ctx.setStepsDest(1, 'lane1.filter.cutoff');
+    h.ctx.setStepsOn(1, true);
+    h.ctx.setStepsMode(1, 'ramp');
+    h.ctx.setStep(1, 0, 0.5);
+
+    const [first, second] = h.ctx.stepRows();
+    expect(second).toMatchObject({ destId: 'lane1.filter.cutoff', on: true, mode: 'ramp' });
+    expect(second.values[0]).toBe(0.5);
+    expect(first).toMatchObject({ destId: '', on: false, mode: 'hold' });
+  });
+
+  it('shrinks, and never to nothing — an empty rack has no hint of what "+" adds', () => {
+    const h = harness();
+    h.ctx.addStepRow();
+    h.ctx.removeStepRow(0);
+    expect(h.ctx.stepRows()).toHaveLength(1);
+    h.ctx.removeStepRow(0);
+    expect(h.ctx.stepRows()).toHaveLength(1);
+    expect(h.ctx.stepRows()[0].destId).toBe('');
+  });
+
+  it('a row that is gone answers nothing rather than throwing', () => {
+    // A handler built over a row outlives the row: the panel repaints on the
+    // NEXT frame, so a click landing in between must not take the app down.
+    const h = harness();
+    expect(() => {
+      h.ctx.setStepsDest(9, 'x');
+      h.ctx.setStepsOn(9, true);
+      h.ctx.setStepsMode(9, 'ramp');
+      h.ctx.setStep(9, 0, 1);
+      h.ctx.stepsTool(9, 'up');
+      h.ctx.removeStepRow(9);
+    }).not.toThrow();
+    expect(h.ctx.stepRows()).toHaveLength(1);
+  });
+
+  it('reshapes one row without touching the other', () => {
+    const h = harness();
+    h.ctx.addStepRow();
+    const before = h.ctx.stepRows()[0].values.slice();
+    h.ctx.stepsTool(1, 'invert');
+    expect(h.ctx.stepRows()[0].values).toEqual(before);
+    expect(h.ctx.stepRows()[1].values).not.toEqual(before);
+  });
+});

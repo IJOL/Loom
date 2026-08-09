@@ -6,7 +6,7 @@
 // nothing speculative.
 
 import type { PanelContext, PanelLane, PanelLoopPhase, PanelWeave } from '@loom/plugin-sdk';
-import { defaultLaneSelection } from '../weave/weave-state';
+import { defaultLaneSelection, defaultWeaveSteps } from '../weave/weave-state';
 import {
   retopologise, positionOf, defaultSelection, selectionLoopIds,
 } from '../weave/weave-selection';
@@ -387,26 +387,54 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       deps.onWeaveChanged?.('*');
     },
 
-    steps() {
-      const s = deps.weave.steps;
-      return { destId: s.destId, values: [...s.values], mode: s.mode, on: s.on };
+    stepRows() {
+      return deps.weave.steps.map((s) => (
+        { destId: s.destId, values: [...s.values], mode: s.mode, on: s.on }
+      ));
     },
 
-    setStep(index, value) {
-      const s = deps.weave.steps;
-      if (index < 0 || index >= s.values.length) return;
+    addStepRow() {
+      deps.weave.steps.push(defaultWeaveSteps());
+      deps.refresh();
+      return deps.weave.steps.length - 1;
+    },
+
+    removeStepRow(row) {
+      if (row < 0 || row >= deps.weave.steps.length) return;
+      deps.weave.steps.splice(row, 1);
+      // Never down to nothing: an empty rack leaves the panel with a "+" and no
+      // hint of what it adds. The last row is emptied instead of removed.
+      if (deps.weave.steps.length === 0) deps.weave.steps.push(defaultWeaveSteps());
+      deps.refresh();
+    },
+
+    setStep(row, index, value) {
+      const s = deps.weave.steps[row];
+      if (!s || index < 0 || index >= s.values.length) return;
       s.values[index] = Math.min(1, Math.max(0, value));
       // No onWeaveChanged: a step is a PARAM write, not material. Dropping every
       // cached fold because a knob-row moved would rebuild the notes of every
       // lane for a value that has nothing to do with them.
     },
 
-    setStepsDest(destId) { deps.weave.steps.destId = destId; },
-    setStepsOn(on) { deps.weave.steps.on = on; },
-    setStepsMode(mode) { deps.weave.steps.mode = mode === 'ramp' ? 'ramp' : 'hold'; },
+    // Out-of-range does nothing rather than throwing: a row can be removed while
+    // a handler built over it is still on screen holding its index.
+    setStepsDest(row, destId) {
+      const s = deps.weave.steps[row];
+      if (s) s.destId = destId;
+    },
+    setStepsOn(row, on) {
+      const s = deps.weave.steps[row];
+      if (s) s.on = on;
+    },
+    setStepsMode(row, mode) {
+      const s = deps.weave.steps[row];
+      if (s) s.mode = mode === 'ramp' ? 'ramp' : 'hold';
+    },
 
-    stepsTool(tool) {
-      const s = deps.weave.steps;
+    stepsTool(row, tool) {
+      const s = deps.weave.steps[row];
+      if (!s) return;
       // The painter's own presets, not a second set: there is one right answer
       // to "what does invert mean" and it already lives in automation-steps.
       // `Math.random` is injected there so a test can pin the random one; a

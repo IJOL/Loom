@@ -368,20 +368,29 @@ export interface PanelContext {
    *  schedules exactly as it did before the panel existed. */
   bypassed(): boolean;
   setBypassed(on: boolean): void;
-  /** The step row: a line of values that moves ONE parameter in time with the
-   *  loop, the way the old sequencers put a row of knobs under the pattern. */
-  steps(): PanelSteps;
+  /** The step RACK: rows of values, each moving one parameter in time with the
+   *  loop, the way the old sequencers put a row of knobs under the pattern.
+   *
+   *  A list rather than one row, because one row is one parameter and a scene
+   *  worth playing moves several — a cutoff opening while a delay send swells
+   *  is two rows, not a compromise between them. Every method below takes the
+   *  row it edits; out-of-range does nothing rather than throwing, since a row
+   *  can be removed while a handler still holds its index. */
+  stepRows(): PanelSteps[];
+  /** Add an empty row, and return where it landed. */
+  addStepRow(): number;
+  removeStepRow(row: number): void;
   /** Draw one step. `index` into the row, `value` 0..1 — normalised, because
    *  what it means in hertz or decibels is the destination's business. */
-  setStep(index: number, value: number): void;
-  /** Point the row at a destination, switch it on, or change how a step reaches
+  setStep(row: number, index: number, value: number): void;
+  /** Point a row at a destination, switch it on, or change how a step reaches
    *  the next. An empty id parks the row: drawn, landing nowhere. */
-  setStepsDest(destId: string): void;
-  setStepsOn(on: boolean): void;
-  setStepsMode(mode: 'hold' | 'ramp'): void;
-  /** Reshape the whole row. The four the old boxes had, and they COMPOSE —
-   *  each takes what is there rather than replacing it with a stored shape. */
-  stepsTool(tool: 'up' | 'down' | 'invert' | 'random'): void;
+  setStepsDest(row: number, destId: string): void;
+  setStepsOn(row: number, on: boolean): void;
+  setStepsMode(row: number, mode: 'hold' | 'ramp'): void;
+  /** Reshape a whole row. The four the old boxes had, and they COMPOSE — each
+   *  takes what is there rather than replacing it with a stored shape. */
+  stepsTool(row: number, tool: 'up' | 'down' | 'invert' | 'random'): void;
   /** Everything a curve can be pointed at, from the ONE catalogue the rest of
    *  Loom automates through — so a step row can move anything a knob can, and
    *  nothing it cannot. */

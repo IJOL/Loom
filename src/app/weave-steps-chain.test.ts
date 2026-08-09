@@ -48,7 +48,7 @@ function harness() {
 describe('the step row reaches the engine it names', () => {
   it('lands a value on the lane\'s param, denormalised into real units', () => {
     const h = harness();
-    h.w.state.steps = { destId: DEST, values: [0, 1], mode: 'hold', on: true };
+    h.w.state.steps = [{ destId: DEST, values: [0, 1], mode: 'hold', on: true }];
     h.w.advance(0);        // first half of the bar -> step 0
     h.w.advance(1.2);      // second half -> step 1
 
@@ -62,7 +62,7 @@ describe('the step row reaches the engine it names', () => {
     // Honest silence rather than a throw: a lane can be deleted while a row
     // still points at it.
     const h = harness();
-    h.w.state.steps = { destId: 'deleted-lane.filter.cutoff', values: [0, 1], mode: 'hold', on: true };
+    h.w.state.steps = [{ destId: 'deleted-lane.filter.cutoff', values: [0, 1], mode: 'hold', on: true }];
     h.w.advance(0);
     h.w.advance(1.2);
     expect(h.setBaseValue).not.toHaveBeenCalled();
@@ -72,7 +72,7 @@ describe('the step row reaches the engine it names', () => {
     // The quiet failure this file exists to catch: getRange returns undefined
     // and applyAutomationToSession answers false, writing nowhere at all.
     const h = harness();
-    h.w.state.steps = { destId: 'subtractive-1.filter.notAThing', values: [0, 1], mode: 'hold', on: true };
+    h.w.state.steps = [{ destId: 'subtractive-1.filter.notAThing', values: [0, 1], mode: 'hold', on: true }];
     h.w.advance(0);
     h.w.advance(1.2);
     expect(h.setBaseValue).not.toHaveBeenCalled();

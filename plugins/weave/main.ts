@@ -12,6 +12,7 @@
 
 import type { PanelContext, PanelLoopPhase } from '@loom/plugin-sdk';
 import { buildLaneRow } from './lane-row';
+import { buildStepRack } from './step-rack';
 
 /** The six macros, in the order the panel shows them. Colours match the knob
  *  palette the rest of Loom uses, so a WEAVE knob reads as a Loom knob. */
@@ -432,90 +433,17 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   addRow.append(add, addWhat);
   lanes.appendChild(addRow);
 
-  // ── the step row ─────────────────────────────────────────────────────────
+  // ── the step rack ────────────────────────────────────────────────────────
   //
-  // What the old sequencers put under the pattern: a line of values that moves
-  // ONE parameter in time with the loop. A cutoff opening a little more each
-  // sixteenth, a resonance nodding on the offbeats.
+  // What the old sequencers put under the pattern: lines of values that move a
+  // parameter in time with the loop. A cutoff opening a little more each
+  // sixteenth, a resonance nodding on the offbeats — and, since a scene moves
+  // more than one thing, as many rows as the scene needs.
   //
-  // The grid is the host's (`Loom.controls.steps` — the same one the clip
-  // painter draws) and the shape maths is the painter's too. What is new here is
-  // WHERE the curve lives: on the weave rather than on a clip, because in this
-  // panel a lane's clip is a vessel the loops fill and tying a curve to it would
-  // tie it to the one thing that does not matter.
-  const stepsRow = el('div', 'weave-steps');
-  const st = ctx.steps();
-
-  const destPick = document.createElement('select');
-  destPick.className = 'weave-step-dest';
-  destPick.setAttribute('aria-label', 'What the step row moves');
-  {
-    const none = document.createElement('option');
-    none.value = '';
-    none.textContent = '— nothing yet —';
-    destPick.appendChild(none);
-    const groups = new Map<string, HTMLOptGroupElement>();
-    for (const d of ctx.destinations()) {
-      const o = document.createElement('option');
-      o.value = d.id;
-      o.textContent = d.name;
-      if (!d.group) { destPick.appendChild(o); continue; }
-      let g = groups.get(d.group);
-      if (!g) {
-        g = document.createElement('optgroup');
-        g.label = d.group;
-        groups.set(d.group, g);
-        destPick.appendChild(g);
-      }
-      g.appendChild(o);
-    }
-    destPick.value = st.destId;
-  }
-  destPick.addEventListener('change', () => ctx.setStepsDest(destPick.value));
-
-  const stepsOn = el('button', 'weave-step-on');
-  const paintStepsOn = () => {
-    const on = ctx.steps().on;
-    stepsOn.textContent = on ? '● RUNNING' : '○ OFF';
-    stepsOn.classList.toggle('on', on);
-    stepsOn.setAttribute('aria-pressed', String(on));
-  };
-  stepsOn.addEventListener('click', () => { ctx.setStepsOn(!ctx.steps().on); paintStepsOn(); });
-
-  const modePick = document.createElement('select');
-  modePick.className = 'weave-step-mode';
-  modePick.setAttribute('aria-label', 'How a step reaches the next');
-  for (const [v, label] of [['hold', 'Step'], ['ramp', 'Glide']]) {
-    const o = document.createElement('option');
-    o.value = v;
-    o.textContent = label;
-    modePick.appendChild(o);
-  }
-  modePick.value = st.mode;
-  modePick.addEventListener('change', () => ctx.setStepsMode(modePick.value as 'hold' | 'ramp'));
-
-  const grid = Loom.controls.steps({
-    values: st.values,
-    label: 'The step row',
-    onChange: (i, v) => ctx.setStep(i, v),
-  });
-  grid.el.classList.add('weave-step-grid');
-
-  const tools = el('div', 'weave-step-tools');
-  for (const [kind, label] of [['up', '↗'], ['down', '↘'], ['invert', '⇅'], ['random', '⚄']] as const) {
-    const b = el('button', 'weave-step-tool');
-    b.textContent = label;
-    b.title = { up: 'Ramp up', down: 'Ramp down', invert: 'Invert', random: 'Randomise' }[kind];
-    b.addEventListener('click', () => { ctx.stepsTool(kind); grid.set(ctx.steps().values); });
-    tools.appendChild(b);
-  }
-
-  const stepsHead = el('div', 'weave-step-head');
-  const stepsLabel = el('span', 'weave-label');
-  stepsLabel.textContent = 'Steps';
-  stepsHead.append(stepsLabel, destPick, modePick, stepsOn, tools);
-  stepsRow.append(stepsHead, grid.el);
-  paintStepsOn();
+  // Built in its own module: this file is already the largest in the plugin, and
+  // the rack has a shape of its own (rows, a picker that narrows another picker)
+  // that has nothing to do with the flow or the macros around it.
+  const stepsRow = buildStepRack(ctx);
 
   // ── macros ───────────────────────────────────────────────────────────────
   const macros = el('div', 'weave-macros');

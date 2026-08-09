@@ -333,7 +333,7 @@ describe('the step row moves a parameter in time with the bar', () => {
   function row(on = true, destId = 'lane1.filter.cutoff') {
     const writes: Array<[string, number]> = [];
     const w = wiring(session(), (id, v) => { writes.push([id, v]); });
-    w.state.steps = { destId, values: [...VALUES], mode: 'hold', on };
+    w.state.steps = [{ destId, values: [...VALUES], mode: 'hold', on }];
     return { w, writes };
   }
 
