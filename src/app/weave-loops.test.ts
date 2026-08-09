@@ -155,3 +155,65 @@ describe('what a lane hands over TO', () => {
     expect(next).toMatchObject({ a: `lib:${STYLE}:bass:0`, b: `lib:${STYLE}:bass:0` });
   });
 });
+
+// Reported from the panel: a two-bar clip woven against a library loop went
+// silent for its whole second half as the fader crossed toward the loop.
+// Weaving two CLIPS was fine — both sides had notes in both bars.
+//
+// Every pattern in the library is ONE bar, and patternNotes has taken clipBars
+// since it was written; its own doc names this exact failure. This context
+// passed `undefined`, so nothing repeated. The mechanism was there and unused.
+describe('a drawn loop fills the clip it is going into', () => {
+  const BAR = 16 * 24;   // TICKS_PER_STEP * 16, the library's own bar
+  const ctxBars = (clipBars?: number) => weaveLoopContext(
+    LANE,
+    { ...DEFAULT_MUSICALITY, lock: false },
+    undefined,
+    { styleMix: 0, darkness: 0.5, laneIndex: 0, seed: 1 },
+    clipBars ? { clipBars, barTicks: BAR } : undefined,
+  );
+
+  it('repeats the one-bar pattern across a two-bar clip', () => {
+    const one = weaveLoopNotes(ID, ctxBars(1))!;
+    const two = weaveLoopNotes(ID, ctxBars(2))!;
+    expect(two).toHaveLength(one.length * 2);
+    expect(two.some((n) => n.start >= BAR)).toBe(true);
+  });
+
+  it('repeats it, it does not stretch it', () => {
+    // The distinction that matters to the ear: the groove has to arrive at the
+    // same speed twice, not once at half speed.
+    const one = weaveLoopNotes(ID, ctxBars(1))!;
+    const two = weaveLoopNotes(ID, ctxBars(2))!;
+    const firstBar = two.filter((n) => n.start < BAR);
+    expect(firstBar.map((n) => n.start)).toEqual(one.map((n) => n.start));
+    expect(firstBar.map((n) => n.duration)).toEqual(one.map((n) => n.duration));
+    // And the copy sits exactly one bar later, same spacing.
+    const secondBar = two.filter((n) => n.start >= BAR);
+    expect(secondBar.map((n) => n.start - BAR)).toEqual(one.map((n) => n.start));
+  });
+
+  it('four bars take four copies', () => {
+    const one = weaveLoopNotes(ID, ctxBars(1))!;
+    expect(weaveLoopNotes(ID, ctxBars(4))!).toHaveLength(one.length * 4);
+  });
+
+  it('no clip length ⇒ one bar, exactly as before', () => {
+    expect(weaveLoopNotes(ID, ctxBars())!).toHaveLength(OFF_SCALE.length);
+  });
+
+  it('a CLIP loop is never repeated — it is already the length it is', () => {
+    // Only DRAWN patterns are one bar by construction. A clip carries its own
+    // length, and tiling it would duplicate music the user wrote.
+    const lane = {
+      ...LANE,
+      clips: [{ id: 'c1', notes: [{ start: 0, duration: 24, midi: 40, velocity: 100 }] }],
+    } as unknown as SessionLane;
+    const c = weaveLoopContext(
+      lane, { ...DEFAULT_MUSICALITY, lock: false }, undefined,
+      { styleMix: 0, darkness: 0.5, laneIndex: 0, seed: 1 },
+      { clipBars: 4, barTicks: BAR },
+    );
+    expect(weaveLoopNotes('clip:c1', c)).toHaveLength(1);
+  });
+});

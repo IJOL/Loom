@@ -122,6 +122,13 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         laneIndex: Math.max(0, lanes.findIndex((l) => l.id === laneId)),
         seed: deps.weave.seed,
       },
+      // The same length the scheduler resolves against, for the same reason the
+      // macros are passed: this lists the loops and that plays them.
+      {
+        clipBars: lanes.find((l) => l.id === laneId)?.clips
+          .find((c) => c && c.lengthBars > 0)?.lengthBars,
+        barTicks: ticksPerBar(deps.seq.meter),
+      },
     );
   };
 

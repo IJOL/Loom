@@ -43,6 +43,20 @@ export interface WeaveLoopContext {
    *  the middle of a crossfade and did nothing at either end: the ends emit a
    *  loop unchanged, so there was no interpolation for it to colour. */
   darkened: boolean;
+  /** How many bars the lane's clip is, so a drawn pattern fills it.
+   *
+   *  EVERY pattern in the library is one bar and a Loom clip is two by default,
+   *  which is the whole of a bug reported from the panel: a two-bar clip woven
+   *  against a library loop went silent for its second half as the fader crossed
+   *  — the loop had no notes there to hand over. Weaving two CLIPS never showed
+   *  it, because both sides had something to say in both bars.
+   *
+   *  `patternNotes` has taken `clipBars` since it was written, and its own doc
+   *  names this exact failure. This context simply passed `undefined`. Absent ⇒
+   *  one bar, which is what it did before. */
+  clipBars?: number;
+  /** Ticks per bar, needed alongside `clipBars` to place each repeat. */
+  barTicks?: number;
 }
 
 /** Where the two macros that move MUSICAL state land.
@@ -77,9 +91,15 @@ export function weaveLoopContext(
   musicality: { key: number; scale: ScaleId; style: StyleId; lock: boolean },
   forcedStyle: StyleId | undefined,
   macros?: WeaveMusicalMacros,
+  /** The clip the drawn loops have to fill. Both callers pass the same thing —
+   *  one LISTS the loops and the other RESOLVES them, and a length that differed
+   *  between them would show a loop and then play a different one. */
+  fill?: { clipBars?: number; barTicks?: number },
 ): WeaveLoopContext {
   return {
     lane,
+    clipBars: fill?.clipBars,
+    barTicks: fill?.barTicks,
     style: macros
       ? styleForLane(musicality.style, macros.styleMix, macros.laneIndex, macros.seed, forcedStyle)
       : forcedStyle ?? musicality.style,
@@ -156,7 +176,10 @@ export function weaveLoopNotes(id: string, c: WeaveLoopContext): NoteEvent[] | u
   const notes = patternNotes(
     parsed.style, parsed.kind, parsed.index,
     rootFor(parsed.kind, c.key),
-    undefined, undefined,
+    // The clip the loop has to fill. patternNotes repeats the bar itself — the
+    // mechanism has been there since it was written, and passing `undefined`
+    // here is what left the second half of a two-bar clip silent.
+    c.clipBars, c.barTicks,
     // Drums are never snapped — a GM drum note picks a voice, not a pitch — and
     // patternNotes already refuses to snap them. Passing the lock through keeps
     // the rule in ONE place instead of two that can disagree.

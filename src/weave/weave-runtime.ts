@@ -47,11 +47,6 @@ export function createWeaveSource(
    *  and what is playing here is the cross-fade — a lane that was weaving used
    *  to be the one lane the macros could not touch. */
   readMacros: ReadNoteMacros = NEUTRAL_NOTE_MACROS,
-  /** How much clip the fold has to fill, asked per call because the answer
-   *  changes: the lane may be playing a two-bar clip now and a four-bar one
-   *  after the next launch. Absent ⇒ the fold covers whatever the loops
-   *  themselves span, which is what it did before this existed. */
-  readFillTicks?: () => number | undefined,
 ): WeaveSource {
   let cacheKey = '';
   let woven: WovenNote[] = [];
@@ -59,23 +54,21 @@ export function createWeaveSource(
   return () => {
     const weights = laneWeights(cfg);
     const m = readMacros();
-    const fillTicks = readFillTicks?.();
     // Rounding keeps a continuously moving fader from refolding on every
     // animation frame. 1e-3 of a crossfade is finer than any audible step, and
     // coarse enough that a slow sweep refolds tens of times rather than
     // thousands. Worth caring about: this runs on the scheduler's tick.
     const key = `${weights.map((w) => w.weight.toFixed(3)).join(',')}|${o.barTicks}`
-      + `|${m.density.toFixed(3)}|${m.energy.toFixed(3)}|${fillTicks ?? ''}`;
+      + `|${m.density.toFixed(3)}|${m.energy.toFixed(3)}`;
     if (key !== cacheKey) {
       cacheKey = key;
       // The sourced fold when the origin is wanted, the plain one when it is
       // not — the same notes either way; the sourced one only also says where
       // each came from. A loop at weight 0 is filtered out before folding, so
       // an origin always names a loop that is genuinely sounding.
-      const opts = fillTicks ? { ...o, fillTicks } : o;
       const blended = routeByOrigin
-        ? blendLoopsBySource(weights, opts).map((n) => ({ ...n, layerIndex: n.from }))
-        : blendLoops(weights, opts);
+        ? blendLoopsBySource(weights, o).map((n) => ({ ...n, layerIndex: n.from }))
+        : blendLoops(weights, o);
       // applyNoteMacros spreads each note, so a layerIndex survives it. Density
       // may drop or split a hit; a split inherits its parent's layer, which is
       // right — the extra hit belongs to the loop the note came from.
