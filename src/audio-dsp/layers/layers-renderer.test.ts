@@ -118,3 +118,54 @@ describe('LayersRenderer', () => {
     expect(v.done).toBe(true);
   });
 });
+
+// A layer's GAIN is a declared continuous param (`l0.gain`), and it was the
+// one value this renderer read from the rack it was built with rather than from
+// the lane's live array — so it moved the next note and never the one sounding.
+// Two homes for one number, and the audio used the frozen one.
+//
+// It matters beyond tidiness: a crossfade that fades two loops by AUDIO instead
+// of by rewriting their notes IS this param moving under a held chord.
+describe('a layer gain is live, like every other continuous param', () => {
+  const index = (slot: Record<string, number>, length: number) => ({ slot, length });
+  // The rack says 1 for both. The live array will say something else, so
+  // reading one or the other gives different answers — the only way a test can
+  // tell them apart.
+  const two = () => new LayersRenderer(note(64), {}, 48000, [
+    layer({ engineId: 'one', gain: 1 }),
+    layer({ engineId: 'one', gain: 1 }),
+  ]);
+  const IX = index({ 'l0.gain': 0, 'l1.gain': 1 }, 2);
+
+  it('reads the live array, not the rack it was built with', () => {
+    const v = two();
+    v.setLiveValues(new Float64Array([0.25, 0]), IX);
+    // The rack would give 1 + 1 = 2.
+    expect(v.renderSample(0)).toBeCloseTo(0.25);
+  });
+
+  it('follows it under a note that is already sounding', () => {
+    const v = two();
+    const values = new Float64Array([1, 0]);
+    v.setLiveValues(values, IX);
+    expect(v.renderSample(0)).toBeCloseTo(1);
+    values[0] = 0;
+    values[1] = 1;
+    expect(v.renderSample(0.1)).toBeCloseTo(1);
+    values[0] = 0.5;
+    values[1] = 0.5;
+    expect(v.renderSample(0.2)).toBeCloseTo(1);
+  });
+
+  it('falls back to the rack when the lane declares no such param', () => {
+    // A lane whose engine is not LAYERS never numbers `l0.gain`, and a
+    // renderer reading slot -1 out of the array would render silence.
+    const v = new LayersRenderer(note(64), {}, 48000, [layer({ engineId: 'one', gain: 0.5 })]);
+    v.setLiveValues(new Float64Array([7]), index({ nothing: 0 }, 1));
+    expect(v.renderSample(0)).toBeCloseTo(0.5);
+  });
+
+  it('and before setLiveValues is called at all', () => {
+    expect(two().renderSample(0)).toBeCloseTo(2);
+  });
+});
