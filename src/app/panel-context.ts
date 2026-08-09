@@ -99,6 +99,30 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
    *  is what keeps the two surfaces telling the same story. */
   const repaintDesk = () => deps.sessionHost.renderWithMixer();
 
+  /** The weave the master flow READS as its own position.
+   *
+   *  Off the LANES, not kept beside the speed: the auto-advance writes lane
+   *  positions, and a second number remembered here would be the one the panel
+   *  shows while the music followed the other.
+   *
+   *  The first lane that is TRAVELLING. Reading the first lane with a selection
+   *  pinned the master readout to a LOCKED one — a number frozen at 0.04 while
+   *  the rest of the scene crossed, which reads as a broken control. All locked
+   *  falls back to the first, which is then honest: the journey really is not
+   *  moving anything. */
+  const leadWeave = () => {
+    const withWeave = deps.sessionHost.state.lanes
+      .filter((l) => deps.weave.lanes[l.id]?.weave != null);
+    const lead = withWeave.find((l) => !deps.weave.lanes[l.id]?.locked) ?? withWeave[0];
+    return lead ? deps.weave.lanes[lead.id]?.weave ?? null : null;
+  };
+
+  /** The delta the last 'free' gesture carried, so the next one can tell a drag
+   *  forward from a drag back. Only 'free' needs it: there the flow is a delta
+   *  from a fixed base rather than a position, so a lane's own x says nothing
+   *  about which way the hand is going. */
+  let lastFreeDelta: number | undefined;
+
   /** Everything the loop list and the loop resolver need about a lane, gathered
    *  once. Built per call rather than cached: the style, the key and the lock
    *  all move, and a stale copy would list loops the lane no longer draws. */
@@ -432,21 +456,8 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
 
     flow() {
       const f = deps.weave.flow;
-      // The position is read off the LANES, not kept beside the speed: the auto-
-      // advance writes lane positions, and a second number remembered here would
-      // be the one the panel shows while the music followed the other.
-      //
-      // From the first lane that is TRAVELLING. Reading the first lane with a
-      // selection pinned the master readout to a LOCKED one — a number frozen at
-      // 0.04 while the rest of the scene crossed, which reads as a broken
-      // control. All locked falls back to the first, which is then honest: the
-      // journey really is not moving anything.
-      const withWeave = deps.sessionHost.state.lanes
-        .filter((l) => deps.weave.lanes[l.id]?.weave != null);
-      const lead = withWeave.find((l) => !deps.weave.lanes[l.id]?.locked) ?? withWeave[0];
-      const first = lead ? deps.weave.lanes[lead.id]?.weave : null;
       return {
-        position: positionOf(first),
+        position: positionOf(leadWeave()),
         drift: f?.drift ?? 'together',
         speedBars: f?.speedBars ?? 0,
         evolve: !!f?.evolve,
@@ -481,6 +492,23 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // whether the clock reached it or a hand dragged it there. Passing no
       // re-hook here was the original bug written down — a hand wrapped back to
       // the start AND the pair never advanced, which is the worst of both.
+      //
+      // But ONLY going forward. `applyFlow` reads "arrived" as "the position
+      // dropped by more than half a lap", which is exactly right for the clock —
+      // it only ever advances, so a big drop can only be the far end folding
+      // round — and a false positive for a hand, which can go back. Seen in the
+      // browser: dragging from 0.95 to 0.20 in one move handed over, so rewinding
+      // the fader quietly changed the material under you.
+      //
+      // The leader's position is what the panel shows as the flow, so comparing
+      // against it is comparing like with like. In 'free' the flow is a DELTA
+      // from a fixed base rather than a position, so it is compared against the
+      // delta the last call carried, not against where a lane sits.
+      const advancing = mode === 'free'
+        ? position >= (lastFreeDelta ?? 0)
+        : position >= positionOf(leadWeave()) - 1e-9;
+      lastFreeDelta = mode === 'free' ? position : undefined;
+
       const rehook = (laneId: string) => {
         const entry = deps.weave.lanes[laneId];
         const next = rehookOnArrival(
@@ -495,7 +523,7 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         position,
         mode,
         base && new Map(Object.entries(base)),
-        evolving ? rehook : undefined,
+        evolving && advancing ? rehook : undefined,
         evolving,
       );
       deps.onWeaveChanged?.('*');

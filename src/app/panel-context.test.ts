@@ -470,3 +470,34 @@ describe('clip length from the panel', () => {
     expect(() => h.ctx.setClipLength('lane1', 2)).not.toThrow();
   });
 });
+
+describe('a hand going BACKWARDS has not arrived anywhere', () => {
+  // Seen in the browser: in EVOLVE, dragging the fader from 0.95 to 0.20 in one
+  // move handed over — `Clip 1 / Clip 2` became `Clip 2 / Clip 3`. applyFlow
+  // reads "arrived" as "the position dropped by more than half a lap", which is
+  // the right signal for the CLOCK (it only ever goes forward, so a big drop can
+  // only be the far end folding round) and a false positive for a hand.
+  it('does not hand over when the fader is dragged back', () => {
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      h.weave.lanes.lane1 = weaving(0.95);
+      h.ctx.setFlow(0.95, 'together', 0, true);
+      h.ctx.setFlow(0.2, 'together', 0, true);
+      const after = h.weave.lanes.lane1.weave as unknown as { a: string; b: string; x: number };
+      expect(after.a).toBe('clip:a');
+      expect(after.b).toBe('clip:b');
+      expect(after.x).toBeCloseTo(0.2, 6);
+    });
+  });
+
+  it('still hands over when it reaches the far end going forward', () => {
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      h.weave.lanes.lane1 = weaving(0.95);
+      h.ctx.setFlow(0.95, 'together', 0, true);
+      h.ctx.setFlow(1, 'together', 0, true);
+      const after = h.weave.lanes.lane1.weave as unknown as { a: string; b: string };
+      expect(after.a).toBe('clip:b');
+    });
+  });
+});
