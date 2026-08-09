@@ -6,7 +6,7 @@
 // loop is pulled into it.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { weaveLoopContext, weaveLoopNotes } from './weave-loops';
+import { weaveLoopContext, weaveLoopNotes, rehookOnArrival } from './weave-loops';
 import { setLibrary } from '../patterns/pattern-library';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { inScale } from '../core/musicality';
@@ -83,5 +83,75 @@ describe('Mood reaches a loop the weave DRAWS, not only one it blends', () => {
     const bright = weaveLoopNotes(ID, ctxAt(0))!;
     expect(bright.map((n) => n.start)).toEqual(plain.map((n) => n.start));
     expect(bright.map((n) => n.duration)).toEqual(plain.map((n) => n.duration));
+  });
+});
+
+describe('what a lane hands over TO', () => {
+  const note = { start: 0, duration: 24, midi: 40, velocity: 100 };
+  const laneWith = (ids: string[]) => ({
+    id: 'l1', engineId: 'subtractive', name: 'l1', inserts: [],
+    clips: ids.map((id) => ({ id, name: id, notes: [note] })),
+  }) as unknown as SessionLane;
+
+  const ctxFor = (lane: SessionLane) => weaveLoopContext(
+    lane, { ...DEFAULT_MUSICALITY, lock: false }, undefined,
+    { styleMix: 0, darkness: 0.5, laneIndex: 0, seed: 1 },
+  );
+
+  it('advances to the NEXT clip, in order', () => {
+    const c = ctxFor(laneWith(['c1', 'c2', 'c3']));
+    const next = rehookOnArrival(
+      { kind: 'ab', a: 'clip:c1', b: 'clip:c2', x: 1 } as never, c, 1, 'l1',
+    );
+    expect(next).toMatchObject({ a: 'clip:c2', b: 'clip:c3' });
+  });
+
+  it('wraps round to the first clip rather than running out', () => {
+    const c = ctxFor(laneWith(['c1', 'c2', 'c3']));
+    const next = rehookOnArrival(
+      { kind: 'ab', a: 'clip:c2', b: 'clip:c3', x: 1 } as never, c, 1, 'l1',
+    );
+    expect(next).toMatchObject({ a: 'clip:c3', b: 'clip:c1' });
+  });
+
+  it('skips an EMPTY clip — the carrier a weaving track is born with', () => {
+    const lane = laneWith(['c1', 'c2', 'c3']);
+    (lane.clips[1] as { notes: unknown[] }).notes = [];
+    const c = ctxFor(lane);
+    const next = rehookOnArrival(
+      { kind: 'ab', a: 'clip:c3', b: 'clip:c1', x: 1 } as never, c, 1, 'l1',
+    );
+    expect(next).toMatchObject({ a: 'clip:c1', b: 'clip:c3' });
+  });
+
+  it('falls through to the library when the lane has nowhere else to go', () => {
+    const c = ctxFor(laneWith(['c1']));
+    const next = rehookOnArrival(
+      { kind: 'ab', a: 'clip:c1', b: 'clip:c1', x: 1 } as never, c, 1, 'l1',
+    );
+    expect(next!.b.startsWith('lib:')).toBe(true);
+  });
+
+  it('a library loop draws ANOTHER one, never the one just left', () => {
+    setLibrary({
+      synth: {}, drums: {}, bass: { [STYLE]: [OFF_SCALE, OFF_SCALE] }, catalog: {},
+    } as never);
+    const c = ctxFor(laneWith([]));
+    const next = rehookOnArrival(
+      { kind: 'ab', a: `lib:${STYLE}:bass:0`, b: `lib:${STYLE}:bass:0`, x: 1 } as never,
+      c, 1, 'l1',
+    );
+    expect(next).toMatchObject({ a: `lib:${STYLE}:bass:0`, b: `lib:${STYLE}:bass:1` });
+  });
+
+  it('stays put rather than falling silent when there is nowhere at all', () => {
+    // One pattern, no clips: abAdvance holds the pair it has. A loop that
+    // repeats is better than a lane that stops.
+    const c = ctxFor(laneWith([]));
+    const next = rehookOnArrival(
+      { kind: 'ab', a: `lib:${STYLE}:bass:0`, b: `lib:${STYLE}:bass:0`, x: 1 } as never,
+      c, 1, 'l1',
+    );
+    expect(next).toMatchObject({ a: `lib:${STYLE}:bass:0`, b: `lib:${STYLE}:bass:0` });
   });
 });

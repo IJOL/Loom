@@ -203,9 +203,26 @@ export function rehookOnArrival(
 ): PanelWeave | null {
   if (!sel || sel.kind !== 'ab') return null;
 
-  // The library only. The lane's own clips are in the choices too, and drawing
-  // one of those — the empty carrier clip included — would land the journey on
-  // silence with no way to tell why.
+  // A lane's CLIPS are an arrangement: they advance IN ORDER, and shuffling
+  // them would not be evolution, it would be noise. Only the library is drawn.
+  //
+  // EMPTY clips are skipped, rather than the whole clip family being excluded
+  // as it was before: a weaving track is born with an empty carrier clip, and
+  // landing the journey on it is silence with no way to tell why. Skipping only
+  // the empty ones is the narrower rule that keeps the useful clips in.
+  const clipIds = (c.lane?.clips ?? [])
+    .filter((cl) => cl && cl.notes.length > 0)
+    .map((cl) => formatLoopId({ source: 'clip', clipId: cl!.id }));
+
+  const atClip = clipIds.indexOf(sel.b);
+  if (atClip >= 0 && clipIds.length > 1) {
+    // Round to the first rather than running out: a lane that reached its last
+    // clip and stopped evolving would go quietly static while the rest travel.
+    return { ...sel, a: sel.b, b: clipIds[(atClip + 1) % clipIds.length] };
+  }
+
+  // Not on a clip, or the only usable one — the library it is, so a lane with a
+  // single clip still has somewhere to go.
   const pool = weaveLoopChoices(c).map((ch) => ch.id).filter((id) => id.startsWith('lib:'));
   if (pool.length === 0) return null;
 
