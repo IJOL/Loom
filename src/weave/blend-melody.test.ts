@@ -162,3 +162,61 @@ describe('whose note a shared onset is', () => {
     expect(early[early.length - 1]).toBe(1);     // the weakest has gone over
   });
 });
+
+// Reported from the panel: "scene 2 nunca se escucha limpio... da la sensación
+// de que haces desaparecer los acordes antes de nada."
+//
+// It was right. Pitch was read with a `find` — ONE note per onset — so three
+// notes struck together came out as one interpolated note the moment the dial
+// left an end. A pad lane lost its chords to a fader nobody had moved far.
+describe('chords survive the crossfade', () => {
+  const chord = (step: number, ...midis: number[]) => midis.map((m) => note(step, m));
+  const atAll = (ns: NoteEvent[], step: number) =>
+    ns.filter((n) => n.start === step * TICKS_PER_STEP).map((n) => n.midi).sort((p, q) => p - q);
+
+  it('keeps every voice of A at x=0', () => {
+    const a = chord(0, 45, 48, 52);
+    const b = chord(0, 47, 50, 53);   // B D F — all in A minor
+    expect(atAll(blendMelody(a, b, 0, BAR, KEY, 'minor', OCT), 0)).toEqual([45, 48, 52]);
+  });
+
+  it('keeps every voice of B at x=1', () => {
+    const a = chord(0, 45, 48, 52);
+    const b = chord(0, 47, 50, 53);   // B D F — all in A minor
+    expect(atAll(blendMelody(a, b, 1, BAR, KEY, 'minor', OCT), 0)).toEqual([47, 50, 53]);
+  });
+
+  it('is still a CHORD halfway, not one note', () => {
+    const a = chord(0, 45, 48, 52);
+    const b = chord(0, 47, 50, 53);   // B D F — all in A minor
+    const out = atAll(blendMelody(a, b, 0.5, BAR, KEY, 'minor', OCT), 0);
+    expect(out).toHaveLength(3);
+    expect(new Set(out).size).toBe(3);        // three VOICES, not one tripled
+    // And every voice is in the scale, which is the whole point of walking in
+    // degrees rather than semitones.
+    for (const m of out) expect(inScale(m, KEY, 'minor')).toBe(true);
+  });
+
+  it('does not lose a voice the instant the dial leaves the end', () => {
+    // The reported symptom, stated as a number: a hair off A must still be a
+    // three-note chord.
+    const a = chord(0, 45, 48, 52);
+    const b = chord(0, 47, 50, 53);   // B D F — all in A minor
+    const out = atAll(blendMelody(a, b, 0.02, BAR, KEY, 'minor', OCT), 0);
+    expect(new Set(out).size).toBe(3);
+  });
+
+  it('a chord against a single note keeps the chord\'s voices', () => {
+    // Uneven counts are the ordinary case: a pad against a bass line.
+    const a = chord(0, 45, 48, 52);
+    const b = [note(0, 47)];
+    expect(new Set(atAll(blendMelody(a, b, 0.1, BAR, KEY, 'minor', OCT), 0)).size).toBeGreaterThan(1);
+  });
+
+  it('a monophonic line is untouched by any of this', () => {
+    const a = [note(0, 45), note(4, 48)];
+    const b = [note(0, 52), note(4, 55)];
+    expect(midis(blendMelody(a, b, 0, BAR, KEY, 'minor', OCT))).toEqual([45, 48]);
+    expect(midis(blendMelody(a, b, 1, BAR, KEY, 'minor', OCT))).toEqual([52, 55]);
+  });
+});

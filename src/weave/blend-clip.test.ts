@@ -151,3 +151,33 @@ describe('blendLoopsBySource', () => {
     expect(blendLoops(loops, drums)).toEqual([hit(0, 36)]);
   });
 });
+
+// Reported from the panel: "scene 2 nunca se escucha limpio y debería".
+//
+// An end used to be reachable exactly — a fader dragged to its stop sent 1.000
+// — so the far end filtered the other loop out entirely and you heard B
+// untouched. The endless dial cannot land on 1.000 by hand, so a thread of A
+// survived every time and the fold ran on both: near enough to hear as B, and
+// never actually B. A hair of a loop is not a loop.
+describe('a hair of a loop is not a loop', () => {
+  const BAR2 = TICKS_PER_STEP * 16;
+  const melodic = { barTicks: BAR2, melodic: true, key: 9, scale: 'minor' as const, octaveBase: 3 };
+  const A = [{ start: 0, duration: 24, midi: 45, velocity: 90 }];
+  const B = [{ start: 0, duration: 24, midi: 52, velocity: 100 }];
+
+  it('a weight under half a percent is not there at all', () => {
+    const out = blendLoops([{ notes: A, weight: 0.004 }, { notes: B, weight: 0.996 }], melodic);
+    expect(out).toEqual(B);
+  });
+
+  it('and one that IS there still blends', () => {
+    const out = blendLoops([{ notes: A, weight: 0.2 }, { notes: B, weight: 0.8 }], melodic);
+    expect(out).not.toEqual(B);
+    expect(out).not.toEqual(A);
+  });
+
+  it('both ends of a real crossfade are exact', () => {
+    expect(blendLoops([{ notes: A, weight: 1 }, { notes: B, weight: 0 }], melodic)).toEqual(A);
+    expect(blendLoops([{ notes: A, weight: 0 }, { notes: B, weight: 1 }], melodic)).toEqual(B);
+  });
+});

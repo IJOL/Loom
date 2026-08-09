@@ -73,7 +73,16 @@ export function blendLoops(loops: LoopWeight[], o: BlendOptions): NoteEvent[] {
   //
   // A loop at zero weight contributes nothing and must not be folded in: at
   // x = 0 the pairwise blend would still let its strongest hits through.
-  const live = loops.filter((l) => l.weight > 0);
+  //
+  // NEARLY zero counts as zero, and that threshold is the difference between
+  // an end you can reach and one you can only approach. A fader dragged to its
+  // stop sent exactly 1.000, so the far end filtered the other loop out and you
+  // heard B untouched; an endless dial cannot land on 1.000 by hand, so a
+  // thread of A survived every turn and the fold ran on both — near enough to
+  // hear as B and never actually B, reported as "scene 2 nunca se escucha
+  // limpio". Half a percent is under two pixels of a dial's travel: an end in
+  // every sense that matters, and far below anything audible as a blend.
+  const live = loops.filter((l) => l.weight > 0.005);
   if (live.length === 0) return [];
   if (live.length === 1) return live[0].notes;
 
