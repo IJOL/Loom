@@ -139,6 +139,24 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *  weave would end up in a different key from everything else on screen. */
   const musicality = () => deps.getState?.().musicality ?? DEFAULT_MUSICALITY;
 
+  /** How much clip this lane's fold has to fill, in ticks.
+   *
+   *  A library loop is one bar. The clip carrying it is whatever the user made,
+   *  and two bars is ordinary — at which point the fold covered the first half
+   *  and the second went SILENT as the fader crossed, because the short loop had
+   *  no notes there to hand over. Weaving two CLIPS of the same length never
+   *  showed it, which is exactly how it survived: both sides had something to
+   *  say in every bar.
+   *
+   *  Read per fold from the clip the lane is PLAYING, so a launch that swaps a
+   *  two-bar clip for a four-bar one is answered on the next iteration. Nothing
+   *  playing ⇒ undefined, and the fold covers whatever the loops span. */
+  const fillTicksFor = (laneId: string): number | undefined => {
+    const clip = deps.getLaneStates().get(laneId)?.playing;
+    const bars = clip?.lengthBars ?? 0;
+    return bars > 0 ? bars * ticksPerBar(deps.getMeter()) : undefined;
+  };
+
   const build = (laneId: string): WeaveSource | undefined => {
     const barTicks = ticksPerBar(deps.getMeter());
     const sel = state.lanes[laneId]?.weave;
@@ -177,7 +195,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
           // only has to agree with itself, since both sides of a pair are
           // converted through the same base.
           octaveBase: 3,
-        }, true, noteMacros);
+        }, true, noteMacros, () => fillTicksFor(laneId));
       }
     }
 

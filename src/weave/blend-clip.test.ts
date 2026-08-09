@@ -151,3 +151,63 @@ describe('blendLoopsBySource', () => {
     expect(blendLoops(loops, drums)).toEqual([hit(0, 36)]);
   });
 });
+
+// Reported from the panel: a two-bar clip woven against a one-bar library loop
+// went silent for its whole second half as the fader crossed toward the loop.
+// Weaving two CLIPS never showed it — both sides had notes in both bars — which
+// is how it survived every test here: every fixture above is one bar.
+describe('a loop shorter than the clip repeats to fill it', () => {
+  const TWO_BARS = BAR * 2;
+  // A two-bar clip: something in each half, so "the second half is silent" is a
+  // question with an answer.
+  const clip2 = [hit(0, 36), hit(4, 38), hit(16, 40), hit(20, 41)];
+  // A one-bar library loop.
+  const loop1 = [hit(0, 60), hit(8, 62)];
+  const fill: BlendOptions = { ...drums, fillTicks: TWO_BARS };
+  const inSecondBar = (ns: NoteEvent[]) => ns.filter((n) => n.start >= BAR);
+
+  it('the fader hard over to the one-bar loop still fills the second bar', () => {
+    // The exact report: weight all on the short loop.
+    const out = blendLoops([{ notes: loop1, weight: 1 }, { notes: clip2, weight: 0 }], fill);
+    expect(inSecondBar(out).length).toBeGreaterThan(0);
+    expect(keys(out)).toEqual(keys([...loop1, hit(16, 60), hit(24, 62)]));
+  });
+
+  it('and so does the crossfade halfway', () => {
+    const out = blendLoops([{ notes: loop1, weight: 0.5 }, { notes: clip2, weight: 0.5 }], fill);
+    expect(inSecondBar(out).length).toBeGreaterThan(0);
+  });
+
+  it('a loop LONGER than the fill is left alone, not truncated', () => {
+    // Cutting music to make a length match is not a fix; the clip's own region
+    // already decides what plays.
+    const out = blendLoops([{ notes: clip2, weight: 1 }], { ...drums, fillTicks: BAR });
+    expect(keys(out)).toEqual(keys(clip2));
+  });
+
+  it('without a fill length nothing repeats — the old behaviour, byte for byte', () => {
+    const out = blendLoops([{ notes: loop1, weight: 1 }, { notes: clip2, weight: 0 }], drums);
+    expect(out).toEqual(loop1);
+  });
+
+  it('the repeats keep their origin, so each still plays its own loop', () => {
+    const out = blendLoopsBySource(
+      [{ notes: loop1, weight: 1 }, { notes: clip2, weight: 0 }], fill,
+    );
+    expect(inSecondBar(out).length).toBeGreaterThan(0);
+    for (const n of inSecondBar(out)) expect(n.from).toBe(0);
+  });
+
+  it('a four-bar clip takes four copies of a one-bar loop', () => {
+    const out = blendLoops([{ notes: loop1, weight: 1 }], { ...drums, fillTicks: BAR * 4 });
+    const steps = out.map((n) => n.start / TICKS_PER_STEP).sort((a, b) => a - b);
+    expect(steps).toEqual([0, 8, 16, 24, 32, 40, 48, 56]);
+  });
+
+  it('a loop whose own length is two bars repeats once in a four-bar clip', () => {
+    // The span is measured from the loop, not assumed to be one bar.
+    const out = blendLoops([{ notes: clip2, weight: 1 }], { ...drums, fillTicks: BAR * 4 });
+    const steps = out.map((n) => n.start / TICKS_PER_STEP).sort((a, b) => a - b);
+    expect(steps).toEqual([0, 4, 16, 20, 32, 36, 48, 52]);
+  });
+});
