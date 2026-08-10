@@ -556,6 +556,20 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         : null;
     },
 
+    laneSound(laneId) {
+      return deps.weave.lanes[laneId]?.sound ?? null;
+    },
+
+    setLaneSound(laneId, value) {
+      const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
+      const sound = value === null ? undefined : Math.min(1, Math.max(0, value));
+      deps.weave.lanes[laneId] = { ...cur, sound };
+      // MATERIAL, not a param: turning the fader on or off changes whether the
+      // fold tags its notes with the loop they came from, so every cached
+      // source for this lane is answering the wrong question.
+      deps.onWeaveChanged?.(laneId);
+    },
+
     setLaneWeave(laneId, weave) {
       // A locked lane keeps the loops it has — by hand as well as by clock. The
       // lock exists to hold an arrangement still, and a dropdown that swapped

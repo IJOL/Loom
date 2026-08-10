@@ -20,6 +20,7 @@ import { launchWeavingLanes } from './weave/weave-transport';
 import { getStripParam, setStripParam } from './core/channel-strip-params';
 import { defaultWeaveState } from './weave/weave-state';
 import { createWeaveParamMacros } from './app/weave-param-macros';
+import { createWeaveSound } from './app/weave-sound';
 import { printScene } from './session/session-runtime';
 import type { NoteEvent } from './core/notes';
 import { wireLayersRack } from './engines/layers-rack-ui';
@@ -407,6 +408,15 @@ const weaveParamMacros = createWeaveParamMacros({
   write: (id, v, ranges) => writes?.applyPlaybackUnmountedWrite(id, v, ranges),
 });
 
+// The SOUND fader, turned into a lane's two layer gains. Same door as the
+// macros, and a factory for the same reason: a lane whose fader is cleared has
+// to get its layers back to unity once, or it keeps a balance nothing on screen
+// governs.
+const weaveSound = createWeaveSound({
+  destinations: () => destinations.list(),
+  write: (id, v, ranges) => writes?.applyPlaybackUnmountedWrite(id, v, ranges),
+});
+
 const weaveWiring = createWeaveWiring({
   getLaneStates: () => sessionHost.laneStates,
   getMeter: () => seq.meter,
@@ -661,6 +671,7 @@ const performanceFeature = createPerformanceFeature({
     // On the change, never per tick: a param written sixty times a second with
     // the same value is sixty ramps the smoother chases for nothing.
     weaveParamMacros.apply(weaveWiring.state.macros);
+    weaveSound.apply(weaveWiring.state);
   },
   // The desk's mute/solo, shared by reference: a panel's M and S and the
   // mixer's are the same two buttons, not two that can disagree.

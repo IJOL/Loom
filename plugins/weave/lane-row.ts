@@ -485,6 +485,50 @@ export function buildLaneRow(
   });
   levelWrap.append(level, levelOut);
 
+  // ── sound ────────────────────────────────────────────────────────────────
+  //
+  // The SECOND axis, and the reason it is a separate control rather than a
+  // fourth topology: the weave decides which NOTES play, this decides what they
+  // are played ON, and they are independent. That is what lets loop A be heard
+  // on instrument B — and what lets the sound evolve while the notes stand
+  // still.
+  //
+  // Off by default, and off is not zero. Without it the lane routes each note
+  // to the layer of the loop it came from, which is the other way of using a
+  // rack and the one this panel shipped with. Turning it on switches that off:
+  // every note reaches both instruments and this balances them.
+  const soundWrap = el('div', 'weave-sound');
+  const soundOn = el('button', 'weave-sound-btn', '◐') as HTMLButtonElement;
+  soundOn.type = 'button';
+  const sound = document.createElement('input');
+  sound.type = 'range';
+  sound.className = 'weave-sound-fader';
+  sound.min = '0';
+  sound.max = '1';
+  sound.step = '0.01';
+  sound.setAttribute('aria-label', 'Which instrument this lane is played on');
+  const paintSound = () => {
+    const v = ctx.laneSound(lane.id);
+    const on = v !== null;
+    soundOn.classList.toggle('on', on);
+    soundOn.title = on
+      ? 'Sound fader on — every note reaches both instruments'
+      : 'Sound fader off — each note plays on the instrument of the loop it came from';
+    soundOn.setAttribute('aria-pressed', String(on));
+    sound.disabled = !on;
+    sound.value = String(v ?? 0);
+    soundWrap.classList.toggle('off', !on);
+  };
+  soundOn.addEventListener('click', () => {
+    ctx.setLaneSound(lane.id, ctx.laneSound(lane.id) === null ? 0 : null);
+    paintSound();
+  });
+  sound.addEventListener('input', () => {
+    ctx.setLaneSound(lane.id, Number(sound.value));
+  });
+  soundWrap.append(soundOn, sound);
+  paintSound();
+
   // Re-read on every repaint, never captured: the style picker below changes
   // which shelf of the library this lane draws from, and a captured list would
   // keep offering the loops of the style the user just left.
@@ -547,7 +591,8 @@ export function buildLaneRow(
   repaintCell();
 
   row.append(
-    led, ring.el, name, transport, levelWrap, engine, preset, style, topo, length, cellHost,
+    led, ring.el, name, transport, levelWrap, engine, preset, style, topo, length,
+    cellHost, soundWrap,
   );
 
   // The bar, under the controls and across the whole row. A second line rather

@@ -222,7 +222,16 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
           // for the same job: it imposes no octave of its own, and every degree
           // is measured from the key's own root.
           octaveBase: 0,
-        }, true, noteMacros);
+          // EITHER the loop chooses the instrument OR the sound fader does.
+          //
+          // Tagging pins each note to the layer of the loop it came from, which
+          // is one way to use a rack and the one this panel shipped with. A
+          // sound fader is the other: it wants every note to reach BOTH
+          // instruments so their gains can balance them. Both at once is
+          // incoherent — a note cannot be pinned to layer 0 and also balanced
+          // across two — so a lane with a fader stops tagging, and the notes
+          // fall back to the zone rule, which sends them everywhere they fit.
+        }, state.lanes[laneId]?.sound === undefined, noteMacros);
       }
     }
 

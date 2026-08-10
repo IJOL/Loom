@@ -456,6 +456,22 @@ export interface PanelContext {
   laneNotes(laneId: string): PanelNote[];
   /** What the lane is weaving, or null when no loops have been chosen. */
   laneWeave(laneId: string): PanelWeave | null;
+  /** The SOUND fader: which instrument this lane's notes are played on, 0..1
+   *  between the two slots of its rack. Null when the lane has no fader.
+   *
+   *  A second axis, not a second topology. `laneWeave` decides which NOTES
+   *  play; this decides what they are played ON, and the two are independent —
+   *  which is what lets loop A be heard on instrument B, and lets the sound
+   *  evolve while the notes stand still.
+   *
+   *  Null is NOT zero. Without a fader the lane routes each note to the layer
+   *  of the loop it came from, which is the other way of using a rack; with
+   *  one, that routing is off and every note reaches both instruments. Either
+   *  the loop chooses the instrument or the fader does, never both. */
+  laneSound(laneId: string): number | null;
+  /** Move the fader, or pass null to remove it and go back to routing by
+   *  loop. */
+  setLaneSound(laneId: string, value: number | null): void;
   /** Choose loops or move the position. Passing null clears the lane back to
    *  playing its clip untouched. */
   setLaneWeave(laneId: string, weave: PanelWeave | null): void;

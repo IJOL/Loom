@@ -215,8 +215,47 @@
 
 .weave-rack.bars-open .weave-bar { height: 54px; }
 
-// Silence you can HEAR, not deduce. Red because it is the one control here that
-// takes something away, and it has to be findable without reading.
+// The SOUND fader: which instrument a lane is played on. Beside the weaving
+// control because it is the second axis of the same idea — the weave picks the
+// notes, this picks what they are played on.
+//
+// Dimmed rather than hidden when off. Hidden, the row would reflow every time
+// it was toggled and there would be nothing on screen saying the option exists;
+// dimmed says "available, not in use", which is what off actually means here.
+.weave-sound {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 78px;
+
+  &.off { opacity: 0.45; }
+}
+
+.weave-sound-btn {
+  background: transparent;
+  color: var(--text-dim, #9a9aa2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 11px;
+  line-height: 1.2;
+  cursor: pointer;
+
+  &:hover { color: var(--knob-purple, #9a6cd0); border-color: var(--knob-purple, #9a6cd0); }
+  &.on {
+    color: var(--knob-purple, #9a6cd0);
+    border-color: var(--knob-purple, #9a6cd0);
+  }
+}
+
+.weave-sound-fader {
+  width: 46px;
+  accent-color: var(--knob-purple, #9a6cd0);
+  cursor: pointer;
+
+  &:disabled { cursor: default; }
+}
+
 // A track's level, beside its transport buttons. Narrow on purpose: the row is
 // already dense and this is a balance control, not a mix fader — the desk is
 // still where you go to ride one.
@@ -301,6 +340,8 @@
   }
 }
 
+// Silence you can HEAR, not deduce. Red because it is the one control here that
+// takes something away, and it has to be findable without reading.
 .weave-halt {
   background: transparent;
   color: var(--red, #ff5c5c);

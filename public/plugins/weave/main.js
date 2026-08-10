@@ -422,6 +422,35 @@ function buildLaneRow(lane, ctx, engines) {
     showLevel(v);
   });
   levelWrap.append(level, levelOut);
+  const soundWrap = el("div", "weave-sound");
+  const soundOn = el("button", "weave-sound-btn", "\u25D0");
+  soundOn.type = "button";
+  const sound = document.createElement("input");
+  sound.type = "range";
+  sound.className = "weave-sound-fader";
+  sound.min = "0";
+  sound.max = "1";
+  sound.step = "0.01";
+  sound.setAttribute("aria-label", "Which instrument this lane is played on");
+  const paintSound = () => {
+    const v = ctx.laneSound(lane.id);
+    const on = v !== null;
+    soundOn.classList.toggle("on", on);
+    soundOn.title = on ? "Sound fader on \u2014 every note reaches both instruments" : "Sound fader off \u2014 each note plays on the instrument of the loop it came from";
+    soundOn.setAttribute("aria-pressed", String(on));
+    sound.disabled = !on;
+    sound.value = String(v ?? 0);
+    soundWrap.classList.toggle("off", !on);
+  };
+  soundOn.addEventListener("click", () => {
+    ctx.setLaneSound(lane.id, ctx.laneSound(lane.id) === null ? 0 : null);
+    paintSound();
+  });
+  sound.addEventListener("input", () => {
+    ctx.setLaneSound(lane.id, Number(sound.value));
+  });
+  soundWrap.append(soundOn, sound);
+  paintSound();
   const cellHost = el("div", "weave-cell-host");
   let cell = { el: cellHost };
   const repaintCell = () => {
@@ -485,7 +514,8 @@ function buildLaneRow(lane, ctx, engines) {
     style,
     topo,
     length,
-    cellHost
+    cellHost,
+    soundWrap
   );
   const strip = noteStrip(lane.id, ctx);
   const wrap = el("div", "weave-lane-wrap");

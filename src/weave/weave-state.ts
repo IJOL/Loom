@@ -44,6 +44,20 @@ export interface LaneSelection {
   locked: boolean;
   forcedStyle?: StyleId;
   harmonyLeader: boolean;
+  /** The SOUND fader: which instrument this lane's notes are played on, 0..1
+   *  between the two slots of its rack.
+   *
+   *  A second axis, not a second topology. The weave above decides which NOTES
+   *  play; this decides what they are played ON, and the two are deliberately
+   *  independent — that is what lets loop A be heard on instrument B, and lets
+   *  the sound evolve while the notes stand still.
+   *
+   *  Absent means the lane has no sound fader, which is NOT the same as 0: with
+   *  it absent the lane routes each note to the layer of the loop it came from,
+   *  which is the other, older way of using a rack. Set, that routing is off —
+   *  every note reaches both instruments and this decides the balance. Either
+   *  the loop chooses the instrument or the fader does, never both. */
+  sound?: number;
 }
 
 export function defaultLaneSelection(): LaneSelection {

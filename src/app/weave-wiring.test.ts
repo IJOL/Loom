@@ -108,6 +108,41 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
     expect(w.notesFor('lane1')!()![0].layerIndex).toBe(0);
   });
 
+  it('stops naming the loop once the lane has a SOUND fader', () => {
+    // Either the loop chooses the instrument or the fader does, never both.
+    //
+    // The tag pins a note to the layer its loop came from, which is one way to
+    // use a rack. A sound fader is the other: it wants every note to reach BOTH
+    // instruments so their gains can balance them, and `pickLayers` only does
+    // that for a note carrying no index. Both at once is incoherent — a note
+    // cannot be pinned to layer 0 and also balanced across two.
+    const w = wiring(session());
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
+      locked: false, harmonyLeader: false,
+    };
+    expect(w.notesFor('lane1')!()![0].layerIndex).toBe(0);
+
+    w.state.lanes.lane1.sound = 0.5;
+    w.invalidate();
+    expect(w.notesFor('lane1')!()![0].layerIndex).toBeUndefined();
+  });
+
+  it('keeps weaving the same NOTES whatever the sound fader says', () => {
+    // The two axes are independent, and this is the assertion that says so: the
+    // fader changes what the notes are played on, never which notes they are.
+    const w = wiring(session());
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 1 },
+      locked: false, harmonyLeader: false,
+    };
+    const before = w.notesFor('lane1')!()!.map((n) => n.midi);
+
+    w.state.lanes.lane1.sound = 1;
+    w.invalidate();
+    expect(w.notesFor('lane1')!()!.map((n) => n.midi)).toEqual(before);
+  });
+
   it('drops the cached source when the weave moves', () => {
     const w = wiring(session());
     w.state.lanes.lane1 = {
