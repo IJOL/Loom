@@ -112,7 +112,53 @@ module's own header warns about. So the ids are `chord:<shape>`, parsed
 explicitly, and a test asserts every offered id round-trips through
 `parseLoopId` and resolves to notes.
 
-## 3 · Register
+## 3 · Inversions, so a chord part stops jumping
+
+`diatonicTriad` (`harmony.ts:49`) builds `[degree, +2, +4]` from the same
+`octaveBase` every time, so every bar's chord is assembled from scratch in root
+position. Two measured consequences: a part moves by as much as eleven
+semitones between bars, and `avoidClash` then bends one voice of the stack
+after the fact (`harmony-guard.ts:27`), which is likelier the further the chord
+has jumped from where the ear left it.
+
+The standard answer is inversion — the same chord with its notes in a different
+order — and it is what makes generated chords sound played rather than
+computed. Two functions beside the triad:
+
+    /** The same triad in each of its positions: root, 1st, 2nd. */
+    export function inversions(triad: number[]): number[][]
+
+    /** The voicing of `triad` closest to `prev`, by total semitone movement.
+     *  `prev === null` (the first bar) gives root position. */
+    export function nearestVoicing(triad: number[], prev: number[] | null): number[]
+
+`renderChordComp` keeps the previous bar's voicing and asks for the nearest one.
+Nothing else changes: same degrees, same rhythm, same notes of the scale — only
+which octave each voice sits in.
+
+Three things to be exact about, because the video that prompted this says
+"1st, 2nd and 3rd":
+
+- **A triad has three positions, not four.** A third inversion needs a seventh
+  chord, and `diatonicTriad` builds three notes. Sevenths are the harmoniser
+  spec's business, and when they arrive `inversions` grows a position rather
+  than changing shape.
+- **Mirror inversion is a different operation** — reflecting the intervals
+  around an axis rather than rotating a voice up an octave. Deliberately out.
+- **No control this round.** The voicing is automatic, and the row has no width
+  left for a picker — the argument the role dropdown already had to win. A
+  fixed inversion is one argument on the same function whenever a UI wants it.
+
+And one bound the plan must carry: the nearest voicing is chosen **within an
+octave of `octaveBase`**, or a long progression walks the chord part away from
+the register its role put it in, one small nearest step at a time.
+
+**This changes the output of a shipped feature.** The clip inspector's Chords
+button (`session-inspector.ts:586`) renders through `renderChordComp`, so its
+chords will be voiced differently from the next build. That is the improvement,
+not a side effect, and acceptance 9 pins what must NOT change with it.
+
+## 4 · Register
 
 `rootFor` (`weave-loops.ts:140`) decides where material sits from the PATTERN's
 kind: 36 for bass, 48 for everything else, each ±6 semitones by key. It becomes
@@ -138,7 +184,7 @@ move them and must not pretend to; and `rootFor` has a twin,
 `octaveBase + key` that `weave-loops.ts:129-139` documents as the bug reported
 as *"nunca pones bajos que suenen a bajos"*. It is retired here too.
 
-## 4 · The control
+## 5 · The control
 
 A dropdown — `— / Bass / Melody / Comp / Pad / Arp` — **sharing the STYLE
 cell**, one above the other. The row's twelve columns plus gaps already need
@@ -196,6 +242,11 @@ numbers, no adjectives.
    `PartSpec.patternKind` no longer exist; grep is the test.
 8. **The row survives**, looked at in a browser: twelve columns, nothing wrapped
    to a second line, and the shared cell headed `Role · Style`.
+9. **Inversions move less, and change nothing else.** Over `i-VI-III-VII`, the
+   total semitone movement between consecutive chords is strictly smaller than
+   the same progression in root position — the number is compared, not
+   eyeballed. And with it: the same degrees, the same rhythm, every pitch still
+   in the scale, and no voice further than an octave from `octaveBase`.
 
 ## What this does not do
 
