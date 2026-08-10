@@ -706,3 +706,44 @@ describe('the master lock', () => {
     expect(h.weave.bypass).toBe(false);
   });
 });
+
+describe('a track s level', () => {
+  it('reads and writes the mixer s own gain, not a second one', () => {
+    // Balancing a weave meant leaving the panel for the desk and coming back.
+    // Two numbers for one gain would be worse than that: the panel would show a
+    // lane at half while the desk showed unity, and neither would be wrong.
+    const levels: Record<string, number> = { lane1: 1 };
+    const h = harness();
+    const ctx = createPanelContext({
+      sessionHost: {
+        state: h.state,
+        laneStates: new Map<string, LanePlayState>(),
+        renderWithMixer: () => {},
+        callbacks: {},
+      } as never,
+      seq: { bpm: 128, meter: DEFAULT_METER, isPlaying: () => false } as never,
+      ctx: { currentTime: 0 } as never,
+      weave: h.weave,
+      refresh: () => {},
+      laneLevel: (id) => levels[id] ?? 1,
+      setLaneLevel: (id, v) => { levels[id] = v; },
+    });
+    expect(ctx.laneLevel('lane1')).toBe(1);
+    ctx.setLaneLevel('lane1', 0.4);
+    expect(levels.lane1).toBe(0.4);
+    expect(ctx.laneLevel('lane1')).toBe(0.4);
+  });
+
+  it('reads unity for a lane with no strip, never zero', () => {
+    // A fixture with no audio graph must not look like a muted lane.
+    expect(harness().ctx.laneLevel('lane1')).toBe(1);
+  });
+
+  it('offers the mixer s declared range rather than a top of its own', () => {
+    // Hardcoding 0..1.5 in the panel would quietly stop agreeing with the desk
+    // the day that spec changes.
+    const r = harness().ctx.laneLevelRange();
+    expect(r.min).toBe(0);
+    expect(r.max).toBeGreaterThan(1);
+  });
+});

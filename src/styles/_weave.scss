@@ -217,6 +217,31 @@
 
 // Silence you can HEAR, not deduce. Red because it is the one control here that
 // takes something away, and it has to be findable without reading.
+// A track's level, beside its transport buttons. Narrow on purpose: the row is
+// already dense and this is a balance control, not a mix fader — the desk is
+// still where you go to ride one.
+.weave-level {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 84px;
+}
+
+.weave-level-fader {
+  width: 52px;
+  accent-color: var(--knob-cyan, #4bc3d4);
+  cursor: pointer;
+}
+
+.weave-level-out {
+  font-size: 9px;
+  color: var(--fg-dim, #888);
+  // Fixed width so a row does not shuffle sideways as the number goes from
+  // 9% to 100% under a drag.
+  min-width: 26px;
+  text-align: right;
+}
+
 // Where the chord walk is. It sits at the end of the flow row because it
 // belongs to the journey, not to the header's settings — and because without it
 // the HOLD switch is invisible: the loops freeze, the chords carry on, and

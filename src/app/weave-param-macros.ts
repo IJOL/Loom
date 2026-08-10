@@ -70,6 +70,9 @@ export function macroTargets(destinations: readonly AutomationTarget[]): MacroPa
 export function applyWeaveParamMacros(
   macros: Record<string, number>,
   deps: WeaveParamMacroDeps,
+  /** What was applied last time, so a macro returning to its neutral can put
+   *  that neutral back once instead of leaving its last effect behind. */
+  prev?: Record<string, number>,
 ): number {
   const all = deps.destinations();
   const ranges = new Map(all.map((d) => [d.id, { min: d.min, max: d.max }] as const));
@@ -89,12 +92,40 @@ export function applyWeaveParamMacros(
       sendA: isSendA ? d.id : undefined,
       sendB: isSendB ? d.id : undefined,
       lfoDepthIds: [],
-    }));
+    }, prev));
   }
 
   // Motion takes the depths in one go — macroParamWrites already fans over the
   // list it is given.
-  land(macroParamWrites(macros, macroTargets(all)));
+  land(macroParamWrites(macros, macroTargets(all), prev));
 
   return landed;
+}
+
+export interface WeaveParamMacros {
+  /** Land Space and Motion on everything they address. Returns how many writes
+   *  went out, which is what a caller checks when nothing seems to happen. */
+  apply(macros: Record<string, number>): number;
+}
+
+/** The applier, holding the one thing it has to remember.
+ *
+ *  A macro that has come home has to say so ONCE, and knowing that means
+ *  knowing where it was last time. That could not live in `applyWeaveParamMacros`
+ *  without becoming module state — the kind that survives a New Session and
+ *  leaks one session's values into the next — so it lives in a closure the
+ *  caller owns, next to the weave it belongs to.
+ *
+ *  The snapshot is a COPY. The macros object is the panel's live one and it
+ *  keeps moving; holding it by reference would compare a value against itself
+ *  and the trailing edge would never fire. */
+export function createWeaveParamMacros(deps: WeaveParamMacroDeps): WeaveParamMacros {
+  let last: Record<string, number> | undefined;
+  return {
+    apply(macros) {
+      const landed = applyWeaveParamMacros(macros, deps, last);
+      last = { ...macros };
+      return landed;
+    },
+  };
 }

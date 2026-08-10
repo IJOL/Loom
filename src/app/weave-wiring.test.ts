@@ -230,6 +230,50 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       expect(w.chordNow()).toEqual({ bar: 0, bars: 1, degree: 0 });
     });
 
+    it('prints a LAP of the progression, not the bar it was standing on', () => {
+      // One bar captured a quarter of a four-chord progression -- and the
+      // quarter you happened to be on, so pressing the button twice gave two
+      // different scenes.
+      const w = flowing(0);
+      w.state.progression = 'i-VI-III-VII';
+      expect(w.lapNotes().bars).toBe(4);
+    });
+
+    it('is one bar with no progression, which is what it always did', () => {
+      const w = flowing(0);
+      expect(w.lapNotes().bars).toBe(1);
+    });
+
+    it('lays the repetitions end to end instead of on top of each other', () => {
+      // A two-bar lane under a four-bar progression is folded twice: once
+      // hearing chords 1-2 and once 3-4. Stacked at the same offsets it would
+      // be two bars of doubled notes rather than four bars of music.
+      const w = flowing(0);
+      w.state.progression = 'i-VI-III-VII';
+      const { bars, byLane } = w.lapNotes();
+      const notes = byLane.get('lane1') ?? [];
+      expect(notes.length).toBeGreaterThan(0);
+      const lapTicks = bars * BAR;
+      for (const n of notes) {
+        expect(n.start).toBeGreaterThanOrEqual(0);
+        // Nothing hangs past the end: a note starting in the last bar belongs
+        // to the NEXT lap, not to the beginning of this one.
+        expect(n.start).toBeLessThan(lapTicks);
+      }
+      expect(Math.max(...notes.map((n) => n.start))).toBeGreaterThanOrEqual(lapTicks / 2);
+    });
+
+    it('leaves the cursor exactly where it found it', () => {
+      // Walking the lap moves the bar cursor. Left where the loop stopped, the
+      // next scheduler tick would fold against the wrong chord.
+      const w = flowing(0);
+      w.state.progression = 'i-VI-III-VII';
+      w.advance(BAR_SEC * 1);
+      const before = w.chordNow();
+      w.lapNotes();
+      expect(w.chordNow()).toEqual(before);
+    });
+
     it('stands still under the master lock, however fast the journey', () => {
       // Keep the arrangement I have. The clock carries on; the loops do not.
       const w = flowing(8);

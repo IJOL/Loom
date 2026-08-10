@@ -79,3 +79,28 @@ describe('param macros', () => {
     for (const val of w.values()) expect(Number.isFinite(val)).toBe(true);
   });
 });
+
+describe('Space is tapered, not linear', () => {
+  it('gives less than half the send at half the knob', () => {
+    // A send is a level, and moved linearly it puts almost all of its audible
+    // range in the first quarter of the travel — one useful position and a lot
+    // of dead knob. Reported as the macro being unusable rather than strong.
+    const half = macroParamWrites({ space: 0.5 }, { sendA: 'a', lfoDepthIds: [] });
+    expect(half.get('a')!).toBeLessThan(0.5 * 0.5 + 1e-9);
+    expect(half.get('a')!).toBeGreaterThan(0);
+  });
+
+  it('still reaches the top', () => {
+    // Taper, not a ceiling: the loud end has to stay reachable or the control
+    // has simply been made quieter.
+    const full = macroParamWrites({ space: 1 }, { sendA: 'a', lfoDepthIds: [] });
+    expect(full.get('a')).toBe(1);
+  });
+
+  it('keeps the second bus below the first at every position', () => {
+    for (const v of [0.25, 0.5, 0.75, 1]) {
+      const w = macroParamWrites({ space: v }, { sendA: 'a', sendB: 'b', lfoDepthIds: [] });
+      expect(w.get('b')!).toBeLessThan(w.get('a')!);
+    }
+  });
+});

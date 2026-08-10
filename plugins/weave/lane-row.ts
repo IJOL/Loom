@@ -145,8 +145,12 @@ function weaveCell(
   }
 
   const nameOf = (id: string) => loops.find((l) => l.id === id)?.name ?? id;
+  // Named by ROLE rather than by position, because the pair is drawn in the
+  // order that makes the dial honest and that is not the order it is stored in.
+  // "Loop 1 / Loop 2" read off the screen would name them the wrong way round.
+  const SLOT_LABEL = ['Loop this lane travels FROM', 'Loop this lane travels TO'];
   const slot = (i: number, current: string, apply: (id: string) => PanelWeave) =>
-    picker('weave-slot', `Loop ${i + 1} for this lane`, loops, current, (id) => {
+    picker('weave-slot', SLOT_LABEL[i] ?? `Loop ${i + 1}`, loops, current, (id) => {
       ctx.setLaneWeave(laneId, apply(id));
       onChanged();
     });
@@ -172,10 +176,24 @@ function weaveCell(
       size: 40,
     });
 
+    // B on the LEFT and A on the right, which reads backwards and is the only
+    // arrangement that tells the truth.
+    //
+    // The dial's tick leaves twelve o'clock and turns clockwise, so at a
+    // quarter of the way round it points RIGHT and at three quarters it points
+    // LEFT. With A on the left you are mostly hearing A while the tick aims at
+    // B, and mostly hearing B while it aims at A: for almost the whole journey
+    // the needle indicates the loop you are leaving. Reported exactly that way
+    // — make the wheel point at the loop that sounds.
+    //
+    // Swapping the two ends fixes it without touching the dial: a quarter round
+    // now points at A, which is what is mostly sounding, and three quarters
+    // points at B. The pair is still stored a → b; only where they are drawn
+    // changed.
     cell.append(
-      slot(0, sel.a, (id) => ({ ...sel, a: id })),
-      fader.el,
       slot(1, sel.b, (id) => ({ ...sel, b: id })),
+      fader.el,
+      slot(0, sel.a, (id) => ({ ...sel, a: id })),
     );
     return {
       el: cell,
@@ -436,6 +454,37 @@ export function buildLaneRow(
   };
   syncTransport();
 
+  // ── level ────────────────────────────────────────────────────────────────
+  //
+  // The same gain the mixer column shows, not a second one: balancing a weave
+  // meant leaving the panel for the desk and coming back, and the whole point
+  // of a track row is that the decisions about one track are in one place.
+  //
+  // The range comes from the host rather than being written 0..1.5 here. It is
+  // the mixer's own spec, and a panel that hardcoded a top would quietly stop
+  // agreeing with the desk the day that spec changed.
+  const range = ctx.laneLevelRange();
+  const levelWrap = el('div', 'weave-level');
+  const level = document.createElement('input');
+  level.type = 'range';
+  level.className = 'weave-level-fader';
+  level.min = String(range.min);
+  level.max = String(range.max);
+  // Fine enough that the fader does not step audibly, coarse enough that a drag
+  // does not fire a write per pixel of a high-DPI screen.
+  level.step = '0.01';
+  level.value = String(ctx.laneLevel(lane.id));
+  level.setAttribute('aria-label', 'Level for this track');
+  const levelOut = el('span', 'weave-level-out');
+  const showLevel = (v: number) => { levelOut.textContent = `${Math.round(v * 100)}%`; };
+  showLevel(Number(level.value));
+  level.addEventListener('input', () => {
+    const v = Number(level.value);
+    ctx.setLaneLevel(lane.id, v);
+    showLevel(v);
+  });
+  levelWrap.append(level, levelOut);
+
   // Re-read on every repaint, never captured: the style picker below changes
   // which shelf of the library this lane draws from, and a captured list would
   // keep offering the loops of the style the user just left.
@@ -497,7 +546,9 @@ export function buildLaneRow(
   paintTopo();
   repaintCell();
 
-  row.append(led, ring.el, name, transport, engine, preset, style, topo, length, cellHost);
+  row.append(
+    led, ring.el, name, transport, levelWrap, engine, preset, style, topo, length, cellHost,
+  );
 
   // The bar, under the controls and across the whole row. A second line rather
   // than a tenth column because it is the OUTPUT and the row above it is the

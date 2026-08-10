@@ -34,6 +34,7 @@ import { getCachedPresets } from '../presets/preset-loader';
 import { pagePresetName } from '../instrument-presets/preset-select-state';
 import { macroNeutral } from '../weave/weave-catalog';
 import { clipRowForLane } from '../weave/weave-transport';
+import { STRIP_PARAM_SPECS } from '../core/channel-strip-params';
 import type { WeaveState } from '../weave/weave-state';
 
 export interface PanelContextDeps {
@@ -79,6 +80,13 @@ export interface PanelContextDeps {
   muteState?: Record<string, boolean>;
   soloState?: Record<string, boolean>;
   applyMuteSolo?: () => void;
+  /** A lane's fader, read and written through the SAME strip door the mixer
+   *  column uses, in the mixer's own units — not a second scale the panel
+   *  invents, which is how two faders for one gain end up disagreeing. Absent
+   *  in fixtures with no audio graph, where the control reads 1 and moves
+   *  nothing. */
+  laneLevel?: (laneId: string) => number;
+  setLaneLevel?: (laneId: string, level: number) => void;
   /** The project's key/scale/style, through main's ONE undoable writer — the
    *  same one Project Options uses. Absent in fixtures with no session. */
   setMusicality?: (m: MusicalityState) => void;
@@ -319,6 +327,26 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // because the transport's Play now starts weaving lanes by the same one.
       const row = clipRowForLane(lane.clips, deps.sessionHost.activeSceneIdx);
       if (row >= 0) deps.sessionHost.launchClipAt(laneId, row);
+    },
+
+    laneLevelRange() {
+      // Straight from the spec the mixer's own fader reads, so the two controls
+      // cannot end up with different tops.
+      const spec = STRIP_PARAM_SPECS.find((s) => s.id === 'bus.level');
+      return { min: spec?.min ?? 0, max: spec?.max ?? 1.5 };
+    },
+
+    laneLevel(laneId) {
+      // 1 is unity, and it is what a lane with no strip should read: a control
+      // that showed 0 for "no audio graph" would look like a muted lane.
+      return deps.laneLevel?.(laneId) ?? 1;
+    },
+
+    setLaneLevel(laneId, level) {
+      deps.setLaneLevel?.(laneId, level);
+      // The mixer column shows the same gain. Repainting keeps the two faders
+      // from telling different stories about one number.
+      repaintDesk();
     },
 
     setLaneMuted(laneId, muted) {

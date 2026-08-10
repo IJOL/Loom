@@ -95,6 +95,9 @@ export interface PerformanceFeatureDeps {
   muteState?: Record<string, boolean>;
   soloState?: Record<string, boolean>;
   applyMuteSolo?: () => void;
+  /** A lane's fader, through the same strip door the mixer column uses. */
+  laneLevel?: (laneId: string) => number;
+  setLaneLevel?: (laneId: string, level: number) => void;
   /** The app's ONE writer of the project's key/scale/style — the same one
    *  Project Options uses, undo and toolbar chip included. */
   setMusicality?: (m: import("../session/session-types").MusicalityState) => void;
@@ -445,6 +448,8 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         muteState: deps.muteState,
         soloState: deps.soloState,
         applyMuteSolo: deps.applyMuteSolo,
+        laneLevel: deps.laneLevel,
+        setLaneLevel: deps.setLaneLevel,
         // The project's musical ground and the tempo, through the app's own
         // writers. The panel is a second VIEW of them, never a second copy.
         setMusicality: deps.setMusicality,

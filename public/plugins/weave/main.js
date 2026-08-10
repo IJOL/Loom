@@ -184,7 +184,8 @@ function weaveCell(laneId, ctx, loops, onChanged) {
     return { el: cell };
   }
   const nameOf = (id) => loops.find((l) => l.id === id)?.name ?? id;
-  const slot = (i, current, apply) => picker("weave-slot", `Loop ${i + 1} for this lane`, loops, current, (id) => {
+  const SLOT_LABEL = ["Loop this lane travels FROM", "Loop this lane travels TO"];
+  const slot = (i, current, apply) => picker("weave-slot", SLOT_LABEL[i] ?? `Loop ${i + 1}`, loops, current, (id) => {
     ctx.setLaneWeave(laneId, apply(id));
     onChanged();
   });
@@ -198,9 +199,9 @@ function weaveCell(laneId, ctx, loops, onChanged) {
       size: 40
     });
     cell.append(
-      slot(0, sel.a, (id) => ({ ...sel, a: id })),
+      slot(1, sel.b, (id) => ({ ...sel, b: id })),
       fader.el,
-      slot(1, sel.b, (id) => ({ ...sel, b: id }))
+      slot(0, sel.a, (id) => ({ ...sel, a: id }))
     );
     return {
       el: cell,
@@ -400,6 +401,27 @@ function buildLaneRow(lane, ctx, engines) {
     lock.classList.toggle("on", ctx.laneLocked(lane.id));
   };
   syncTransport();
+  const range = ctx.laneLevelRange();
+  const levelWrap = el("div", "weave-level");
+  const level = document.createElement("input");
+  level.type = "range";
+  level.className = "weave-level-fader";
+  level.min = String(range.min);
+  level.max = String(range.max);
+  level.step = "0.01";
+  level.value = String(ctx.laneLevel(lane.id));
+  level.setAttribute("aria-label", "Level for this track");
+  const levelOut = el("span", "weave-level-out");
+  const showLevel = (v) => {
+    levelOut.textContent = `${Math.round(v * 100)}%`;
+  };
+  showLevel(Number(level.value));
+  level.addEventListener("input", () => {
+    const v = Number(level.value);
+    ctx.setLaneLevel(lane.id, v);
+    showLevel(v);
+  });
+  levelWrap.append(level, levelOut);
   const cellHost = el("div", "weave-cell-host");
   let cell = { el: cellHost };
   const repaintCell = () => {
@@ -452,7 +474,19 @@ function buildLaneRow(lane, ctx, engines) {
   };
   paintTopo();
   repaintCell();
-  row.append(led, ring.el, name, transport, engine, preset, style, topo, length, cellHost);
+  row.append(
+    led,
+    ring.el,
+    name,
+    transport,
+    levelWrap,
+    engine,
+    preset,
+    style,
+    topo,
+    length,
+    cellHost
+  );
   const strip = noteStrip(lane.id, ctx);
   const wrap = el("div", "weave-lane-wrap");
   wrap.append(row, strip.el);

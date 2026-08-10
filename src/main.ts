@@ -17,8 +17,9 @@ import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
 import { createWeaveWiring } from './app/weave-wiring';
 import { launchWeavingLanes } from './weave/weave-transport';
+import { getStripParam, setStripParam } from './core/channel-strip-params';
 import { defaultWeaveState } from './weave/weave-state';
-import { applyWeaveParamMacros } from './app/weave-param-macros';
+import { createWeaveParamMacros } from './app/weave-param-macros';
 import { printScene } from './session/session-runtime';
 import type { NoteEvent } from './core/notes';
 import { wireLayersRack } from './engines/layers-rack-ui';
@@ -394,6 +395,18 @@ const activeLaneStore = createActiveLaneStore();
 // WEAVE's live state, built BEFORE the host so the host can ask it for a gate
 // on every tick, and read later by the panel plugin. Neither can own it: the
 // host exists before the panel does.
+// Space and Motion, landed on real destinations. A factory rather than a bare
+// call because it has to remember where the macros were LAST time: a knob
+// brought home has to write its neutral once, and writing it always would zero
+// every send a user set by hand the moment the panel opened.
+//
+// Playback semantics — the value reaches the audio and NOT the lane's saved
+// sound. The macro owns it; what should persist is the weave's own state.
+const weaveParamMacros = createWeaveParamMacros({
+  destinations: () => destinations.list(),
+  write: (id, v, ranges) => writes?.applyPlaybackUnmountedWrite(id, v, ranges),
+});
+
 const weaveWiring = createWeaveWiring({
   getLaneStates: () => sessionHost.laneStates,
   getMeter: () => seq.meter,
@@ -647,17 +660,22 @@ const performanceFeature = createPerformanceFeature({
     autosave?.request();
     // On the change, never per tick: a param written sixty times a second with
     // the same value is sixty ramps the smoother chases for nothing.
-    applyWeaveParamMacros(weaveWiring.state.macros, {
-      destinations: () => destinations.list(),
-      // Playback semantics — the value reaches the audio and NOT the lane's
-      // saved sound. The macro owns it; the weave's own state is what should
-      // persist, and that is a separate slice.
-      write: (id, v, ranges) => writes?.applyPlaybackUnmountedWrite(id, v, ranges),
-    });
+    weaveParamMacros.apply(weaveWiring.state.macros);
   },
   // The desk's mute/solo, shared by reference: a panel's M and S and the
   // mixer's are the same two buttons, not two that can disagree.
   muteState, soloState, applyMuteSolo,
+  // A lane's fader, through the SAME strip door the mixer column writes. One
+  // gain with one owner: a panel that kept its own number would show a lane at
+  // half while the desk showed it at unity, and neither would be wrong.
+  laneLevel: (id) => {
+    const strip = laneResources.get(id)?.strip;
+    return strip ? getStripParam(strip, 'bus.level') ?? 1 : 1;
+  },
+  setLaneLevel: (id, v) => {
+    const strip = laneResources.get(id)?.strip;
+    if (strip) setStripParam(strip, 'bus.level', v);
+  },
   // Freeze what the weave is playing right now into a new scene. It asks the
   // SAME source the scheduler plays from, so the printed bar is the bar you
   // were hearing rather than a re-derivation that could disagree with it.
@@ -669,16 +687,19 @@ const performanceFeature = createPerformanceFeature({
   // recomputed, or the readout and the sound drift apart by a bar.
   weaveChordNow: () => weaveWiring.chordNow(),
   printWeaveScene: () => withUndo(_discreteHistoryDeps!, () => {
-    const notes = new Map<string, NoteEvent[]>();
-    for (const lane of sessionHost.state.lanes) {
-      const woven = weaveWiring.notesFor(lane.id)?.();
-      if (woven?.length) notes.set(lane.id, woven);
-    }
-    const scene = printScene(sessionHost.state, notes, 'Weave');
+    // The whole LAP of the progression, not the bar the scheduler is standing
+    // on. Printing one bar captured a quarter of a four-chord progression — and
+    // the quarter you happened to be on, which is worse than a fixed one
+    // because pressing the button twice gave two different scenes.
+    //
+    // With no progression the lap is one bar and this is exactly what it always
+    // did, which is the right degenerate case.
+    const { bars, byLane } = weaveWiring.lapNotes();
+    const scene = printScene(sessionHost.state, byLane, 'Weave', bars);
     if (!scene) return 0;
     sessionHost.renderWithMixer();
     sessionHost.deps.saveSession?.();
-    return notes.size;
+    return byLane.size;
   }),
   swapLaneEngine: onEngineChangeUndoable,
   // The host's OWN applyPresetForLane, not a fresh call to applyPresetToEngine:

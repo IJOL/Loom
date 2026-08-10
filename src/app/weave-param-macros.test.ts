@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { applyWeaveParamMacros, macroTargets } from './weave-param-macros';
+import { applyWeaveParamMacros, createWeaveParamMacros, macroTargets } from './weave-param-macros';
 import type { AutomationTarget } from '../automation/automation-targets';
 
 const dest = (id: string, min = 0, max = 1): AutomationTarget =>
@@ -88,5 +88,55 @@ describe('applyWeaveParamMacros', () => {
   it('reports how many writes landed, so a dead macro is visible', () => {
     const h = harness();
     expect(applyWeaveParamMacros({ space: 1, motion: 1 }, h.deps)).toBe(5);
+  });
+});
+
+describe('a macro that goes back to neutral takes its effect with it', () => {
+  it('clears the sends when Space returns to zero', () => {
+    // Reported: "la macro de space... si la pones a 0 de nuevo sigue habiendo
+    // eco". At neutral the mapping wrote NOTHING, so the sends kept whatever
+    // the last non-zero position had left on them. A macro you cannot undo is
+    // worse than one that does not exist.
+    const h = harness();
+    const macros = createWeaveParamMacros(h.deps);
+    macros.apply({ space: 0.8, motion: 0 });
+    // Something audible went out. WHICH value is the taper's business and is
+    // asserted in macro-params.test.ts, not duplicated here.
+    expect(h.written.get('lane1.bus.sendA')).toBeGreaterThan(0);
+
+    macros.apply({ space: 0, motion: 0 });
+    expect(h.written.get('lane1.bus.sendA')).toBe(0);
+    expect(h.written.get('lane1.bus.sendB')).toBe(0);
+  });
+
+  it('does the same for Motion', () => {
+    const h = harness();
+    const macros = createWeaveParamMacros(h.deps);
+    macros.apply({ space: 0, motion: 0.9 });
+    expect(h.written.get('lane1.lfo1.depth')).toBeCloseTo(0.9, 5);
+    macros.apply({ space: 0, motion: 0 });
+    expect(h.written.get('lane1.lfo1.depth')).toBe(0);
+  });
+
+  it('writes NOTHING while it has never left neutral', () => {
+    // The property the old guard existed to protect, and it still holds: a
+    // panel merely opened must not zero the sends a user set by hand at the
+    // desk. Identity means identity.
+    const h = harness();
+    const macros = createWeaveParamMacros(h.deps);
+    macros.apply({ space: 0, motion: 0 });
+    expect(h.written.size).toBe(0);
+  });
+
+  it('goes quiet again once it has put the zero back', () => {
+    // One write on the way down, not one per repaint: a param written sixty
+    // times a second with the same value is sixty ramps for nothing.
+    const h = harness();
+    const macros = createWeaveParamMacros(h.deps);
+    macros.apply({ space: 0.5, motion: 0 });
+    macros.apply({ space: 0, motion: 0 });
+    h.written.clear();
+    macros.apply({ space: 0, motion: 0 });
+    expect(h.written.size).toBe(0);
   });
 });

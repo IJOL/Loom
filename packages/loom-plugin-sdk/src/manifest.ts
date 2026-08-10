@@ -364,6 +364,17 @@ export interface PanelContext {
    *  the fan, so locking one does not re-space the others under it. */
   laneLocked(laneId: string): boolean;
   setLaneLocked(laneId: string, locked: boolean): void;
+  /** A lane's fader, in the mixer's own units — 0 is silence, 1 is unity and
+   *  the top of the range is above it, so a panel that draws a slider takes
+   *  `laneLevelRange()` rather than assuming 0..1.
+   *
+   *  It is the SAME gain the mixer column shows, not a second one: writing here
+   *  moves that fader and vice versa. A lane with no strip reads 1, because a
+   *  control showing 0 for "no audio graph" looks like a muted lane. */
+  laneLevel(laneId: string): number;
+  setLaneLevel(laneId: string, level: number): void;
+  /** The declared range of the fader above, so a panel does not hardcode it. */
+  laneLevelRange(): { min: number; max: number };
   /** The MASTER lock: keep the arrangement you have.
    *
    *  Set, no lane advances, no lane hands over, and a hand on the master fader

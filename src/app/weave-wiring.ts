@@ -50,6 +50,11 @@ export interface WeaveWiring {
    *  sounding. Null when no progression is running, which is a different answer
    *  from sitting on the tonic. */
   chordNow: () => { bar: number; bars: number; degree: number } | null;
+  /** Every lane's fold across one full lap of the chord progression, laid end
+   *  to end, plus how many bars that lap is. What PRINT captures, so a printed
+   *  scene is the whole harmonic journey rather than the bar you happened to be
+   *  standing on. */
+  lapNotes: () => { bars: number; byLane: Map<string, NoteEvent[]> };
   /** Adopt a loaded weave, IN PLACE.
    *
    *  The state object is shared by reference with the panel and with the session
@@ -379,6 +384,22 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     });
   };
 
+  /** A lane's fold, with the leader rule around it and the bypass in front.
+   *
+   *  Bypassed, the panel contributes NOTHING and every lane schedules exactly
+   *  as it did before WEAVE existed. Checked here rather than inside the source
+   *  because "nothing to say" is already this function's own answer — the
+   *  additive path is the one that was always there. */
+  const foldFor = (laneId: string): WeaveSource | undefined => {
+    if (state.bypass) return undefined;
+    if (guarded.has(laneId)) return guarded.get(laneId);
+    const source = rawFor(laneId);
+    if (!source) return undefined;
+    const out = guardAgainstLeader(laneId, source);
+    guarded.set(laneId, out);
+    return out;
+  };
+
   return {
     state,
 
@@ -475,18 +496,58 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       }
     },
 
-    notesFor(laneId) {
-      // Bypassed, the panel contributes NOTHING: every lane schedules exactly as
-      // it did before WEAVE existed. Checked here rather than inside the source
-      // because "nothing to say" is already this function's own answer — the
-      // additive path is the one that was always there.
-      if (state.bypass) return undefined;
-      if (guarded.has(laneId)) return guarded.get(laneId);
-      const source = rawFor(laneId);
-      if (!source) return undefined;
-      const out = guardAgainstLeader(laneId, source);
-      guarded.set(laneId, out);
-      return out;
+    notesFor: foldFor,
+
+    /** Every lane's fold across ONE FULL LAP of the chord progression.
+     *
+     *  What `notesFor` gives is the bar the scheduler is about to play, folded
+     *  onto whichever chord that bar sits under. Printing that captured a
+     *  quarter of a four-chord progression — and the quarter you happened to be
+     *  on, which is worse than a fixed one because it is not reproducible.
+     *
+     *  So the cursor is walked over the whole lap here, a clip's length at a
+     *  time, and the folds are laid end to end. Each lane advances by ITS OWN
+     *  clip length: a two-bar lane under a four-bar progression is folded twice
+     *  and hears chords 1-2 then 3-4, while a four-bar lane beside it is folded
+     *  once. Anything hanging past the end of the lap is dropped rather than
+     *  wrapped, since a note that started in the last bar belongs to the next
+     *  lap, not to the beginning of this one.
+     *
+     *  The cursor is restored and every cache dropped afterwards, or the next
+     *  scheduler tick would fold against whatever bar this loop stopped on. */
+    lapNotes() {
+      const prog = progressionById(state.progression ?? 'static')?.chords;
+      const bars = Math.max(1, prog ? progressionBars(prog) : 1);
+      const barTicks = ticksPerBar(deps.getMeter());
+      const lanes = deps.getState?.().lanes ?? [];
+      const saved = barCursor;
+      const byLane = new Map<string, NoteEvent[]>();
+
+      for (const lane of lanes) {
+        const span = Math.max(1, clipBarsFor(lane.id) ?? 1);
+        const out: NoteEvent[] = [];
+        for (let at = 0; at < bars; at += span) {
+          barCursor = at;
+          // The fold is memoised per lane, and this loop changes the answer
+          // every step: without dropping it, every repetition would be the
+          // first one over again and the progression would never be heard.
+          sources.clear();
+          guarded.clear();
+          const notes = foldFor(lane.id)?.();
+          if (!notes) continue;
+          for (const n of notes) {
+            const start = n.start + at * barTicks;
+            if (start >= bars * barTicks) continue;
+            out.push({ ...n, start });
+          }
+        }
+        if (out.length) byLane.set(lane.id, out);
+      }
+
+      barCursor = saved;
+      sources.clear();
+      guarded.clear();
+      return { bars, byLane };
     },
 
     invalidate() {
