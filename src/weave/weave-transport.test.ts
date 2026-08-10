@@ -5,7 +5,9 @@
 // contributes nothing. Stop already stopped everything, so the asymmetry was
 // the surprise rather than either half on its own.
 import { describe, it, expect, vi } from 'vitest';
-import { weavingLaneIds, clipRowForLane, launchWeavingLanes } from './weave-transport';
+import {
+  weavingLaneIds, clipRowForLane, launchWeavingLanes, createWeaveAwareStart,
+} from './weave-transport';
 import { defaultWeaveState, type WeaveState } from './weave-state';
 import type { SessionClip } from '../session/session';
 
@@ -110,5 +112,99 @@ describe('launchWeavingLanes', () => {
     const launchClipAt = vi.fn();
     launchWeavingLanes(defaultWeaveState(), { lanes, activeSceneIdx: 0, launchClipAt });
     expect(launchClipAt).not.toHaveBeenCalled();
+  });
+});
+
+describe('Play, when launching a clip is itself a Play', () => {
+  // Reported from the app: "lo he parado de arriba y ya no ha arrancado más".
+  // `launchClipAt` on a STOPPED transport arranges the lane and then presses
+  // Play itself — which is the very wrapper that launches the weaving lanes. One
+  // weaving lane is enough to make that unbounded: start → launch → start → …
+  // until the stack gives out, and the clock never starts. Play stayed dead for
+  // the rest of the session, with the button still looking armed.
+
+  /** A transport whose clip launch presses Play back, the way the real one
+   *  does while stopped. */
+  function transport() {
+    let playing = false;
+    const starts: string[] = [];
+    let press: () => void = () => {};
+    return {
+      get starts() { return starts; },
+      setPress(p: () => void) { press = p; },
+      launchClipAt(id: string) {
+        starts.push(`launch:${id}`);
+        if (!playing) press();          // exactly what launchClipAt does
+      },
+      start() { starts.push('clock'); playing = true; },
+      get playing() { return playing; },
+    };
+  }
+
+  it('starts the clock instead of recursing', () => {
+    const t = transport();
+    const press = createWeaveAwareStart({
+      launchWeaving: () => { t.launchClipAt('a'); },
+      start: () => t.start(),
+    });
+    t.setPress(press);
+    expect(() => press()).not.toThrow();
+    expect(t.playing).toBe(true);
+  });
+
+  it('starts the clock exactly ONCE per press', () => {
+    const t = transport();
+    const press = createWeaveAwareStart({
+      launchWeaving: () => { t.launchClipAt('a'); t.launchClipAt('b'); },
+      start: () => t.start(),
+    });
+    t.setPress(press);
+    press();
+    expect(t.starts.filter((s) => s === 'clock')).toHaveLength(1);
+  });
+
+  it('launches EVERY lane before the clock, so they begin together', () => {
+    // Not merely damage control. While the clock is stopped every lane takes
+    // the idle branch and is queued at the same instant; let a nested press
+    // start the clock early and the lanes after it are quantised to the next
+    // boundary instead — the first lane would begin a bar before the rest.
+    const t = transport();
+    const press = createWeaveAwareStart({
+      launchWeaving: () => { t.launchClipAt('a'); t.launchClipAt('b'); t.launchClipAt('c'); },
+      start: () => t.start(),
+    });
+    t.setPress(press);
+    press();
+    expect(t.starts).toEqual(['launch:a', 'launch:b', 'launch:c', 'clock']);
+  });
+
+  it('can still be started again after a stop', () => {
+    // The guard must not latch: it is released before the clock starts, so a
+    // second press behaves like the first.
+    const t = transport();
+    const press = createWeaveAwareStart({
+      launchWeaving: () => { t.launchClipAt('a'); },
+      start: () => t.start(),
+    });
+    t.setPress(press);
+    press();
+    press();
+    expect(t.starts.filter((s) => s === 'clock')).toHaveLength(2);
+  });
+
+  it('does not leave Play dead when a lane s launch throws', () => {
+    // One bad lane must not lock the transport out for the rest of the session,
+    // which is the exact failure this function exists to end.
+    const t = transport();
+    let boom = true;
+    const press = createWeaveAwareStart({
+      launchWeaving: () => { if (boom) throw new Error('bad lane'); t.launchClipAt('a'); },
+      start: () => t.start(),
+    });
+    t.setPress(press);
+    expect(() => press()).toThrow();
+    boom = false;
+    press();
+    expect(t.playing).toBe(true);
   });
 });

@@ -69,3 +69,44 @@ export function launchWeavingLanes(state: WeaveState, deps: WeaveLaunchDeps): vo
     if (row >= 0) deps.launchClipAt(id, row);
   }
 }
+
+/** Play: launch what WEAVE is weaving, THEN start the clock — and survive the
+ *  fact that launching a clip starts the clock too.
+ *
+ *  `launchClipAt` on a stopped transport arranges the lane and then presses
+ *  Play itself, which is this very function. With even one weaving lane that is
+ *  unbounded recursion: start → launch → start → launch → … until the stack
+ *  gives out, and the clock never starts. Play went dead from the moment the
+ *  transport was stopped, silently, with the button still looking armed.
+ *
+ *  The guard makes those nested presses no-ops, and that is not merely damage
+ *  control — it is what makes the lanes start TOGETHER. While the clock is
+ *  still stopped every lane takes `launchClipAt`'s idle branch and is queued at
+ *  the same instant; let one nested call start the clock early and the lanes
+ *  after it would be quantised to the next boundary instead, so the first lane
+ *  would begin a bar before the rest. Arrange everything, then start once — the
+ *  same order `launchSceneAt` follows, for the same reason. */
+export function createWeaveAwareStart(deps: {
+  /** Launch every weaving lane's carrier clip. */
+  launchWeaving(): void;
+  /** The real transport start, called exactly once per outermost press. */
+  start(): void;
+}): () => void {
+  let launching = false;
+  return () => {
+    // A start that arrives from INSIDE the launch is that launch's own doing.
+    // Returning is safe because the outer call has not reached `start()` yet
+    // and always will.
+    if (launching) return;
+    launching = true;
+    try {
+      deps.launchWeaving();
+    } finally {
+      // Restored even if a lane's launch throws: one bad lane must not leave
+      // the transport permanently unable to start, which is the failure this
+      // whole function exists to end.
+      launching = false;
+    }
+    deps.start();
+  };
+}

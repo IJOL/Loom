@@ -16,7 +16,7 @@ import { createKnobMounter } from './app/knob-mounting';
 import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
 import { createWeaveWiring } from './app/weave-wiring';
-import { launchWeavingLanes } from './weave/weave-transport';
+import { launchWeavingLanes, createWeaveAwareStart } from './weave/weave-transport';
 import { getStripParam, setStripParam } from './core/channel-strip-params';
 import { defaultWeaveState } from './weave/weave-state';
 import { createWeaveParamMacros } from './app/weave-param-macros';
@@ -746,24 +746,29 @@ wireKnobAutomationMenu({ onRegisterKnob, destinations, sessionHost, seq, perform
 // the engine always starts/stops. (Previously onPlay()===true skipped
 // _origStart, so Performance had no engine → no sound, and seq.isPlaying()
 // stayed false so the Play button never toggled to Stop.)
-seq.start = () => {
-  // Play starts what WEAVE is weaving. A weaving lane still plays a CARRIER
-  // clip, so starting the clock without launching it left the panel
-  // contributing nothing — while Stop already stopped everything, which is why
-  // the asymmetry read as a bug rather than as a missing step.
-  //
+// Play starts what WEAVE is weaving. A weaving lane still plays a CARRIER clip,
+// so starting the clock without launching it left the panel contributing
+// nothing — while Stop already stopped everything, which is why the asymmetry
+// read as a bug rather than as a missing step.
+//
+// Through createWeaveAwareStart because launching a clip on a STOPPED transport
+// presses Play itself: without the guard that is start → launch → start → …
+// until the stack gives out, and Play stayed dead for the rest of the session.
+// See that function for why the guard is also what makes the lanes start
+// together rather than a bar apart.
+seq.start = createWeaveAwareStart({
   // Session only. Performance REPLAYS recorded launches, and launching over
   // them would fight the take it is in the middle of reproducing.
-  if (performanceFeature.getMode() !== 'performance') {
+  launchWeaving: () => {
+    if (performanceFeature.getMode() === 'performance') return;
     launchWeavingLanes(weaveWiring.state, {
       lanes: sessionHost.state.lanes,
       activeSceneIdx: sessionHost.activeSceneIdx,
       launchClipAt: (laneId, row) => sessionHost.launchClipAt(laneId, row),
     });
-  }
-  performanceFeature.onPlay();
-  _origStart();
-};
+  },
+  start: () => { performanceFeature.onPlay(); _origStart(); },
+});
 seq.stop = () => { performanceFeature.onStop(); _origStop(); };
 
 const copyBtn = document.getElementById('copy-to-performance');
