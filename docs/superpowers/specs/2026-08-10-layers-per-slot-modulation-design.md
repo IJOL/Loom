@@ -1,9 +1,20 @@
 # LAYERS: a slot must contain its instrument
 
 **Date:** 2026-08-10
-**Status:** BUILT. All three problems below are solved and covered by tests; what
-is left is the listening check — acceptance 1 has not been re-measured in the
-app since, and acceptances 2–4 have not been heard. Prune this file once it has.
+**Status:** DONE. All three problems below are solved, covered by 97 tests
+across 7 files, and acceptance 1 is CLOSED — measured at the master in the
+running app, twice, each pass from a clean reload with the lane verified as an
+ordinary subtractive lane before the "before" was taken:
+
+| Pass | Before (RMS / peak) | After (RMS / peak) | Ratio RMS | Ratio peak |
+| --- | --- | --- | --- | --- |
+| 1 | 0.08516 / 0.7499 | 0.08458 / 0.7693 | **0.993** | 1.026 |
+| 2 | 0.08228 / 0.7501 | 0.08473 / 0.7664 | **1.030** | 1.022 |
+
+Zero near-silent frames in any pass. The number to beat was 0.51; converting is
+now within three percent, which is inaudible. The user also confirmed it by ear.
+
+Prune this file — its work has shipped.
 **Branch:** `worktree-arranger-auto-accompaniment`.
 
 ## What shipped
