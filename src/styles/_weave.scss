@@ -217,6 +217,28 @@
 
 // Silence you can HEAR, not deduce. Red because it is the one control here that
 // takes something away, and it has to be findable without reading.
+// HOLD keeps the arrangement; HALT unplugs the panel. Same shape so they read
+// as one pair of switches, different colour because one preserves and the other
+// stops: amber for "held where it is", red for "off".
+.weave-hold {
+  background: transparent;
+  color: var(--knob-yellow, #e0b040);
+  border: 1px solid var(--knob-yellow, #e0b040);
+  border-radius: 3px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+
+  &:hover { background: rgba(224, 176, 64, 0.15); }
+  &.on {
+    background: var(--knob-yellow, #e0b040);
+    border-color: var(--knob-yellow, #e0b040);
+    color: var(--bg);
+  }
+}
+
 .weave-halt {
   background: transparent;
   color: var(--red, #ff5c5c);

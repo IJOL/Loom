@@ -364,8 +364,24 @@ export interface PanelContext {
    *  the fan, so locking one does not re-space the others under it. */
   laneLocked(laneId: string): boolean;
   setLaneLocked(laneId: string, locked: boolean): void;
-  /** Whether the weave is bypassed: set, it contributes nothing and every lane
-   *  schedules exactly as it did before the panel existed. */
+  /** The MASTER lock: keep the arrangement you have.
+   *
+   *  Set, no lane advances, no lane hands over, and a hand on the master fader
+   *  or a lane's wheel writes nothing. Three things carry on underneath it, and
+   *  each for its own reason: the CHORD PROGRESSION, because a lock on the
+   *  loops is not a lock on the harmony; the MACROS, because they are the
+   *  user's hand rather than evolution, and a locked scene deaf to a rise in
+   *  Energy would pull apart from the rest; and the STEP RACK, because it moves
+   *  a parameter in time with the loop, which is a sound moving rather than an
+   *  arrangement changing.
+   *
+   *  It is not a mute and it never touches the desk. */
+  locked(): boolean;
+  setLocked(on: boolean): void;
+  /** Whether the weave is bypassed: set, it contributes nothing, every lane
+   *  schedules exactly as it did before the panel existed, and the transport
+   *  stops with it — off means off, rather than uncovering whatever the session
+   *  grid had launched. */
   bypassed(): boolean;
   setBypassed(on: boolean): void;
   /** The step RACK: rows of values, each moving one parameter in time with the

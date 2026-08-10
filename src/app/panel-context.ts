@@ -377,6 +377,19 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // would rebuild every source to fold exactly the same notes.
     },
 
+    locked() {
+      return deps.weave.locked === true;
+    },
+
+    setLocked(on) {
+      // No onWeaveChanged: locking changes nothing about what is playing RIGHT
+      // NOW, only whether anything may move it next tick. Invalidating would
+      // rebuild every source to fold exactly the same notes — the same reason
+      // the per-lane lock does not invalidate either.
+      deps.weave.locked = on;
+      deps.refresh();
+    },
+
     bypassed() {
       return deps.weave.bypass === true;
     },
@@ -508,6 +521,10 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     },
 
     setLaneWeave(laneId, weave) {
+      // A locked lane keeps the loops it has — by hand as well as by clock. The
+      // lock exists to hold an arrangement still, and a dropdown that swapped
+      // the material under it would be the one hole in that promise.
+      if (deps.weave.locked || deps.weave.lanes[laneId]?.locked) return;
       const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
       deps.weave.lanes[laneId] = { ...cur, weave };
       deps.onWeaveChanged?.(laneId);
@@ -580,6 +597,12 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         );
         if (next && entry) deps.weave.lanes[laneId] = { ...entry, weave: next };
       };
+
+      // Locked, the SETTINGS above are still written — drift, speed and EVOLVE
+      // are how the journey will behave when it is let go, and refusing to
+      // record them would make the panel forget what the user chose. What the
+      // lock stops is the journey MOVING, which is everything below.
+      if (deps.weave.locked) { deps.refresh(); return; }
 
       applyFlow(
         deps.weave.lanes,

@@ -141,6 +141,23 @@ export interface WeaveState {
   bypass: boolean;
   /** The step rack: one row per parameter it moves. */
   steps: WeaveSteps[];
+  /** The MASTER lock: keep the arrangement I have.
+   *
+   *  It freezes what the LOOPS do and nothing else — no lane advances, no lane
+   *  hands over, and a hand on the master fader or a lane's wheel writes
+   *  nothing. Three things deliberately carry on underneath it:
+   *
+   *  - **The chord progression.** A lock on the loops is not a lock on the
+   *    harmony: the progression decides where the material SITS, not which
+   *    material plays, so freezing one is not a wish to freeze the other.
+   *  - **The macros.** They are the user's hand, not evolution, and a locked
+   *    scene that ignored a rise in Energy would pull apart from the rest.
+   *  - **The step rack.** It moves a PARAMETER in time with the loop, which is
+   *    a sound moving rather than an arrangement changing.
+   *
+   *  A lane's own `locked` says the same thing about one lane. Neither is a
+   *  mute and neither touches the desk. */
+  locked?: boolean;
   /** Which chord progression the scene is walking, by catalogue id.
    *
    *  'static' — the default — is Loom as it always was: one key, one chord, for
@@ -159,6 +176,7 @@ export function defaultWeaveState(): WeaveState {
     lanes: {}, macros, seed: 1,
     flow: { drift: 'together', speedBars: 0, evolve: false },
     bypass: false,
+    locked: false,
     steps: defaultWeaveStepRows(),
     progression: 'static',
   };

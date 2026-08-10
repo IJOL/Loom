@@ -772,6 +772,18 @@ function mountWeave(host, ctx) {
     rack.classList.toggle("bars-open");
     paintBars();
   });
+  const hold = el3("button", "weave-hold");
+  const paintHold = () => {
+    const on = ctx.locked();
+    hold.textContent = on ? "\u{1F512} HELD" : "\u{1F513} HOLD";
+    hold.classList.toggle("on", on);
+    hold.title = on ? "Let the weave travel again" : "Keep these loops \u2014 the chords keep walking, the macros keep working";
+    hold.setAttribute("aria-pressed", String(on));
+  };
+  hold.addEventListener("click", () => {
+    ctx.setLocked(!ctx.locked());
+    paintHold();
+  });
   const halt = el3("button", "weave-halt");
   const paintHalt = () => {
     const off = ctx.bypassed();
@@ -793,11 +805,13 @@ function mountWeave(host, ctx) {
     spacer,
     bars,
     reseed,
+    hold,
     halt,
     surge,
     print
   );
   paintBars();
+  paintHold();
   paintHalt();
   const pulse = el3("div", "weave-pulse");
   const cells = [];

@@ -269,14 +269,35 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   };
   bars.addEventListener('click', () => { rack.classList.toggle('bars-open'); paintBars(); });
 
+  // Keep the arrangement you have. A toggle, not a held button: this one is a
+  // decision that outlives your finger, which is exactly the opposite of SURGE.
+  //
+  // What it does NOT stop is the chord progression — a lock on the loops is not
+  // a lock on the harmony — nor the macros, nor the step rack. The scene you
+  // froze keeps breathing; it just stops changing what it is made of.
+  const hold = el('button', 'weave-hold');
+  const paintHold = () => {
+    const on = ctx.locked();
+    hold.textContent = on ? '🔒 HELD' : '🔓 HOLD';
+    hold.classList.toggle('on', on);
+    hold.title = on
+      ? 'Let the weave travel again'
+      : 'Keep these loops — the chords keep walking, the macros keep working';
+    hold.setAttribute('aria-pressed', String(on));
+  };
+  hold.addEventListener('click', () => {
+    ctx.setLocked(!ctx.locked());
+    paintHold();
+  });
+
   // WEAVE's connection to the clock, on and off. That is the whole of it.
   //
-  // It stopped and muted the lanes for a while, and that was wrong twice: it
+  // Muting the lanes was tried and reverted, and those reasons still hold: it
   // reached into the mixer to answer a question about this panel, and it left a
-  // session saved silent with no way back. Loom has to behave exactly as it does
-  // with this panel closed — the transport plays, the lanes play their clips,
-  // the desk is untouched. Off, the weave simply does not contribute and does
-  // not travel; press the transport and nothing here starts up.
+  // session saved silent with no way back. What off DOES do is stop the
+  // transport, because carrying on uncovered whatever the session grid had
+  // launched — a surprise after ten minutes of listening to the weave with no
+  // memory of what was underneath.
   const halt = el('button', 'weave-halt');
   const paintHalt = () => {
     const off = ctx.bypassed();
@@ -299,9 +320,10 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     field('Key', keySel, scaleSel),
     field('Style', styleSel),
     field('Chords', progSel),
-    spacer, bars, reseed, halt, surge, print,
+    spacer, bars, reseed, hold, halt, surge, print,
   );
   paintBars();
+  paintHold();
   paintHalt();
 
   // ── the pulse: a bar of sixteen cells that lights on the beat ────────────

@@ -634,3 +634,75 @@ describe('unplugging the weave', () => {
     expect(h.ctx.laneTransport('lane1').muted).toBe(false);
   });
 });
+
+describe('the master lock', () => {
+  it('is off in a fresh weave', () => {
+    // A panel that opened already frozen would look broken in the one way that
+    // is hardest to diagnose: everything responds and nothing moves.
+    expect(harness().ctx.locked()).toBe(false);
+  });
+
+  it('refuses a hand on a lane s loops', () => {
+    // The lock holds an arrangement still. A dropdown that swapped the material
+    // under it would be the one hole in that promise.
+    const h = harness();
+    h.weave.lanes.lane1 = weaving(0.25);
+    h.ctx.setLocked(true);
+    h.ctx.setLaneWeave('lane1', { kind: 'ab', a: 'clip:x', b: 'clip:y', x: 0.9 } as never);
+    expect((h.weave.lanes.lane1.weave as { a: string }).a).toBe('clip:a');
+  });
+
+  it('refuses a hand on the master fader', () => {
+    const h = harness();
+    h.weave.lanes.lane1 = weaving(0.25);
+    h.ctx.setLocked(true);
+    h.ctx.setFlow(0.9, 'together', 0, false);
+    expect((h.weave.lanes.lane1.weave as { x: number }).x).toBe(0.25);
+  });
+
+  it('still records how the journey WOULD behave', () => {
+    // Drift, speed and EVOLVE are settings for when the lock is let go. Refusing
+    // to store them would make the panel forget what the user chose.
+    const h = harness();
+    h.ctx.setLocked(true);
+    h.ctx.setFlow(0.5, 'offset', 16, true);
+    expect(h.weave.flow.speedBars).toBe(16);
+    expect(h.weave.flow.evolve).toBe(true);
+    expect(h.weave.flow.drift).toBe('offset');
+  });
+
+  it('lets go again', () => {
+    const h = harness();
+    h.weave.lanes.lane1 = weaving(0.25);
+    h.ctx.setLocked(true);
+    h.ctx.setLocked(false);
+    h.ctx.setFlow(0.9, 'together', 0, false);
+    expect((h.weave.lanes.lane1.weave as { x: number }).x).toBeCloseTo(0.9, 5);
+  });
+
+  it('leaves the macros alone', () => {
+    // They are the user's hand, not evolution. A locked scene deaf to a rise in
+    // Energy would pull apart from everything else in the mix.
+    const h = harness();
+    h.ctx.setLocked(true);
+    h.ctx.setMacro('energy', 0.8);
+    expect(h.weave.macros.energy).toBe(0.8);
+  });
+
+  it('leaves the chord progression alone', () => {
+    // The invariant this whole round is built on: a lock freezes MATERIAL,
+    // never HARMONY. The progression decides where material sits, not which
+    // material plays, so freezing one is not a wish to freeze the other.
+    const h = harness();
+    h.ctx.setLocked(true);
+    h.ctx.setProgression('i-VI-III-VII');
+    expect(h.weave.progression).toBe('i-VI-III-VII');
+  });
+
+  it('is not a mute', () => {
+    const h = harness();
+    h.ctx.setLocked(true);
+    expect(h.ctx.laneTransport('lane1').muted).toBe(false);
+    expect(h.weave.bypass).toBe(false);
+  });
+});

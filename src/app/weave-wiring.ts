@@ -396,6 +396,17 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
 
       tickSteps(nowSec / barSec);
 
+      // The master lock: keep the arrangement I have.
+      //
+      // Everything ABOVE this line carries on, and each for its own reason. The
+      // bar cursor keeps counting, so the chord progression keeps walking — a
+      // lock on the loops is not a lock on the harmony. The step rack keeps
+      // writing, because it moves a parameter in time with the loop, which is a
+      // sound moving rather than an arrangement changing.
+      //
+      // Everything BELOW moves loops, and that is exactly what stops.
+      if (state.locked) { lastFlow = -1; return; }
+
       const speed = state.flow?.speedBars ?? 0;
       if (!(speed > 0)) {
         lastFlow = -1;

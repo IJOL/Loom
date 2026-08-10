@@ -200,6 +200,42 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       expect(posOf(w)).toBeCloseTo(0.5, 3);
     });
 
+    it('stands still under the master lock, however fast the journey', () => {
+      // Keep the arrangement I have. The clock carries on; the loops do not.
+      const w = flowing(8);
+      w.state.locked = true;
+      w.advance(BAR_SEC * 4);
+      expect(posOf(w)).toBe(0);
+    });
+
+    it('lets the step rack keep writing under the lock', () => {
+      // A lock freezes MATERIAL. The step rack moves a PARAMETER in time with
+      // the loop, which is a sound moving rather than an arrangement changing —
+      // the same reason the chord progression carries on underneath it.
+      const written: number[] = [];
+      const w = createWeaveWiring({
+        getLaneStates: () => new Map<string, LanePlayState>(),
+        getMeter: () => DEFAULT_METER,
+        getBpm: () => 120,
+        getState: () => session(),
+        writeStep: (_id, v) => written.push(v),
+      });
+      w.state.locked = true;
+      w.state.steps = [{ destId: 'lane1.filter.cutoff', values: [0, 1], mode: 'hold', on: true }];
+      w.advance(0);
+      w.advance(BAR_SEC * 1.5);
+      expect(written).toHaveLength(2);
+    });
+
+    it('travels again once the lock is let go', () => {
+      const w = flowing(8);
+      w.state.locked = true;
+      w.advance(BAR_SEC * 4);
+      w.state.locked = false;
+      w.advance(BAR_SEC * 4);
+      expect(posOf(w)).toBeCloseTo(0.5, 3);
+    });
+
     it('wraps rather than arriving and stopping', () => {
       // Stopping at the end would be the static scene this whole panel exists
       // to avoid.
