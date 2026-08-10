@@ -750,6 +750,12 @@ function mountWeave(host, ctx) {
   const styleSel = pick("weave-style", ctx.styles(), mus.style);
   const pushMus = () => ctx.setMusicality(Number(keySel.value), scaleSel.value, styleSel.value);
   for (const s of [keySel, scaleSel, styleSel]) s.addEventListener("change", pushMus);
+  const progSel = pick("weave-prog", ctx.progressions(), ctx.progression());
+  for (const c of ctx.progressions()) {
+    const o = [...progSel.options].find((x) => x.value === c.id);
+    if (o && c.group) o.title = c.group;
+  }
+  progSel.addEventListener("change", () => ctx.setProgression(progSel.value));
   const reseed = el3("button", "weave-reseed");
   reseed.textContent = "\u27F3 Reshuffle";
   reseed.title = "Deal the lane styles again \u2014 the Style amount stays where it is";
@@ -783,6 +789,7 @@ function mountWeave(host, ctx) {
     logo,
     field("Key", keySel, scaleSel),
     field("Style", styleSel),
+    field("Chords", progSel),
     spacer,
     bars,
     reseed,

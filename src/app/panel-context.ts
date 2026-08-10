@@ -27,6 +27,7 @@ import type { Sequencer } from '../core/sequencer';
 import { sceneCountdown } from '../core/scene-countdown';
 import { ticksPerBar } from '../core/meter';
 import { applyClipLength } from '../core/clip-time-scale';
+import { PROGRESSIONS, progressionById } from '../arranger/progression';
 import { TICKS_PER_QUARTER } from '../core/notes';
 import { listEngines } from '../engines/registry';
 import { getCachedPresets } from '../presets/preset-loader';
@@ -434,6 +435,22 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     setStepsMode(row, mode) {
       const s = deps.weave.steps[row];
       if (s) s.mode = mode === 'ramp' ? 'ramp' : 'hold';
+    },
+
+    progressions() {
+      // The `feel` line is what the panel shows beside each name: nobody should
+      // have to read roman numerals to pick one.
+      return PROGRESSIONS.map((p) => ({ id: p.id, name: p.name, group: p.feel }));
+    },
+
+    progression() { return deps.weave.progression ?? 'static'; },
+
+    setProgression(id) {
+      deps.weave.progression = progressionById(id) ? id : 'static';
+      // Every lane's fold moves onto different chords, so every cached one is
+      // stale — this is material, not a param.
+      deps.onWeaveChanged?.('*');
+      deps.refresh();
     },
 
     stepsTool(row, tool) {

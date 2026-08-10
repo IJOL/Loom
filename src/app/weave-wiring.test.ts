@@ -7,6 +7,7 @@ import { defaultWeaveState } from '../weave/weave-state';
 import { setLibrary } from '../patterns/pattern-library';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { DEFAULT_METER, ticksPerBar } from '../core/meter';
+import { inScale } from '../core/musicality';
 import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
 import type { SessionState } from '../session/session';
 import type { LanePlayState } from '../session/session-runtime';
@@ -525,5 +526,72 @@ describe('the lowest lane leads, and the others keep off its worst intervals', (
     const w = wiring(twoLanes(36, 61));
     weaving(w, 'high');
     expect(w.notesFor('high')!()![0].midi).toBe(61);
+  });
+});
+
+// The harmony has never moved. A session picks a key once and stays there for
+// ever, which is what "no va a ningun lado" was: busy for two minutes and still
+// standing in the same place.
+describe('the scene walks a chord progression', () => {
+  const oneLane = (): SessionState => ({
+    lanes: [{
+      id: 'lane1',
+      engineId: 'subtractive',
+      clips: [
+        { id: 'clipA', name: 'A', color: '#fff', lengthBars: 1, gridResolution: '1/16',
+          notes: [hit(0, 45)] },                                   // A2, the tonic
+        { id: 'clipB', name: 'B', color: '#fff', lengthBars: 1, gridResolution: '1/16',
+          notes: [hit(0, 45)] },
+      ],
+      inserts: [],
+    }],
+    scenes: [],
+    musicality: { ...DEFAULT_MUSICALITY, key: 9, scale: 'minor' },
+  } as unknown as SessionState);
+
+  const woven = (progression: string, atBar: number): number => {
+    const w = createWeaveWiring({
+      getLaneStates: () => new Map<string, LanePlayState>(),
+      getMeter: () => DEFAULT_METER,
+      getBpm: () => 120,
+      getState: oneLane,
+    });
+    w.state.progression = progression;
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
+      locked: false, harmonyLeader: false,
+    };
+    w.advance(atBar * 2);        // one bar is 2s at 120bpm in 4/4
+    w.invalidate();
+    return w.notesFor('lane1')!()![0].midi;
+  };
+
+  it('stands still on the static progression, which is the default', () => {
+    // Loom as it always was, and now something the user chose rather than
+    // something nobody wrote.
+    for (const bar of [0, 1, 2, 3]) expect(woven('static', bar)).toBe(45);
+  });
+
+  it('moves the material onto the chord the bar is under', () => {
+    // Two chords, two bars each: the first two bars are home and the next two
+    // are somewhere else.
+    expect(woven('i-VI', 0)).toBe(45);
+    expect(woven('i-VI', 2)).not.toBe(45);
+  });
+
+  it('keeps every note in the key while it moves them', () => {
+    // Diatonic transposition, not a semitone shift: the whole reason a
+    // progression is stored in degrees.
+    for (const bar of [0, 1, 2, 3]) {
+      expect(inScale(woven('i-VI-III-VII', bar), 9, 'minor')).toBe(true);
+    }
+  });
+
+  it('walks the SESSION\'s bars, not the clip\'s own', () => {
+    // A one-bar clip under a four-chord progression has to hear all four
+    // chords. Anchored to the clip it would restart every bar and only the
+    // first chord would ever sound.
+    const heard = new Set([0, 1, 2, 3].map((bar) => woven('i-VI-III-VII', bar)));
+    expect(heard.size).toBeGreaterThan(2);
   });
 });

@@ -141,6 +141,13 @@ export interface WeaveState {
   bypass: boolean;
   /** The step rack: one row per parameter it moves. */
   steps: WeaveSteps[];
+  /** Which chord progression the scene is walking, by catalogue id.
+   *
+   *  'static' — the default — is Loom as it always was: one key, one chord, for
+   *  ever. It is an ENTRY in the catalogue rather than an absent field, so
+   *  standing still is something the user chose rather than something nobody
+   *  implemented. */
+  progression?: string;
 }
 
 export function defaultWeaveState(): WeaveState {
@@ -153,6 +160,7 @@ export function defaultWeaveState(): WeaveState {
     flow: { drift: 'together', speedBars: 0, evolve: false },
     bypass: false,
     steps: defaultWeaveStepRows(),
+    progression: 'static',
   };
 }
 

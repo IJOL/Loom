@@ -391,6 +391,18 @@ export interface PanelContext {
   /** Reshape a whole row. The four the old boxes had, and they COMPOSE — each
    *  takes what is there rather than replacing it with a stored shape. */
   stepsTool(row: number, tool: 'up' | 'down' | 'invert' | 'random'): void;
+  /** The chord progressions the scene can walk, and which one it is on.
+   *
+   *  Loom has always picked a key once and stayed there, so a scene could be
+   *  busy for two minutes and still feel like it was standing still. A
+   *  progression is what makes it leave home and come back. `id` 'static' is
+   *  standing still, kept as an entry so it is a choice.
+   *
+   *  `name` and a plain-language `group` describing what it does to the ear —
+   *  the panel shows those; nothing here speaks in roman numerals. */
+  progressions(): PanelChoice[];
+  progression(): string;
+  setProgression(id: string): void;
   /** Everything a curve can be pointed at, from the ONE catalogue the rest of
    *  Loom automates through — so a step row can move anything a knob can, and
    *  nothing it cannot. */

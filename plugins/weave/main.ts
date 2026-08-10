@@ -227,6 +227,20 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     ctx.setMusicality(Number(keySel.value), scaleSel.value, styleSel.value);
   for (const s of [keySel, scaleSel, styleSel]) s.addEventListener('change', pushMus);
 
+  // The chord progression the whole scene walks. It sits beside Key and Style
+  // because it is the third thing that decides what the music IS, and because
+  // until it existed the pair above told the whole story: one key, one chord,
+  // for ever, which is why a scene could be busy and still stand still.
+  //
+  // Each option carries what it does to the ear as its tooltip — nobody should
+  // have to read roman numerals to pick one.
+  const progSel = pick('weave-prog', ctx.progressions(), ctx.progression());
+  for (const c of ctx.progressions()) {
+    const o = [...progSel.options].find((x) => x.value === c.id);
+    if (o && c.group) o.title = c.group;
+  }
+  progSel.addEventListener('change', () => ctx.setProgression(progSel.value));
+
   // No BPM field here, though the mockup drew one. The mockup was a standalone
   // picture; in the app the transport's own BPM input sits forty pixels above
   // this row and is already editable, so a second one would be duplication you
@@ -284,6 +298,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     logo,
     field('Key', keySel, scaleSel),
     field('Style', styleSel),
+    field('Chords', progSel),
     spacer, bars, reseed, halt, surge, print,
   );
   paintBars();

@@ -13,6 +13,7 @@ import { defaultWeaveState, type WeaveState, type LaneWeaveConfig } from '../wea
 import { createWeaveSource, createMacroSource, type WeaveSource } from '../weave/weave-runtime';
 import { resolveSelection } from '../weave/weave-selection';
 import { avoidClash } from '../weave/harmony-guard';
+import { applyProgression, progressionById } from '../arranger/progression';
 import { weaveLoopNotes, weaveLoopContext, rehookOnArrival } from './weave-loops';
 import { macroNeutral } from '../weave/weave-catalog';
 import { isHarmonic } from '../plugins/capabilities';
@@ -231,7 +232,11 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *  what the leader search reads for EVERY lane on every ask. */
   const rawFor = (laneId: string): WeaveSource | undefined => {
     if (sources.has(laneId)) return sources.get(laneId);
-    const source = build(laneId);
+    const built = build(laneId);
+    // The progression belongs INSIDE what the leader search reads: it moves
+    // every lane at once, so measuring the bass before it had moved would
+    // measure a note nobody plays.
+    const source = built && withProgression(laneId, built);
     // Only real sources are cached. "Nothing to say" costs one map read and one
     // number compare to re-derive, cheaper than the sentinel a Map needs to
     // remember an absence — and it means a lane starts weaving on the tick after
@@ -273,6 +278,39 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     const notes = rawFor(marked)?.();
     if (!notes || notes.length === 0) return lowest;
     return { laneId: marked, root: notes.reduce((lo, n) => Math.min(lo, n.midi), Infinity) };
+  };
+
+  /** Which bar of the session the clock is in, as of the last tick.
+   *
+   *  The progression walks the SESSION's bars, not each clip's own. Anchoring
+   *  it to the clip would restart it on every loop, and since a clip is usually
+   *  two bars and a progression four, only the first two chords would ever be
+   *  heard. Read at fold time and quantised to whole bars, so it changes the
+   *  answer once a bar rather than once a tick.
+   *
+   *  It trails the sound by one look-ahead — the scheduler asks for the bar it
+   *  is about to play — which at a bar's resolution lands on the right chord for
+   *  everything but the instant of the change itself. */
+  let barCursor = 0;
+
+  /** A lane's fold, moved onto the chord this bar is under.
+   *
+   *  Before the leader rule, not after: the guard measures the lowest note that
+   *  will actually sound, and a lane transposed afterwards would be measured in
+   *  the wrong place. Percussion is skipped — a drum note picks a voice, not a
+   *  pitch, so transposing one changes the instrument. */
+  const withProgression = (laneId: string, source: WeaveSource): WeaveSource => () => {
+    const notes = source();
+    if (!notes || notes.length === 0 || !melodicLane(laneId)) return notes;
+    const prog = progressionById(state.progression ?? 'static')?.chords;
+    if (!prog) return notes;
+    const m = musicality();
+    const barTicks = ticksPerBar(deps.getMeter());
+    // Offset by where the transport is, so a two-bar clip under a four-bar
+    // progression hears all four chords instead of the first two twice.
+    const shifted = notes.map((n) => ({ ...n, start: n.start + barCursor * barTicks }));
+    const moved = applyProgression(shifted, prog, barTicks, m.key, m.scale);
+    return moved.map((n, i) => ({ ...notes[i], midi: n.midi })) as typeof notes;
   };
 
   /** A lane's fold, with the leader's worst intervals kept off it.
@@ -352,6 +390,10 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       // it: it moves a parameter in time with the loop, which is a different
       // job from moving the loops, and it must keep running while the flow sits
       // at a speed of Off.
+      // Where the progression is. Whole bars: a chord lasts a bar at least, so
+      // a finer reading would only invalidate the fold cache for nothing.
+      barCursor = Math.floor(nowSec / barSec);
+
       tickSteps(nowSec / barSec);
 
       const speed = state.flow?.speedBars ?? 0;
