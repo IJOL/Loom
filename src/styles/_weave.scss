@@ -226,7 +226,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  min-width: 78px;
+  min-width: 0;
 
   &.off { opacity: 0.45; }
 }
@@ -249,7 +249,8 @@
 }
 
 .weave-sound-fader {
-  width: 46px;
+  flex: 1;
+  min-width: 0;
   accent-color: var(--knob-purple, #9a6cd0);
   cursor: pointer;
 
@@ -263,11 +264,14 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  min-width: 84px;
+  min-width: 0;
 }
 
 .weave-level-fader {
-  width: 52px;
+  // Takes what the readout beside it leaves. A width of its own would push the
+  // percentage out of a column that is already only as wide as it needs to be.
+  flex: 1;
+  min-width: 0;
   accent-color: var(--knob-cyan, #4bc3d4);
   cursor: pointer;
 }
@@ -376,12 +380,18 @@
 
 .weave-lane {
   display: grid;
-  // Ten columns: lamp, ring, name, transport, instrument, preset, style,
-  // topology, bars, loops. Only the last is elastic — the weaving control is
-  // where the row's spare width belongs, because it is the only cell whose
-  // contents change shape.
-  grid-template-columns: 14px 30px 74px 96px 96px 118px 106px 118px 56px 1fr;
-  gap: 10px;
+  // Twelve columns: lamp, ring, name, transport, LEVEL, instrument, preset,
+  // style, topology, bars, loops, SOUND. Only the loops column is elastic — the
+  // weaving control is where the row's spare width belongs, because it is the
+  // only cell whose contents change shape.
+  //
+  // The count is load-bearing and it is why this list is spelled out rather than
+  // left to `auto-fit`: appending a child without adding its column drops it
+  // onto an implicit second row and takes the whole layout with it. That is
+  // exactly what adding the level and sound faders did — buttons piled up, the
+  // bar buttons stretched across the full width and the loop pickers vanished.
+  grid-template-columns: 14px 30px 74px 96px 78px 96px 118px 106px 118px 56px 1fr 74px;
+  gap: 8px;
   align-items: center;
   background: var(--surface-2);
   border: 1px solid var(--border-soft);

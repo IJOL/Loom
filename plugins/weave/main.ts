@@ -487,11 +487,17 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   // ── lanes ────────────────────────────────────────────────────────────────
   const lanes = el('div', 'weave-lanes');
 
-  // Column headers. The row carries eight things now, and without a header the
-  // two dropdowns in the middle are guesswork.
+  // Column headers, on the SAME grid as a lane so a label cannot drift out of
+  // line with the column it names.
+  //
+  // One entry per child of a lane row, blanks included — the count is what
+  // keeps them lined up. Adding a control to the row without adding its label
+  // here shifts every heading one column to the left, which is subtler than a
+  // broken layout and reads as the row being mislabelled rather than as a bug.
   const head2 = el('div', 'weave-lane weave-lane-head');
   for (const label of [
-    '', '', 'Lane', '', 'Instrument', 'Preset', 'Style', 'Topology', 'Bars', 'Loops',
+    '', '', 'Lane', '', 'Level', 'Instrument', 'Preset', 'Style', 'Topology',
+    'Bars', 'Loops', 'Sound',
   ]) {
     const c = el('span', 'weave-col');
     c.textContent = label;

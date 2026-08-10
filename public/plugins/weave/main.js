@@ -994,12 +994,14 @@ function mountWeave(host, ctx) {
     "",
     "Lane",
     "",
+    "Level",
     "Instrument",
     "Preset",
     "Style",
     "Topology",
     "Bars",
-    "Loops"
+    "Loops",
+    "Sound"
   ]) {
     const c = el3("span", "weave-col");
     c.textContent = label;
