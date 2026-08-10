@@ -65,22 +65,46 @@ export function convertLaneToLayers(
 ): boolean {
   if (!deps || !lane || lane.engineId === LAYERS_ENGINE_ID) return false;
 
-  const slot = { engineId: lane.engineId, lo: 0, hi: 127, gain: 1, presetName };
-  const rack: LayerSpec[] = [{ ...slot }, { ...slot }];
+  // Slot 1 arrives SILENT, and that is the whole difference between a rack you
+  // can work with and one you cannot.
+  //
+  // Both slots at unity was the obvious reading and it is wrong twice. The lane
+  // doubles in level the moment it is converted, which is not what "convert"
+  // should mean. And worse, you then hear both instruments at once for ever:
+  // recall a preset into one and the other keeps playing the old sound at full
+  // level on top of it, so the change is half-masked and reads as nothing
+  // happening at all — reported exactly that way.
+  //
+  // Silent, converting is inaudible, giving slot 2 a preset is a decision you
+  // make deliberately, and raising it — by hand or with the SOUND fader — is
+  // the crossfade this was built for.
+  const slot = { engineId: lane.engineId, lo: 0, hi: 127, presetName };
+  const rack: LayerSpec[] = [{ ...slot, gain: 1 }, { ...slot, gain: 0 }];
 
-  const params = lane.engineState?.params;
-  if (params) {
-    const carried: Record<string, number> = { ...params };
-    for (const [id, v] of Object.entries(params)) {
-      // Only the engine's OWN params. A strip param (`bus.level`) belongs to the
-      // desk, not to the patch, and prefixing one would invent `l0.bus.level`,
-      // which nothing reads.
-      if (id.startsWith('bus.') || id.startsWith('l0.') || id.startsWith('l1.')) continue;
-      carried[`${layerPrefix(0)}${id}`] = v;
-      carried[`${layerPrefix(1)}${id}`] = v;
-    }
-    lane.engineState = { ...lane.engineState, params: carried };
+  const params = lane.engineState?.params ?? {};
+  const carried: Record<string, number> = { ...params };
+  for (const [id, v] of Object.entries(params)) {
+    // Only the engine's OWN params. A strip param (`bus.level`) belongs to the
+    // desk, not to the patch, and prefixing one would invent `l0.bus.level`,
+    // which nothing reads.
+    if (id.startsWith('bus.') || id.startsWith('l0.') || id.startsWith('l1.')) continue;
+    carried[`${layerPrefix(0)}${id}`] = v;
+    carried[`${layerPrefix(1)}${id}`] = v;
   }
+  // The gains as PARAMS as well as in the rack, and written AFTER the copy so
+  // the loop above cannot overwrite them from an engine that happens to declare
+  // its own `gain`.
+  //
+  // Both are needed: the rack's figure is what a voice uses until the lane's
+  // live values arrive, and the param is what wins afterwards. `l1.gain`
+  // defaults to 1, so a rack that said 0 alone would be overruled a fraction of
+  // a second later and slot 1 would come up loud anyway.
+  //
+  // Unconditional — outside any "did the lane have params" branch. A lane with
+  // none still has to come out of this with slot 1 silent.
+  carried[`${layerPrefix(0)}gain`] = 1;
+  carried[`${layerPrefix(1)}gain`] = 0;
+  lane.engineState = { ...lane.engineState, params: carried };
 
   deps.setRack(lane.id, rack);
   return true;
