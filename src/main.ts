@@ -16,6 +16,7 @@ import { createKnobMounter } from './app/knob-mounting';
 import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
 import { createWeaveWiring } from './app/weave-wiring';
+import { launchWeavingLanes } from './weave/weave-transport';
 import { defaultWeaveState } from './weave/weave-state';
 import { applyWeaveParamMacros } from './app/weave-param-macros';
 import { printScene } from './session/session-runtime';
@@ -660,6 +661,10 @@ const performanceFeature = createPerformanceFeature({
   // Freeze what the weave is playing right now into a new scene. It asks the
   // SAME source the scheduler plays from, so the printed bar is the bar you
   // were hearing rather than a re-derivation that could disagree with it.
+  // Late-bound for the same reason as onRecVisualChanged above: the unified
+  // stop is a const declared further down, so the bare value would be a TDZ
+  // crash. Switching WEAVE off calls it, and only then.
+  stopTransport: () => stopTransport(),
   printWeaveScene: () => withUndo(_discreteHistoryDeps!, () => {
     const notes = new Map<string, NoteEvent[]>();
     for (const lane of sessionHost.state.lanes) {
@@ -705,7 +710,24 @@ wireKnobAutomationMenu({ onRegisterKnob, destinations, sessionHost, seq, perform
 // the engine always starts/stops. (Previously onPlay()===true skipped
 // _origStart, so Performance had no engine → no sound, and seq.isPlaying()
 // stayed false so the Play button never toggled to Stop.)
-seq.start = () => { performanceFeature.onPlay(); _origStart(); };
+seq.start = () => {
+  // Play starts what WEAVE is weaving. A weaving lane still plays a CARRIER
+  // clip, so starting the clock without launching it left the panel
+  // contributing nothing — while Stop already stopped everything, which is why
+  // the asymmetry read as a bug rather than as a missing step.
+  //
+  // Session only. Performance REPLAYS recorded launches, and launching over
+  // them would fight the take it is in the middle of reproducing.
+  if (performanceFeature.getMode() !== 'performance') {
+    launchWeavingLanes(weaveWiring.state, {
+      lanes: sessionHost.state.lanes,
+      activeSceneIdx: sessionHost.activeSceneIdx,
+      launchClipAt: (laneId, row) => sessionHost.launchClipAt(laneId, row),
+    });
+  }
+  performanceFeature.onPlay();
+  _origStart();
+};
 seq.stop = () => { performanceFeature.onStop(); _origStop(); };
 
 const copyBtn = document.getElementById('copy-to-performance');

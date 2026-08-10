@@ -83,6 +83,10 @@ export interface PerformanceFeatureDeps {
   applyLanePreset?: (laneId: string, presetName: string) => void;
   /** Freeze the weave into a new scene; returns how many lanes were written. */
   printWeaveScene?: () => number;
+  /** The app's unified stop — the one that also finalizes a live take and
+   *  resets the Play button. A panel that unplugs itself stops the transport
+   *  with it, so switching WEAVE off cannot uncover the scene underneath. */
+  stopTransport?: () => void;
   /** Passed through to a panel's context: the mixer's own mute/solo tables, so
    *  a panel's M and S buttons and the desk's are the same two buttons. */
   muteState?: Record<string, boolean>;
@@ -431,6 +435,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         swapLaneEngine: deps.swapLaneEngine,
         applyLanePreset: deps.applyLanePreset,
         printWeaveScene: deps.printWeaveScene,
+        stopTransport: deps.stopTransport,
         // The desk's own tables, by reference. A panel muting a copy would look
         // like it worked and change nothing.
         muteState: deps.muteState,

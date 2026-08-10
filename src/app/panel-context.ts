@@ -33,6 +33,7 @@ import { listEngines } from '../engines/registry';
 import { getCachedPresets } from '../presets/preset-loader';
 import { pagePresetName } from '../instrument-presets/preset-select-state';
 import { macroNeutral } from '../weave/weave-catalog';
+import { clipRowForLane } from '../weave/weave-transport';
 import type { WeaveState } from '../weave/weave-state';
 
 export interface PanelContextDeps {
@@ -63,6 +64,10 @@ export interface PanelContextDeps {
    *  Absent in fixtures with no session — the button then reports nothing
    *  written rather than pretending. */
   printWeaveScene?: () => number;
+  /** The app's unified stop — the one that also finalizes a live take and
+   *  resets the Play button, rather than `seq.stop` on its own. Absent in
+   *  fixtures with no transport, where unplugging simply stops nothing. */
+  stopTransport?: () => void;
   /** The mixer's OWN mute and solo tables, not copies. A panel that toggled a
    *  private flag would let a lane read soloed here and muted at the desk.
    *  Absent in fixtures with no audio graph — the buttons then do nothing
@@ -306,9 +311,9 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       if (!lane) return;
       // The launched scene's row if this lane has a clip there, else the first
       // clip it has. Following the scene keeps a lane started from here in step
-      // with the ones started from the grid.
-      const scene = deps.sessionHost.activeSceneIdx;
-      const row = lane.clips[scene] ? scene : lane.clips.findIndex((c) => c !== null);
+      // with the ones started from the grid — and the rule lives in ONE place,
+      // because the transport's Play now starts weaving lanes by the same one.
+      const row = clipRowForLane(lane.clips, deps.sessionHost.activeSceneIdx);
       if (row >= 0) deps.sessionHost.launchClipAt(laneId, row);
     },
 
@@ -377,15 +382,20 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     },
 
     setBypassed(on) {
-      // Unplug the weave from the clock, and NOTHING else.
+      // Unplug the weave from the clock — and stop the clock with it.
       //
-      // It muted and stopped the lanes for a while, which was wrong twice over:
-      // it reached into the mixer to answer a question about the weave, and it
-      // left a session saved silent. Loom must behave exactly as it does with
-      // this panel closed — the lanes keep playing their own clips, the desk is
-      // untouched, and the only thing that changes is that WEAVE stops
-      // contributing and stops travelling.
+      // Carrying on was the first reading and it is the one that surprised
+      // people: after ten minutes of listening to the weave, switching it off
+      // uncovered whatever the session grid had launched, which nobody
+      // remembered was under there. Off should mean off.
+      //
+      // The TRANSPORT, never the lanes. Muting and stopping the driven lanes
+      // was tried and reverted, and those reasons still hold — it reached into
+      // the mixer to answer a question about this panel, and it left a session
+      // saved silent with the button unable to undo it. Stopping the transport
+      // touches no mixer state, saves nothing, and is undone by pressing play.
       deps.weave.bypass = on;
+      if (on) deps.stopTransport?.();
       // Every cached fold is now answering the wrong question, and the next tick
       // has to ask again — off, so the lanes weave once more; on, so nothing is
       // left holding a source the gate no longer consults.

@@ -34,6 +34,7 @@ function harness(
   const added: string[] = [];
   const weave = defaultWeaveState();
   const changed: string[] = [];
+  const stops: number[] = [];
 
   // A fixture with no callbacks stands in for a host that refuses — the panel
   // has to tell the difference rather than report a lane id that names nothing.
@@ -57,9 +58,10 @@ function harness(
     refresh: () => {},
     onWeaveChanged: (id) => changed.push(id),
     setMusicality: (m) => { written.push(m); state.musicality = m; },
+    stopTransport: () => { stops.push(1); },
   });
 
-  return { ctx, state, weave, written, added, changed };
+  return { ctx, state, weave, written, added, changed, stops };
 }
 
 /** Run `fn` with a two-pattern library installed for the default style, then put
@@ -599,5 +601,36 @@ describe('flipping the switch is not travelling', () => {
       const after = h.weave.lanes.lane1.weave as unknown as { a: string };
       expect(after.a).toBe('clip:b');
     });
+  });
+});
+
+describe('unplugging the weave', () => {
+  it('stops the transport, so off means off', () => {
+    // Reported from a session: switching WEAVE off uncovered whatever the
+    // session grid had launched, which arrived as a surprise after ten minutes
+    // of listening to the weave and no memory of what was under it.
+    const h = harness();
+    h.ctx.setBypassed(true);
+    expect(h.weave.bypass).toBe(true);
+    expect(h.stops).toHaveLength(1);
+  });
+
+  it('does not start anything when it is plugged back in', () => {
+    // Play is the only thing that starts the transport. Plugging the weave in
+    // must not decide for the user that the scene should be running.
+    const h = harness();
+    h.ctx.setBypassed(true);
+    h.ctx.setBypassed(false);
+    expect(h.weave.bypass).toBe(false);
+    expect(h.stops).toHaveLength(1);
+  });
+
+  it('leaves the desk alone', () => {
+    // Muting the driven lanes was tried and reverted: it reached into the mixer
+    // to answer a question about this panel, and left a session saved silent.
+    // Stopping the transport is a different act and must stay one.
+    const h = harness();
+    h.ctx.setBypassed(true);
+    expect(h.ctx.laneTransport('lane1').muted).toBe(false);
   });
 });
