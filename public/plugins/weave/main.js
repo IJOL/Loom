@@ -753,7 +753,7 @@ function mountWeave(host, ctx) {
   const progSel = pick("weave-prog", ctx.progressions(), ctx.progression());
   for (const c of ctx.progressions()) {
     const o = [...progSel.options].find((x) => x.value === c.id);
-    if (o && c.group) o.title = c.group;
+    if (o && c.group) o.title = `${c.id.replace(/-/g, " \xB7 ")} \u2014 ${c.group}`;
   }
   progSel.addEventListener("change", () => ctx.setProgression(progSel.value));
   const reseed = el3("button", "weave-reseed");
@@ -894,7 +894,35 @@ function mountWeave(host, ctx) {
   driftLabel.textContent = "Drift";
   const speedLabel = el3("span", "weave-label");
   speedLabel.textContent = "Speed";
-  flowRow.append(flowLabel, flowDial.el, flowOut, driftLabel, drift, speedLabel, speed, evolve);
+  const ROMAN = ["i", "II", "III", "iv", "v", "VI", "VII"];
+  const chordWrap = el3("div", "weave-chordbar");
+  const chordFill = el3("span", "weave-chordbar-fill");
+  const chordOut = el3("span", "weave-chordbar-text");
+  chordWrap.append(chordFill, chordOut);
+  const paintChord = () => {
+    const now = ctx.chordNow();
+    const walking = !!now && now.bars > 1;
+    chordWrap.classList.toggle("idle", !walking);
+    if (!now) {
+      chordOut.textContent = "";
+      chordFill.style.width = "0%";
+      return;
+    }
+    chordFill.style.width = `${(now.bar + 1) / now.bars * 100}%`;
+    chordOut.textContent = walking ? `${now.bar + 1}/${now.bars} \xB7 ${ROMAN[now.degree] ?? now.degree}` : "home";
+  };
+  paintChord();
+  flowRow.append(
+    flowLabel,
+    flowDial.el,
+    flowOut,
+    driftLabel,
+    drift,
+    speedLabel,
+    speed,
+    evolve,
+    chordWrap
+  );
   const lanes = el3("div", "weave-lanes");
   const head2 = el3("div", "weave-lane weave-lane-head");
   for (const label of [
@@ -945,6 +973,7 @@ function mountWeave(host, ctx) {
   host.appendChild(rack);
   let raf = 0;
   let lastStep = -1;
+  let lastChordBar = -1;
   const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
   const SILENT = { state: "silent", frac: 0, bars: 0, centerText: "" };
   const frame = () => {
@@ -970,6 +999,11 @@ function mountWeave(host, ctx) {
         flowDial.set(pos);
         showFlow();
       }
+    }
+    const chordBar = ctx.chordNow()?.bar ?? -1;
+    if (chordBar !== lastChordBar) {
+      lastChordBar = chordBar;
+      paintChord();
     }
     const step = Math.floor(phase * 16) % 16;
     if (step !== lastStep) {

@@ -237,7 +237,11 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   const progSel = pick('weave-prog', ctx.progressions(), ctx.progression());
   for (const c of ctx.progressions()) {
     const o = [...progSel.options].find((x) => x.value === c.id);
-    if (o && c.group) o.title = c.group;
+    // The id IS the roman numeral, and hiding it entirely was half a decision:
+    // nobody should have to read them to pick, but somebody who does read them
+    // was left with no way to see which progression a friendly name is. In the
+    // tooltip it costs a hover and nothing else.
+    if (o && c.group) o.title = `${c.id.replace(/-/g, ' · ')} — ${c.group}`;
   }
   progSel.addEventListener('change', () => ctx.setProgression(progSel.value));
 
@@ -445,7 +449,40 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   driftLabel.textContent = 'Drift';
   const speedLabel = el('span', 'weave-label');
   speedLabel.textContent = 'Speed';
-  flowRow.append(flowLabel, flowDial.el, flowOut, driftLabel, drift, speedLabel, speed, evolve);
+
+  // Where the chord walk is, as a bar that fills across the lap and the current
+  // chord beside it.
+  //
+  // Without it the HOLD switch is invisible: you freeze the loops, the chords
+  // carry on, and nothing on screen distinguishes that from a panel that
+  // stopped responding. It reads the host's own cursor rather than counting
+  // bars here, so the number cannot drift a bar away from what is sounding.
+  //
+  // Roman numerals rather than degree numbers, and here rather than in the
+  // host: `progression.ts` says outright that romans are a display concern and
+  // belong in whatever draws this. This is what draws it.
+  const ROMAN = ['i', 'II', 'III', 'iv', 'v', 'VI', 'VII'];
+  const chordWrap = el('div', 'weave-chordbar');
+  const chordFill = el('span', 'weave-chordbar-fill');
+  const chordOut = el('span', 'weave-chordbar-text');
+  chordWrap.append(chordFill, chordOut);
+  const paintChord = () => {
+    const now = ctx.chordNow();
+    // A single-chord progression is "Stay home", which has no journey to show.
+    // Hiding the bar says that more clearly than a full bar that never moves.
+    const walking = !!now && now.bars > 1;
+    chordWrap.classList.toggle('idle', !walking);
+    if (!now) { chordOut.textContent = ''; chordFill.style.width = '0%'; return; }
+    chordFill.style.width = `${((now.bar + 1) / now.bars) * 100}%`;
+    chordOut.textContent = walking
+      ? `${now.bar + 1}/${now.bars} · ${ROMAN[now.degree] ?? now.degree}`
+      : 'home';
+  };
+  paintChord();
+
+  flowRow.append(
+    flowLabel, flowDial.el, flowOut, driftLabel, drift, speedLabel, speed, evolve, chordWrap,
+  );
 
   // ── lanes ────────────────────────────────────────────────────────────────
   const lanes = el('div', 'weave-lanes');
@@ -519,6 +556,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   // glow can never disagree about where the beat is.
   let raf = 0;
   let lastStep = -1;
+  let lastChordBar = -1;
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
   const SILENT: PanelLoopPhase = { state: 'silent', frac: 0, bars: 0, centerText: '' };
 
@@ -570,6 +608,11 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
         showFlow();
       }
     }
+    // On the BAR, not on the frame: a chord lasts a bar at least, so repainting
+    // it sixty times a second is fifty-nine DOM writes that change nothing.
+    const chordBar = ctx.chordNow()?.bar ?? -1;
+    if (chordBar !== lastChordBar) { lastChordBar = chordBar; paintChord(); }
+
     const step = Math.floor(phase * 16) % 16;
     if (step !== lastStep) {
       lastStep = step;

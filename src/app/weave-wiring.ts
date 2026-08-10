@@ -13,7 +13,9 @@ import { defaultWeaveState, type WeaveState, type LaneWeaveConfig } from '../wea
 import { createWeaveSource, createMacroSource, type WeaveSource } from '../weave/weave-runtime';
 import { resolveSelection } from '../weave/weave-selection';
 import { avoidClash } from '../weave/harmony-guard';
-import { applyProgression, progressionById } from '../arranger/progression';
+import {
+  applyProgression, progressionById, progressionBars, chordAtBar,
+} from '../arranger/progression';
 import { weaveLoopNotes, weaveLoopContext, rehookOnArrival } from './weave-loops';
 import { macroNeutral } from '../weave/weave-catalog';
 import { isHarmonic } from '../plugins/capabilities';
@@ -43,6 +45,11 @@ export interface WeaveWiring {
    *  closed — or because the tab went to the background and rAF throttled —
    *  would be a scene that quietly freezes behind your back. */
   advance: (nowSec: number) => void;
+  /** Where the chord walk is, for anything that DRAWS it. Read off the same bar
+   *  cursor the fold uses, so a readout cannot drift a bar away from what is
+   *  sounding. Null when no progression is running, which is a different answer
+   *  from sitting on the tonic. */
+  chordNow: () => { bar: number; bars: number; degree: number } | null;
   /** Adopt a loaded weave, IN PLACE.
    *
    *  The state object is shared by reference with the panel and with the session
@@ -374,6 +381,24 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
 
   return {
     state,
+
+    /** Where the chord walk is, for anything that DRAWS it.
+     *
+     *  Read off the same `barCursor` the fold uses, never recomputed from the
+     *  clock: a readout that counted its own bars would eventually disagree
+     *  with the music by one, which is the single most confusing thing a
+     *  position display can do. Null when there is no progression to be in.
+     *
+     *  `bar` is 0-based within the lap and `bars` is the lap's length, so a
+     *  caller shows `bar + 1` of `bars` without knowing anything else. */
+    chordNow() {
+      const prog = progressionById(state.progression ?? 'static')?.chords;
+      const bars = prog ? progressionBars(prog) : 0;
+      if (!prog || bars <= 0) return null;
+      const chord = chordAtBar(prog, barCursor);
+      if (!chord) return null;
+      return { bar: ((barCursor % bars) + bars) % bars, bars, degree: chord.degree };
+    },
 
     advance(nowSec) {
       // Disconnected means disconnected: not contributing AND not travelling.

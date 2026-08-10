@@ -217,6 +217,43 @@
 
 // Silence you can HEAR, not deduce. Red because it is the one control here that
 // takes something away, and it has to be findable without reading.
+// Where the chord walk is. It sits at the end of the flow row because it
+// belongs to the journey, not to the header's settings — and because without it
+// the HOLD switch is invisible: the loops freeze, the chords carry on, and
+// nothing on screen tells you which of those is happening.
+.weave-chordbar {
+  position: relative;
+  min-width: 92px;
+  height: 18px;
+  border: 1px solid var(--line, #333);
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+
+  &.idle { opacity: 0.4; }
+}
+
+.weave-chordbar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--knob-purple, #9a6cd0);
+  opacity: 0.35;
+  // The bar steps once a chord. Easing it would suggest the harmony slides
+  // between degrees, which is the one thing it never does.
+  transition: width 90ms linear;
+}
+
+.weave-chordbar-text {
+  position: relative;
+  width: 100%;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--fg, #ddd);
+}
+
 // HOLD keeps the arrangement; HALT unplugs the panel. Same shape so they read
 // as one pair of switches, different colour because one preserves and the other
 // stops: amber for "held where it is", red for "off".

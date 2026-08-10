@@ -200,6 +200,36 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       expect(posOf(w)).toBeCloseTo(0.5, 3);
     });
 
+    it('reports where the chord walk is, from the fold s own cursor', () => {
+      // Never recomputed by whoever draws it: a readout counting its own bars
+      // eventually disagrees with the music by one, which is the most confusing
+      // thing a position display can do.
+      const w = flowing(0);
+      w.state.progression = 'i-VI-III-VII';
+      w.advance(BAR_SEC * 2);
+      expect(w.chordNow()).toEqual({ bar: 2, bars: 4, degree: 2 });
+      w.advance(BAR_SEC * 5);
+      expect(w.chordNow()).toMatchObject({ bar: 1, degree: 5 });
+    });
+
+    it('keeps the chords walking under the master lock', () => {
+      // The invariant: a lock freezes MATERIAL, never HARMONY.
+      const w = flowing(8);
+      w.state.progression = 'i-VI-III-VII';
+      w.state.locked = true;
+      w.advance(BAR_SEC * 2);
+      expect(posOf(w)).toBe(0);
+      expect(w.chordNow()).toMatchObject({ bar: 2 });
+    });
+
+    it('says nothing rather than "home" when nothing is walking', () => {
+      // 'static' IS a lap of one bar on the tonic, which is a different answer
+      // from having no progression at all.
+      const w = flowing(0);
+      w.advance(0);
+      expect(w.chordNow()).toEqual({ bar: 0, bars: 1, degree: 0 });
+    });
+
     it('stands still under the master lock, however fast the journey', () => {
       // Keep the arrangement I have. The clock carries on; the loops do not.
       const w = flowing(8);

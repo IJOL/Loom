@@ -87,6 +87,9 @@ export interface PerformanceFeatureDeps {
    *  resets the Play button. A panel that unplugs itself stops the transport
    *  with it, so switching WEAVE off cannot uncover the scene underneath. */
   stopTransport?: () => void;
+  /** Where the chord walk is, threaded to a panel so it can draw it from the
+   *  same cursor the fold reads rather than counting its own bars. */
+  weaveChordNow?: () => { bar: number; bars: number; degree: number } | null;
   /** Passed through to a panel's context: the mixer's own mute/solo tables, so
    *  a panel's M and S buttons and the desk's are the same two buttons. */
   muteState?: Record<string, boolean>;
@@ -436,6 +439,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         applyLanePreset: deps.applyLanePreset,
         printWeaveScene: deps.printWeaveScene,
         stopTransport: deps.stopTransport,
+        weaveChordNow: deps.weaveChordNow,
         // The desk's own tables, by reference. A panel muting a copy would look
         // like it worked and change nothing.
         muteState: deps.muteState,

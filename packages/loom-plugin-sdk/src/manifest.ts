@@ -419,6 +419,17 @@ export interface PanelContext {
   progressions(): PanelChoice[];
   progression(): string;
   setProgression(id: string): void;
+  /** Where the chord walk is right now, for anything that DRAWS it.
+   *
+   *  `bar` is 0-based within the lap and `bars` is the lap's length, so a
+   *  caller shows `bar + 1` of `bars` without knowing anything else; `degree`
+   *  is the 0-based scale degree the current bar sits on, which a panel turns
+   *  into a roman numeral if its readers want one. Null when no progression is
+   *  running — a real answer, and not the same as sitting on the tonic.
+   *
+   *  Read off the same cursor the fold uses, so the number and the sound cannot
+   *  drift apart by a bar. */
+  chordNow(): { bar: number; bars: number; degree: number } | null;
   /** Everything a curve can be pointed at, from the ONE catalogue the rest of
    *  Loom automates through — so a step row can move anything a knob can, and
    *  nothing it cannot. */

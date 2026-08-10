@@ -665,6 +665,9 @@ const performanceFeature = createPerformanceFeature({
   // stop is a const declared further down, so the bare value would be a TDZ
   // crash. Switching WEAVE off calls it, and only then.
   stopTransport: () => stopTransport(),
+  // The chord walk's own position, from the wiring that folds it — never
+  // recomputed, or the readout and the sound drift apart by a bar.
+  weaveChordNow: () => weaveWiring.chordNow(),
   printWeaveScene: () => withUndo(_discreteHistoryDeps!, () => {
     const notes = new Map<string, NoteEvent[]>();
     for (const lane of sessionHost.state.lanes) {

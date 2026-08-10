@@ -68,6 +68,10 @@ export interface PanelContextDeps {
    *  resets the Play button, rather than `seq.stop` on its own. Absent in
    *  fixtures with no transport, where unplugging simply stops nothing. */
   stopTransport?: () => void;
+  /** Where the chord walk is, read off the SAME bar cursor the fold uses. A
+   *  readout that counted its own bars would eventually disagree with the music
+   *  by one, which is the most confusing thing a position display can do. */
+  weaveChordNow?: () => { bar: number; bars: number; degree: number } | null;
   /** The mixer's OWN mute and solo tables, not copies. A panel that toggled a
    *  private flag would let a lane read soloed here and muted at the desk.
    *  Absent in fixtures with no audio graph — the buttons then do nothing
@@ -467,6 +471,10 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     },
 
     progression() { return deps.weave.progression ?? 'static'; },
+
+    chordNow() {
+      return deps.weaveChordNow?.() ?? null;
+    },
 
     setProgression(id) {
       deps.weave.progression = progressionById(id) ? id : 'static';
