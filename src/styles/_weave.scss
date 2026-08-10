@@ -390,7 +390,13 @@
   // onto an implicit second row and takes the whole layout with it. That is
   // exactly what adding the level and sound faders did — buttons piled up, the
   // bar buttons stretched across the full width and the loop pickers vanished.
-  grid-template-columns: 14px 30px 74px 96px 78px 96px 118px 106px 118px 56px 1fr 74px;
+  //
+  // SOUND is the widest of the two faders on purpose, and twice what it
+  // shipped with: it is a CROSSFADE between two instruments, so its travel is
+  // the gesture, where LEVEL is a balance trim you nudge. At 74px the button
+  // beside it left about 45px of throw — enough to set a value, not enough to
+  // ride one.
+  grid-template-columns: 14px 30px 74px 96px 78px 96px 118px 106px 118px 56px 1fr 148px;
   gap: 8px;
   align-items: center;
   background: var(--surface-2);
