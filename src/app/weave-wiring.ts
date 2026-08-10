@@ -12,6 +12,7 @@
 import { defaultWeaveState, type WeaveState, type LaneWeaveConfig } from '../weave/weave-state';
 import { createWeaveSource, createMacroSource, type WeaveSource } from '../weave/weave-runtime';
 import { resolveSelection } from '../weave/weave-selection';
+import { avoidClash } from '../weave/harmony-guard';
 import { weaveLoopNotes, weaveLoopContext, rehookOnArrival } from './weave-loops';
 import { macroNeutral } from '../weave/weave-catalog';
 import { isHarmonic } from '../plugins/capabilities';
@@ -72,6 +73,10 @@ export interface WeaveWiringDeps {
 export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
   const state = defaultWeaveState();
   const sources = new Map<string, WeaveSource>();
+  /** The same sources with the leader rule wrapped round them — what the
+   *  scheduler is handed. Two caches because the leader search reads the RAW
+   *  ones, and reading a guarded one from inside the guard is a loop. */
+  const guarded = new Map<string, WeaveSource>();
 
   const macro = (id: string) => {
     const v = state.macros[id];
@@ -222,6 +227,69 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     );
   };
 
+  /** The lane's own fold, before any lane hears any other. Cached because it is
+   *  what the leader search reads for EVERY lane on every ask. */
+  const rawFor = (laneId: string): WeaveSource | undefined => {
+    if (sources.has(laneId)) return sources.get(laneId);
+    const source = build(laneId);
+    // Only real sources are cached. "Nothing to say" costs one map read and one
+    // number compare to re-derive, cheaper than the sentinel a Map needs to
+    // remember an absence — and it means a lane starts weaving on the tick after
+    // a loop is chosen even if someone forgets to invalidate.
+    if (source) sources.set(laneId, source);
+    return source;
+  };
+
+  /** Which lane is playing the LOWEST note right now, and what that note is.
+   *
+   *  "El bajo manda" — and until now it did not. The rule that keeps a lane off
+   *  the intervals that grate against the bass was written, tested and never
+   *  called: `createWeaveNotes` had no caller outside its own test file, and
+   *  nothing anywhere set `harmonyLeader`.
+   *
+   *  Chosen by EAR rather than by a flag. Whoever is lowest leads, so the rule
+   *  needs nobody to mark anything and follows the music — swap the bass line
+   *  for something higher and the leadership moves with it. The stored
+   *  `harmonyLeader` still wins when something sets it, which keeps the door
+   *  open for a button without making one a prerequisite.
+   *
+   *  Null when fewer than two melodic lanes are weaving: with nothing to clash
+   *  against, every lane must sound exactly as its author wrote it. */
+  const leader = (): { laneId: string; root: number } | null => {
+    const ids = (deps.getState?.().lanes ?? []).map((l) => l.id)
+      .filter((id) => state.lanes[id]?.weave && melodicLane(id));
+    if (ids.length < 2) return null;
+
+    let marked: string | undefined;
+    let lowest: { laneId: string; root: number } | null = null;
+    for (const laneId of ids) {
+      if (state.lanes[laneId]?.harmonyLeader) marked = laneId;
+      const notes = rawFor(laneId)?.();
+      if (!notes || notes.length === 0) continue;
+      const root = notes.reduce((lo, n) => Math.min(lo, n.midi), Infinity);
+      if (!lowest || root < lowest.root) lowest = { laneId, root };
+    }
+    if (!marked) return lowest;
+    const notes = rawFor(marked)?.();
+    if (!notes || notes.length === 0) return lowest;
+    return { laneId: marked, root: notes.reduce((lo, n) => Math.min(lo, n.midi), Infinity) };
+  };
+
+  /** A lane's fold, with the leader's worst intervals kept off it.
+   *
+   *  The leader itself is NEVER altered: it is the reference, and moving it
+   *  would make the rule chase its own tail — a lane adjusting to a root that
+   *  adjusts to the lane. Percussion is skipped for the reason it always is: a
+   *  drum note picks a voice, not a pitch, so there is no interval to forbid. */
+  const guardAgainstLeader = (laneId: string, source: WeaveSource): WeaveSource => () => {
+    const notes = source();
+    if (!notes || notes.length === 0 || !melodicLane(laneId)) return notes;
+    const lead = leader();
+    if (!lead || lead.laneId === laneId) return notes;
+    const m = musicality();
+    return avoidClash(notes as NoteEvent[], lead.root, m.key, m.scale) as typeof notes;
+  };
+
   // The starting line 'free' counts from lives in WeaveState now, not here.
   // There were two of them — this one for the clock, none for the hand — and
   // "cosas raras" is what a hand on the fader looked like: a slider sends its
@@ -324,6 +392,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       )) {
 
         sources.clear();
+        guarded.clear();
 
       }
     },
@@ -334,18 +403,17 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       // because "nothing to say" is already this function's own answer — the
       // additive path is the one that was always there.
       if (state.bypass) return undefined;
-      if (sources.has(laneId)) return sources.get(laneId);
-      const source = build(laneId);
-      // Only real sources are cached. "Nothing to say" costs one map read and
-      // one number compare to re-derive, cheaper than the sentinel a Map needs
-      // to remember an absence — and it means a lane starts weaving on the tick
-      // after a loop is chosen even if someone forgets to invalidate.
-      if (source) sources.set(laneId, source);
-      return source;
+      if (guarded.has(laneId)) return guarded.get(laneId);
+      const source = rawFor(laneId);
+      if (!source) return undefined;
+      const out = guardAgainstLeader(laneId, source);
+      guarded.set(laneId, out);
+      return out;
     },
 
     invalidate() {
       sources.clear();
+      guarded.clear();
     },
 
     replace(next) {
@@ -362,6 +430,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       state.flow = next.flow ?? { drift: 'together', speedBars: 0 };
       lastFlow = -1;
       sources.clear();
+      guarded.clear();
     },
   };
 }

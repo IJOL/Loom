@@ -441,3 +441,89 @@ describe('the weave does not transpose what it folds', () => {
     expect(mid).toBeLessThanOrEqual(52);
   });
 });
+
+// "siempre hemos hablado que el bajo manda" — and it never did. The machinery
+// was written, tested and never called: `createWeaveNotes` had no caller outside
+// its own test file, and nothing anywhere set `harmonyLeader`, so the rule that
+// keeps a lane off the notes that grate against the bass has been dead since it
+// was written.
+//
+// The leader is now chosen by EAR rather than by a flag: whichever weaving lane
+// is playing the lowest note is the one the others defer to. That is what "the
+// bass leads" means without asking anyone to mark it, and it follows the music
+// — swap the bass line for something higher and the leadership moves with it.
+describe('the lowest lane leads, and the others keep off its worst intervals', () => {
+  const twoLanes = (lowMidi: number, highMidi: number): SessionState => ({
+    lanes: ['low', 'high'].map((id) => ({
+      id,
+      engineId: 'subtractive',
+      clips: [
+        { id: `${id}A`, name: 'A', color: '#fff', lengthBars: 1, gridResolution: '1/16',
+          notes: [hit(0, id === 'low' ? lowMidi : highMidi)] },
+        { id: `${id}B`, name: 'B', color: '#fff', lengthBars: 1, gridResolution: '1/16',
+          notes: [hit(0, id === 'low' ? lowMidi : highMidi)] },
+      ],
+      inserts: [],
+    })),
+    scenes: [],
+    musicality: { ...DEFAULT_MUSICALITY, key: 0, scale: 'minor' },
+  } as unknown as SessionState);
+
+  const weaving = (w: ReturnType<typeof wiring>, id: string) => {
+    w.state.lanes[id] = {
+      weave: { kind: 'ab', a: `clip:${id}A`, b: `clip:${id}B`, x: 0 },
+      locked: false, harmonyLeader: false,
+    };
+  };
+
+  /** What the HIGH lane ends up playing, with a bass note under it. */
+  const highNote = (lowMidi: number, highMidi: number): number => {
+    const w = wiring(twoLanes(lowMidi, highMidi));
+    weaving(w, 'low');
+    weaving(w, 'high');
+    return w.notesFor('high')!()![0].midi;
+  };
+
+  it('nudges a MINOR SECOND above the bass off the clash', () => {
+    // C2 under C#4: a semitone apart within the octave, which is the interval
+    // that grates hardest of the three.
+    expect(highNote(36, 61)).not.toBe(61);
+  });
+
+  it('nudges a TRITONE off it too', () => {
+    expect(highNote(36, 66)).not.toBe(66);
+  });
+
+  it('leaves a consonant note exactly where the author wrote it', () => {
+    // A fifth above the bass. The rule is deliberately less than harmony: it
+    // forbids what grates and touches nothing else.
+    expect(highNote(36, 67)).toBe(67);
+  });
+
+  it('never moves the LEADER — it is the reference, not a participant', () => {
+    // Moving it would make the rule chase its own tail: a lane adjusting to a
+    // root that adjusts to the lane.
+    const w = wiring(twoLanes(36, 61));
+    weaving(w, 'low');
+    weaving(w, 'high');
+    expect(w.notesFor('low')!()![0].midi).toBe(36);
+  });
+
+  it('follows the music: whoever is lowest leads, not whoever is first', () => {
+    // The lanes are declared low-then-high; here the SECOND one is lower, and
+    // the rule has to notice.
+    const w = wiring(twoLanes(61, 36));
+    weaving(w, 'low');
+    weaving(w, 'high');
+    expect(w.notesFor('high')!()![0].midi).toBe(36);   // the actual bass, untouched
+    expect(w.notesFor('low')!()![0].midi).not.toBe(61);
+  });
+
+  it('does nothing at all when only one lane is weaving', () => {
+    // Nothing to clash WITH. A lane on its own must sound exactly as its author
+    // wrote it, whatever notes that is.
+    const w = wiring(twoLanes(36, 61));
+    weaving(w, 'high');
+    expect(w.notesFor('high')!()![0].midi).toBe(61);
+  });
+});
