@@ -156,6 +156,28 @@ describe('converting a lane carries its sound', () => {
     expect(convertLaneToLayers(h.lane, 'Bright')).toBe(false);
   });
 
+  it('carries the LIVE patch, not the mirror of edits', () => {
+    // engineState.params holds what has been WRITTEN since the lane was built,
+    // which for a lane sounding a preset applied at boot is almost nothing. So
+    // the copy carried almost nothing and the converted lane came up on factory
+    // defaults — reported as "suena totalmente diferente y el preset es el
+    // mismo". The caller reads the engine; this only has to prefer it.
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright', { 'filter.cutoff': 4200, 'osc1.level': 0.33 });
+    const p = h.lane.engineState?.params ?? {};
+    expect(p['l0.filter.cutoff']).toBe(4200);
+    expect(p['l1.filter.cutoff']).toBe(4200);
+    // A param the mirror never held still comes across.
+    expect(p['l0.osc1.level']).toBe(0.33);
+  });
+
+  it('falls back to the mirror when there is no engine to read', () => {
+    // A fixture with no audio graph still has to convert rather than throw.
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright');
+    expect(h.lane.engineState?.params?.['l0.filter.cutoff']).toBe(800);
+  });
+
   it('brings slot 1 up SILENT, so converting changes nothing you hear', () => {
     // Both at unity doubles the lane's level the moment it is converted, and
     // then leaves both instruments playing at once for ever — recall a preset

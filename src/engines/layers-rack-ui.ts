@@ -62,6 +62,19 @@ export function convertLaneToLayers(
    *  codebase and no owner (see REMAINING-WORK) — inventing a fourth here would
    *  make that worse rather than expose it. */
   presetName?: string,
+  /** The lane's LIVE patch — every param its engine declares, read off the
+   *  engine — supplied by the caller because only it holds the lane's engine.
+   *
+   *  `engineState.params` is not the same thing and using it was the bug: it is
+   *  a MIRROR OF EDITS, so it holds what has been written since the lane was
+   *  built and nothing else. A lane sounding a preset applied at boot has an
+   *  almost empty one, so the copy carried almost nothing and the converted
+   *  lane came up on factory defaults — reported as "suena totalmente diferente
+   *  y el preset es el mismo".
+   *
+   *  Falls back to the mirror when no engine is available, which is what a
+   *  fixture with no audio graph has. */
+  patch?: Record<string, number>,
 ): boolean {
   if (!deps || !lane || lane.engineId === LAYERS_ENGINE_ID) return false;
 
@@ -81,9 +94,10 @@ export function convertLaneToLayers(
   const slot = { engineId: lane.engineId, lo: 0, hi: 127, presetName };
   const rack: LayerSpec[] = [{ ...slot, gain: 1 }, { ...slot, gain: 0 }];
 
-  const params = lane.engineState?.params ?? {};
-  const carried: Record<string, number> = { ...params };
-  for (const [id, v] of Object.entries(params)) {
+  // The live patch when the caller can read one, the mirror otherwise.
+  const source = patch ?? lane.engineState?.params ?? {};
+  const carried: Record<string, number> = { ...lane.engineState?.params };
+  for (const [id, v] of Object.entries(source)) {
     // Only the engine's OWN params. A strip param (`bus.level`) belongs to the
     // desk, not to the patch, and prefixing one would invent `l0.bus.level`,
     // which nothing reads.
@@ -104,6 +118,26 @@ export function convertLaneToLayers(
   // none still has to come out of this with slot 1 silent.
   carried[`${layerPrefix(0)}gain`] = 1;
   carried[`${layerPrefix(1)}gain`] = 0;
+
+  // What this does NOT carry, and why it is left undone rather than half-done:
+  // the lane's MODULATORS.
+  //
+  // Subtractive ships two ADSRs — one on `amp`, one on `filter.env` — and
+  // LAYERS ships a single LFO, so a converted lane loses its amplitude and
+  // filter envelopes and comes out at half the level sounding like another
+  // instrument. Measured: RMS 0.044 before, 0.022 after, twice from a clean
+  // reload.
+  //
+  // Carrying them at the LANE's level would silence the symptom and entrench
+  // the fault. `LayersRenderer` hands the lane's offsets to every layer
+  // unchanged, so one envelope would be shared by every slot: two instruments
+  // could never have different envelopes, and a slot would sound according to
+  // something outside itself. A slot has to CONTAIN what its instrument brings.
+  //
+  // That is per-slot modulation, and it is a redesign rather than a copy — the
+  // envelope targets `amp` and `filter.env` are synthetic, not declared params,
+  // so "layer 0's amp" has no name yet. See the handover beside this round's
+  // specs.
   lane.engineState = { ...lane.engineState, params: carried };
 
   deps.setRack(lane.id, rack);

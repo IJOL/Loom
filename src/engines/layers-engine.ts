@@ -29,7 +29,7 @@ import type { EngineParamGroup } from './engine-param-groups';
 import { requireModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
-import { registerEngineCapabilities } from '../plugins/capabilities';
+import { pluginSynthTrim, registerEngineCapabilities } from '../plugins/capabilities';
 import { isStripParamId } from '../core/channel-strip-params';
 import { MAX_LAYERS, layerPrefix, readRack, type LayerSpec } from '../audio-dsp/layers/layer-spec';
 import { buildLayersRack, hiddenLayerParam } from './layers-rack-ui';
@@ -141,7 +141,20 @@ function makeLayersDescriptor() {
     dynamicParamsFor: layersDynamicParamsFor,
     dynamicGroupsFor: layersDynamicGroupsFor,
     // Plain objects: this crosses the thread boundary by structured clone.
-    structuralFor: (lane) => ({ layers: laneLayers(lane).map((l) => ({ ...l })) }),
+    //
+    // Each slot carries its engine's own output balance. A lane gets ONE trim
+    // from the allocator and LAYERS declares 1, so an engine inside a slot had
+    // no way to ask for its own and played raw — subtractive asks for 0.25, so
+    // a layered lane came out four times as loud as the same patch on a lane of
+    // its own. Derived here rather than stored, because it belongs to the
+    // engine: a plugin that revises its trim must not need every saved rack
+    // rewritten.
+    structuralFor: (lane) => ({
+      layers: laneLayers(lane).map((l) => ({
+        ...l,
+        trim: l.engineId ? pluginSynthTrim(l.engineId) ?? 1 : 1,
+      })),
+    }),
     extraUI: buildLayersRack,
     // Only the open tab's instrument is drawn. Four engines' worth of knobs at
     // once is not a page, it is a wall — and it is what the first attempt did.

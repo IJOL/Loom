@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { LayersRenderer } from './layers-renderer';
-import { readRack } from './layer-spec';
+import { readRack, type LayerSpec } from './layer-spec';
 import { registerRenderer } from '../renderer-registry';
 import type { NoteSpec, ParamBag, ParamIndex } from '@loom/plugin-sdk';
 
@@ -128,5 +128,36 @@ describe('a live gain reaches a note already sounding', () => {
     const index: ParamIndex = { slot: { 'l0.tone': 0, 'l0.gain': 1 }, length: 2 };
     r.setLiveValues(values, index);
     expect(r.renderSample(0)).toBeCloseTo(0.4, 6);
+  });
+});
+
+describe('a slot plays at its OWN engine s balance', () => {
+  // A lane carries ONE output trim and LAYERS declares 1, so every engine
+  // inside a slot played raw: subtractive asks for 0.25 and a converted lane
+  // came out four times as loud as the same patch on a lane of its own.
+  // Measured at the master before it was measured here.
+
+  it('scales a layer by the trim its engine asked for', () => {
+    const quiet = readRack([{ engineId: 'test-tone', lo: 0, hi: 127, gain: 1, trim: 0.25 }]);
+    const raw = readRack([{ engineId: 'test-tone', lo: 0, hi: 127, gain: 1 }]);
+    const at = (r: LayerSpec[]) => new LayersRenderer(note(0), BAG, 48000, r, 0).renderSample(0);
+    expect(at(quiet)).toBeCloseTo(at(raw) * 0.25, 6);
+  });
+
+  it('treats an absent trim as 1, so an older rack still sounds', () => {
+    const rack0 = readRack([{ engineId: 'test-tone', lo: 0, hi: 127, gain: 1 }]);
+    expect(new LayersRenderer(note(0), BAG, 48000, rack0, 0).renderSample(0))
+      .toBeCloseTo(0.25, 6);
+  });
+
+  it('applies each slot s own, not one for the rack', () => {
+    // Two engines with different balances in one rack is the ordinary case the
+    // single lane-level trim could never express.
+    const mixed = readRack([
+      { engineId: 'test-tone', lo: 0, hi: 127, gain: 1, trim: 1 },
+      { engineId: 'test-tone', lo: 0, hi: 127, gain: 1, trim: 0.5 },
+    ]);
+    const both = new LayersRenderer(note(undefined), BAG, 48000, mixed, undefined).renderSample(0);
+    expect(both).toBeCloseTo(0.25 * 1 + 0.75 * 0.5, 6);
   });
 });

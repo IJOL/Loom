@@ -21,6 +21,9 @@ interface Live {
   /** The rack's own figure, used until — and only until — the lane's live array
    *  arrives. A voice spawned before `setLiveValues` still has to sound. */
   gain: number;
+  /** This slot's engine's own output balance. Constant for the voice's life —
+   *  it belongs to the engine, not to anything the user is moving. */
+  trim: number;
   layer: number;
   /** Slot of this layer's `gain` in the lane's live values, resolved once in
    *  setLiveValues. -1 when the lane does not declare it, which is the ordinary
@@ -53,6 +56,11 @@ export class LayersRenderer implements VoiceRenderer {
       this.live.push({
         render: createRenderer(engineId, note, subBag(params, i), sampleRate),
         gain: layers[i].gain,
+        // This slot's ENGINE's own output balance, folded in once. An ordinary
+        // lane gets its engine's trim from the allocator; a slot's engine had no
+        // way to ask for its own, so every one of them played raw — subtractive
+        // asks for 0.25 and came out four times too loud.
+        trim: layers[i].trim ?? 1,
         layer: i,
         gainSlot: -1,
       });
@@ -68,7 +76,7 @@ export class LayersRenderer implements VoiceRenderer {
       // the one sounding — and a crossfade between two layers is precisely this
       // number moving under a held chord.
       const gain = v && l.gainSlot >= 0 ? v[l.gainSlot] : l.gain;
-      sum += l.render.renderSample(t, modOffsets) * gain;
+      sum += l.render.renderSample(t, modOffsets) * gain * l.trim;
     }
     return sum;
   }

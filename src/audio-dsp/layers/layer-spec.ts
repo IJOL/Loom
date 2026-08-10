@@ -44,6 +44,19 @@ export interface LayerSpec {
    *  Absent means "no preset chosen", which is honest for a slot whose knobs
    *  were turned by hand rather than recalled. */
   presetName?: string;
+  /** This slot's engine's own output compensation. DERIVED, never saved: the
+   *  host fills it when it posts the rack, from the same capability the lane
+   *  allocator reads for an ordinary lane.
+   *
+   *  It has to travel with the slot because the balance belongs to the ENGINE,
+   *  not to the rack. A lane carries one trim and LAYERS declares 1, so every
+   *  engine inside it played at its raw level: subtractive declares 0.25, which
+   *  made a converted lane four times as loud as the same patch on its own
+   *  lane. Measured at the master, and audible long before it was measured.
+   *
+   *  Absent ⇒ 1, which is what a rack posted by an older build says and the
+   *  right neutral for an engine that declares nothing. */
+  trim?: number;
 }
 
 export const emptyLayer = (): LayerSpec => ({ engineId: '', lo: 0, hi: 127, gain: 1 });

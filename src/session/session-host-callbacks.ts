@@ -4,6 +4,8 @@
 
 import { convertLaneToLayers } from '../engines/layers-rack-ui';
 import { pagePresetName } from '../instrument-presets/preset-select-state';
+import { snapshotEngineParams } from '../instrument-presets/user-preset-store';
+import { commitParamForLane } from '../engines/engine-param-commit';
 import { html } from 'lit-html';
 import { renderElement } from '../core/lit-fragment';
 import type { SessionHost } from './session-host';
@@ -203,7 +205,30 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       // option and the slot came up "— pick —" while playing that very sound.
       const raw = pagePresetName.get(laneId) ?? lane.enginePresetName;
       const presetName = raw?.includes(':') ? raw.slice(raw.indexOf(':') + 1) : raw;
-      const run = () => { convertLaneToLayers(lane, presetName); };
+      // The lane's LIVE patch, read off its engine. `engineState.params` is a
+      // mirror of EDITS, so a lane sounding a preset applied at boot has almost
+      // nothing in it — carrying that is what made a converted lane come up on
+      // factory defaults sounding like something else entirely.
+      const engine = self.deps.laneResources?.get(laneId)?.engine;
+      const patch = engine ? snapshotEngineParams(engine) : undefined;
+      const run = () => {
+        if (!convertLaneToLayers(lane, presetName, patch)) return;
+        // Tell the NEW engine what the rack says, through the door every param
+        // write goes through.
+        //
+        // Writing the gains into engineState alone was not enough: the rack is
+        // set, the engine is rebuilt, and the rebuilt engine takes each param
+        // from its SPEC default — `l1.gain` defaults to 1 — so slot 1 came up at
+        // full level and the lane doubled. Measured at the master: RMS 0.075
+        // before converting, 0.147 after, on the same looping scene.
+        //
+        // After the rebuild, necessarily: the engine written to has to be the
+        // one that now exists.
+        const built = self.deps.laneResources?.get(laneId)?.engine;
+        if (!built) return;
+        commitParamForLane(built, self.state, laneId, 'l0.gain', 1);
+        commitParamForLane(built, self.state, laneId, 'l1.gain', 0);
+      };
       if (hd) withUndo(hd, run); else run();
     },
     onDuplicateLane(laneId: string) {
