@@ -827,6 +827,22 @@ wireLayersRack({
     const lane = sessionHost.state.lanes.find((l) => l.id === laneId);
     if (!lane) return;
     lane.engineState = { ...lane.engineState, layers };
+    // The lane IS a layered instrument now, and has to say so — BEFORE the swap,
+    // because the swap ends by announcing that this lane's destinations changed
+    // and the catalogue rebuilds from `lane.engineId`.
+    //
+    // Left unwritten, the lane kept claiming to be its old engine while its live
+    // engine was LAYERS, and three things broke at once, all silently. The
+    // destination catalogue offered the OLD engine's params, so `l0.gain` and
+    // `l1.gain` did not exist as destinations and WEAVE's sound fader wrote
+    // nothing — reported as "el fader no hace nada". `convertLaneToLayers`
+    // guards on this id, so a lane could be converted again and again, each pass
+    // prefixing an already-prefixed set (`l0.l0.adsr-amp`). And a save reloaded
+    // the lane as its old engine, taking the whole rack with it.
+    //
+    // Not routed through `swapLaneEngineFlow` on purpose: that door RESETS
+    // engineState, which is exactly the rack this one just wrote.
+    lane.engineId = LAYERS_ENGINE_ID;
     swapLaneEngine(laneId, LAYERS_ENGINE_ID);
     // The rebuilt engine starts from its SPEC defaults and reads nothing back,
     // so everything the lane holds has to be put onto it again: every slot's

@@ -16,6 +16,7 @@ import { seedEnginePresets, __resetPresetCache } from '../presets/preset-loader'
 import { getEngine, registerEngine } from './registry';
 import { createDescriptorEngine } from './descriptor-engine';
 import { isLayerModulator } from './layer-modulators';
+import { listAutomationTargets } from '../automation/automation-targets';
 import { ModulationHostImpl } from '../modulation/modulation-host';
 import type { ModulatorState } from '../modulation/types';
 import type { SessionLane, SessionState } from '../session/session';
@@ -61,13 +62,20 @@ function harness() {
   } as unknown as SynthEngine;
 
   const l = lane();
-  const state = { lanes: [l] } as unknown as SessionState;
+  // The two global insert racks are part of a session, and the destination
+  // catalogue walks them alongside the lanes.
+  const state = { lanes: [l], masterInserts: [], sends: [] } as unknown as SessionState;
   const racks: unknown[] = [];
   wireLayersRack({
     setRack: (laneId, layers) => {
       racks.push(layers);
       const target = state.lanes.find((x) => x.id === laneId);
-      if (target) target.engineState = { ...target.engineState, layers };
+      if (!target) return;
+      target.engineState = { ...target.engineState, layers };
+      // What the real door does (main.ts): the lane IS a layered instrument now
+      // and says so. The fixture mirrors it because three things downstream read
+      // that id — the destination catalogue, the convert guard, and the loader.
+      target.engineId = LAYERS_ENGINE_ID;
     },
     repaint: () => {},
   });
@@ -196,13 +204,43 @@ describe('converting a lane carries its sound', () => {
     expect(layers?.[1]).toMatchObject({ engineId: SLOT_ENGINE, lo: 0, hi: 127 });
   });
 
+  it('marks the lane as layered, which is what everything downstream reads', () => {
+    // Left unwritten, the lane claimed to be its old engine while its live
+    // engine was LAYERS. The destination catalogue is built from this id, so
+    // `l0.gain` was not a destination at all and WEAVE's sound fader wrote
+    // nothing — reported as "el fader no hace nada". A save reloaded the lane as
+    // its old engine too, rack and all.
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright');
+    expect(h.lane.engineId).toBe(LAYERS_ENGINE_ID);
+  });
+
   it('refuses a lane that is already layered', () => {
     const h = harness();
     convertLaneToLayers(h.lane, 'Bright');
-    // The real setRack swaps the lane's engine; the fixture mirrors that,
-    // because the guard reads engineId and would otherwise never see it change.
-    h.lane.engineId = LAYERS_ENGINE_ID;
     expect(convertLaneToLayers(h.lane, 'Bright')).toBe(false);
+  });
+
+  it('cannot be applied twice, so nothing is prefixed twice', () => {
+    // The guard only bites once the lane says it is layered. Without it a second
+    // pass prefixed an already-prefixed set and produced `l0.l0.adsr-amp` and
+    // `l0.l0.filter.cutoff` — seen in the app's own destination list.
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright', { 'filter.cutoff': 4200 }, presetMods(0.6));
+    convertLaneToLayers(h.lane, 'Bright', { 'filter.cutoff': 4200 }, presetMods(0.6));
+    expect(Object.keys(h.lane.engineState?.params ?? {}).some((k) => /^l\d\.l\d\./.test(k))).toBe(false);
+    expect((h.lane.engineState?.modulators ?? []).some((m) => /^l\d\.l\d\./.test(m.id))).toBe(false);
+  });
+
+  it('offers the layer gains as destinations, which is what the fader writes', () => {
+    // The end of the chain WEAVE's sound fader depends on: it looks its two
+    // targets up in the ONE catalogue and skips a lane that does not offer
+    // them. This is the assertion that ties the fader to the conversion.
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright');
+    const ids = listAutomationTargets(h.state, new Map()).map((t) => t.id);
+    expect(ids).toContain(`${h.lane.id}.l0.gain`);
+    expect(ids).toContain(`${h.lane.id}.l1.gain`);
   });
 
   it('carries the LIVE patch, not the mirror of edits', () => {
