@@ -6,7 +6,7 @@
 // loop is pulled into it.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { weaveLoopContext, weaveLoopNotes, rehookOnArrival } from './weave-loops';
+import { weaveLoopContext, weaveLoopNotes, rehookOnArrival, nearestOffset } from './weave-loops';
 import { setLibrary } from '../patterns/pattern-library';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { inScale } from '../core/musicality';
@@ -215,5 +215,46 @@ describe('a drawn loop fills the clip it is going into', () => {
       { clipBars: 4, barTicks: BAR },
     );
     expect(weaveLoopNotes('clip:c1', c)).toHaveLength(1);
+  });
+});
+
+// "nunca pones bajos que suenen a bajos" — reported by ear, and true.
+//
+// The library's bass patterns live at MIDI 36..48 (C2..C3, a real bass
+// register) and the key was added outright, so the whole shelf walked upwards
+// as the key rose. In A that is 45..57 — A2..A3 — which is not a bass.
+describe('a library loop lands in the right REGISTER, not just the right key', () => {
+  it('shifts to the nearest tonic, never more than half an octave', () => {
+    for (let key = 0; key < 12; key++) {
+      expect(Math.abs(nearestOffset(key))).toBeLessThanOrEqual(6);
+    }
+  });
+
+  it('goes DOWN for a key in the top half of the octave', () => {
+    expect(nearestOffset(9)).toBe(-3);      // A: down a minor third, not up a sixth
+    expect(nearestOffset(7)).toBe(-5);      // G
+    expect(nearestOffset(11)).toBe(-1);     // B
+  });
+
+  it('goes up for a key in the bottom half, exactly as before', () => {
+    expect(nearestOffset(0)).toBe(0);
+    expect(nearestOffset(2)).toBe(2);
+    expect(nearestOffset(5)).toBe(5);
+  });
+
+  it('is still the same NOTE — only the octave moves', () => {
+    for (let key = 0; key < 12; key++) {
+      expect((((nearestOffset(key) % 12) + 12) % 12)).toBe(key);
+    }
+  });
+
+  it('keeps a bass in the bass in EVERY key', () => {
+    // The property that failed: the register the patterns were written for is
+    // C2..C3, and no key may push a loop out of an octave around it.
+    for (let key = 0; key < 12; key++) {
+      const root = 36 + nearestOffset(key);
+      expect(root).toBeGreaterThanOrEqual(30);
+      expect(root).toBeLessThanOrEqual(41);
+    }
   });
 });

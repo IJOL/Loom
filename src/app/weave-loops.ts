@@ -124,10 +124,27 @@ function kindsFor(harmonic: boolean): PatternKind[] {
 }
 
 /** Where a melodic pattern's root sits. Bass an octave under the lead, both
- *  transposed by the session key, so a library loop lands in the same tonality
- *  as everything already playing. */
+ *  moved to the session key so a library loop lands in the same tonality as
+ *  everything already playing.
+ *
+ *  To the NEAREST tonic, not the one above. This used to add the key outright,
+ *  which walks the whole shelf upwards as the key rises: the bass patterns live
+ *  at MIDI 36..48 — C2..C3, a real bass register — and in A that became 45..57,
+ *  which is A2..A3 and is not a bass any more. Reported as "nunca pones bajos
+ *  que suenen a bajos", and measurable with tools/loop-fingerprints.ts.
+ *
+ *  A tonic is the same note in every octave, so choosing which one is free —
+ *  and a player choosing between A1 and A2 for a bass line does not think about
+ *  it either. Six semitones up or six down keeps every key within half an octave
+ *  of the register the patterns were written for. */
 function rootFor(kind: PatternKind, key: number): number {
-  return (kind === 'bass' ? 36 : 48) + key;
+  const base = kind === 'bass' ? 36 : 48;
+  return base + nearestOffset(key);
+}
+
+/** The key as a shift of −6..+5 semitones rather than 0..+11. */
+export function nearestOffset(key: number): number {
+  return ((((key % 12) + 12) % 12) + 6) % 12 - 6;
 }
 
 const KIND_LABEL: Record<PatternKind, string> = {
