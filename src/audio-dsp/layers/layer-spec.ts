@@ -33,6 +33,17 @@ export interface LayerSpec {
   hi: number;
   /** 0..1. The weave's position moves these; so does a fader by hand. */
   gain: number;
+  /** Which preset of `engineId` this slot is on, by name.
+   *
+   *  A LABEL, not the sound: the sound is the layer's params and they are what
+   *  actually plays. This exists because without it the slot's dropdown had no
+   *  selected state and always read "— pick —", so a rack built by recalling
+   *  two presets showed neither of them and looked empty — reported exactly
+   *  that way after a lane was converted.
+   *
+   *  Absent means "no preset chosen", which is honest for a slot whose knobs
+   *  were turned by hand rather than recalled. */
+  presetName?: string;
 }
 
 export const emptyLayer = (): LayerSpec => ({ engineId: '', lo: 0, hi: 127, gain: 1 });

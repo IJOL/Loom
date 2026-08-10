@@ -29,6 +29,12 @@ export interface SessionUICallbacks {
   onAddLane: (engineId: string) => void;
   /** Full-clone a lane (instrument + clips); the new lane appears to the right. */
   onDuplicateLane: (laneId: string) => void;
+  /** Turn a lane into a RACK holding its own instrument twice, over the whole
+   *  keyboard, carrying its current sound into both slots.
+   *
+   *  Optional because the grid must still render in a fixture with no engine
+   *  registry: absent, the menu entry is simply not offered. */
+  onConvertToLayered?: (laneId: string) => void;
   /** Append a clone of the scene at sceneIdx. */
   onDuplicateScene: (sceneIdx: number) => void;
   /** Append a new scene capturing the currently-playing clip on each lane. */

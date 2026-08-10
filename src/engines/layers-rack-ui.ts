@@ -16,6 +16,7 @@ import { html, render } from 'lit-html';
 import { listEngines } from './registry';
 import { melodicSynthEngineIds } from './engine-selector-ui';
 import type { EngineUIContext, SynthEngine } from './engine-types';
+import type { SessionLane } from '../session/session';
 import { LAYERS_ENGINE_ID, laneLayers } from './layers-engine';
 import { layerPrefix, MAX_LAYERS, type LayerSpec } from '../audio-dsp/layers/layer-spec';
 import { getCachedPresets } from '../presets/preset-loader';
@@ -34,6 +35,56 @@ let deps: LayersRackDeps | undefined;
 /** Wired once at boot. Absent — in a fixture with no session — leaves the
  *  controls inert rather than throwing on the first change. */
 export function wireLayersRack(d: LayersRackDeps): void { deps = d; }
+
+/** Turn an ordinary lane into a LAYERS lane holding its own instrument twice.
+ *
+ *  Doing it by hand is five steps — swap the engine, fill slot 0, fill slot 1,
+ *  set both zones, recall two presets — and the first four are the same four
+ *  every time. This is those four.
+ *
+ *  BOTH slots get the lane's current engine, over the whole keyboard. Two
+ *  full-range slots is what makes a note reach both instruments rather than
+ *  being split by pitch, and that is the arrangement the SOUND fader balances.
+ *
+ *  The lane's existing sound is copied into both slots rather than reset. A
+ *  layer's params wear its own prefix (`l0.cutoff`), so converting without
+ *  copying would silently return the lane to factory defaults — the user would
+ *  hear their patch vanish and have nothing to blame it on. Starting identical
+ *  is also the honest default: the fader does nothing until slot 1 is given a
+ *  different preset, which is a choice this function has no business making.
+ *
+ *  Returns false when there is nothing to convert — no session wired, no such
+ *  lane, or a lane that is already layered. */
+export function convertLaneToLayers(
+  lane: SessionLane | undefined,
+  /** Which preset the lane is showing, so both slots can say so. Resolved by
+   *  the caller because "what preset is this lane on" has three answers in this
+   *  codebase and no owner (see REMAINING-WORK) — inventing a fourth here would
+   *  make that worse rather than expose it. */
+  presetName?: string,
+): boolean {
+  if (!deps || !lane || lane.engineId === LAYERS_ENGINE_ID) return false;
+
+  const slot = { engineId: lane.engineId, lo: 0, hi: 127, gain: 1, presetName };
+  const rack: LayerSpec[] = [{ ...slot }, { ...slot }];
+
+  const params = lane.engineState?.params;
+  if (params) {
+    const carried: Record<string, number> = { ...params };
+    for (const [id, v] of Object.entries(params)) {
+      // Only the engine's OWN params. A strip param (`bus.level`) belongs to the
+      // desk, not to the patch, and prefixing one would invent `l0.bus.level`,
+      // which nothing reads.
+      if (id.startsWith('bus.') || id.startsWith('l0.') || id.startsWith('l1.')) continue;
+      carried[`${layerPrefix(0)}${id}`] = v;
+      carried[`${layerPrefix(1)}${id}`] = v;
+    }
+    lane.engineState = { ...lane.engineState, params: carried };
+  }
+
+  deps.setRack(lane.id, rack);
+  return true;
+}
 
 /** Which layer's page is open, per lane. Module state because it is a VIEW
  *  preference: it must survive the lane editor being rebuilt (which happens on
@@ -146,11 +197,17 @@ export function buildLayersRack(host: HTMLElement, ctx: EngineUIContext, engine:
             const name = (e.target as HTMLSelectElement).value;
             if (!name) return;
             applyLayerPreset(engine, ctx, open, layer.engineId, name);
+            // Remember WHICH one, or the dropdown falls back to "— pick —" on
+            // the next repaint and the slot reads as empty while playing the
+            // sound it just recalled.
+            deps?.setRack(ctx.laneId, rack.map((l, k) => (k === open ? { ...l, presetName: name } : l)));
             deps?.repaint(ctx.laneId);
           }}
         >
-          <option value="">${presets.length ? '— pick —' : '—'}</option>
-          ${presets.map((p) => html`<option value=${p.name}>${p.name}</option>`)}
+          <option value="" ?selected=${!layer.presetName}>${presets.length ? '— pick —' : '—'}</option>
+          ${presets.map((p) => html`
+            <option value=${p.name} ?selected=${p.name === layer.presetName}>${p.name}</option>
+          `)}
         </select>
       </label>
     </div>

@@ -14,6 +14,17 @@ import { clipDragHandlers } from './session-clip-drag';
 import { listEngines, getEngine } from '../engines/registry';
 import type { SessionUICallbacks } from './session-ui-types';
 import { acceptsAudioFile, isAudioEngine } from '../plugins/capabilities';
+import { melodicSynthEngineIds } from '../engines/engine-selector-ui';
+import { LAYERS_ENGINE_ID } from '../engines/layers-engine';
+
+/** Whether this lane could become a rack of instruments.
+ *
+ *  The SAME list a layer slot offers, asked rather than restated: a rack holds
+ *  melodic engines, so the drum machine, the sampler and the audio channel are
+ *  out — a slot holding one is silently skipped at spawn, which reads as a
+ *  broken instrument. And a lane that is already layered has nowhere to go. */
+const canLayer = (engineId: string): boolean =>
+  engineId !== LAYERS_ENGINE_ID && melodicSynthEngineIds().includes(engineId);
 
 // The audio channel gets its OWN entry in the "+" menu, appended right below
 // the engine list (see addLaneHeaderTemplate). That is a layout decision made
@@ -96,6 +107,13 @@ export function laneHeaderTemplate(
       { label: 'Rename track', onSelect: () => rename(nameEl) },
       { label: 'Edit instrument', onSelect: () => cb.onEditLane(lane.id) },
       { label: 'Duplicate track', onSelect: () => cb.onDuplicateLane(lane.id) },
+      // Only where it means something. A rack holds melodic engines, so the
+      // drum machine and the audio channel cannot be layered; an already
+      // layered lane has nowhere to go. Hidden rather than disabled: a menu of
+      // things you cannot do is longer and says less.
+      ...(cb.onConvertToLayered && canLayer(lane.engineId)
+        ? [{ label: 'Convert to layered', onSelect: () => cb.onConvertToLayered!(lane.id) }]
+        : []),
       { label: 'Stop track', onSelect: () => cb.onStopLane(lane.id) },
       { label: 'Delete track', danger: true, separatorBefore: true, onSelect: () => cb.onDeleteLane(lane.id) },
     ]);

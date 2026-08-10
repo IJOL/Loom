@@ -2,6 +2,8 @@
 // interaction handlers. Extracted from session-host.ts (the body was already
 // written in terms of `self`, so it lifts out verbatim with `self` as a param).
 
+import { convertLaneToLayers } from '../engines/layers-rack-ui';
+import { pagePresetName } from '../instrument-presets/preset-select-state';
 import { html } from 'lit-html';
 import { renderElement } from '../core/lit-fragment';
 import type { SessionHost } from './session-host';
@@ -180,6 +182,28 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         ensureScenesForRows(self.state);
         self.renderWithMixer();
       };
+      if (hd) withUndo(hd, run); else run();
+    },
+    onConvertToLayered(laneId: string) {
+      // Undoable, because it swaps the lane's instrument and rewrites its
+      // params — the two things a user most wants back if they meant something
+      // else. The conversion itself lives with the rack, which owns the one
+      // door that writes a rack and rebuilds the engine behind it.
+      const lane = self.state.lanes.find((l) => l.id === laneId);
+      if (!lane) return;
+      const hd = self.deps.historyDeps;
+      // The SAME resolution the WEAVE panel uses: the live picker's answer
+      // first, the saved one as the fallback. Three answers exist and none owns
+      // the question, so the rule is to reuse an existing reading rather than
+      // add a fourth.
+      //
+      // Stripped of its vocabulary prefix. What is recorded is the DROPDOWN's
+      // value — `factory:LEAD Square`, `user:…`, `sampler:…` — and a layer's
+      // preset list carries bare names, so handing it over whole matched no
+      // option and the slot came up "— pick —" while playing that very sound.
+      const raw = pagePresetName.get(laneId) ?? lane.enginePresetName;
+      const presetName = raw?.includes(':') ? raw.slice(raw.indexOf(':') + 1) : raw;
+      const run = () => { convertLaneToLayers(lane, presetName); };
       if (hd) withUndo(hd, run); else run();
     },
     onDuplicateLane(laneId: string) {
