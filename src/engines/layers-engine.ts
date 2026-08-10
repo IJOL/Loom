@@ -31,7 +31,9 @@ import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 import { pluginSynthTrim, registerEngineCapabilities } from '../plugins/capabilities';
 import { isStripParamId } from '../core/channel-strip-params';
-import { MAX_LAYERS, layerPrefix, readRack, type LayerSpec } from '../audio-dsp/layers/layer-spec';
+import {
+  MAX_LAYERS, layerPrefix, layerModTargets, readRack, type LayerSpec,
+} from '../audio-dsp/layers/layer-spec';
 import { buildLayersRack, hiddenLayerParam } from './layers-rack-ui';
 import type { SessionLane } from '../session/session';
 
@@ -155,6 +157,12 @@ function makeLayersDescriptor() {
         trim: l.engineId ? pluginSynthTrim(l.engineId) ?? 1 : 1,
       })),
     }),
+    // A slot's own envelopes. `amp` and `filter.env` are how an engine finds its
+    // per-voice envelopes, and a lane numbers one of each — so four instruments
+    // in one lane would share a single amplitude envelope, and a slot's sound
+    // would depend on what the slot beside it was given. One set per slot is
+    // what lets a plucked bass and a slow pad live in the same lane.
+    modTargets: layerModTargets(),
     extraUI: buildLayersRack,
     // Only the open tab's instrument is drawn. Four engines' worth of knobs at
     // once is not a page, it is a wall — and it is what the first attempt did.

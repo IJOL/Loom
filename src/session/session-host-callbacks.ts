@@ -211,8 +211,12 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       // factory defaults sounding like something else entirely.
       const engine = self.deps.laneResources?.get(laneId)?.engine;
       const patch = engine ? snapshotEngineParams(engine) : undefined;
+      // And its ENVELOPES, which are not params and so are not in the patch.
+      // Read live for the same reason: `engineState.modulators` is written on
+      // save, not kept in step.
+      const mods = engine?.modulators?.serialize();
       const run = () => {
-        if (!convertLaneToLayers(lane, presetName, patch)) return;
+        if (!convertLaneToLayers(lane, presetName, patch, mods)) return;
         // Tell the NEW engine what the rack says, through the door every param
         // write goes through.
         //
@@ -226,6 +230,11 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         // one that now exists.
         const built = self.deps.laneResources?.get(laneId)?.engine;
         if (!built) return;
+        // Everything the conversion wrote — the copied patch under both
+        // prefixes AND the two slots' envelopes — is put onto the rebuilt
+        // engine by the rack door itself (main.ts's setRack), because every
+        // rack change rebuilds and every rebuild needs it. Only the gains are
+        // written here, and only because they must also reach the mirror.
         commitParamForLane(built, self.state, laneId, 'l0.gain', 1);
         commitParamForLane(built, self.state, laneId, 'l1.gain', 0);
       };

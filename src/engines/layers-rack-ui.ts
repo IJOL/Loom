@@ -17,10 +17,12 @@ import { listEngines } from './registry';
 import { melodicSynthEngineIds } from './engine-selector-ui';
 import type { EngineUIContext, SynthEngine } from './engine-types';
 import type { SessionLane } from '../session/session';
-import { LAYERS_ENGINE_ID, laneLayers } from './layers-engine';
+import { LAYERS_ENGINE_ID, LAYERS_DEFAULT_MODULATORS, laneLayers } from './layers-engine';
 import { layerPrefix, MAX_LAYERS, type LayerSpec } from '../audio-dsp/layers/layer-spec';
 import { getCachedPresets } from '../presets/preset-loader';
 import { commitParamForLane } from './engine-param-commit';
+import { prefixModulators, replaceLayerModulators } from './layer-modulators';
+import type { ModulatorState } from '../modulation/types';
 
 export interface LayersRackDeps {
   /** Write the rack to the lane and rebuild its engine. The host owns both —
@@ -75,6 +77,10 @@ export function convertLaneToLayers(
    *  Falls back to the mirror when no engine is available, which is what a
    *  fixture with no audio graph has. */
   patch?: Record<string, number>,
+  /** The lane's LIVE modulators, read off its engine — its envelopes, which are
+   *  not params and so are not in `patch`. Supplied by the caller for the same
+   *  reason and with the same fallback. */
+  mods?: ModulatorState[],
 ): boolean {
   if (!deps || !lane || lane.engineId === LAYERS_ENGINE_ID) return false;
 
@@ -119,26 +125,33 @@ export function convertLaneToLayers(
   carried[`${layerPrefix(0)}gain`] = 1;
   carried[`${layerPrefix(1)}gain`] = 0;
 
-  // What this does NOT carry, and why it is left undone rather than half-done:
-  // the lane's MODULATORS.
+  // The MODULATORS, into both slots, wearing each slot's prefix.
   //
-  // Subtractive ships two ADSRs — one on `amp`, one on `filter.env` — and
-  // LAYERS ships a single LFO, so a converted lane loses its amplitude and
-  // filter envelopes and comes out at half the level sounding like another
-  // instrument. Measured: RMS 0.044 before, 0.022 after, twice from a clean
-  // reload.
+  // This is the half that params alone could never do. Subtractive ships two
+  // ADSRs — one on `amp`, one on `filter.env` — and LAYERS ships a single LFO,
+  // so a lane converted without them lost its amplitude envelope (flat gain) and
+  // its filter envelope (a shut filter) and came out at half the level sounding
+  // like another instrument. Measured: RMS 0.044 before, 0.022 after.
   //
-  // Carrying them at the LANE's level would silence the symptom and entrench
-  // the fault. `LayersRenderer` hands the lane's offsets to every layer
-  // unchanged, so one envelope would be shared by every slot: two instruments
-  // could never have different envelopes, and a slot would sound according to
-  // something outside itself. A slot has to CONTAIN what its instrument brings.
+  // PREFIXED, never shared. A modulator at the lane's level is handed to every
+  // layer unchanged, so one envelope would drive all four: two instruments could
+  // never have different envelopes, and a slot would sound according to what the
+  // slot beside it was given. `l0.amp` is the whole difference.
   //
-  // That is per-slot modulation, and it is a redesign rather than a copy — the
-  // envelope targets `amp` and `filter.env` are synthetic, not declared params,
-  // so "layer 0's amp" has no name yet. See the handover beside this round's
-  // specs.
-  lane.engineState = { ...lane.engineState, params: carried };
+  // Read from the LIVE host for the same reason the patch is —
+  // `engineState.modulators` is written on save, not kept in step.
+  const liveMods = mods ?? lane.engineState?.modulators ?? [];
+  lane.engineState = {
+    ...lane.engineState,
+    params: carried,
+    modulators: [
+      // LAYERS' own set first: the rack's LFO belongs to the rack, and is what
+      // an inserted modulator would join.
+      ...LAYERS_DEFAULT_MODULATORS(),
+      ...prefixModulators(liveMods, 0, lane.engineId),
+      ...prefixModulators(liveMods, 1, lane.engineId),
+    ],
+  };
 
   deps.setRack(lane.id, rack);
   return true;
@@ -200,6 +213,23 @@ function applyLayerPreset(
   for (const [id, value] of Object.entries(preset.params as Record<string, number>)) {
     if (typeof value === 'number') commitParamForLane(engine, ctx.sessionState, ctx.laneId, `${pre}${id}`, value);
   }
+  // A preset is an instrument, not a bag of numbers. Most of the ones we ship
+  // carry their own envelopes — subtractive's every one of them — and applying
+  // only `params` left a slot playing the previous preset's envelope with the
+  // new preset's knobs. This is what makes changing a layer's preset change the
+  // whole sound rather than half of it.
+  //
+  // Replaced rather than added: the envelope this preset does not have must go,
+  // or a slot accumulates one set per preset you ever recalled into it.
+  const mods = replaceLayerModulators(
+    engine.modulators.serialize(), i, prefixModulators(preset.modulators ?? [], i, engineId),
+  );
+  engine.modulators.deserialize(mods);
+  (engine as { postModulators?(): void }).postModulators?.();
+  const lane = ctx.sessionState?.lanes.find((l) => l.id === ctx.laneId);
+  // Straight into engineState, because nothing else mirrors a modulator set on
+  // its way past — `commitParamForLane` covers params and only params.
+  if (lane) lane.engineState = { ...lane.engineState, modulators: mods };
 }
 
 export function buildLayersRack(host: HTMLElement, ctx: EngineUIContext, engine: SynthEngine): void {

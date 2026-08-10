@@ -35,11 +35,21 @@ import type { ParamIndex } from '@loom/plugin-sdk';
 
 /** Build the index for one engine from its declared param ids, in declaration
  *  order. Repeats keep their first slot; an id that is both a declared param and
- *  a synthetic target gets one slot, not two. */
-export function buildParamIndex(ids: readonly string[]): ParamIndex {
+ *  a synthetic target gets one slot, not two.
+ *
+ *  @param extra modulation targets this ENGINE contributes that are neither
+ *  declared params nor the three above. LAYERS has twelve — `l0.amp`,
+ *  `l0.filter.env`, … — because a slot's amplitude envelope belongs to that
+ *  slot's instrument and the lane's single `amp` would be shared by all four.
+ *  Numbered BEFORE the global three so the same reasoning holds: adding one
+ *  never renumbers a declared param. */
+export function buildParamIndex(
+  ids: readonly string[], extra: readonly string[] = [],
+): ParamIndex {
   const slot: Record<string, number> = {};
   let n = 0;
   for (const id of ids) if (!(id in slot)) slot[id] = n++;
+  for (const t of extra) if (!(t in slot)) slot[t] = n++;
   for (const t of SYNTHETIC_TARGETS) if (!(t in slot)) slot[t] = n++;
   return { slot, length: n };
 }

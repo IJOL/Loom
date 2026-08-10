@@ -135,6 +135,9 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
             : spec.groups,
           modulators: spec.modulators,
           hideParam: spec.hideParam,
+          // Targets that are not knobs. LAYERS declares one envelope pair per
+          // slot; every other engine declares none and gets the global three.
+          modTargets: spec.modTargets,
           // A plugin engine's renderer does NOT multiply by its own engine trim
           // (the number lives in its manifest, not its compiled JS), so the host
           // carries it down to the sum point. The `?? 1` is the floor for a

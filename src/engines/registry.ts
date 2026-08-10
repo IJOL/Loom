@@ -71,6 +71,16 @@ export interface EngineDescriptor {
   /** A param this engine declares but does not want DRAWN right now. See
    *  WorkletEngineConfig.hideParam. */
   hideParam?: (laneId: string, paramId: string) => boolean;
+  /** Modulation targets this engine has that are NOT declared params.
+   *
+   *  Every engine already gets three of these for free — `amp`, `filter.env`,
+   *  `amp.gain` — because a per-voice envelope is not a knob. LAYERS needs one
+   *  set PER SLOT: four instruments in one lane sharing a single amplitude
+   *  envelope is four instruments that cannot have different envelopes.
+   *
+   *  Static, not per-lane, and read at the same moment as the params: the
+   *  worklet numbers a lane once and keeps that numbering for its lifetime. */
+  modTargets?: readonly string[];
 }
 
 export function registerEngine(engine: SynthEngine): void {
@@ -139,6 +149,7 @@ export function getEngineDescriptor(id: string): EngineDescriptor | undefined {
     extraUI: eng.extraUI,
     dynamicGroupsFor: eng.dynamicGroupsFor?.bind(eng),
     hideParam: eng.hideParam,
+    modTargets: eng.modTargets,
   };
 }
 

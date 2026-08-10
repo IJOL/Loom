@@ -18,6 +18,7 @@
 // Pure: no registry, no AudioContext, no worklet globals.
 
 import type { ParamBag, ParamIndex } from '@loom/plugin-sdk';
+import { SYNTHETIC_TARGETS } from '../param-index';
 
 /** The most layers one lane can hold. Four because that is what the widest
  *  arrangement needs (a square of loops), and because every layer is a whole
@@ -123,6 +124,54 @@ export function subBag(bag: ParamBag, i: number): ParamBag {
   const out: ParamBag = {};
   for (const k in bag) {
     if (k.startsWith(pre)) out[k.slice(pre.length)] = bag[k];
+  }
+  return out;
+}
+
+/** The modulation targets a LAYERS lane declares beyond its params: each slot's
+ *  copy of the synthetic three.
+ *
+ *  `amp` and `filter.env` are not declared params — they are the per-voice
+ *  amplitude and filter envelopes, and an engine finds them by name rather than
+ *  in its own spec. A lane numbers ONE of each, so four instruments in one lane
+ *  would share a single amplitude envelope: give slot 1 a plucked preset and
+ *  slot 2 a pad, and whichever envelope arrived last would play both. Naming
+ *  them per slot is what makes "layer 0's amp" a thing that exists.
+ *
+ *  All four slots, filled or not — the lane's numbering is fixed for its
+ *  lifetime, so a slot that only got its targets once occupied could never be
+ *  given an envelope without rebuilding the lane. */
+export function layerModTargets(): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < MAX_LAYERS; i++) {
+    for (const t of SYNTHETIC_TARGETS) out.push(`${layerPrefix(i)}${t}`);
+  }
+  return out;
+}
+
+/** One layer's share of a set of modulators, in that layer's own vocabulary.
+ *
+ *  A lane's modulator aims at `l0.amp`; the instrument in slot 0 only ever knew
+ *  that target as `amp`. Mods with nothing aimed at this layer are dropped
+ *  entirely rather than passed through empty — an engine that is handed an
+ *  envelope with no targets still allocates one per voice.
+ *
+ *  Structurally typed on purpose: the worklet's ModLite and the SDK's ModEnvSpec
+ *  are two views of the same wire shape, and this needs neither of them whole. */
+export function subMods<M extends { depthByParam: Record<string, number> }>(
+  mods: readonly M[], i: number,
+): M[] {
+  const pre = layerPrefix(i);
+  const out: M[] = [];
+  for (const m of mods) {
+    const depthByParam: Record<string, number> = {};
+    let any = false;
+    for (const k in m.depthByParam) {
+      if (!k.startsWith(pre)) continue;
+      depthByParam[k.slice(pre.length)] = m.depthByParam[k];
+      any = true;
+    }
+    if (any) out.push({ ...m, depthByParam });
   }
   return out;
 }

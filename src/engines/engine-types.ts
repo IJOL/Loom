@@ -165,4 +165,7 @@ export interface SynthEngine {
   dynamicGroupsFor?(lane: import('../session/session').SessionLane): import('./engine-param-groups').EngineParamGroup[];
   /** A param declared but not drawn right now. See EngineDescriptor.hideParam. */
   hideParam?: (laneId: string, paramId: string) => boolean;
+  /** Modulation targets that are not declared params. See
+   *  EngineDescriptor.modTargets. */
+  modTargets?: readonly string[];
 }

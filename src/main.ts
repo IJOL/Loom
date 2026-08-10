@@ -38,6 +38,7 @@ import { ChannelStrip } from './core/fx';
 import { type KnobHandle } from './core/knob';
 import * as laneTrackHelpers from './core/lane-display';
 import { SessionHost } from './session/session-host';
+import { applyEngineStateForLane } from './session/session-host-persistence';
 import { DEFAULT_MUSICALITY } from './session/session';
 import { renderProjectOptionsDialog } from './session/project-options-dialog';
 import { bindAboutDialog } from './app/about-dialog';
@@ -827,6 +828,12 @@ wireLayersRack({
     if (!lane) return;
     lane.engineState = { ...lane.engineState, layers };
     swapLaneEngine(laneId, LAYERS_ENGINE_ID);
+    // The rebuilt engine starts from its SPEC defaults and reads nothing back,
+    // so everything the lane holds has to be put onto it again: every slot's
+    // params AND every slot's envelopes. Without this, changing one slot's
+    // instrument silently reset the other three, and a converted lane came up
+    // with no envelopes at all.
+    applyEngineStateForLane(sessionHost, lane);
     // Repaint through the ONE door: focusLane owns which lane the instrument
     // page shows, and reaching past it to showLaneEditor is what once left the
     // clip editor and the knobs pointing at two different lanes.

@@ -21,9 +21,17 @@ import { getModulator } from '../modulation/modulator-registry';
  *  renderer read that struct. That translation table is gone with the struct. It
  *  was also what stopped the modulation offsets being numbered by the lane's
  *  ParamIndex, which is keyed by dot-ids — one vocabulary is the price of one
- *  numbering. Nothing persisted changes: a connection always stored the dot-id. */
-export function makeDotIdMapper(params: EngineParamSpec[]): (paramId: string) => string | null {
-  const targets = [...params.map((p) => p.id), 'amp', 'filter.env', 'amp.gain'];
+ *  numbering. Nothing persisted changes: a connection always stored the dot-id.
+ *
+ *  @param extra targets the engine contributes that are not declared params —
+ *  LAYERS' per-slot `l0.amp`, `l0.filter.env`, … Checked FIRST, and the order is
+ *  load-bearing: `l0.amp` ends with `.amp`, so with the bare three in front
+ *  every slot's amplitude envelope would collapse onto the lane's single `amp`
+ *  and all four instruments would share one. */
+export function makeDotIdMapper(
+  params: EngineParamSpec[], extra: readonly string[] = [],
+): (paramId: string) => string | null {
+  const targets = [...extra, ...params.map((p) => p.id), 'amp', 'filter.env', 'amp.gain'];
   return (paramId) => {
     for (const t of targets) if (paramId === t || paramId.endsWith('.' + t)) return t;
     return null;

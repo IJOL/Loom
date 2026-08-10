@@ -44,13 +44,17 @@ export class LoomWorkletNode {
    *  second construction site and mute that lane's every knob at runtime; a
    *  missing argument is a type error instead. */
   constructor(ctx: BaseAudioContext, engineId: string, outputTrim: number,
-              paramIds: readonly string[]) {
+              paramIds: readonly string[],
+              /** Modulation targets that are not params — see
+               *  EngineDescriptor.modTargets. Part of the numbering, so it
+               *  travels at construction with everything else structural. */
+              modTargets: readonly string[] = []) {
     this.node = new AudioWorkletNode(ctx, LOOM_PROCESSOR_NAME, {
       outputChannelCount: [2],
       // outputTrim is STRUCTURAL (it comes from the plugin manifest, not a
       // knob), so it travels once at construction rather than as a param —
       // and so does the param numbering.
-      processorOptions: { engineId, outputTrim, paramIds },   // engineId tells the worklet which renderer to build
+      processorOptions: { engineId, outputTrim, paramIds, modTargets },   // engineId tells the worklet which renderer to build
     });
     this.node.port.onmessage = (e: MessageEvent<WorkletToMain>) => {
       if (e.data.type === 'voices') this.countCb?.(e.data.active);

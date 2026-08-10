@@ -11,10 +11,20 @@
 // is the honest reading of what the user asked for — a hidden divide-by-N would
 // make a fader that visibly says 1.0 quietly mean 0.25.
 
-import type { NoteSpec, ParamBag, ParamIndex, VoiceModOffsets, VoiceRenderer } from '@loom/plugin-sdk';
+import type {
+  ModEnvSpec, NoteSpec, ParamBag, ParamIndex, VoiceModOffsets, VoiceRenderer,
+} from '@loom/plugin-sdk';
 import { slotOf } from '@loom/plugin-sdk';
 import { createRenderer, hasRenderer } from '../renderer-registry';
-import { pickLayers, subBag, subIndex, layerPrefix, type LayerSpec } from './layer-spec';
+import { pickLayers, subBag, subIndex, subMods, layerPrefix, type LayerSpec } from './layer-spec';
+
+/** The two per-voice envelope hooks. Neither is on VoiceRenderer — the
+ *  VoiceManager reaches them by cast too, for the same reason: a renderer with
+ *  no envelopes should not have to declare them. */
+interface EnvelopeVoice {
+  setModEnvelopes?(mods: ModEnvSpec[], index: ParamIndex): void;
+  getAdsrOffsets?(): VoiceModOffsets;
+}
 
 interface Live {
   render: VoiceRenderer;
@@ -29,6 +39,9 @@ interface Live {
    *  setLiveValues. -1 when the lane does not declare it, which is the ordinary
    *  case for a renderer built outside a LAYERS lane. */
   gainSlot: number;
+  /** Whether this layer was handed any per-voice envelope. Only a layer that
+   *  was has offsets worth reading back for the knob rings. */
+  hasEnv: boolean;
 }
 
 export class LayersRenderer implements VoiceRenderer {
@@ -36,6 +49,10 @@ export class LayersRenderer implements VoiceRenderer {
   /** The lane's live values, kept by reference so a gain change reaches a note
    *  already sounding. Absent until the host hands them over. */
   private values: Float64Array | undefined;
+  /** The lane's slot count, learned when the envelopes arrive — the width the
+   *  summed ring telemetry has to be. */
+  private modLength = 0;
+  private adsrOnly: Float64Array | undefined;
 
   constructor(
     note: NoteSpec,
@@ -63,6 +80,7 @@ export class LayersRenderer implements VoiceRenderer {
         trim: layers[i].trim ?? 1,
         layer: i,
         gainSlot: -1,
+        hasEnv: false,
       });
     }
   }
@@ -97,6 +115,51 @@ export class LayersRenderer implements VoiceRenderer {
       l.gainSlot = slotOf(index, `${layerPrefix(l.layer)}gain`);
       l.render.setLiveValues?.(values, subIndex(index, l.layer));
     }
+  }
+
+  /** Hand each layer ITS OWN per-voice envelopes.
+   *
+   *  A LAYERS lane's modulators aim at `l0.amp`, `l1.filter.env`, …; the
+   *  instrument in slot 0 only ever knew those as `amp` and `filter.env`. Both
+   *  the mods and the numbering are translated per slot, which is the whole
+   *  reason a slot can hold a plucked bass while the slot beside it holds a pad.
+   *
+   *  Without this a layer had no envelopes at all: the lane's own `amp` slot is
+   *  not one this layer can see, so a converted lane came up with a flat
+   *  amplitude and a closed filter — measured at half the level, and audible as
+   *  another instrument entirely.
+   *
+   *  A layer with nothing aimed at it is SKIPPED rather than handed an empty
+   *  list: a renderer given envelopes builds one Adsr per voice for them. */
+  setModEnvelopes(mods: ModEnvSpec[], index: ParamIndex): void {
+    this.modLength = index.length;
+    for (const l of this.live) {
+      const mine = subMods(mods, l.layer);
+      if (!mine.length) continue;
+      (l.render as EnvelopeVoice).setModEnvelopes?.(mine, subIndex(index, l.layer));
+      l.hasEnv = true;
+    }
+  }
+
+  /** Every layer's ADSR-only offsets, summed. Telemetry only — read ~30 times a
+   *  second to draw the knob rings — so the allocation on first call is not on
+   *  the audio path. Each layer's array is already addressed by the LANE's
+   *  slots (subIndex translates the naming, never the numbering), so this is a
+   *  plain add rather than a re-index. */
+  getAdsrOffsets(): VoiceModOffsets {
+    if (!this.adsrOnly || this.adsrOnly.length !== this.modLength) {
+      this.adsrOnly = new Float64Array(this.modLength);
+    }
+    const out = this.adsrOnly;
+    out.fill(0);
+    for (const l of this.live) {
+      if (!l.hasEnv) continue;
+      const a = (l.render as EnvelopeVoice).getAdsrOffsets?.();
+      if (!a) continue;
+      const n = Math.min(a.length, out.length);
+      for (let i = 0; i < n; i++) out[i] += a[i];
+    }
+    return out;
   }
 
   /** Done only when every layer is. A voice retired while its longest release

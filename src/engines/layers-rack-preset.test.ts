@@ -13,7 +13,11 @@ import '../plugins/modulators/adsr';
 import { LAYERS_ENGINE_ID } from './layers-engine';
 import { buildLayersRack, wireLayersRack, convertLaneToLayers } from './layers-rack-ui';
 import { seedEnginePresets, __resetPresetCache } from '../presets/preset-loader';
-import { getEngine } from './registry';
+import { getEngine, registerEngine } from './registry';
+import { createDescriptorEngine } from './descriptor-engine';
+import { isLayerModulator } from './layer-modulators';
+import { ModulationHostImpl } from '../modulation/modulation-host';
+import type { ModulatorState } from '../modulation/types';
 import type { SessionLane, SessionState } from '../session/session';
 import type { EngineUIContext, SynthEngine } from './engine-types';
 
@@ -22,6 +26,21 @@ import type { EngineUIContext, SynthEngine } from './engine-types';
  *  registry already holds, and only the PRESET cache needs seeding. */
 const SLOT_ENGINE = 'subtractive';
 
+// The slot's engine has to be REGISTERED, not merely have presets: prefixing a
+// modulator resolves its target through that engine's own declared params,
+// exactly as the worklet's mapper does. In the app subtractive is a plugin the
+// host registers at boot; here it is two params, which is all this needs.
+if (!getEngine(SLOT_ENGINE)) {
+  registerEngine(createDescriptorEngine({
+    id: SLOT_ENGINE, name: 'Subtractive', polyphony: 'poly',
+    params: [
+      { id: 'filter.cutoff', label: 'Cutoff', kind: 'continuous', min: 0, max: 20000, default: 800 },
+      { id: 'osc1.level', label: 'Level', kind: 'continuous', min: 0, max: 1, default: 0.6 },
+    ],
+    presets: () => [],
+  }));
+}
+
 const lane = (): SessionLane => ({
   id: 'lane1', engineId: SLOT_ENGINE, clips: [], inserts: [],
   engineState: { params: { 'filter.cutoff': 800 } },
@@ -29,10 +48,16 @@ const lane = (): SessionLane => ({
 
 function harness() {
   const written: [string, number][] = [];
+  // A real ModulationHostImpl, because a layer's preset now brings ITS
+  // modulators and the rack reads the set back to replace only that slot's.
+  const modHost = new ModulationHostImpl([]);
+  const posted: number[] = [];
   const engine = {
     id: LAYERS_ENGINE_ID,
     setBaseValue: (id: string, v: number) => { written.push([id, v]); },
     getBaseValue: () => 0,
+    modulators: modHost,
+    postModulators: () => { posted.push(1); },
   } as unknown as SynthEngine;
 
   const l = lane();
@@ -49,16 +74,40 @@ function harness() {
 
   const host = document.createElement('div');
   const ctx = { laneId: l.id, sessionState: state } as unknown as EngineUIContext;
-  return { host, ctx, engine, lane: l, state, written, racks };
+  return { host, ctx, engine, lane: l, state, written, racks, modHost, posted };
 }
+
+/** An envelope of the kind every subtractive preset ships: one on the
+ *  amplitude, one on the filter. Written in the preset's own vocabulary — bare
+ *  target ids — which is what the prefixing has to translate. */
+const presetMods = (sustain: number): ModulatorState[] => ([
+  {
+    id: 'adsr-amp', kind: 'adsr', enabled: true, scope: 'per-voice', sustain,
+    connections: [{ id: 'c', paramId: 'amp', depth: 1 }],
+  },
+  {
+    id: 'adsr-filter', kind: 'adsr', enabled: true, scope: 'per-voice', sustain,
+    connections: [{ id: 'c', paramId: 'filter.env', depth: 1 }],
+  },
+] as ModulatorState[]);
 
 beforeEach(() => {
   __resetPresetCache();
   seedEnginePresets(SLOT_ENGINE, [
     { name: 'Bright', params: { 'filter.cutoff': 9000, 'osc1.level': 0.9 } },
-    { name: 'Dark', params: { 'filter.cutoff': 300, 'osc1.level': 0.2 } },
+    { name: 'Dark', params: { 'filter.cutoff': 300, 'osc1.level': 0.2 },
+      modulators: presetMods(0.4) },
+    { name: 'Flat', params: { 'filter.cutoff': 1000 } },
   ]);
 });
+
+/** What the app does after a conversion: the rack rebuilds the lane's engine,
+ *  and the persisted state — params AND modulators — is applied onto the one
+ *  that now exists. The fixture's engine is not rebuilt, so this is the step
+ *  that stands in for it. */
+function rebuild(h: ReturnType<typeof harness>): void {
+  h.modHost.deserialize(h.lane.engineState?.modulators ?? []);
+}
 
 /** Pick `name` in the rack's preset dropdown, the way a user does. */
 function pickPreset(h: ReturnType<typeof harness>, name: string): boolean {
@@ -216,6 +265,119 @@ describe('converting a lane carries its sound', () => {
     h.lane.engineState = { params: { gain: 0.8 } };
     convertLaneToLayers(h.lane, 'Bright');
     expect(h.lane.engineState?.params?.['l1.gain']).toBe(0);
+  });
+});
+
+describe('a slot contains its instrument s ENVELOPES too', () => {
+  // The half params could never carry. `amp` and `filter.env` are not knobs, so
+  // a preset applied as params alone left the slot playing the previous
+  // preset's envelope with the new preset's cutoff.
+
+  it('brings the preset s modulators in, under this slot s prefix', () => {
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright');
+    pickPreset(h, 'Dark');
+    const ids = h.modHost.serialize().map((m) => m.id);
+    expect(ids).toContain('l0.adsr-amp');
+    expect(ids).not.toContain('adsr-amp');
+  });
+
+  it('aims them at THIS slot s envelope, not the lane s', () => {
+    // A connection to the bare `amp` would be handed to every layer unchanged,
+    // and two instruments could never have different envelopes.
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright');
+    pickPreset(h, 'Dark');
+    const amp = h.modHost.serialize().find((m) => m.id === 'l0.adsr-amp');
+    expect(amp?.connections[0].paramId).toBe('l0.amp');
+  });
+
+  it('REPLACES the slot s previous set rather than stacking on it', () => {
+    // Otherwise a slot accumulates one envelope per preset ever recalled into
+    // it, and the oldest keeps sounding.
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright');
+    pickPreset(h, 'Dark');
+    pickPreset(h, 'Flat');
+    expect(h.modHost.serialize().filter((m) => m.id.startsWith('l0.'))).toHaveLength(0);
+  });
+
+  it('leaves the OTHER slot s envelopes alone', () => {
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright', undefined, presetMods(0.9));
+    rebuild(h);
+    const before = h.modHost.serialize().filter((m) => m.id.startsWith('l1.'));
+    pickPreset(h, 'Dark');
+    const after = h.modHost.serialize().filter((m) => m.id.startsWith('l1.'));
+    expect(after).toHaveLength(before.length);
+    expect(after.length).toBeGreaterThan(0);
+  });
+
+  it('re-sends the set, or the write reaches the object and not the sound', () => {
+    // Deserializing replaces the host's state and nothing else — the worklet
+    // carries on running whatever it was last handed.
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright');
+    pickPreset(h, 'Dark');
+    expect(h.posted.length).toBeGreaterThan(0);
+  });
+
+  it('mirrors them into the lane so they survive a reload', () => {
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright');
+    pickPreset(h, 'Dark');
+    expect(h.lane.engineState?.modulators?.map((m) => m.id)).toContain('l0.adsr-amp');
+  });
+});
+
+describe('converting carries the lane s envelopes into BOTH slots', () => {
+  // The measured failure: subtractive ships an ADSR on `amp` and one on
+  // `filter.env`, LAYERS ships a single LFO, so a converted lane came up with a
+  // flat amplitude and a shut filter — RMS 0.044 → 0.022.
+
+  it('gives each slot its own copy', () => {
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright', undefined, presetMods(0.6));
+    const ids = h.lane.engineState?.modulators?.map((m) => m.id) ?? [];
+    expect(ids).toContain('l0.adsr-amp');
+    expect(ids).toContain('l1.adsr-amp');
+    expect(ids).toContain('l0.adsr-filter');
+  });
+
+  it('points each copy at its own slot', () => {
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright', undefined, presetMods(0.6));
+    const mods = h.lane.engineState?.modulators ?? [];
+    expect(mods.find((m) => m.id === 'l0.adsr-amp')?.connections[0].paramId).toBe('l0.amp');
+    expect(mods.find((m) => m.id === 'l1.adsr-amp')?.connections[0].paramId).toBe('l1.amp');
+  });
+
+  it('keeps LAYERS own modulators alongside them', () => {
+    // The rack's LFO belongs to the rack, and is what an inserted modulator
+    // would join.
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright', undefined, presetMods(0.6));
+    const own = h.lane.engineState?.modulators?.filter((m) => !isLayerModulator(m.id));
+    expect(own?.length).toBeGreaterThan(0);
+  });
+
+  it('resolves a LANE-qualified connection the same as a bare one', () => {
+    // A connection made in the panel stores `subtractive-1.filter.cutoff`; one
+    // shipped in a preset stores `filter.cutoff`. Both have to end up as
+    // `l0.filter.cutoff` or half a lane's modulation is dropped on conversion.
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright', undefined, [{
+      id: 'lfo1', kind: 'lfo', enabled: true, scope: 'shared',
+      connections: [{ id: 'c', paramId: 'subtractive-1.filter.cutoff', depth: 0.5 }],
+    }] as ModulatorState[]);
+    const lfo = h.lane.engineState?.modulators?.find((m) => m.id === 'l0.lfo1');
+    expect(lfo?.connections[0].paramId).toBe('l0.filter.cutoff');
+  });
+
+  it('converts a lane with no modulators at all without inventing any', () => {
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright', undefined, []);
+    expect(h.lane.engineState?.modulators?.some((m) => m.id.startsWith('l0.'))).toBe(false);
   });
 });
 

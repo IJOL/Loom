@@ -115,6 +115,11 @@ export interface WorkletEngineConfig {
    *  hides the three closed tabs, so the page shows one instrument rather than
    *  four stacked. Absent ⇒ everything declared is drawn, as before. */
   hideParam?: (laneId: string, paramId: string) => boolean;
+  /** Modulation targets that are not declared params — see
+   *  EngineDescriptor.modTargets. They must reach BOTH the numbering (so a
+   *  connection to one resolves to a slot) and the target mapper (so it is
+   *  recognised at all); this class is where those two meet. */
+  modTargets?: readonly string[];
 }
 
 export class WorkletLaneEngine implements SynthEngine {
@@ -168,7 +173,7 @@ export class WorkletLaneEngine implements SynthEngine {
     // the reason its offsets could not be numbered by the lane's ParamIndex,
     // which is keyed by dot-ids. Nothing persisted changes: a saved connection
     // always stored the dot-id, and the translation only ever happened in flight.
-    this.mapTarget = makeDotIdMapper(cfg.params);
+    this.mapTarget = makeDotIdMapper(cfg.params, cfg.modTargets);
     this.extraUI = cfg.extraUI;
     this.hideParam = cfg.hideParam;
     // Strip params are excluded from the bag on purpose: the bag IS the worklet
@@ -188,7 +193,8 @@ export class WorkletLaneEngine implements SynthEngine {
     // and plugins/karplus read but NO engine declares. Deriving the numbering
     // from the same object is what keeps that third case from going dead.
     const seed: ParamBag = { ...this.state, 'output.trim': 1 };
-    this.worklet = new LoomWorkletNode(ctx, cfg.engineId, cfg.outputTrim ?? 1, Object.keys(seed));
+    this.worklet = new LoomWorkletNode(ctx, cfg.engineId, cfg.outputTrim ?? 1,
+                                       Object.keys(seed), cfg.modTargets);
     this.worklet.connect(output);
     // Post the FULL spec-default bag once, right away. loom-processor.ts builds
     // its VoiceManager from an empty ParamBag ({}), so — absent this — every id
@@ -235,6 +241,14 @@ export class WorkletLaneEngine implements SynthEngine {
     this.postMods();
     reapplyLaneModulations(laneId);
   }
+  /** Re-send the modulator set to the worklet, and nothing else.
+   *
+   *  What a caller that has just written `modulators` directly — the load path
+   *  deserializing a lane's saved set — needs. `onModulationEdited` also
+   *  re-binds the lane's Web-Audio destinations, which is right for an edit and
+   *  wrong for an offline render. */
+  postModulators(): void { this.postMods(); }
+
   /** Exposed for the global voice cap and for tests. */
   getWorkletNode(): LoomWorkletNode { return this.worklet; }
 

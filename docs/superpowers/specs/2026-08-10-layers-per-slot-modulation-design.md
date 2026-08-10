@@ -1,8 +1,53 @@
 # LAYERS: a slot must contain its instrument
 
 **Date:** 2026-08-10
-**Status:** approved in conversation, not started.
+**Status:** BUILT. All three problems below are solved and covered by tests; what
+is left is the listening check — acceptance 1 has not been re-measured in the
+app since, and acceptances 2–4 have not been heard. Prune this file once it has.
 **Branch:** `worktree-arranger-auto-accompaniment`.
+
+## What shipped
+
+- **Naming.** `layerModTargets()` gives every slot its own `amp`, `amp.gain`
+  and `filter.env`. `buildParamIndex` takes them as `extra` and numbers them
+  before the global three, so nothing declared is ever renumbered;
+  `makeDotIdMapper` takes them too and checks them FIRST, because `l0.amp` ends
+  with `.amp` and would otherwise collapse onto the lane's one. They reach the
+  worklet as a new `modTargets` on the engine descriptor, carried by the
+  allocator → `WorkletLaneEngine` → `LoomWorkletNode` → `VoiceManager`.
+- **The envelopes reach the slot.** `LayersRenderer.setModEnvelopes` hands each
+  layer `subMods(mods, i)` and `subIndex(index, i)` — its own targets, under its
+  own names, at the lane's slots. `getAdsrOffsets` sums them back so the knob
+  rings follow a layer's envelope.
+- **A slot's preset brings its modulators.** `applyLayerPreset` replaces that
+  slot's set (never merges) and re-posts it. `convertLaneToLayers` carries the
+  lane's live set into both slots, prefixed.
+- **The set now reaches the SOUND.** `applyLaneEngineState` deserialized a
+  lane's saved modulators and never re-sent them, so the worklet kept running
+  whatever it was handed at construction — a lane's saved modulator edits were
+  inert on load. It now calls the engine's new `postModulators()`, which is
+  narrower than `onModulationEdited` on purpose (no Web-Audio re-bind, so an
+  offline render is unaffected).
+- **Every rack change restores the lane.** `setRack` rebuilds the engine from
+  spec defaults, so it now re-applies the lane's engineState. Changing one
+  slot's instrument used to silently reset the other three.
+
+### Where a slot's modulators live, and what that shows
+
+They are the LANE's modulators, with prefixed ids (`l0.adsr-amp`) aimed at
+prefixed targets (`l0.amp`). Not a new field on `LayerSpec`: `engineState.
+modulators` already exists, is already saved, and is already applied on rebuild,
+and a second home for the same thing would be a second answer to "what is this
+slot's envelope".
+
+The visible consequence is that a converted lane's MODULATORS panel lists five
+cards — LAYERS' own LFO plus each slot's pair. They render and edit correctly
+(a connection row labels itself from its own paramId and does not need the
+destination registry), so this is left visible on purpose: a user can retune
+slot 0's amplitude envelope where they can see which slot it belongs to.
+
+The better home is that slot's own TAB, next to its instrument and its preset —
+a follow-up, not a blocker.
 
 ## The rule this round exists to honour
 

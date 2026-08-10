@@ -30,6 +30,14 @@ type AnyEngine = {
   setKitMode?(m: 'synth' | 'sample'): void;
   setBaseValue(id: string, v: number): void;
   modulators?: { deserialize(s: unknown[]): void };
+  /** Re-send the modulator set to the worklet. Deserializing replaces the
+   *  host's state and nothing else, so without this a lane's SAVED modulators
+   *  reached its object and never its sound: the worklet carried on running the
+   *  set it was handed at construction (the engine's defaults, or the preset's).
+   *  Narrower than `onModulationEdited` on purpose — that one also re-binds the
+   *  Web-Audio destinations of the LIVE lane, which an offline render must not
+   *  do. */
+  postModulators?(): void;
   setKeymap?(k: KeymapEntry[]): void;
   setPadStore?(s: Record<number, Record<string, number>>): void;
   setDrumVoiceMutes?(m: Record<string, boolean>): void;
@@ -53,7 +61,10 @@ export async function applyLaneEngineState(
     }
   }
   const mods = es?.modulators;
-  if (mods && engine.modulators) engine.modulators.deserialize(mods);
+  if (mods && engine.modulators) {
+    engine.modulators.deserialize(mods);
+    engine.postModulators?.();
+  }
 
   deps.loadNoteFx(lane.id, es?.noteFx);
 

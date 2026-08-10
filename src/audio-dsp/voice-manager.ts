@@ -69,9 +69,13 @@ export class VoiceManager {
    *  default serves the in-process callers whose initial bag IS the full set. */
   constructor(private sr: number, private engineId: string, params: ParamBag,
               private readonly outputTrim = 1,
-              paramIds: readonly string[] = Object.keys(params)) {
+              paramIds: readonly string[] = Object.keys(params),
+              /** Modulation targets this engine has that are not params — see
+               *  EngineDescriptor.modTargets. They get slots like everything
+               *  else; they simply never receive a knob's value. */
+              modTargets: readonly string[] = []) {
     this.params = { ...params };
-    this.index = buildParamIndex(paramIds);
+    this.index = buildParamIndex(paramIds, modTargets);
     for (const id of paramIds) this.slotIds[this.index.slot[id]] = id;
     for (const id in this.index.slot) this.targetIds[this.index.slot[id]] = id;
     this.modOffsets = new Float64Array(this.index.length);

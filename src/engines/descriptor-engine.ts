@@ -64,6 +64,8 @@ export interface DescriptorEngineConfig {
   dynamicGroupsFor?: (lane: import('../session/session').SessionLane) => EngineParamGroup[];
   /** See SynthEngine.hideParam. */
   hideParam?: (laneId: string, paramId: string) => boolean;
+  /** See EngineDescriptor.modTargets. */
+  modTargets?: readonly string[];
 }
 
 const inertVoice = (): Voice => ({
@@ -149,5 +151,6 @@ export function createDescriptorEngine(cfg: DescriptorEngineConfig): SynthEngine
     extraUI: cfg.extraUI,
     dynamicGroupsFor: cfg.dynamicGroupsFor,
     hideParam: cfg.hideParam,
+    modTargets: cfg.modTargets,
   };
 }
