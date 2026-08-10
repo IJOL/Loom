@@ -200,7 +200,19 @@ export function buildLayersRack(host: HTMLElement, ctx: EngineUIContext, engine:
             // Remember WHICH one, or the dropdown falls back to "— pick —" on
             // the next repaint and the slot reads as empty while playing the
             // sound it just recalled.
-            deps?.setRack(ctx.laneId, rack.map((l, k) => (k === open ? { ...l, presetName: name } : l)));
+            //
+            // Written STRAIGHT to the stored rack, never through setRack: that
+            // door swaps the lane's engine, which rebuilds it — and rebuilding
+            // it here would throw away the preset's params one line after they
+            // were written. Reported as changing a layer's preset leaving the
+            // sound exactly as it was.
+            //
+            // Rebuilding to store a LABEL is wrong on its own terms anyway. The
+            // sound is the params; this is the name of where they came from.
+            if (lane) lane.engineState = {
+              ...lane.engineState,
+              layers: rack.map((l, k) => (k === open ? { ...l, presetName: name } : l)),
+            };
             deps?.repaint(ctx.laneId);
           }}
         >
