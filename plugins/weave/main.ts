@@ -43,6 +43,11 @@ function arcPath(frac: number): string {
   return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
 }
 
+/** The progression dropdown's value when the scene walks a progression the user
+ *  WROTE. Not a catalogue id and deliberately unpickable — you become custom by
+ *  editing the strip, never by choosing it here. */
+const CUSTOM = '__custom';
+
 const svg = (tag: string) => document.createElementNS('http://www.w3.org/2000/svg', tag);
 const el = (tag: string, cls?: string) => {
   const n = document.createElement(tag);
@@ -243,7 +248,24 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     // tooltip it costs a hover and nothing else.
     if (o && c.group) o.title = `${c.id.replace(/-/g, ' · ')} — ${c.group}`;
   }
-  progSel.addEventListener('change', () => ctx.setProgression(progSel.value));
+  // Custom is a STATE, not a choice: you become custom by editing the strip
+  // below, never by picking it. Disabled so it cannot be chosen, present so a
+  // written progression has a name in the box instead of the entry it started
+  // from — which would be the select naming music nobody is playing.
+  const customOpt = document.createElement('option');
+  customOpt.value = CUSTOM;
+  customOpt.textContent = 'Custom';
+  customOpt.disabled = true;
+  customOpt.title = 'Written by hand below. Pick an entry above to go back to the catalogue.';
+  progSel.appendChild(customOpt);
+
+  progSel.addEventListener('change', () => {
+    if (progSel.value === CUSTOM) return;
+    // Picking from the shelf throws the written one away — the host does it, so
+    // there is one rule rather than two.
+    ctx.setProgression(progSel.value);
+    paintChords();
+  });
 
   // No BPM field here, though the mockup drew one. The mockup was a standalone
   // picture; in the app the transport's own BPM input sits forty pixels above
@@ -484,6 +506,89 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     flowLabel, flowDial.el, flowOut, driftLabel, drift, speedLabel, speed, evolve, chordWrap,
   );
 
+  // ── the progression, written by hand ─────────────────────────────────────
+  //
+  // The catalogue was the only input, and six entries is a data limit dressed
+  // as a capability one. This is the strip that ends it: a cell per chord, as
+  // WIDE as it is long. A bar count in text would be a number to read; a wide
+  // cell is a length you see.
+  //
+  // The host owns every rule about what an edit MEANS — at least one bar, never
+  // remove the last, the first edit of a catalogue entry copies it. This only
+  // decides what a cell looks like and which op a gesture calls.
+  const chordStrip = el('div', 'weave-chords');
+  const paintChords = () => {
+    chordStrip.textContent = '';
+    const track = ctx.chordTrack();
+    const total = track.reduce((n, c) => n + c.bars, 0) || 1;
+    track.forEach((c, i) => {
+      const cell = el('div', 'weave-chord-cell');
+      cell.textContent = ROMAN[c.degree] ?? String(c.degree);
+      // The width IS the length: flex-grow by bars, so the strip always fills
+      // the row and the proportions stay true however long the lap is.
+      cell.style.flexGrow = String(c.bars);
+      cell.title = `${c.bars} bar${c.bars === 1 ? '' : 's'} — click to change the chord, drag the right edge to lengthen`;
+      cell.addEventListener('click', () => {
+        // Seven degrees, wrapping. A dropdown per cell would be a menu to open
+        // for a value with seven possibilities you can hear as you pass them.
+        ctx.setChordDegree(i, (c.degree + 1) % ROMAN.length);
+        paintChords();
+      });
+
+      const grip = el('div', 'weave-chord-grip');
+      grip.addEventListener('pointerdown', (e) => {
+        // The right edge, which is where a length is changed everywhere else in
+        // this app. stopPropagation so the drag does not also count as the
+        // click that steps the chord.
+        e.stopPropagation();
+        e.preventDefault();
+        const startX = (e as PointerEvent).clientX;
+        const startBars = c.bars;
+        const perBar = chordStrip.clientWidth / total;
+        const move = (m: PointerEvent) => {
+          ctx.setChordBars(i, startBars + (m.clientX - startX) / perBar);
+          paintChords();
+        };
+        const up = () => {
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+        };
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+      });
+      cell.appendChild(grip);
+
+      const kill = el('button', 'weave-chord-kill') as HTMLButtonElement;
+      kill.type = 'button';
+      kill.textContent = '×';
+      kill.title = 'Remove this chord';
+      kill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        ctx.removeChord(i);
+        paintChords();
+      });
+      cell.appendChild(kill);
+
+      chordStrip.appendChild(cell);
+    });
+
+    const add = el('button', 'weave-chord-add') as HTMLButtonElement;
+    add.type = 'button';
+    add.textContent = '+';
+    add.title = 'Add a chord at the end';
+    add.addEventListener('click', () => {
+      ctx.insertChordAfter(ctx.chordTrack().length - 1);
+      paintChords();
+    });
+    chordStrip.appendChild(add);
+
+    // The dropdown has to follow: the moment anything is written, the entry it
+    // names is no longer what is playing, and a select that went on naming it
+    // would be lying.
+    progSel.value = ctx.isCustomProgression() ? CUSTOM : ctx.progression();
+  };
+  paintChords();
+
   // ── lanes ────────────────────────────────────────────────────────────────
   const lanes = el('div', 'weave-lanes');
 
@@ -552,7 +657,9 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     repaintMacros.push(knob.paint);
   }
 
-  rack.append(head, pulse, flowRow, lanes, stepsRow, macros);
+  // Under the flow row, where the progression already lives: the bar above says
+  // WHERE the walk is, and this says what the walk IS.
+  rack.append(head, pulse, flowRow, chordStrip, lanes, stepsRow, macros);
   host.appendChild(rack);
 
   // ── the animation ────────────────────────────────────────────────────────

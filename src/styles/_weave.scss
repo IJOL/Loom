@@ -222,6 +222,73 @@
 // Dimmed rather than hidden when off. Hidden, the row would reflow every time
 // it was toggled and there would be nothing on screen saying the option exists;
 // dimmed says "available, not in use", which is what off actually means here.
+// The progression, as cells whose width IS how long each chord lasts. A bar
+// count in text would be a number to read; a wide cell is a length you see.
+.weave-chords {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  min-height: 22px;
+  margin: 0 8px 6px;
+}
+
+.weave-chord-cell {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 2px;
+  font-size: 11px;
+  color: var(--knob-purple, #9a6cd0);
+  cursor: pointer;
+  user-select: none;
+
+  &:hover { border-color: var(--knob-purple, #9a6cd0); }
+}
+
+// The drag handle is the RIGHT EDGE, which is where a length is changed
+// everywhere else in this app.
+.weave-chord-grip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
+.weave-chord-kill {
+  position: absolute;
+  top: 0;
+  left: 2px;
+  background: none;
+  border: 0;
+  padding: 0 2px;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--fg-dim, #888);
+  cursor: pointer;
+  opacity: 0;
+
+  .weave-chord-cell:hover & { opacity: 1; }
+}
+
+.weave-chord-add {
+  flex: 0 0 auto;
+  padding: 0 8px;
+  background: none;
+  border: 1px dashed var(--border-soft);
+  border-radius: 2px;
+  color: var(--fg-dim, #888);
+  cursor: pointer;
+
+  &:hover { color: var(--knob-purple, #9a6cd0); border-color: var(--knob-purple, #9a6cd0); }
+}
+
 .weave-sound {
   display: flex;
   align-items: center;

@@ -669,6 +669,7 @@ function arcPath(frac) {
   const large = SWEEP2 * frac > 180 ? 1 : 0;
   return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
 }
+var CUSTOM = "__custom";
 var svg = (tag) => document.createElementNS("http://www.w3.org/2000/svg", tag);
 var el3 = (tag, cls) => {
   const n = document.createElement(tag);
@@ -819,7 +820,17 @@ function mountWeave(host, ctx) {
     const o = [...progSel.options].find((x) => x.value === c.id);
     if (o && c.group) o.title = `${c.id.replace(/-/g, " \xB7 ")} \u2014 ${c.group}`;
   }
-  progSel.addEventListener("change", () => ctx.setProgression(progSel.value));
+  const customOpt = document.createElement("option");
+  customOpt.value = CUSTOM;
+  customOpt.textContent = "Custom";
+  customOpt.disabled = true;
+  customOpt.title = "Written by hand below. Pick an entry above to go back to the catalogue.";
+  progSel.appendChild(customOpt);
+  progSel.addEventListener("change", () => {
+    if (progSel.value === CUSTOM) return;
+    ctx.setProgression(progSel.value);
+    paintChords();
+  });
   const reseed = el3("button", "weave-reseed");
   reseed.textContent = "\u27F3 Reshuffle";
   reseed.title = "Deal the lane styles again \u2014 the Style amount stays where it is";
@@ -987,6 +998,63 @@ function mountWeave(host, ctx) {
     evolve,
     chordWrap
   );
+  const chordStrip = el3("div", "weave-chords");
+  const paintChords = () => {
+    chordStrip.textContent = "";
+    const track = ctx.chordTrack();
+    const total = track.reduce((n, c) => n + c.bars, 0) || 1;
+    track.forEach((c, i) => {
+      const cell = el3("div", "weave-chord-cell");
+      cell.textContent = ROMAN[c.degree] ?? String(c.degree);
+      cell.style.flexGrow = String(c.bars);
+      cell.title = `${c.bars} bar${c.bars === 1 ? "" : "s"} \u2014 click to change the chord, drag the right edge to lengthen`;
+      cell.addEventListener("click", () => {
+        ctx.setChordDegree(i, (c.degree + 1) % ROMAN.length);
+        paintChords();
+      });
+      const grip = el3("div", "weave-chord-grip");
+      grip.addEventListener("pointerdown", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const startX = e.clientX;
+        const startBars = c.bars;
+        const perBar = chordStrip.clientWidth / total;
+        const move = (m) => {
+          ctx.setChordBars(i, startBars + (m.clientX - startX) / perBar);
+          paintChords();
+        };
+        const up = () => {
+          window.removeEventListener("pointermove", move);
+          window.removeEventListener("pointerup", up);
+        };
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", up);
+      });
+      cell.appendChild(grip);
+      const kill = el3("button", "weave-chord-kill");
+      kill.type = "button";
+      kill.textContent = "\xD7";
+      kill.title = "Remove this chord";
+      kill.addEventListener("click", (e) => {
+        e.stopPropagation();
+        ctx.removeChord(i);
+        paintChords();
+      });
+      cell.appendChild(kill);
+      chordStrip.appendChild(cell);
+    });
+    const add2 = el3("button", "weave-chord-add");
+    add2.type = "button";
+    add2.textContent = "+";
+    add2.title = "Add a chord at the end";
+    add2.addEventListener("click", () => {
+      ctx.insertChordAfter(ctx.chordTrack().length - 1);
+      paintChords();
+    });
+    chordStrip.appendChild(add2);
+    progSel.value = ctx.isCustomProgression() ? CUSTOM : ctx.progression();
+  };
+  paintChords();
   const lanes = el3("div", "weave-lanes");
   const head2 = el3("div", "weave-lane weave-lane-head");
   for (const label of [
@@ -1035,7 +1103,7 @@ function mountWeave(host, ctx) {
     macros.appendChild(knob.el);
     repaintMacros.push(knob.paint);
   }
-  rack.append(head, pulse, flowRow, lanes, stepsRow, macros);
+  rack.append(head, pulse, flowRow, chordStrip, lanes, stepsRow, macros);
   host.appendChild(rack);
   let raf = 0;
   let lastStep = -1;
