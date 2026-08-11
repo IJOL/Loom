@@ -32,11 +32,32 @@ export interface LaneRowHandle {
   followWeave(phase: number): void;
 }
 
+/** The topologies a lane can be PUT on.
+ *
+ *  A dropdown and not a row of buttons, for the reason the empty entry is here
+ *  at all: three buttons could only ever turn weaving ON. Once a lane was
+ *  weaving there was no way back to it simply playing its clip — the one thing
+ *  every other control on this row can be undone into.
+ *
+ *  QUEUE is deliberately absent. The topology still exists, still resolves and
+ *  still plays: a saved lane on it keeps working and the row shows it. It is
+ *  just not offered any more — a cursor over an ordered list is a playlist, and
+ *  the two that earn their place are the ones that travel on their own. */
 const TOPOS: { kind: PanelWeave['kind']; label: string; title: string }[] = [
   { kind: 'ab', label: 'A→B', title: 'Two loops. Arrive at B and a fresh B is drawn — the journey never ends.' },
-  { kind: 'queue', label: 'Queue', title: 'A cursor over an ordered list. Finite, but walkable both ways.' },
   { kind: 'cloud', label: 'Cloud', title: 'Four loops at the corners of a square. Best on melodic material.' },
 ];
+
+/** What every topology is named when a lane is on it — the retired one
+ *  included, so a row can say what it is playing even when it can no longer be
+ *  chosen. A dropdown that showed a dash for a lane that IS weaving would be
+ *  the same lie the loop pickers were fixed for. */
+const TOPO_NAME: Record<PanelWeave['kind'], string> = {
+  ab: 'A→B', queue: 'Queue', cloud: 'Cloud',
+};
+
+const OFF = '';
+const OFF_LABEL = '— off —';
 
 const el = (tag: string, cls?: string, text?: string) => {
   const n = document.createElement(tag);
@@ -598,18 +619,27 @@ export function buildLaneRow(
     });
   if (roleChoices.length === 0) role.title = 'A drum lane plays percussion, whatever part anything says';
 
-  const topo = el('div', 'weave-topo');
-  const buttons = TOPOS.map((t) => {
-    const b = el('button', 'weave-topo-btn', t.label) as HTMLButtonElement;
-    b.type = 'button';
-    b.title = t.title;
-    b.addEventListener('click', () => {
-      ctx.setLaneTopology(lane.id, t.kind);
-      paintTopo();
-      repaintCell();
-    });
-    topo.appendChild(b);
-    return { kind: t.kind, b };
+  const topo = document.createElement('select');
+  topo.className = 'weave-topo';
+  topo.setAttribute('aria-label', `How ${lane.name} weaves`);
+  const off = el('option', undefined, OFF_LABEL) as HTMLOptionElement;
+  off.value = OFF;
+  off.title = 'Stop weaving — the lane plays its clip untouched';
+  topo.appendChild(off);
+  for (const t of TOPOS) {
+    const o = el('option', undefined, t.label) as HTMLOptionElement;
+    o.value = t.kind;
+    o.title = t.title;
+    topo.appendChild(o);
+  }
+  topo.addEventListener('change', () => {
+    // OFF is a real destination, not the absence of a choice. `setLaneWeave`
+    // with null is the host's own door for "play the clip untouched" — the same
+    // one the sound fader uses to go back to routing by loop.
+    if (topo.value === OFF) ctx.setLaneWeave(lane.id, null);
+    else ctx.setLaneTopology(lane.id, topo.value as PanelWeave['kind']);
+    paintTopo();
+    repaintCell();
   });
   // How long the lane's phrase is, in the same two gestures the clip editor
   // uses. The weave replaces a clip's NOTES every tick and respects its LENGTH,
@@ -632,10 +662,16 @@ export function buildLaneRow(
 
   const paintTopo = () => {
     const kind = ctx.laneWeave(lane.id)?.kind;
-    for (const { kind: k, b } of buttons) {
-      b.classList.toggle('on', k === kind);
-      b.setAttribute('aria-pressed', String(k === kind));
+    // A lane on a topology this list no longer offers — a saved QUEUE — gets
+    // its own entry rather than falling back to OFF, which would claim the lane
+    // is playing its clip while it is audibly weaving.
+    if (kind && !TOPOS.some((t) => t.kind === kind) && !topo.querySelector(`option[value="${kind}"]`)) {
+      const o = el('option', undefined, TOPO_NAME[kind]) as HTMLOptionElement;
+      o.value = kind;
+      o.title = 'Retired: still plays, no longer offered';
+      topo.appendChild(o);
     }
+    topo.value = kind ?? OFF;
   };
   paintTopo();
   repaintCell();

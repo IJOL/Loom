@@ -555,10 +555,18 @@
 }
 
 // ── topology: which control this lane is played with ───────────────────────
+// How a lane weaves — a dropdown, not the three buttons it was. Buttons could
+// only ever turn weaving ON: there was no way back to the lane simply playing
+// its clip, which is what the empty entry is.
 .weave-topo {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 10.5px;
 }
 
 .weave-topo-btn {

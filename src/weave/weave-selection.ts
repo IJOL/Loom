@@ -18,7 +18,14 @@ import type { LaneWeave } from './weave-state';
 export type { PanelWeave };
 
 export type TopologyKind = PanelWeave['kind'];
-export const TOPOLOGIES: TopologyKind[] = ['ab', 'queue', 'cloud'];
+
+// There was a `TOPOLOGIES` array here — every kind, in a list, with no callers.
+// It is gone rather than kept, because what it read as was "the topologies on
+// offer", and it is not: the panel offers A→B and Cloud and QUEUE has been
+// retired from that list. A zero-caller export that looks like the answer to a
+// question something else already answers is how the retired one gets wired
+// back in by a future reader in good faith. Queue itself stays — a saved lane
+// on it resolves and plays, exactly as before.
 
 /** How many loops a topology needs before it has anything to say. Below this it
  *  still resolves — it just cannot cross-fade, which is honest rather than an

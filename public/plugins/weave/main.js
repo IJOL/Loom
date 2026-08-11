@@ -161,9 +161,15 @@ function endlessDial(o) {
 // plugins/weave/lane-row.ts
 var TOPOS = [
   { kind: "ab", label: "A\u2192B", title: "Two loops. Arrive at B and a fresh B is drawn \u2014 the journey never ends." },
-  { kind: "queue", label: "Queue", title: "A cursor over an ordered list. Finite, but walkable both ways." },
   { kind: "cloud", label: "Cloud", title: "Four loops at the corners of a square. Best on melodic material." }
 ];
+var TOPO_NAME = {
+  ab: "A\u2192B",
+  queue: "Queue",
+  cloud: "Cloud"
+};
+var OFF = "";
+var OFF_LABEL = "\u2014 off \u2014";
 var el = (tag, cls, text) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -542,18 +548,24 @@ function buildLaneRow(lane, ctx, engines) {
     }
   );
   if (roleChoices.length === 0) role.title = "A drum lane plays percussion, whatever part anything says";
-  const topo = el("div", "weave-topo");
-  const buttons = TOPOS.map((t) => {
-    const b = el("button", "weave-topo-btn", t.label);
-    b.type = "button";
-    b.title = t.title;
-    b.addEventListener("click", () => {
-      ctx.setLaneTopology(lane.id, t.kind);
-      paintTopo();
-      repaintCell();
-    });
-    topo.appendChild(b);
-    return { kind: t.kind, b };
+  const topo = document.createElement("select");
+  topo.className = "weave-topo";
+  topo.setAttribute("aria-label", `How ${lane.name} weaves`);
+  const off = el("option", void 0, OFF_LABEL);
+  off.value = OFF;
+  off.title = "Stop weaving \u2014 the lane plays its clip untouched";
+  topo.appendChild(off);
+  for (const t of TOPOS) {
+    const o = el("option", void 0, t.label);
+    o.value = t.kind;
+    o.title = t.title;
+    topo.appendChild(o);
+  }
+  topo.addEventListener("change", () => {
+    if (topo.value === OFF) ctx.setLaneWeave(lane.id, null);
+    else ctx.setLaneTopology(lane.id, topo.value);
+    paintTopo();
+    repaintCell();
   });
   const length = el("div", "weave-len");
   for (const [label, factor, title] of [
@@ -571,10 +583,13 @@ function buildLaneRow(lane, ctx, engines) {
   }
   const paintTopo = () => {
     const kind = ctx.laneWeave(lane.id)?.kind;
-    for (const { kind: k, b } of buttons) {
-      b.classList.toggle("on", k === kind);
-      b.setAttribute("aria-pressed", String(k === kind));
+    if (kind && !TOPOS.some((t) => t.kind === kind) && !topo.querySelector(`option[value="${kind}"]`)) {
+      const o = el("option", void 0, TOPO_NAME[kind]);
+      o.value = kind;
+      o.title = "Retired: still plays, no longer offered";
+      topo.appendChild(o);
     }
+    topo.value = kind ?? OFF;
   };
   paintTopo();
   repaintCell();
