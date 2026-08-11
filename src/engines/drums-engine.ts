@@ -51,4 +51,5 @@ registerEngineCapabilities('drums-machine', {
   acceptsNoteFx: false,
   harmonic: false,        // hits, not pitches: cannot host a chord accompaniment
   isRandomizable: false,  // sound is a loaded kit, not a bag of params
+  presetKind: 'kits',     // ...and so is its preset: the unified Synth/Samples list
 });

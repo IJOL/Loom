@@ -72,6 +72,15 @@ export function isRandomizable(id: string): boolean {
 export function defaultRoleOf(id: string): LaneRole | undefined {
   return caps.get(id)?.defaultRole;
 }
+/** True when this engine's presets are KITS, not knob values.
+ *
+ *  The drum machine's case, and the reason it needs saying rather than being
+ *  read off the id: a kit lane's list comes from the unified Synth/Samples
+ *  catalogue and applying one rebuilds the editor. Default false — an ordinary
+ *  instrument's preset is a bag of params. */
+export function usesKitPresets(id: string): boolean {
+  return caps.get(id)?.presetKind === 'kits';
+}
 export function shortLabelFor(id: string): string | undefined {
   return caps.get(id)?.shortLabel;
 }

@@ -19,7 +19,7 @@ import {
 import { stylesWithPatterns } from '../patterns/pattern-library';
 import { STYLE_CATALOG, SCALE_CATALOG, rootName, type StyleId } from '../core/musicality';
 import type { MusicalityState, LaneRole } from '../session/session-types';
-import { isHarmonic } from '../plugins/capabilities';
+import { isHarmonic, usesKitPresets } from '../plugins/capabilities';
 import { roleMembers } from './panel-context-role';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { emptyClip } from '../session/session';
@@ -36,7 +36,8 @@ import {
 import { TICKS_PER_QUARTER } from '../core/notes';
 import { listEngines } from '../engines/registry';
 import { getCachedPresets } from '../presets/preset-loader';
-import { pagePresetName } from '../instrument-presets/preset-select-state';
+import { pagePresetName, presetControlsDeps } from '../instrument-presets/preset-select-state';
+import { getDrumKits, loadDrumKits } from '../presets/drum-kits-loader';
 import { macroNeutral } from '../weave/weave-catalog';
 import { clipRowForLane } from '../weave/weave-transport';
 import { STRIP_PARAM_SPECS } from '../core/channel-strip-params';
@@ -292,6 +293,18 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     },
 
     presets(engineId) {
+      // A KIT lane reads the unified Synth/Samples catalogue — the same list the
+      // Session page's kit picker shows. Asking the engine-preset cache here
+      // returned the SYNTH kits alone, so the panel offered a drum lane a third
+      // of what it can actually play and no way to reach the rest.
+      if (usesKitPresets(engineId)) {
+        const kits = getDrumKits();
+        // Loaded lazily and cached; the panel can open before it has resolved.
+        // Refresh when it does rather than leave a dropdown that is empty for
+        // no reason the user can see.
+        if (kits.length === 0) void loadDrumKits().then(() => deps.refresh());
+        return kits.map((k) => ({ id: `engine:${k.name}`, name: k.name, group: k.group }));
+      }
       // The same preset cache the lane's own dropdown reads, in the same
       // vocabulary: `engine:<name>` is what recordPagePresetForLane stores
       // verbatim, so offering bare names here would guarantee the current
@@ -315,6 +328,21 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     },
 
     setPreset(laneId, presetId) {
+      const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
+      // A KIT is applied by a different door, because applying one REBUILDS the
+      // lane's editor instead of pushing param values — and the params road
+      // would simply not find a sample kit's name, so choosing one from here
+      // used to be a dropdown that changed and nothing else.
+      if (lane && usesKitPresets(lane.engineId)) {
+        const name = presetId.startsWith('engine:') ? presetId.slice('engine:'.length) : presetId;
+        // Recorded BEFORE applying, for the reason the drums page records it
+        // there: the apply re-populates the pickers synchronously and reads
+        // this, so setting it after makes them snap back to "(custom)".
+        pagePresetName.set(laneId, `engine:${name}`);
+        presetControlsDeps()?.applyDrumKitPreset?.(laneId, name);
+        deps.refresh();
+        return;
+      }
       deps.applyLanePreset?.(laneId, presetId);
       deps.refresh();
     },

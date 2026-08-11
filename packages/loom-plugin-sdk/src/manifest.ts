@@ -137,6 +137,16 @@ export interface EngineCapabilities {
    *  melodic shelf exactly as before. Meaningless when `harmonic` is false —
    *  a drum lane draws percussion whatever anyone says. */
   defaultRole?: LaneRole;
+  /** What a "preset" IS for this engine.
+   *
+   *  'params' — the default — is a bag of knob values. 'kits' is the drum
+   *  machine's case: a preset is a KIT, applying one rebuilds the editor rather
+   *  than pushing values, and the list is the unified Synth/Samples one rather
+   *  than the engine preset cache. Two screens already answered this with an
+   *  `engineId === 'drums-machine'`, and the second of them answered it wrong:
+   *  WEAVE offered a drum lane the synth kits only, with no way to reach the
+   *  sample ones the Session page has always shown. */
+  presetKind?: 'params' | 'kits';
   /** Whether the "🎲 Sound" dice means anything for this engine. A melodic
    *  instrument has this: its sound is a bag of params the dice can roll. The
    *  sampler and the drum machine do not — their sound is a loaded kit or
