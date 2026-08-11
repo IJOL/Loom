@@ -331,6 +331,27 @@ export const SHOTS = [
     },
   },
 
+  // ── WEAVE ────────────────────────────────────────────────────────────────
+  // Before the Performance shot, which leaves the app in the other view: this
+  // one wants the session as it was.
+  //
+  // The root id is the panel registry's own (`panel-view-<id>`), not a name
+  // this file invents — WEAVE is a plugin, so there is no hand-written element
+  // to aim at and a hardcoded id would break the day the panel is renamed.
+  {
+    name: 'weave-view',
+    selector: '#panel-view-weave',
+    setup: async (page) => {
+      await page.locator('.mode-btn[data-mode="weave"]').click();
+      await page.locator('#panel-view-weave').waitFor({ state: 'visible' });
+      await page.waitForFunction(
+        () => !document.getElementById('panel-view-weave')?.hidden,
+        null, { timeout: 5_000 },
+      );
+      await page.waitForTimeout(300);
+    },
+  },
+
   // ── Performance view ─────────────────────────────────────────────────────
   {
     name: 'performance-view',

@@ -4,6 +4,8 @@
 
 Open it from the view toggle in the transport bar. WEAVE is a **panel plugin**: it ships in `plugins/weave/` and is loaded at runtime like any engine or insert, which means it can be absent from a build without the rest of the app noticing.
 
+![WEAVE — one row per track, each crossfading between its own loops](images/weave-view.png)
+
 ---
 
 ## The idea in one paragraph
@@ -110,7 +112,23 @@ Every chordal track follows one progression, walked across the session's bars an
 
 ## The macros
 
-Six knobs colour everything at once. **Density** and **Energy** rewrite notes; **Space** and **Motion** move parameters; **Darkness** chooses the scale the blends walk, and **Style mix** decides how far a track may stray from the session's style. At their neutral positions they say nothing at all.
+Six knobs colour everything at once. **Density** and **Energy** rewrite notes; **Space** and **Motion** move parameters; **Mood** chooses the scale the blends walk their degrees in, from brightest to darkest; **Style mix** decides how far a track may stray from the session's style. At their neutral positions they say nothing at all.
+
+---
+
+## The step rack
+
+Below the tracks is a row of bars pointing at a **destination** — any parameter a knob can move. It moves that parameter **in time with the loop** rather than on a curve of its own, which is what a step row on an old sequencer was for. **+ ROW** adds another; each row has its own length and its own mode, so a sixteen-step row cannot silence a four-step one.
+
+Its value goes to the audio object and never to the track's saved sound: the row owns the value, and stamping its momentary position into a preset is the mistake that door exists to avoid.
+
+---
+
+## Switching the whole thing off
+
+**⏻ WEAVE ON / OFF** unplugs the panel. Off, it stops the transport and every track goes back to playing exactly what it played before WEAVE existed — nothing is undone, nothing is lost, and plugging it back in does not start anything on its own. It is the honest way to hear the session underneath.
+
+**+ WEAVING TRACK** adds a track that arrives already weaving: a new lane, an empty carrier clip, and its first two library loops picked for you. A track that arrived empty would leave the panel as useless as it was.
 
 ---
 

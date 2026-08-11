@@ -90,7 +90,11 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 </tr>
 <tr>
 <td>11</td>
-<td><a href="#11-developer-guide">Developer Guide</a></td>
+<td><a href="#11-weave">WEAVE</a></td>
+</tr>
+<tr>
+<td>12</td>
+<td><a href="#12-developer-guide">Developer Guide</a></td>
 </tr>
 </tbody></table>
 <hr>
@@ -2770,10 +2774,103 @@ uvicorn app:app --port 8765
 <p>Two things are outside undo entirely: the <strong>raw recording</strong> (a take is finalised on Stop and does not enter the stack) and <strong>Copy to Performance</strong> (it overwrites the arrangement outright).</p>
 <p>See <a href="#09-saving-and-export">Saving &amp; Export</a> for how sessions are saved and loaded.</p>
 </section>
-<section class="chapter" id="11-developer-guide"><h1 id="11-developer-guide--developer-guide">Developer Guide</h1>
+<section class="chapter" id="11-weave"><h1 id="11-weave--weave">WEAVE</h1>
+<p><strong>WEAVE</strong> is a third view, beside Session and Performance. Where the Session grid launches clips you wrote, WEAVE <strong>crossfades between loops</strong> — and keeps crossfading, on its own, for as long as you let it. A scene made in WEAVE is not a fixed arrangement; it is one that keeps finding new material while you steer it.</p>
+<p>Open it from the view toggle in the transport bar. WEAVE is a <strong>panel plugin</strong>: it ships in <code>plugins/weave/</code> and is loaded at runtime like any engine or insert, which means it can be absent from a build without the rest of the app noticing.</p>
+<p><img src="images/weave-view.png" alt="WEAVE — one row per track, each crossfading between its own loops"></p>
+<hr>
+<h2 id="11-weave--the-idea-in-one-paragraph">The idea in one paragraph</h2>
+<p>Every track in WEAVE plays a <strong>blend of two or more loops</strong> instead of its own clip. Where the blend sits is a position you can move by hand or leave to the master flow. The two loops never simply alternate: what they SHARE stays put — that shared skeleton is what holds the bar together — and what differs hands over gradually. Melodic material is blended in <strong>scale degrees</strong>, so a crossfade cannot detune; it can only move between notes that are in the key.</p>
+<p>You are never editing the loops. WEAVE is a tool that sits ON TOP of the session: switch a track&#39;s weave off and its clip is exactly as you left it.</p>
+<hr>
+<h2 id="11-weave--the-track-row">The track row</h2>
+<p>Each track is one row, split into two lines. The top line is what a hand reaches for while the music runs; the second line is what you set once and leave.</p>
+<p><strong>Top line, left to right:</strong></p>
+<ul>
+<li><strong>VU meter</strong> — what the track is putting out, the same meter the mixer column shows. It keeps reading with the transport stopped, because a held note or a reverb tail is still sound.</li>
+<li><strong>Loop ring</strong> — where this track is in its bar, and how long is left of a queued change.</li>
+<li><strong>Name</strong>, then <strong>▶ ■ M S 🔒</strong> — launch, stop, mute, solo, and <strong>lock</strong>. A locked track holds the loops it has while everything else travels. Mute and solo are the mixer&#39;s own, not a second pair.</li>
+<li><strong>Level</strong> — the same gain as the mixer column, with its percentage beside it.</li>
+<li><strong>Topology</strong> — how this track weaves. See below. The blank entry, <code>— off —</code>, returns the track to simply playing its clip.</li>
+<li><strong>The weaving control itself</strong> — a dial, a queue or a square, depending on the topology.</li>
+<li><strong>◐ Sound</strong> — off by default. See <em>Playing one part on several instruments</em>.</li>
+</ul>
+<p><strong>Second line:</strong> the note bar this track is about to play, then which slot (on a rack), instrument, preset, part, style shelf, half/double time, and octave.</p>
+<hr>
+<h2 id="11-weave--topologies--how-a-track-weaves">Topologies — how a track weaves</h2>
+<p>Pick one per track from the dropdown.</p>
+<h3 id="11-weave--ab">A→B</h3>
+<p>Two loops and a dial between them. When the dial reaches the far end, <strong>B becomes the new A and a fresh loop is drawn for B</strong> — so the journey never ends and never returns to where it began.</p>
+<p>The control is an <strong>endless dial</strong>, not a fader, and it is dragged <strong>up and down</strong>. A dial rather than a fader because a fader promises two ends, and with the scene evolving there are none.</p>
+<p>The names sit either side as <em>from → to</em>.</p>
+<h3 id="11-weave--cloud">Cloud</h3>
+<p>Four loops, one in each corner of a square, and a dot you drag. An edge behaves like a plain two-loop crossfade; the middle is the one place all four sound at once.</p>
+<p>A cloud walks its lap along a <strong>path</strong>, because the master flow is one number and a square is two:</p>
+<ul>
+<li><strong>RIM</strong> — the four sides. The dot spends its whole lap on an edge, so every corner arrives as a clean handover.</li>
+<li><strong>CROSS</strong> — side, diagonal, side, diagonal. The same four corners, but it crosses the middle twice a lap, alternating clean handovers with everything piling up.</li>
+</ul>
+<p>A cloud evolves too: each lap swaps out <strong>the corner the dot is furthest from</strong> — the one nobody is hearing — so four laps renew the whole square, one corner at a time.</p>
+<h3 id="11-weave--queue">Queue</h3>
+<p>An ordered list with a cursor, always crossfading between the two entries it sits between. Finite where A→B is endless, but walkable backwards. It is no longer offered in the dropdown; a saved track already on it keeps working.</p>
+<hr>
+<h2 id="11-weave--the-master-flow">The master flow</h2>
+<p>The header controls move every unlocked track at once.</p>
+<ul>
+<li><strong>Flow</strong> — the master dial, and a readout of where the scene is.</li>
+<li><strong>Drift</strong> — whether the tracks travel together or fan out.</li>
+<li><strong>Speed</strong> — how long one full journey takes, in bars. <strong>Off</strong> by default: a panel that started travelling the moment you opened it would change a session you had not touched.</li>
+<li><strong>EVOLVE / STATIC</strong> — what happens at the END of a lap. <strong>STATIC</strong> is a scene you place by hand and it stays placed. <strong>EVOLVE</strong> draws fresh material on arrival, which is what makes a scene keep moving.</li>
+<li><strong>Journey</strong> — <strong>One way</strong>, or <strong>⇄ N laps</strong>: how many laps out before the journey turns round and comes back. Going out it draws new loops; coming back it walks the ones it already played, so the way home is the same journey in reverse rather than a different one.</li>
+<li><strong>🔒 HOLD</strong> — freeze the arrangement. The chord walk keeps going and the step rack keeps writing; only the loops stop moving.</li>
+<li><strong>SURGE</strong> — held, not toggled: a momentary push that restores itself when you let go.</li>
+<li><strong>⟳ Reshuffle</strong> — <strong>tap</strong> to re-deal only the loop you are NOT hearing, which is why it is safe mid-phrase; <strong>hold</strong> it to re-deal every loop at once. A locked track ignores both.</li>
+</ul>
+<hr>
+<h2 id="11-weave--what-each-track-plays--parts-and-shelves">What each track PLAYS — parts and shelves</h2>
+<p>A track&#39;s <strong>part</strong> decides which material it draws and in which register: <strong>Bass</strong>, <strong>Comp</strong>, <strong>Pad</strong>, <strong>Arp</strong> or <strong>Melody</strong>. Leave it unset and the track behaves as it always did. An engine can declare its own default — a TB-303 lane comes out as bass whether or not you mark it.</p>
+<ul>
+<li><strong>Bass</strong> and <strong>Melody</strong> read the pattern library, at their own octave.</li>
+<li><strong>Comp</strong>, <strong>Pad</strong> and <strong>Arp</strong> read <strong>no</strong> library at all. Their material is GENERATED as chords, because a chord written as fixed semitones cannot stay in key across the eight scales a session may be in. What you pick for them is a <strong>shape</strong> — the rhythm and the voicing — and the notes follow the session&#39;s key, scale and chord progression.</li>
+<li>Marking a track <strong>Arp</strong> also gives it an arpeggiator. Unmarking it does not take the arpeggiator away: by then it is a card with your settings on it.</li>
+</ul>
+<p><strong>Style</strong> picks which shelf of the library this track draws from, independent of the session&#39;s own style. A style change lands on the <strong>next</strong> loop drawn, not the one playing — changing it mid-phrase would be a splice, not an evolution.</p>
+<p><strong>Half and double time</strong> (<code>×2</code> / <code>÷2</code>) and the <strong>octave</strong> (<code>− +</code>) both live on the weave, never on the clip. The phrase is always delivered whole: half time stretches it and takes the room it needs.</p>
+<hr>
+<h2 id="11-weave--playing-one-part-on-several-instruments">Playing one part on several instruments</h2>
+<p>The <strong>◐</strong> button is a second axis: the weave decides which NOTES play, this decides <strong>what they are played on</strong>.</p>
+<p>Turning it on builds what it needs — the track becomes a <strong>rack</strong> of instruments, its own sound in the first slot and others alongside, each on its own preset. The control then wears the shape of that track&#39;s loop control: a <strong>fader</strong> on A→B, a <strong>square</strong> on a cloud. Off, it collapses back to just the button.</p>
+<p>Without it, each note plays on the instrument of the loop it came from. With it, every note reaches every instrument and the control balances them. Either the loop chooses the instrument or you do — never both.</p>
+<p>The <code>1 2</code> buttons on the second line pick which slot the instrument and preset dropdowns are pointing at.</p>
+<hr>
+<h2 id="11-weave--the-chord-progression">The chord progression</h2>
+<p>Every chordal track follows one progression, walked across the session&#39;s bars and shown as a bar with the current chord in Roman numerals. Pick a catalogue entry, or edit the strip and it becomes yours — the catalogue is never written to. &quot;Stay home&quot; is a single chord and no journey.</p>
+<hr>
+<h2 id="11-weave--the-macros">The macros</h2>
+<p>Six knobs colour everything at once. <strong>Density</strong> and <strong>Energy</strong> rewrite notes; <strong>Space</strong> and <strong>Motion</strong> move parameters; <strong>Mood</strong> chooses the scale the blends walk their degrees in, from brightest to darkest; <strong>Style mix</strong> decides how far a track may stray from the session&#39;s style. At their neutral positions they say nothing at all.</p>
+<hr>
+<h2 id="11-weave--the-step-rack">The step rack</h2>
+<p>Below the tracks is a row of bars pointing at a <strong>destination</strong> — any parameter a knob can move. It moves that parameter <strong>in time with the loop</strong> rather than on a curve of its own, which is what a step row on an old sequencer was for. <strong>+ ROW</strong> adds another; each row has its own length and its own mode, so a sixteen-step row cannot silence a four-step one.</p>
+<p>Its value goes to the audio object and never to the track&#39;s saved sound: the row owns the value, and stamping its momentary position into a preset is the mistake that door exists to avoid.</p>
+<hr>
+<h2 id="11-weave--switching-the-whole-thing-off">Switching the whole thing off</h2>
+<p><strong>⏻ WEAVE ON / OFF</strong> unplugs the panel. Off, it stops the transport and every track goes back to playing exactly what it played before WEAVE existed — nothing is undone, nothing is lost, and plugging it back in does not start anything on its own. It is the honest way to hear the session underneath.</p>
+<p><strong>+ WEAVING TRACK</strong> adds a track that arrives already weaving: a new lane, an empty carrier clip, and its first two library loops picked for you. A track that arrived empty would leave the panel as useless as it was.</p>
+<hr>
+<h2 id="11-weave--print--keeping-what-you-heard">PRINT — keeping what you heard</h2>
+<p><strong>PRINT</strong> freezes what the weave is playing into a new scene: a full lap of the chord progression, laid end to end, as ordinary clips you can edit. It is an output, never the goal — the weave carries on folding either way.</p>
+<blockquote>
+<p><strong>Known limitation.</strong> A track that is still weaving plays its weave, not its clips — so launching a printed scene on a track that is still weaving plays the weave. Switch that track&#39;s topology to <code>— off —</code> to hear what was printed.</p>
+</blockquote>
+<hr>
+<h2 id="11-weave--two-things-worth-knowing">Two things worth knowing</h2>
+<p><strong>A scene does not choose what a weaving track plays.</strong> On a track with loops chosen, launching a scene decides only <em>whether</em> it sounds. What it sounds is the weave&#39;s own selection, the same in every scene — including a scene of empty clips.</p>
+<p><strong>Nothing here is undoable.</strong> A weave move is deliberately not an undo entry; it is a performance, not an edit. It IS saved with the session, and it nudges the autosave when it moves.</p>
+</section>
+<section class="chapter" id="12-developer-guide"><h1 id="12-developer-guide--developer-guide">Developer Guide</h1>
 <p>This chapter is for contributors who want to extend Loom or understand how its internals fit together. Read it alongside <code>CLAUDE.md</code> at the repo root, which is the shortest architecture summary the project keeps — this chapter expands on it in prose.</p>
 <p>Both drift. Where a document and the code disagree, <strong>the code is right</strong>: every claim below carries the file it was checked against, so you can check it again.</p>
-<h2 id="11-developer-guide--the-spine">The spine</h2>
+<h2 id="12-developer-guide--the-spine">The spine</h2>
 <p>Three structures hold everything together:</p>
 <ol>
 <li><p><strong>A plugin registry</strong> — engines, FX and modulators are all plugins, and most of them are no longer in this repository&#39;s source at all. A plugin is a directory under <code>plugins/</code>, compiled into <code>public/plugins/&lt;id&gt;/</code>, and loaded by the browser <strong>at runtime</strong> off a JSON manifest; it compiles against <code>@loom/plugin-sdk</code> and talks to the host through one small runtime ABI, <code>globalThis.Loom</code>. Six engines, fifteen inserts and one modulator ship that way today. A shrinking in-tree SPI, discovered by a Vite <code>import.meta.glob</code> scan, still carries the LFO/ADSR modulators and the note-FX.</p>
@@ -2783,7 +2880,7 @@ uvicorn app:app --port 8765
 <li><p><strong><code>LaneResourceMap</code></strong> — owns the live Web Audio nodes for each lane. One entry per lane, holding a <code>ChannelStrip</code>, a <code>SynthEngine</code> instance, and an <code>InsertChain</code>. The lane allocator in <code>src/app/lane-allocator.ts</code> is the sole path for creating and swapping these resources; nothing else should construct them directly.</p>
 </li>
 </ol>
-<h2 id="11-developer-guide--boot">Boot</h2>
+<h2 id="12-developer-guide--boot">Boot</h2>
 <p><code>src/main.ts</code> is a boot script, not a feature file. It builds the handful of objects everything else needs, then hands them to one wiring module per concern in <code>src/app/</code>:</p>
 <ul>
 <li><code>bootstrapPlugins()</code> first, before anything reads the registry (<code>main.ts:92</code>), then <code>loadPlugins()</code> — the external plugins, fetched and validated (<code>main.ts:98</code>). That second one is a <strong>promise</strong>, and the difference matters: everything the in-tree registry knows is available synchronously, while every engine and insert that arrives from <code>public/plugins/</code> lands later. Code that enumerates components at boot sees only the built-ins unless it awaits it, which is written down at <code>main.ts:647</code>.</li>
@@ -2793,8 +2890,8 @@ uvicorn app:app --port 8765
 </ul>
 <p><strong>The order is load-bearing</strong>, and the comments in <code>main.ts</code> say why at each step. <code>wireMenuBar</code> is deliberately the last statement of boot (<code>main.ts:810</code>): its action table names a handle from nearly every feature above, so the bar appearing is the proof that boot ran start to finish.</p>
 <p>If you are looking for the code behind a control, it is almost never in <code>main.ts</code> — find the <code>wireX</code> call that mentions it and open that module.</p>
-<h2 id="11-developer-guide--how-a-plugin-gets-in">How a plugin gets in</h2>
-<h3 id="11-developer-guide--the-external-abi--the-normal-case">The external ABI — the normal case</h3>
+<h2 id="12-developer-guide--how-a-plugin-gets-in">How a plugin gets in</h2>
+<h3 id="12-developer-guide--the-external-abi--the-normal-case">The external ABI — the normal case</h3>
 <p>The browser cannot list a directory, so <strong><code>public/plugins/index.json</code> is the discovery mechanism</strong>: a flat array of plugin ids, rewritten by <code>npm run build:plugins</code>. For each id, <code>loadPlugins</code> (<code>src/plugin-host/plugin-host.ts</code>) fetches <code>plugin.json</code>, validates it as <strong>data</strong> before a single line of the plugin runs (<code>manifest-validate.ts</code>), adopts its declared components into the engine / modulator / fx registries, seeds any <code>presets.json</code>, and collects its <code>dsp.js</code> URL for the worklet.</p>
 <p>Two properties of that loop are worth relying on:</p>
 <ul>
@@ -2802,7 +2899,7 @@ uvicorn app:app --port 8765
 <li><strong>A plugin&#39;s JS is loaded through a <code>blob:</code> URL</strong>, not a bare <code>import(url)</code> (<code>module-loader.ts</code>). A plugin is a static asset in <code>public/</code>, and Vite&#39;s dev middleware refuses to serve one as a module — so the obvious import works in the production build and breaks under <code>npm run dev</code>. Fetching the source and evaluating it from a blob behaves identically in both, and is the same mechanism a user-installed plugin will need when its bytes live in IndexedDB instead of at a URL.</li>
 </ul>
 <p>The worklet half is symmetrical: <code>loom-processor.ts</code> installs <code>globalThis.Loom</code> (<code>registerRenderer</code>, <code>registerModulatorKernel</code>) and the host guarantees that module is <code>addModule</code>&#39;d <strong>first</strong>, so every plugin <code>dsp.js</code> added afterwards shares the realm and can reach the registry. The ABI deliberately carries no DSP — everything a plugin uses from <code>@loom/plugin-sdk</code> is compiled into the plugin&#39;s own bundle, which is what lets the ABI stay stable across versions.</p>
-<h3 id="11-developer-guide--what-is-left-of-the-in-tree-spi">What is left of the in-tree SPI</h3>
+<h3 id="12-developer-guide--what-is-left-of-the-in-tree-spi">What is left of the in-tree SPI</h3>
 <p><code>src/app/plugin-bootstrap.ts</code> still calls <code>import.meta.glob</code> at build time over <code>src/engines/*.ts</code> and <code>src/plugins/**/*.ts</code> (<code>*.test.ts</code> excluded), and any exported value matching the <code>PluginFactory</code> shape (<code>{ kind, manifest, create }</code>) is registered. <strong>No insert is found this way any more</strong> — all fifteen are external. What the glob does today is mostly to <em>evaluate</em> modules so their module-scope registrations run:</p>
 <ul>
 <li><strong>Modulators</strong> call <code>registerModulator</code> at module scope into <code>src/modulation/modulator-registry.ts</code> — their own door, the same one a plugin modulator arrives through. The shape check does not match them.</li>
@@ -2810,15 +2907,15 @@ uvicorn app:app --port 8765
 </ul>
 <p><code>bootstrapPlugins</code> then bridges every registered engine descriptor into the plugin registry, so <code>listPlugins(&#39;engine&#39;)</code> keeps seeing all nine.</p>
 <p>The engine registry (<code>src/engines/registry.ts</code>) supports both a <strong>singleton</strong> pattern (<code>registerEngine</code>) for shared instances and a <strong>factory</strong> pattern (<code>registerEngineFactory</code> / <code>createEngineInstance</code>) for per-lane instances that need independent state.</p>
-<h3 id="11-developer-guide--never-ask-an-engine-its-name">Never ask an engine its name</h3>
+<h3 id="12-developer-guide--never-ask-an-engine-its-name">Never ask an engine its name</h3>
 <p>Anything the core needs to know about a component goes through <strong>one door</strong>, <code>src/plugins/capabilities.ts</code> — <code>clipContent</code>, <code>slide</code>, <code>outputTrim</code>, <code>acceptsNoteFx</code>, <code>defaultNoteView</code>, and so on. A built-in answers from code, a plugin from its manifest, and the caller cannot tell which; that is the whole point, because it is what let six engines move out of <code>src/</code> without the core noticing. Every accessor there returns a safe default for an unknown id and never <code>undefined</code> — an unregistered engine that blanked its lane&#39;s UI would fail silently. <strong>An <code>engineId === &#39;…&#39;</code> comparison anywhere outside that file is a bug.</strong></p>
 <p><code>listEngines()</code> reads from the singleton map and is the source of metadata (name, type, polyphony, parameter specs) used to populate the lane engine selector.</p>
-<h3 id="11-developer-guide--what-declaring-a-param-actually-buys-you">What &quot;declaring a param&quot; actually buys you</h3>
+<h3 id="12-developer-guide--what-declaring-a-param-actually-buys-you">What &quot;declaring a param&quot; actually buys you</h3>
 <p>Engines declare their parameters as <code>EngineParamSpec[]</code>, and for the catalogue that is the whole story: <code>listAutomationTargets</code> walks <code>engine.params</code> and pushes <code>`${lane.id}.${spec.id}`</code> for every continuous one (<code>src/automation/automation-targets.ts:120</code>). Automation and the modulation dropdown both read that catalogue through <code>DestinationRegistry.list()</code>. Neither of them calls <code>getAudioParams()</code>.</p>
 <p><code>getAudioParams()</code> / <code>getSharedAudioParams()</code> are a narrower thing — the <strong>Web Audio binding surface</strong>, used only where a modulator has to reach a real <code>AudioParam</code> through the depth-gain bridge in <code>connection-binder.ts</code>. That means FX inserts, channel strips, and the two engines that still expose shared params, Drums and Sampler. For the six melodic worklet engines <code>getAudioParams()</code> returns an empty <code>Map</code> on purpose (<code>src/engines/worklet-lane-engine.ts:150</code>); their modulation is applied per sample inside the worklet by <code>ModulationRuntime</code>.</p>
 <p>So: declare the param in the spec and it is automatable and modulatable. Return it from <code>getAudioParams()</code> only if it is a genuine <code>AudioParam</code> on the main thread.</p>
 <p>That rule is why the lane <strong>mixer</strong> is automatable at all. The seven strip controls — level, pan, sends A and B, and the three EQ bands — were once declared inline by <code>drums-machine</code> alone, which is why a drum lane&#39;s volume could be automated and a Subtractive lane&#39;s could not: the capability belonged to one engine&#39;s source file rather than to the mixer. They now live in <code>src/core/channel-strip-params.ts</code> and every engine with a <code>ChannelStrip</code> spreads <code>STRIP_PARAM_SPECS</code> into its own params, keeping the original <code>bus.*</code> ids so existing drum-lane envelopes and connections still resolve. One caveat if you touch the binder side: a <strong>modulator</strong> binds to the strip&#39;s multiplicative trims, not to the real gains, because a bipolar modulator summed onto a gain can drive it below zero — which inverts phase instead of quietening, and the lane cancels against the rest of the mix. Automation writes the real gains through <code>setStripParam</code>.</p>
-<h2 id="11-developer-guide--sessionstate-data-model">SessionState data model</h2>
+<h2 id="12-developer-guide--sessionstate-data-model">SessionState data model</h2>
 <p><code>src/session/session-types.ts</code> defines three levels (re-exported from <code>session.ts</code>, which holds the factories):</p>
 <ul>
 <li><strong><code>SessionLane</code></strong> — has an <code>engineId</code>, a list of <code>SessionClip | null</code> slots, and an <code>engineState</code> bag that persists knob values, modulator configs, note-FX, sampler keymap, pad params, and kit mode.</li>
@@ -2828,7 +2925,7 @@ uvicorn app:app --port 8765
 <p>Notes carry a <code>velocity</code> field (0–127). The <code>velToColor</code> function in <code>src/core/velocity-color.ts</code> maps velocity to a blue-to-yellow ramp used by both the piano roll and the drum grid.</p>
 <p>Saves are written as <code>schemaVersion: 3</code> (<code>SavedStateV3</code> in <code>src/save/</code>). Older saves are normalised by <code>session-migration.ts</code> at load time before anything else touches the data.</p>
 <p><strong>Replacing the session is New plus a load, in that order.</strong> Every route that swaps the whole session — New, the boot demo, the demo picker, a save or autosave load, an import that replaces — calls <code>resetAllResources</code> (<code>src/session/session-host-reset.ts</code>) <em>first</em>, and only then applies the incoming state. The reason is that applying a session only ever pushes the fields the incoming JSON happens to carry, and <code>ensureLaneResource</code> is idempotent: a lane id present in both the old and the new state used to keep its live <code>ChannelStrip</code>, so level, pan, EQ, sends, mute, compressor and sidechain rode straight through New and through every demo switch — as did the master rack, the send buses, mute/solo and the note-FX chains. The fix is not a longer list of restores at the apply site (that list goes stale the next time something joins the desk); it is that a load starts from a released desk, so anything the new state does not set sits at its constructed default. The one deliberate exception is the master <strong>volume</strong> fader: that is the listening level of the room, not a property of the song.</p>
-<h2 id="11-developer-guide--laneresourcemap-and-the-audio-graph">LaneResourceMap and the audio graph</h2>
+<h2 id="12-developer-guide--laneresourcemap-and-the-audio-graph">LaneResourceMap and the audio graph</h2>
 <p>The master audio path assembled in <code>src/app/audio-graph.ts</code> runs:</p>
 <pre><code class="language-text">master (sum GainNode)
   → MasterBusStrip (EQ / pan / mute)
@@ -2844,7 +2941,7 @@ uvicorn app:app --port 8765
 <p>That follower is an <strong>AudioWorklet</strong> (<code>duck-processor</code> / <code>duck-node</code>, wrapping the pure <code>DuckDetector</code> in <code>src/audio-dsp/duck-detector.ts</code>), not a filter chain. It was two <code>BiquadFilterNode</code> lowpasses until 2026-07-27: at a 0.25 s release the cutoff is 0.64 Hz, the pole pair sits a hair from z=1, and in the float32 node graph the rounding error accumulated like an integrator — the &quot;envelope&quot; grew without bound with the input at exactly zero, so the duck multiplier drifted past 0 and came back negative, i.e. the ducked lane went silent and then returned phase-inverted and louder. A one-pole follower is a convex combination of the input and itself, so it is bounded by construction at any time constant and returns to zero when the source stops. Keep the multiplier&#39;s <code>[0, 1]</code> invariant if you touch it; <code>src/audio-dsp/duck-detector.test.ts</code> and <code>src/core/strip-ducker.dsp.test.ts</code> pin it.</p>
 <p>Each lane&#39;s <code>LaneResources</code> consists of a <code>ChannelStrip</code> (level, EQ, send levels), a <code>SynthEngine</code>, and an <code>InsertChain</code> of per-lane FX. <code>LaneResourceMap.replaceEngine</code> hot-swaps only the engine while keeping the strip and inserts in place — the channel-level resources survive an engine swap.</p>
 <p>The lane allocator (<code>src/app/lane-allocator.ts</code>) is the only module that constructs a <code>LaneResources</code>, in exactly one place: <code>ensureLaneResource</code> (line 228). The second entry point, <code>ensureExtraPoly</code>, went with the <code>PolySynth</code> class it existed to feed. Call <code>ensureLaneResource</code> once per lane before accessing anything in the map. Test code that needs a lane wired up must call it explicitly as setup.</p>
-<h2 id="11-developer-guide--the-scheduler">The scheduler</h2>
+<h2 id="12-developer-guide--the-scheduler">The scheduler</h2>
 <p>The <code>Sequencer</code> class (<code>src/core/sequencer.ts</code>) fires every 25 ms (the poll interval) and looks <strong>200 ms</strong> ahead. On each tick it calls <code>sessionTick(now, lookaheadSec)</code> with <code>lookaheadSec = 0.2</code>, and the session host fans that out to <code>tickLane</code> for each playing lane.</p>
 <p><code>tickLane</code> (<code>src/core/lane-scheduler.ts</code>) implements the Chris Wilson two-clocks pattern: for every <code>NoteEvent</code> whose absolute schedule time falls in the window <code>[now, now + lookaheadSec)</code>, it calls <code>ctx.onTrigger</code>. Schedule times are derived by converting clip-tick positions to seconds using the current BPM and projecting onto the absolute timeline from the loop-start anchor. Step duration for a 16th note is <code>60 / bpm / 4</code> seconds.</p>
 <p>Two important consequences for contributors:</p>
@@ -2854,8 +2951,8 @@ uvicorn app:app --port 8765
 </ul>
 <p>The scheduler asks <code>laneLoopRegion</code> (<code>src/core/clip-loop.ts:40</code>) how long one iteration of a clip is, and there are <strong>two</strong> ways the answer comes back shorter than the whole clip. The active scene&#39;s global loop wins first: when <code>GlobalLoopOverride.enabled</code> is set, <code>[startBar, endBar)</code> becomes the region for every lane in the scene, whatever the clips say. Absent that, <code>effectiveClipLoop</code> (line 19) applies the clip&#39;s own <code>loopEnabled</code> / <code>[loopStartTick, loopEndTick)</code>. The brace UI in <code>src/core/clip-loop-brace.ts</code> is the editing surface for the clip&#39;s own region.</p>
 <p>That precedence has a consequence worth knowing before you touch clip automation: a clip&#39;s envelope array spans the clip&#39;s <code>lengthBars</code> and is blind to <strong>both</strong> shortenings, so inside a shorter loop the curve slides against the notes. It is written down as known debt at the top of <code>src/core/clip-envelope-length.ts</code> and pinned by tests — meet it as a decision, not a mystery.</p>
-<h2 id="11-developer-guide--how-to-recipes">How-to recipes</h2>
-<h3 id="11-developer-guide--add-a-synth-engine">Add a synth engine</h3>
+<h2 id="12-developer-guide--how-to-recipes">How-to recipes</h2>
+<h3 id="12-developer-guide--add-a-synth-engine">Add a synth engine</h3>
 <p><strong>Write a plugin. Do not add a file to <code>src/</code>.</strong> All six melodic engines are
 external plugins, and yours should be too — it needs no access to this repo&#39;s
 source, and it is a directory no future PR review has to carry. Full walkthrough
@@ -2907,7 +3004,7 @@ called <code>createInstance(&#39;engine&#39;, …)</code> instead of going throu
 allocator.</li>
 </ul>
 <p>See <a href="#04-engines">Engines</a> for the full engine catalogue.</p>
-<h3 id="11-developer-guide--commit-an-engine-param-edit-through-one-seam">Commit an engine param edit through one seam</h3>
+<h3 id="12-developer-guide--commit-an-engine-param-edit-through-one-seam">Commit an engine param edit through one seam</h3>
 <p>Any control you build for an engine param must write it with <code>commitParam</code> from
 <a href="https://github.com/IJOL/Loom/blob/main/src/engines/engine-param-commit.ts"><code>src/engines/engine-param-commit.ts</code></a>,
 never <code>engine.setBaseValue</code> alone:</p>
@@ -2931,7 +3028,7 @@ no <code>onChange</code> fires and <code>commitParam</code> never runs.</li>
 <p><code>withoutParamMirror(...)</code> suppresses the mirror. The load path uses it to apply
 a lane&#39;s preset without clobbering the saved params it is about to replay — a
 saved tweak beats its lane preset.</p>
-<h3 id="11-developer-guide--add-an-fx-insert">Add an FX insert</h3>
+<h3 id="12-developer-guide--add-an-fx-insert">Add an FX insert</h3>
 <p>An insert is a plugin like an engine, with one structural difference: <strong>it is not
 a worklet</strong>. Only synthesis runs in the worklet; an insert builds ordinary Web
 Audio nodes on the main thread.</p>
@@ -2950,7 +3047,7 @@ renderer will not work, because that half runs inside the worklet with no
 (<code>src/session/lane-insert-ui.ts</code>), and the same builder serves lanes, the master
 rack and both send racks, so a new insert appears in all four at once.</p>
 <p>Separately from the picker, the <code>FxBus</code> seeds send A with <code>delay</code> and send B with <code>reverb</code> when it is constructed (<code>src/core/fx.ts:30</code>). That is a default, not a restriction — both are offered as ordinary inserts too. <strong>Seeding needs the plugin registry to be up</strong>: the FxBus cannot seed a send with an insert that has not loaded yet.</p>
-<h3 id="11-developer-guide--add-a-modulator">Add a modulator</h3>
+<h3 id="12-developer-guide--add-a-modulator">Add a modulator</h3>
 <p>A modulator can be a plugin too — <code>plugins/sh/</code> (sample &amp; hold) is the shipped
 proof. Declare <code>kind: &quot;modulator&quot;</code> with a <code>modulator</code> block naming its <code>driver</code>
 (<code>time</code> or <code>gate</code>), the <code>scopes</code> it supports (<code>shared</code>, <code>per-voice</code>) and an
@@ -2963,24 +3060,24 @@ directly.</p>
 (<code>src/modulation/connection-binder.ts:44</code>) for the native-node targets, while a
 worklet engine&#39;s params are modulated per sample by <code>ModulationRuntime</code>.</p>
 <p>See <a href="#06-modulation-and-note-fx">Modulation and Note FX</a> for the user-facing side.</p>
-<h3 id="11-developer-guide--add-a-note-fx">Add a note-FX</h3>
+<h3 id="12-developer-guide--add-a-note-fx">Add a note-FX</h3>
 <p><code>kind: &#39;notefx&#39;</code> is the fourth plugin kind — a transform applied to notes before they reach the engine, per lane, persisted in <code>lane.engineState.noteFx</code>. A <code>NoteFxFactory</code> declares <code>defaultParams()</code> and has no <code>create()</code>, so the bootstrap&#39;s shape check ignores it: the file <strong>must</strong> call <code>registerPlugin</code> itself at module scope (<code>src/plugins/notefx/arp.ts:11</code>). The processor that does the work lives beside it in <code>src/notefx/</code>.</p>
-<h3 id="11-developer-guide--add-a-preset">Add a preset</h3>
+<h3 id="12-developer-guide--add-a-preset">Add a preset</h3>
 <p>For one of the six melodic engines, the presets ship <strong>with the plugin</strong>: append an entry to <code>plugins/&lt;id&gt;/presets.json</code> and run <code>npm run build:plugins</code>. <code>plugin-host</code> seeds them at load. For Sampler or Drums, the file is still <code>public/presets/&lt;engine&gt;.json</code>.</p>
 <p>Either way the <code>gm</code> field is optional (an integer GM program number for MIDI-import matching), JSON is the source of truth, <code>preset-loader.ts</code> validates and <code>preset-apply.ts</code> applies it at runtime by calling <code>engine.applyPreset</code>. Each engine&#39;s JSON keys are its own vocabulary — do not use a generic <code>setBaseValue</code> loop.</p>
-<h3 id="11-developer-guide--add-a-synth-drum-kit">Add a synth drum kit</h3>
+<h3 id="12-developer-guide--add-a-synth-drum-kit">Add a synth drum kit</h3>
 <p>Append an object to the <code>KITS</code> array in <code>src/core/drums.ts</code>. Kits are parameter bags over shared DSP primitives. To add a new drum <em>voice</em> (not just a new kit): extend the <code>DrumVoice</code> union, add it to <code>DRUM_LANES</code>, add an entry to every kit, implement a <code>play&lt;Voice&gt;()</code> method, and add a <code>trigger()</code> case.</p>
-<h3 id="11-developer-guide--add-a-sampled-drum-kit">Add a sampled drum kit</h3>
+<h3 id="12-developer-guide--add-a-sampled-drum-kit">Add a sampled drum kit</h3>
 <ol>
 <li>Create a subdirectory <code>public/drumkits/&lt;id&gt;/</code> containing WAV files for each voice (e.g. <code>kick.wav</code>, <code>snare.wav</code>, <code>closedHat.wav</code>).</li>
 <li>Add a manifest file <code>public/drumkits/&lt;id&gt;.json</code> with <code>id</code>, <code>name</code>, and a <code>samples</code> array. Each entry needs <code>voice</code>, <code>note</code> (GM MIDI note number), and <code>file</code> (path relative to <code>public/drumkits/</code>).</li>
 <li>Register the kit in <code>public/drumkits/index.json</code> by appending <code>{ &quot;id&quot;: &quot;&lt;id&gt;&quot;, &quot;name&quot;: &quot;&lt;display name&gt;&quot; }</code>.</li>
 </ol>
 <p>68 sampled kits ship under <code>public/drumkits/</code>; <code>tr808</code>, <code>acoustic</code> and <code>dirt</code> are the hand-curated three and the clearest reference for this layout.</p>
-<h2 id="11-developer-guide--conventions">Conventions</h2>
+<h2 id="12-developer-guide--conventions">Conventions</h2>
 <p><strong>File size: 300 lines of code as a target, 500 as a hard cap.</strong> Lines of <em>code</em> — comment lines and blank lines do not count towards either number. The distinction is not pedantry: <code>src/main.ts</code> is 816 raw lines and 473 lines of code, which is inside the cap by the rule that applies and over it by the one that does not. A file that is long because it explains itself is fine; a file that is long because it does too much is the thing the cap exists to catch. When one crosses the line, split it by concern — <code>src/app/</code> is what that looks like in practice.</p>
 <p><strong>Assertions are relative.</strong> See Testing, below.</p>
-<h2 id="11-developer-guide--source-layout-tour">Source layout tour</h2>
+<h2 id="12-developer-guide--source-layout-tour">Source layout tour</h2>
 <pre><code class="language-text">src/
   core/           DSP primitives + pure logic (drums, sequencer,
                   lane-scheduler, lane-resources, fx, meter, notes,
@@ -3151,7 +3248,7 @@ tools/
                   hand-maintained list of screenshots + their selectors)
                   and manual.css. Driven by build-manual.mjs
 </code></pre>
-<h3 id="11-developer-guide--building-the-manual">Building the manual</h3>
+<h3 id="12-developer-guide--building-the-manual">Building the manual</h3>
 <p>The chapters in <code>docs/manual/*.md</code> are the only hand-written source. <code>index.html</code>, <code>Loom-Manual.pdf</code> and everything in <code>images/</code> are generated and committed — never hand-edit them.</p>
 <table>
 <thead>
@@ -3174,7 +3271,7 @@ tools/
 </tr>
 </tbody></table>
 <p><code>manual:shots</code> photographs whatever is already in <code>dist/</code> — it does not build. Run <code>npm run build</code> immediately before it, or you will capture a stale bundle (the same trap as <code>test:e2e</code>, below). A new chapter file is invisible to both outputs until it is added to the <code>CHAPTERS</code> array in <code>tools/manual/assemble.mjs</code>.</p>
-<h2 id="11-developer-guide--testing">Testing</h2>
+<h2 id="12-developer-guide--testing">Testing</h2>
 <p>Loom has four test layers, one per risk class.</p>
 <p><strong>Pure logic</strong> (<code>src/**/*.test.ts</code>, excluding <code>.dsp</code> and <code>.wiring</code> suffixes) — schemas, scales, migrations, session/arrangement logic, modulation math. These run fast and have no audio dependencies.</p>
 <p><strong>Scheduling with a fake clock</strong> — <code>src/core/lane-scheduler.test.ts</code> and <code>src/session/session-runtime.test.ts</code> drive the look-ahead scheduler through a mock <code>AudioContext</code> clock. The fake clock advances in controlled steps so timing edge-cases are deterministic.</p>
