@@ -398,17 +398,30 @@
   }
 }
 
-// The sound square. Small — it lives on the row you play from, and the four
-// corners it picks between are named on the instrument page, not here. Square by
-// aspect-ratio rather than a fixed height, so it stays a square as the row's
-// density changes.
-.weave-sound-pad {
-  width: 34px;
+// Where the control goes — EMPTY when the sound is off, which is what lets the
+// row's last column collapse to the button alone.
+.weave-sound-host {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.weave-sound-fader {
+  width: 150px;
+  accent-color: var(--knob-purple, #9a6cd0);
+  cursor: pointer;
+}
+
+// The sound square, on a lane whose loops are a square too. Smaller than the
+// loop pad because this one has no loop names around it to line up with — and
+// because a row carrying both must not be twice as tall as one carrying either.
+// Square by aspect-ratio, so it stays square as the row's density changes.
+.weave-lane .weave-sound-pad {
+  width: 46px;
+  height: 46px;
   aspect-ratio: 1;
   flex: 0 0 auto;
   cursor: pointer;
-
-  .weave-sound.off & { cursor: default; pointer-events: none; }
 }
 
 // A track's level, beside its transport buttons. Narrow on purpose: the row is
@@ -555,13 +568,18 @@
   // steps of a percentage and unusable as a fader; SOUND is a crossfade between
   // two instruments, so its travel IS the gesture. Loops still takes whatever
   // is left, because it is the only cell whose contents change shape.
-  grid-template-columns: 14px 30px 74px 96px 160px 118px 1fr 220px;
+  // The SOUND column is `auto`, not a fixed width, and that is the whole reason
+  // the row is not permanently as wide as its widest possible control. Off, it
+  // is one glyph; on A→B it is that plus a fader; on a cloud it is that plus a
+  // square. The row grows for the control you are actually using, the same way
+  // the cloud's own pad grows the loops column and only then.
+  grid-template-columns: 14px 30px 74px 96px 160px 118px 1fr auto;
   gap: 8px;
   align-items: center;
   background: var(--surface-2);
   border: 1px solid var(--border-soft);
   border-radius: 2px;
-  padding: 6px 8px;
+  padding: 4px 8px;
 }
 
 // The header is the same grid with no chrome, so a label cannot drift out of
@@ -584,8 +602,11 @@
 // different amount on each axis, which is why the cloud read as incomprehensible
 // rather than merely small.
 .weave-lane .pad2d {
-  height: 74px;
-  width: 74px;
+  // The tallest thing in the row, so it IS the row's height. 66 rather than 74:
+  // still a target you can aim a diagonal at, four rows less of scrolling on a
+  // full rack.
+  height: 66px;
+  width: 66px;
   border-color: var(--border);
 }
 

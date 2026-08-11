@@ -532,30 +532,48 @@ function buildLaneRow(lane, ctx, engines) {
   const soundWrap = el("div", "weave-sound");
   const soundOn = el("button", "weave-sound-btn", "\u25D0");
   soundOn.type = "button";
-  const soundPad = Loom.controls.pad2d({
-    x: 0,
-    y: 0,
-    label: "Drag: how much of each of the four instruments this lane is played on",
-    onChange: (x, y) => {
-      ctx.setLaneSound(lane.id, x, y);
-    }
-  });
-  soundPad.el.classList.add("weave-sound-pad");
+  const soundHost = el("div", "weave-sound-host");
   const paintSound = () => {
     const at = ctx.laneSound(lane.id);
     const on = at !== null;
     soundOn.classList.toggle("on", on);
-    soundOn.title = on ? "Sound pad on \u2014 every note reaches every instrument in the rack" : "Sound pad off \u2014 each note plays on the instrument of the loop it came from";
+    soundOn.title = on ? "Sound on \u2014 every note reaches every instrument in the rack" : "Sound off \u2014 each note plays on the instrument of the loop it came from";
     soundOn.setAttribute("aria-pressed", String(on));
-    soundPad.set(at?.x ?? 0, at?.y ?? 0);
     soundWrap.classList.toggle("off", !on);
+    soundHost.replaceChildren();
+    if (!at) return;
+    if (ctx.laneWeave(lane.id)?.kind === "cloud") {
+      const p = Loom.controls.pad2d({
+        x: at.x,
+        y: at.y,
+        label: "Drag: how much of each of the four instruments this lane is played on",
+        onChange: (x, y) => {
+          ctx.setLaneSound(lane.id, x, y);
+        }
+      });
+      p.el.classList.add("weave-sound-pad");
+      soundHost.appendChild(p.el);
+      return;
+    }
+    const fader = document.createElement("input");
+    fader.type = "range";
+    fader.className = "weave-sound-fader";
+    fader.min = "0";
+    fader.max = "1";
+    fader.step = "0.01";
+    fader.value = String(at.x);
+    fader.setAttribute("aria-label", "Which instrument this lane is played on");
+    fader.addEventListener("input", () => {
+      ctx.setLaneSound(lane.id, Number(fader.value));
+    });
+    soundHost.appendChild(fader);
   };
   soundOn.addEventListener("click", () => {
     ctx.setLaneSound(lane.id, ctx.laneSound(lane.id) === null ? 0 : null, 0);
     paintSound();
+    paintPickers();
   });
-  soundWrap.append(soundOn, soundPad.el);
-  paintSound();
+  soundWrap.append(soundOn, soundHost);
   const cellHost = el("div", "weave-cell-host");
   let cell = { el: cellHost };
   const repaintCell = () => {
@@ -602,6 +620,8 @@ function buildLaneRow(lane, ctx, engines) {
     else ctx.setLaneTopology(lane.id, topo.value);
     paintTopo();
     repaintCell();
+    paintSound();
+    paintPickers();
   });
   const length = el("div", "weave-len");
   for (const [label, factor, title] of [
@@ -652,6 +672,7 @@ function buildLaneRow(lane, ctx, engines) {
   };
   paintTopo();
   repaintCell();
+  paintSound();
   row.append(led, ring.el, name, transport, levelWrap, topo, cellHost, soundWrap);
   const strip = noteStrip(lane.id, ctx);
   const setup = el("div", "weave-lane-setup");
@@ -1114,7 +1135,7 @@ function mountWeave(host, ctx) {
   for (const laps of [0, 2, 4, 8]) {
     const o = document.createElement("option");
     o.value = String(laps);
-    o.textContent = laps === 0 ? "One way" : `\u21C4 ${laps}`;
+    o.textContent = laps === 0 ? "One way" : `\u21C4 ${laps} laps`;
     o.title = laps === 0 ? "The journey only ever goes forward" : `${laps} laps out, then back over the same loops`;
     pingPong.appendChild(o);
   }
@@ -1151,6 +1172,8 @@ function mountWeave(host, ctx) {
   driftLabel.textContent = "Drift";
   const speedLabel = el3("span", "weave-label");
   speedLabel.textContent = "Speed";
+  const pingPongLabel = el3("span", "weave-label");
+  pingPongLabel.textContent = "Journey";
   const ROMAN = ["i", "II", "III", "iv", "v", "VI", "VII"];
   const chordWrap = el3("div", "weave-chordbar");
   const chordFill = el3("span", "weave-chordbar-fill");
@@ -1177,11 +1200,17 @@ function mountWeave(host, ctx) {
     drift,
     speedLabel,
     speed,
-    // Beside the speed, because the two are one question: how long a lap takes,
-    // and how many of them before the journey turns round. Before EVOLVE,
-    // because EVOLVE is what happens AT the ends this decides.
-    pingPong,
+    // AFTER evolve, not beside the speed. Reasoning it out as "how long a lap
+    // takes, and how many laps" put two unlabelled-looking dropdowns side by
+    // side and read as one control with two halves — reported as confusing, and
+    // it is: Speed is a TEMPO and this is a SHAPE.
+    //
+    // Its real neighbour is EVOLVE, because both answer what happens at the END
+    // of a lap — one draws something new, the other decides whether the lane
+    // ever comes back for it.
     evolve,
+    pingPongLabel,
+    pingPong,
     chordWrap
   );
   const chordStrip = el3("div", "weave-chords");

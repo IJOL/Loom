@@ -215,6 +215,32 @@ export function slotChoices() {
     .filter((e) => e.id !== LAYERS_ENGINE_ID && allowed.has(e.id));
 }
 
+/** Fill this rack's EMPTY slots, in order, and say which ones were filled.
+ *
+ *  One write and therefore one rebuild: a lane is numbered once for its
+ *  lifetime, so every change to what a slot holds rebuilds it, and doing them
+ *  one at a time would rebuild the lane once per slot.
+ *
+ *  Filled slots are never touched — this grows a rack, it does not re-deal one.
+ *  That is what makes it safe to call when a lane's control gains a dimension:
+ *  the two instruments you were crossing between stay exactly where they are. */
+export function fillEmptyLayerSlots(
+  lane: SessionLane | undefined, engineIds: readonly string[],
+): number[] {
+  if (!deps || !lane || engineIds.length === 0) return [];
+  const rack = readRack(lane.engineState?.layers);
+  const filled: number[] = [];
+  let next = 0;
+  const grown = rack.map((l, i) => {
+    if (l.engineId !== '' || next >= engineIds.length) return l;
+    filled.push(i);
+    return { ...l, engineId: engineIds[next++], lo: 0, hi: 127, gain: 0 };
+  });
+  if (filled.length === 0) return [];
+  deps.setRack(lane.id, grown);
+  return filled;
+}
+
 /** Put a different INSTRUMENT in one slot.
  *
  *  Through the same door the rack's own dropdown uses, which writes the rack and

@@ -611,39 +611,70 @@ export function buildLaneRow(
   // to the layer of the loop it came from, which is the other way of using a
   // rack and the one this panel shipped with. Turning it on switches that off:
   // every note reaches both instruments and this balances them.
-  // A SQUARE, not a fader: a rack holds four instruments and the pad puts one in
-  // each corner — the same shape and the same corner order the cloud uses for
-  // loops, so a hand that has learnt one has learnt the other.
+  // The sound control wears the SHAPE OF THE LOOP CONTROL on the same lane: a
+  // fader where the lane crosses two loops, a square where it crosses four. One
+  // idea per row rather than one per panel — a hand that has learnt how this
+  // lane moves has learnt both of its controls at once.
+  //
+  // And it EXISTS only while it is on. Off, the column collapses to the button:
+  // the row is a dense thing already, and a control that is dimmed but still
+  // taking its width is width nobody is using.
   const soundWrap = el('div', 'weave-sound');
   const soundOn = el('button', 'weave-sound-btn', '◐') as HTMLButtonElement;
   soundOn.type = 'button';
-  const soundPad = Loom.controls.pad2d({
-    x: 0,
-    y: 0,
-    label: 'Drag: how much of each of the four instruments this lane is played on',
-    onChange: (x, y) => { ctx.setLaneSound(lane.id, x, y); },
-  });
-  soundPad.el.classList.add('weave-sound-pad');
+  const soundHost = el('div', 'weave-sound-host');
+
   const paintSound = () => {
     const at = ctx.laneSound(lane.id);
     const on = at !== null;
     soundOn.classList.toggle('on', on);
     soundOn.title = on
-      ? 'Sound pad on — every note reaches every instrument in the rack'
-      : 'Sound pad off — each note plays on the instrument of the loop it came from';
+      ? 'Sound on — every note reaches every instrument in the rack'
+      : 'Sound off — each note plays on the instrument of the loop it came from';
     soundOn.setAttribute('aria-pressed', String(on));
-    soundPad.set(at?.x ?? 0, at?.y ?? 0);
     soundWrap.classList.toggle('off', !on);
+
+    // Rebuilt rather than repainted, because the SHAPE can change: switching
+    // this lane to a cloud turns its fader into a square. Only ever from a
+    // press — never from the control's own onChange — so a drag is never
+    // interrupted by the thing being dragged.
+    soundHost.replaceChildren();
+    if (!at) return;
+    if (ctx.laneWeave(lane.id)?.kind === 'cloud') {
+      const p = Loom.controls.pad2d({
+        x: at.x,
+        y: at.y,
+        label: 'Drag: how much of each of the four instruments this lane is played on',
+        onChange: (x, y) => { ctx.setLaneSound(lane.id, x, y); },
+      });
+      p.el.classList.add('weave-sound-pad');
+      soundHost.appendChild(p.el);
+      return;
+    }
+    const fader = document.createElement('input');
+    fader.type = 'range';
+    fader.className = 'weave-sound-fader';
+    fader.min = '0';
+    fader.max = '1';
+    fader.step = '0.01';
+    fader.value = String(at.x);
+    fader.setAttribute('aria-label', 'Which instrument this lane is played on');
+    fader.addEventListener('input', () => { ctx.setLaneSound(lane.id, Number(fader.value)); });
+    soundHost.appendChild(fader);
   };
+
   soundOn.addEventListener('click', () => {
-    // Null the whole pad, or bring it back at the corner slot 0 is in — the
-    // instrument the lane already had, so turning it on is inaudible until you
-    // drag.
+    // Off entirely, or back at the end slot 0 is on — the instrument the lane
+    // already had, so turning it on is inaudible until you move it.
     ctx.setLaneSound(lane.id, ctx.laneSound(lane.id) === null ? 0 : null, 0);
     paintSound();
+    // Turning it on can have made this lane a RACK, which is what the row's
+    // instrument and preset dropdowns then point at. Without this they caught up
+    // whenever something else happened to repaint the panel — reported as the
+    // slot buttons appearing later, for no reason you could see.
+    paintPickers();
   });
-  soundWrap.append(soundOn, soundPad.el);
-  paintSound();
+  soundWrap.append(soundOn, soundHost);
 
   // Re-read on every repaint, never captured: the style picker below changes
   // which shelf of the library this lane draws from, and a captured list would
@@ -705,6 +736,11 @@ export function buildLaneRow(
     else ctx.setLaneTopology(lane.id, topo.value as PanelWeave['kind']);
     paintTopo();
     repaintCell();
+    // The sound control has the shape of THIS one, so changing it changes that:
+    // a fader becomes a square and back. And a lane that just gained corners may
+    // have gained instruments to put in them, which the slot buttons show.
+    paintSound();
+    paintPickers();
   });
   // Half time and double time for this lane alone — the one thing that lets a
   // pad sit under a beat rather than beside it.
@@ -773,6 +809,8 @@ export function buildLaneRow(
   };
   paintTopo();
   repaintCell();
+  // After the topology is known: the sound control's shape is read off it.
+  paintSound();
 
   // The lane in TWO lines, split by what you do with a control rather than by
   // what it controls.

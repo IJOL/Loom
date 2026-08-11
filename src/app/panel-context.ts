@@ -21,7 +21,10 @@ import { STYLE_CATALOG, SCALE_CATALOG, rootName, type StyleId } from '../core/mu
 import type { MusicalityState, LaneRole } from '../session/session-types';
 import { isHarmonic, usesKitPresets } from '../plugins/capabilities';
 import { laneLayers } from '../engines/layers-engine';
-import { slotChoices, setLayerEngine, recallLayerPreset } from '../engines/layers-rack-ui';
+import {
+  slotChoices, setLayerEngine, recallLayerPreset, contrastPresetName, fillEmptyLayerSlots,
+} from '../engines/layers-rack-ui';
+import { commitParamForLane } from '../engines/engine-param-commit';
 import { roleMembers } from './panel-context-role';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { emptyClip } from '../session/session';
@@ -253,6 +256,66 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
    *  engine. */
   const isRack = (laneId: string): boolean =>
     (deps.destinations?.() ?? []).some((d) => d.id === `${laneId}.l0.gain`);
+
+  /** How many instruments this lane's SOUND control has ends for.
+   *
+   *  The sound control wears the shape of the lane's LOOP control: a lane
+   *  crossing two loops crosses two sounds on a fader, a lane on a square of
+   *  four crosses four on a square. One shape per lane rather than one shape
+   *  for the panel — the row already reads as "this is how this lane moves",
+   *  and a hand that has learnt the loop control has learnt the other one. */
+  const soundEnds = (laneId: string): number =>
+    deps.weave.lanes[laneId]?.weave?.kind === 'cloud' ? 4 : 2;
+
+  /** Give this lane a rack deep enough for the control it is about to show.
+   *
+   *  Three cases and they are genuinely different. Not a rack at all: convert,
+   *  which carries the lane's own sound into slot 0 and fills the rest. A rack
+   *  that is deep enough: nothing, and NOT a re-deal — the instruments you were
+   *  crossing between are the ones you chose. A rack that is too shallow — a
+   *  lane converted on A→B and since moved to a cloud — grows, keeping every
+   *  slot it already had, because the alternative is two corners of the square
+   *  that are silent with nothing on screen saying why. */
+  const ensureSoundRack = (laneId: string): void => {
+    const want = soundEnds(laneId);
+    if (!isRack(laneId)) {
+      deps.sessionHost.callbacks.onConvertToLayered?.(laneId, { contrast: true, slots: want });
+      return;
+    }
+    const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
+    const rack = laneLayers(lane);
+    const held = rack.map((l) => l.engineId).filter(Boolean);
+    if (held.length >= want) return;
+
+    // Nothing to write to, nothing to do — and checked BEFORE `slotChoices`,
+    // which builds every engine's descriptor and so needs a live registry. A
+    // fixture with no audio graph has neither, and asking the expensive question
+    // first made it throw rather than answer "not here".
+    const resources = deps.sessionHost.deps?.laneResources;
+    if (!resources?.get(laneId)?.engine) return;
+
+    // Instruments it does not already hold, so growing a rack widens the morph
+    // instead of putting the same sound in two corners.
+    const used = new Set(held);
+    const add = slotChoices().map((e) => e.id)
+      .filter((id) => !used.has(id))
+      .slice(0, want - held.length);
+    const grown = fillEmptyLayerSlots(lane, add);
+    // Re-read AFTER the fill: it wrote the rack, which rebuilds the lane, so the
+    // engine to write to is the one that exists now and not the one checked
+    // above.
+    const engine = resources.get(laneId)?.engine;
+    if (!engine) return;
+    for (const i of grown) {
+      const id = laneLayers(lane)[i]?.engineId;
+      if (!id) continue;
+      // Silent, like every slot after the first: growing the control must not
+      // change what the lane sounds like until you move it.
+      commitParamForLane(engine, deps.sessionHost.state, laneId, `l${i}.gain`, 0);
+      const name = contrastPresetName(id, undefined);
+      if (name) recallLayerPreset(engine, deps.sessionHost.state, laneId, i, id, name);
+    }
+  };
 
   const reseedLaneIfLoopsMoved = (laneId: string): void => {
     const sel = deps.weave.lanes[laneId]?.weave;
@@ -691,22 +754,15 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     setLaneSound(laneId, value, y) {
       // Turning it ON is also what BUILDS the thing it moves.
       //
-      // The fader writes `l0.gain` and `l1.gain`, which only exist on a lane
-      // that is a rack of two instruments. On an ordinary lane those
+      // The control writes `l0.gain`, `l1.gain` and so on, which only exist on a
+      // lane that is a rack of instruments. On an ordinary lane those
       // destinations are absent, every write was skipped, and the control did
-      // nothing with nothing on screen saying why — while the four steps that
-      // would have made it work (swap to LAYERS, fill both slots, recall two
-      // presets) lived on another page entirely.
+      // nothing with nothing on screen saying why — while the steps that would
+      // have made it work lived on another page entirely.
       //
-      // Asked of the CATALOGUE rather than of the lane's engine id: "can this
-      // fader land" is exactly the question, it is the same one the applier
-      // asks before each write, and it needs no core comparison against the name
-      // of an engine.
-      if (value !== null && !isRack(laneId)) {
-        // With a CONTRASTING second slot, or the press would end with a fader
-        // between two copies of the same sound.
-        deps.sessionHost.callbacks.onConvertToLayered?.(laneId, { contrast: true });
-      }
+      // Deep enough for the control this lane is about to show: two ends on
+      // A→B, four corners on a cloud.
+      if (value !== null) ensureSoundRack(laneId);
 
       const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
       const sound = value === null ? undefined : Math.min(1, Math.max(0, value));
@@ -715,10 +771,16 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       const soundY = value === null ? undefined
         : Math.min(1, Math.max(0, y ?? cur.soundY ?? 0));
       deps.weave.lanes[laneId] = { ...cur, sound, soundY };
-      // MATERIAL, not a param: turning the fader on or off changes whether the
+      // MATERIAL, not a param: turning the control on or off changes whether the
       // fold tags its notes with the loop they came from, so every cached
       // source for this lane is answering the wrong question.
       deps.onWeaveChanged?.(laneId);
+      // And the ROW has to be redrawn, because turning this on can have made the
+      // lane a rack — which is what its instrument and preset dropdowns point
+      // at. Without this the slot buttons appeared some time later, whenever
+      // something else happened to repaint the panel, which is how a control
+      // reads as unreliable.
+      deps.refresh();
     },
 
     setLaneWeave(laneId, weave) {
@@ -1065,7 +1127,15 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         ...cur,
         weave: retopologise(cur.weave, kind, loopIds),
       };
+      // The sound control wears the shape of this one, so a lane that just
+      // gained two corners needs two more instruments to put in them. Grown,
+      // never re-dealt: the sounds it was already crossing between stay.
+      //
+      // Only when the control is actually on. Building a rack for a lane that is
+      // not morphing would swap its instrument for a reason it never asked for.
+      if (cur.sound !== undefined) ensureSoundRack(laneId);
       deps.onWeaveChanged?.(laneId);
+      deps.refresh();
     },
 
     loopPhase(laneId): PanelLoopPhase {

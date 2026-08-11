@@ -189,7 +189,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       };
       if (hd) withUndo(hd, run); else run();
     },
-    onConvertToLayered(laneId: string, opts?: { contrast?: boolean }) {
+    onConvertToLayered(laneId: string, opts?: { contrast?: boolean; slots?: number }) {
       // Undoable, because it swaps the lane's instrument and rewrites its
       // params — the two things a user most wants back if they meant something
       // else. The conversion itself lives with the rack, which owns the one
@@ -229,16 +229,18 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         // conversion fills it with the carried patch, so afterwards every lane
         // looks edited. Empty here means factory defaults and nothing to lose.
         const hadEdits = Object.keys(lane.engineState?.params ?? {}).length > 0;
-        // A morph wants four DIFFERENT instruments, one per corner of its pad.
-        // From the rack's own list, so a slot still cannot hold a rack, the
-        // Sampler or the drum machine — and never the lane's own engine, which
-        // is already in slot 0 carrying its patch.
+        // A morph wants DIFFERENT instruments, one per end of its control — two
+        // for a lane on A→B, four for one on a cloud. From the rack's own list,
+        // so a slot still cannot hold a rack, the Sampler or the drum machine —
+        // and never the lane's own engine, which is already in slot 0 carrying
+        // its patch.
         //
-        // Fewer than three others is a small install, not an error: the rack is
-        // built as deep as the engines allow and the pad's empty corners simply
-        // have no destination to write.
+        // Fewer engines than asked for is a small install, not an error: the
+        // rack is built as deep as the list allows and the control's spare ends
+        // simply have no destination to write.
         const spread = opts?.contrast
-          ? slotChoices().map((e) => e.id).filter((id) => id !== slotEngineId).slice(0, 3)
+          ? slotChoices().map((e) => e.id).filter((id) => id !== slotEngineId)
+            .slice(0, Math.max(1, (opts.slots ?? 2) - 1))
           : undefined;
         if (!convertLaneToLayers(lane, presetName, patch, mods, spread)) return;
         // Tell the NEW engine what the rack says, through the door every param

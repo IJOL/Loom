@@ -485,7 +485,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   for (const laps of [0, 2, 4, 8]) {
     const o = document.createElement('option');
     o.value = String(laps);
-    o.textContent = laps === 0 ? 'One way' : `⇄ ${laps}`;
+    o.textContent = laps === 0 ? 'One way' : `⇄ ${laps} laps`;
     o.title = laps === 0
       ? 'The journey only ever goes forward'
       : `${laps} laps out, then back over the same loops`;
@@ -539,6 +539,8 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   driftLabel.textContent = 'Drift';
   const speedLabel = el('span', 'weave-label');
   speedLabel.textContent = 'Speed';
+  const pingPongLabel = el('span', 'weave-label');
+  pingPongLabel.textContent = 'Journey';
 
   // Where the chord walk is, as a bar that fills across the lap and the current
   // chord beside it.
@@ -572,10 +574,15 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
 
   flowRow.append(
     flowLabel, flowDial.el, flowOut, driftLabel, drift, speedLabel, speed,
-    // Beside the speed, because the two are one question: how long a lap takes,
-    // and how many of them before the journey turns round. Before EVOLVE,
-    // because EVOLVE is what happens AT the ends this decides.
-    pingPong, evolve, chordWrap,
+    // AFTER evolve, not beside the speed. Reasoning it out as "how long a lap
+    // takes, and how many laps" put two unlabelled-looking dropdowns side by
+    // side and read as one control with two halves — reported as confusing, and
+    // it is: Speed is a TEMPO and this is a SHAPE.
+    //
+    // Its real neighbour is EVOLVE, because both answer what happens at the END
+    // of a lap — one draws something new, the other decides whether the lane
+    // ever comes back for it.
+    evolve, pingPongLabel, pingPong, chordWrap,
   );
 
   // ── the progression, written by hand ─────────────────────────────────────
