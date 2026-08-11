@@ -309,8 +309,10 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     for (const i of grown) {
       const id = laneLayers(lane)[i]?.engineId;
       if (!id) continue;
-      // Silent, like every slot after the first: growing the control must not
-      // change what the lane sounds like until you move it.
+      // Silent until the sound applier writes the real figure a moment later.
+      // Belt and braces on purpose: the rebuild put every slot back at its spec
+      // default, and `l1.gain` defaults to 1 — a new corner at full level for
+      // even one tick is four instruments at once.
       commitParamForLane(engine, deps.sessionHost.state, laneId, `l${i}.gain`, 0);
       const name = contrastPresetName(id, undefined);
       if (name) recallLayerPreset(engine, deps.sessionHost.state, laneId, i, id, name);
@@ -968,6 +970,18 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // The rack door, which rebuilds the lane: what a slot HOLDS changes the
       // lane's param numbering, and a lane is numbered once for its lifetime.
       setLayerEngine(lane, slot, engineId);
+      // And the rebuild is exactly why this has to say the weave moved.
+      //
+      // A rebuilt engine takes every param from its SPEC default, and `l1.gain`
+      // defaults to 1 — so every slot comes back at FULL LEVEL and the lane
+      // plays all of its instruments at once, however the sound control is set.
+      // Reported as "ahora suena simultáneamente".
+      //
+      // Announcing it re-runs the sound applier, which writes the gains from the
+      // control's own position. One owner for "how loud is each slot", rather
+      // than this file writing a second set of numbers that can disagree with
+      // the pad.
+      deps.onWeaveChanged?.(laneId);
       deps.refresh();
     },
 
