@@ -796,6 +796,14 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // A→B, four corners on a cloud.
       if (value !== null) ensureSoundRack(laneId);
 
+      // Whether the CONTROL is appearing or disappearing, as opposed to merely
+      // moving. It decides whether the row is rebuilt below, and getting that
+      // wrong is not cosmetic: `refresh` remounts the whole panel, so rebuilding
+      // on a value change destroys the very element the pointer is dragging. A
+      // click survived it — one event — and a drag died on the second, which is
+      // exactly how it was reported.
+      const appearing = (deps.weave.lanes[laneId]?.sound === undefined) !== (value === null);
+
       const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
       const sound = value === null ? undefined : Math.min(1, Math.max(0, value));
       // The vertical axis KEEPS its place when only x is given, so a control
@@ -807,12 +815,15 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // fold tags its notes with the loop they came from, so every cached
       // source for this lane is answering the wrong question.
       deps.onWeaveChanged?.(laneId);
-      // And the ROW has to be redrawn, because turning this on can have made the
-      // lane a rack — which is what its instrument and preset dropdowns point
-      // at. Without this the slot buttons appeared some time later, whenever
-      // something else happened to repaint the panel, which is how a control
-      // reads as unreliable.
-      deps.refresh();
+      // The row is redrawn only when the control APPEARS or DISAPPEARS, because
+      // turning it on can have made the lane a rack — which is what its
+      // instrument and preset dropdowns then point at, and without a redraw the
+      // slot buttons showed up some time later, whenever something else happened
+      // to repaint the panel.
+      //
+      // Never while it is merely MOVING. `refresh` remounts the panel, so a
+      // redraw per drag event replaces the control under the pointer holding it.
+      if (appearing) deps.refresh();
     },
 
     setLaneWeave(laneId, weave) {

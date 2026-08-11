@@ -39,6 +39,9 @@ function harness(
   // `l0.gain`, so a sound fader has nothing to write until the lane is a rack.
   const destIds: string[] = [];
   const converted: { laneId: string; contrast?: boolean }[] = [];
+  // `refresh` REMOUNTS the panel, so counting it is counting how often every
+  // control in the row is destroyed and rebuilt.
+  const refreshes: number[] = [];
 
   // A fixture with no callbacks stands in for a host that refuses — the panel
   // has to tell the difference rather than report a lane id that names nothing.
@@ -62,14 +65,14 @@ function harness(
     seq: { bpm: 128, meter: DEFAULT_METER, isPlaying: () => false } as never,
     ctx: { currentTime: 0 } as never,
     weave,
-    refresh: () => {},
+    refresh: () => { refreshes.push(1); },
     onWeaveChanged: (id) => changed.push(id),
     setMusicality: (m) => { written.push(m); state.musicality = m; },
     stopTransport: () => { stops.push(1); },
     destinations: () => destIds.map((id) => ({ id })) as never,
   });
 
-  return { ctx, state, weave, written, added, changed, stops, destIds, converted };
+  return { ctx, state, weave, written, added, changed, stops, destIds, converted, refreshes };
 }
 
 /** Run `fn` with a two-pattern library installed for the default style, then put
@@ -238,6 +241,34 @@ describe('createPanelContext — the sound fader', () => {
     h.ctx.setLaneSound('lane1', 0.5, 0.75);
     expect(h.converted).toEqual([]);
     expect(h.ctx.laneSound('lane1')).toEqual({ x: 0.5, y: 0.75 });
+  });
+
+  it('does not rebuild the row while the control is being MOVED', () => {
+    // `refresh` remounts the whole panel, so a rebuild per drag event replaces
+    // the element the pointer is holding: a click survived it — one event — and
+    // a drag died on the second. Reported as a fader you could not drag, only
+    // click.
+    const h = harness(['lane1']);
+    h.destIds.push('lane1.l0.gain');
+    h.ctx.setLaneSound('lane1', 0.1);
+    const after = h.refreshes.length;
+    for (const x of [0.2, 0.3, 0.4, 0.5]) h.ctx.setLaneSound('lane1', x);
+    expect(h.refreshes.length).toBe(after);
+  });
+
+  it('DOES rebuild it when the control appears or disappears', () => {
+    // Which is the other half of the same rule: turning it on can have made the
+    // lane a rack, and the row's instrument and preset dropdowns then point at
+    // one. Without the rebuild the slot buttons showed up whenever something
+    // else happened to repaint.
+    const h = harness(['lane1']);
+    h.destIds.push('lane1.l0.gain');
+    const before = h.refreshes.length;
+    h.ctx.setLaneSound('lane1', 0);
+    expect(h.refreshes.length).toBeGreaterThan(before);
+    const on = h.refreshes.length;
+    h.ctx.setLaneSound('lane1', null);
+    expect(h.refreshes.length).toBeGreaterThan(on);
   });
 
   it('keeps the vertical axis when only the horizontal one is moved', () => {
