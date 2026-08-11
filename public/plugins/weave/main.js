@@ -532,31 +532,29 @@ function buildLaneRow(lane, ctx, engines) {
   const soundWrap = el("div", "weave-sound");
   const soundOn = el("button", "weave-sound-btn", "\u25D0");
   soundOn.type = "button";
-  const sound = document.createElement("input");
-  sound.type = "range";
-  sound.className = "weave-sound-fader";
-  sound.min = "0";
-  sound.max = "1";
-  sound.step = "0.01";
-  sound.setAttribute("aria-label", "Which instrument this lane is played on");
+  const soundPad = Loom.controls.pad2d({
+    x: 0,
+    y: 0,
+    label: "Drag: how much of each of the four instruments this lane is played on",
+    onChange: (x, y) => {
+      ctx.setLaneSound(lane.id, x, y);
+    }
+  });
+  soundPad.el.classList.add("weave-sound-pad");
   const paintSound = () => {
-    const v = ctx.laneSound(lane.id);
-    const on = v !== null;
+    const at = ctx.laneSound(lane.id);
+    const on = at !== null;
     soundOn.classList.toggle("on", on);
-    soundOn.title = on ? "Sound fader on \u2014 every note reaches both instruments" : "Sound fader off \u2014 each note plays on the instrument of the loop it came from";
+    soundOn.title = on ? "Sound pad on \u2014 every note reaches every instrument in the rack" : "Sound pad off \u2014 each note plays on the instrument of the loop it came from";
     soundOn.setAttribute("aria-pressed", String(on));
-    sound.disabled = !on;
-    sound.value = String(v ?? 0);
+    soundPad.set(at?.x ?? 0, at?.y ?? 0);
     soundWrap.classList.toggle("off", !on);
   };
   soundOn.addEventListener("click", () => {
-    ctx.setLaneSound(lane.id, ctx.laneSound(lane.id) === null ? 0 : null);
+    ctx.setLaneSound(lane.id, ctx.laneSound(lane.id) === null ? 0 : null, 0);
     paintSound();
   });
-  sound.addEventListener("input", () => {
-    ctx.setLaneSound(lane.id, Number(sound.value));
-  });
-  soundWrap.append(soundOn, sound);
+  soundWrap.append(soundOn, soundPad.el);
   paintSound();
   const cellHost = el("div", "weave-cell-host");
   let cell = { el: cellHost };

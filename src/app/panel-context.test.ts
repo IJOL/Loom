@@ -227,7 +227,7 @@ describe('createPanelContext — the sound fader', () => {
     const h = harness(['lane1']);
     h.ctx.setLaneSound('lane1', 0);
     expect(h.converted).toEqual([{ laneId: 'lane1', contrast: true }]);
-    expect(h.ctx.laneSound('lane1')).toBe(0);
+    expect(h.ctx.laneSound('lane1')).toEqual({ x: 0, y: 0 });
   });
 
   it('leaves a lane that already has the gains alone', () => {
@@ -235,9 +235,19 @@ describe('createPanelContext — the sound fader', () => {
     // again would rewrite their two slots with a fresh pair.
     const h = harness(['lane1']);
     h.destIds.push('lane1.l0.gain', 'lane1.l1.gain');
-    h.ctx.setLaneSound('lane1', 0.5);
+    h.ctx.setLaneSound('lane1', 0.5, 0.75);
     expect(h.converted).toEqual([]);
-    expect(h.ctx.laneSound('lane1')).toBe(0.5);
+    expect(h.ctx.laneSound('lane1')).toEqual({ x: 0.5, y: 0.75 });
+  });
+
+  it('keeps the vertical axis when only the horizontal one is moved', () => {
+    // Two controls can move the pad — a drag moves both, a lap of the flow may
+    // move one — and either resetting the other would teleport the sound.
+    const h = harness(['lane1']);
+    h.destIds.push('lane1.l0.gain');
+    h.ctx.setLaneSound('lane1', 0.2, 0.9);
+    h.ctx.setLaneSound('lane1', 0.6);
+    expect(h.ctx.laneSound('lane1')).toEqual({ x: 0.6, y: 0.9 });
   });
 
   it('reports no slots for an ordinary lane, so its own pickers stand', () => {

@@ -591,14 +591,20 @@ export interface PanelContext {
    *  which is what lets loop A be heard on instrument B, and lets the sound
    *  evolve while the notes stand still.
    *
-   *  Null is NOT zero. Without a fader the lane routes each note to the layer
-   *  of the loop it came from, which is the other way of using a rack; with
-   *  one, that routing is off and every note reaches both instruments. Either
-   *  the loop chooses the instrument or the fader does, never both. */
-  laneSound(laneId: string): number | null;
-  /** Move the fader, or pass null to remove it and go back to routing by
-   *  loop. */
-  setLaneSound(laneId: string, value: number | null): void;
+   *  A SQUARE, not a line: a rack holds four instruments and the pad puts one
+   *  in each corner, the same shape and the same corner order the cloud uses
+   *  for loops. A rack of two is that square with its bottom half empty.
+   *
+   *  Null is NOT the origin. Without a pad the lane routes each note to the
+   *  layer of the loop it came from, which is the other way of using a rack;
+   *  with one, that routing is off and every note reaches every instrument.
+   *  Either the loop chooses the instrument or the pad does, never both. */
+  laneSound(laneId: string): { x: number; y: number } | null;
+  /** Move the pad, or pass null to remove it and go back to routing by loop.
+   *
+   *  `y` omitted leaves the vertical axis where it was, so a control that moves
+   *  one axis cannot silently reset the other. */
+  setLaneSound(laneId: string, value: number | null, y?: number): void;
   /** Choose loops or move the position. Passing null clears the lane back to
    *  playing its clip untouched. */
   setLaneWeave(laneId: string, weave: PanelWeave | null): void;

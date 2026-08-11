@@ -2,7 +2,10 @@
 // interaction handlers. Extracted from session-host.ts (the body was already
 // written in terms of `self`, so it lifts out verbatim with `self` as a param).
 
-import { convertLaneToLayers, contrastPresetName, recallLayerPreset } from '../engines/layers-rack-ui';
+import {
+  convertLaneToLayers, contrastPresetName, recallLayerPreset, slotChoices,
+} from '../engines/layers-rack-ui';
+import { laneLayers } from '../engines/layers-engine';
 import { pagePresetName } from '../instrument-presets/preset-select-state';
 import { snapshotEngineParams } from '../instrument-presets/user-preset-store';
 import { commitParamForLane } from '../engines/engine-param-commit';
@@ -221,7 +224,23 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         // so afterwards `lane.engineId` names the rack rather than the
         // instrument inside it.
         const slotEngineId = lane.engineId;
-        if (!convertLaneToLayers(lane, presetName, patch, mods)) return;
+        // Whether this lane's sound is one the USER built, read BEFORE the
+        // conversion — `engineState.params` is a mirror of EDITS, and the
+        // conversion fills it with the carried patch, so afterwards every lane
+        // looks edited. Empty here means factory defaults and nothing to lose.
+        const hadEdits = Object.keys(lane.engineState?.params ?? {}).length > 0;
+        // A morph wants four DIFFERENT instruments, one per corner of its pad.
+        // From the rack's own list, so a slot still cannot hold a rack, the
+        // Sampler or the drum machine — and never the lane's own engine, which
+        // is already in slot 0 carrying its patch.
+        //
+        // Fewer than three others is a small install, not an error: the rack is
+        // built as deep as the engines allow and the pad's empty corners simply
+        // have no destination to write.
+        const spread = opts?.contrast
+          ? slotChoices().map((e) => e.id).filter((id) => id !== slotEngineId).slice(0, 3)
+          : undefined;
+        if (!convertLaneToLayers(lane, presetName, patch, mods, spread)) return;
         // Tell the NEW engine what the rack says, through the door every param
         // write goes through.
         //
@@ -240,22 +259,44 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         // engine by the rack door itself (main.ts's setRack), because every
         // rack change rebuilds and every rebuild needs it. Only the gains are
         // written here, and only because they must also reach the mirror.
-        commitParamForLane(built, self.state, laneId, 'l0.gain', 1);
-        commitParamForLane(built, self.state, laneId, 'l1.gain', 0);
+        // Slot 0 keeps the sound the lane already had; every slot after it
+        // arrives SILENT, so converting is inaudible and raising a corner is a
+        // decision you make.
+        const rack = laneLayers(lane);
+        rack.forEach((l, i) => {
+          if (l.engineId) commitParamForLane(built, self.state, laneId, `l${i}.gain`, i === 0 ? 1 : 0);
+        });
 
-        // A morph needs two DIFFERENT sounds. The conversion copies the lane's
-        // patch into both slots on purpose — that is what makes converting
-        // inaudible — so on its own it leaves a fader that moves and changes
-        // nothing, which is indistinguishable from a broken one.
-        //
         // Only when the caller asks. From the lane menu you are building a rack
-        // by hand and the second slot is yours to fill; from the sound fader the
-        // whole point of the press was to have something to fade to.
+        // by hand and the other slots are yours to fill; from the sound pad the
+        // whole point of the press was to have somewhere to cross to.
         if (!opts?.contrast) return;
-        const other = contrastPresetName(slotEngineId, presetName);
-        // Fewer than two presets: leave the slot as it is rather than empty it.
-        // Two identical instruments is a poor morph; a silent one is a bug.
-        if (other) recallLayerPreset(built, self.state, laneId, 1, slotEngineId, other);
+
+        // Every slot INITIALISED, which is what was missing. A slot with no
+        // preset shows "— pick —" while playing whatever the rebuild left in it,
+        // and two slots that happen to hold the same sound make a pad that moves
+        // and changes nothing — reported as exactly that.
+        for (let i = 1; i < rack.length; i++) {
+          const held = rack[i].engineId;
+          if (!held) continue;
+          // A different engine's first preset can never collide with slot 0's,
+          // which is the contrast this is for. Only when a slot happens to hold
+          // the lane's own engine does it have to avoid one by name.
+          const name = contrastPresetName(held, held === slotEngineId ? presetName : undefined);
+          // An engine that ships no presets keeps its factory defaults rather
+          // than being emptied: a poor corner is better than a silent one.
+          if (name) recallLayerPreset(built, self.state, laneId, i, held, name);
+        }
+
+        // And slot 0 — but ONLY when there is nothing to lose. A lane with no
+        // recorded preset and no edits of its own is on factory defaults, and
+        // leaving it there gives the pad a corner whose dropdown reads
+        // "— pick —" for ever. A lane whose knobs were turned by hand keeps
+        // them: overwriting an unnamed sound the user built is the one thing
+        // this must not do.
+        if (presetName || hadEdits) return;
+        const first = contrastPresetName(slotEngineId, undefined);
+        if (first) recallLayerPreset(built, self.state, laneId, 0, slotEngineId, first);
       };
       if (hd) withUndo(hd, run); else run();
     },

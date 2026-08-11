@@ -611,36 +611,38 @@ export function buildLaneRow(
   // to the layer of the loop it came from, which is the other way of using a
   // rack and the one this panel shipped with. Turning it on switches that off:
   // every note reaches both instruments and this balances them.
+  // A SQUARE, not a fader: a rack holds four instruments and the pad puts one in
+  // each corner — the same shape and the same corner order the cloud uses for
+  // loops, so a hand that has learnt one has learnt the other.
   const soundWrap = el('div', 'weave-sound');
   const soundOn = el('button', 'weave-sound-btn', '◐') as HTMLButtonElement;
   soundOn.type = 'button';
-  const sound = document.createElement('input');
-  sound.type = 'range';
-  sound.className = 'weave-sound-fader';
-  sound.min = '0';
-  sound.max = '1';
-  sound.step = '0.01';
-  sound.setAttribute('aria-label', 'Which instrument this lane is played on');
+  const soundPad = Loom.controls.pad2d({
+    x: 0,
+    y: 0,
+    label: 'Drag: how much of each of the four instruments this lane is played on',
+    onChange: (x, y) => { ctx.setLaneSound(lane.id, x, y); },
+  });
+  soundPad.el.classList.add('weave-sound-pad');
   const paintSound = () => {
-    const v = ctx.laneSound(lane.id);
-    const on = v !== null;
+    const at = ctx.laneSound(lane.id);
+    const on = at !== null;
     soundOn.classList.toggle('on', on);
     soundOn.title = on
-      ? 'Sound fader on — every note reaches both instruments'
-      : 'Sound fader off — each note plays on the instrument of the loop it came from';
+      ? 'Sound pad on — every note reaches every instrument in the rack'
+      : 'Sound pad off — each note plays on the instrument of the loop it came from';
     soundOn.setAttribute('aria-pressed', String(on));
-    sound.disabled = !on;
-    sound.value = String(v ?? 0);
+    soundPad.set(at?.x ?? 0, at?.y ?? 0);
     soundWrap.classList.toggle('off', !on);
   };
   soundOn.addEventListener('click', () => {
-    ctx.setLaneSound(lane.id, ctx.laneSound(lane.id) === null ? 0 : null);
+    // Null the whole pad, or bring it back at the corner slot 0 is in — the
+    // instrument the lane already had, so turning it on is inaudible until you
+    // drag.
+    ctx.setLaneSound(lane.id, ctx.laneSound(lane.id) === null ? 0 : null, 0);
     paintSound();
   });
-  sound.addEventListener('input', () => {
-    ctx.setLaneSound(lane.id, Number(sound.value));
-  });
-  soundWrap.append(soundOn, sound);
+  soundWrap.append(soundOn, soundPad.el);
   paintSound();
 
   // Re-read on every repaint, never captured: the style picker below changes

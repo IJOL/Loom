@@ -682,10 +682,13 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     },
 
     laneSound(laneId) {
-      return deps.weave.lanes[laneId]?.sound ?? null;
+      const cur = deps.weave.lanes[laneId];
+      // `sound` is the pad's x AND the switch that says the pad exists at all,
+      // so absent means no pad rather than a pad at the origin.
+      return cur?.sound === undefined ? null : { x: cur.sound, y: cur.soundY ?? 0 };
     },
 
-    setLaneSound(laneId, value) {
+    setLaneSound(laneId, value, y) {
       // Turning it ON is also what BUILDS the thing it moves.
       //
       // The fader writes `l0.gain` and `l1.gain`, which only exist on a lane
@@ -707,7 +710,11 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
 
       const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
       const sound = value === null ? undefined : Math.min(1, Math.max(0, value));
-      deps.weave.lanes[laneId] = { ...cur, sound };
+      // The vertical axis KEEPS its place when only x is given, so a control
+      // that moves one axis cannot silently reset the other.
+      const soundY = value === null ? undefined
+        : Math.min(1, Math.max(0, y ?? cur.soundY ?? 0));
+      deps.weave.lanes[laneId] = { ...cur, sound, soundY };
       // MATERIAL, not a param: turning the fader on or off changes whether the
       // fold tags its notes with the loop they came from, so every cached
       // source for this lane is answering the wrong question.

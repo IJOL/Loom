@@ -38,10 +38,13 @@ export interface WeaveSoundDeps {
   ) => void;
 }
 
-/** The two slots the fader balances. Slot 0 and slot 1 rather than "every layer
- *  in the rack": a fader has two ends, and a rack with four filled slots is a
- *  different instrument, not a longer fader. */
-const SLOTS = ['l0.gain', 'l1.gain'] as const;
+/** The four slots the pad balances, in the CLOUD's corner order: top-left,
+ *  top-right, bottom-left, bottom-right.
+ *
+ *  All four, not "every layer in the rack": four is what a square has, and it is
+ *  also the rack's own maximum. A lane with fewer filled slots simply has no
+ *  destination for the rest, and the write is skipped. */
+const SLOTS = ['l0.gain', 'l1.gain', 'l2.gain', 'l3.gain'] as const;
 
 export interface WeaveSound {
   /** Write the gains of every lane that has a sound fader. Returns how many
@@ -87,13 +90,17 @@ export function createWeaveSound(deps: WeaveSoundDeps): WeaveSound {
         // loop instead, so writing gains for it would fight that routing.
         if (sel?.sound === undefined) continue;
         now.add(laneId);
-        const { a, b } = soundGains(sel.sound);
-        put(laneId, [a, b]);
+        put(laneId, soundGains(sel.sound, sel.soundY ?? 0));
       }
 
-      // The trailing edge: lanes that had a fader and no longer do get both
-      // layers back at unity, once.
-      for (const laneId of fading) if (!now.has(laneId)) put(laneId, [1, 1]);
+      // The trailing edge: lanes that had a pad and no longer do get every layer
+      // back at unity, once.
+      //
+      // Unity and not silence, because turning the pad off hands the routing
+      // back to the LOOP the note came from — and that sends each note to one
+      // layer, so a layer at unity is one instrument playing its own notes
+      // rather than four playing on top of each other.
+      for (const laneId of fading) if (!now.has(laneId)) put(laneId, [1, 1, 1, 1]);
       fading = now;
 
       return landed;

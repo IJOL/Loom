@@ -398,13 +398,17 @@
   }
 }
 
-.weave-sound-fader {
-  flex: 1;
-  min-width: 0;
-  accent-color: var(--knob-purple, #9a6cd0);
+// The sound square. Small — it lives on the row you play from, and the four
+// corners it picks between are named on the instrument page, not here. Square by
+// aspect-ratio rather than a fixed height, so it stays a square as the row's
+// density changes.
+.weave-sound-pad {
+  width: 34px;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
   cursor: pointer;
 
-  &:disabled { cursor: default; }
+  .weave-sound.off & { cursor: default; pointer-events: none; }
 }
 
 // A track's level, beside its transport buttons. Narrow on purpose: the row is

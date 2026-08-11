@@ -73,6 +73,12 @@ export interface LaneSelection {
    *  different part; one that moves by an octave is the same part in a register
    *  where it fits, which is the only thing this is for. */
   octave?: number;
+  /** Where the SOUND pad sits on its vertical axis, 0..1. Read only when `sound`
+   *  is set — that one is the pad's x AND the switch that says the pad exists at
+   *  all, which is why the second axis is a field of its own rather than the two
+   *  being one object. Absent ⇒ the top edge, where a rack of two behaves
+   *  exactly like the fader this used to be. */
+  soundY?: number;
   /** The loops this lane has already travelled through, oldest first.
    *
    *  A journey that only ever draws forward is a journey you cannot re-hear:

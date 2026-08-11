@@ -81,6 +81,11 @@ export function convertLaneToLayers(
    *  not params and so are not in `patch`. Supplied by the caller for the same
    *  reason and with the same fallback. */
   mods?: ModulatorState[],
+  /** Engines for the slots AFTER the first, when the rack is being built as a
+   *  morph rather than as a blank to fill by hand. Slot 0 always holds the
+   *  lane's own instrument, carrying its patch; these are the ones you cross
+   *  towards. Absent ⇒ the old two slots, both the lane's own engine. */
+  spread?: readonly string[],
 ): boolean {
   if (!deps || !lane || lane.engineId === LAYERS_ENGINE_ID) return false;
 
@@ -97,19 +102,30 @@ export function convertLaneToLayers(
   // Silent, converting is inaudible, giving slot 2 a preset is a decision you
   // make deliberately, and raising it — by hand or with the SOUND fader — is
   // the crossfade this was built for.
-  const slot = { engineId: lane.engineId, lo: 0, hi: 127, presetName };
-  const rack: LayerSpec[] = [{ ...slot, gain: 1 }, { ...slot, gain: 0 }];
+  const own = { engineId: lane.engineId, lo: 0, hi: 127, presetName };
+  const rack: LayerSpec[] = spread && spread.length > 0
+    ? [
+        { ...own, gain: 1 },
+        ...spread.slice(0, MAX_LAYERS - 1)
+          .map((engineId) => ({ engineId, lo: 0, hi: 127, gain: 0 })),
+      ]
+    : [{ ...own, gain: 1 }, { ...own, gain: 0 }];
 
   // The live patch when the caller can read one, the mirror otherwise.
   const source = patch ?? lane.engineState?.params ?? {};
   const carried: Record<string, number> = { ...lane.engineState?.params };
+  // Only into the slots holding the SAME instrument. A patch is a set of ids
+  // that engine declares, so copying it under another engine's prefix writes
+  // names nothing over there reads — and the slot it was meant to make sound
+  // familiar is playing something else entirely anyway.
+  const mine = rack.map((l) => l.engineId === lane.engineId);
+  const prefixes = rack.map((_, i) => layerPrefix(i));
   for (const [id, v] of Object.entries(source)) {
     // Only the engine's OWN params. A strip param (`bus.level`) belongs to the
     // desk, not to the patch, and prefixing one would invent `l0.bus.level`,
     // which nothing reads.
-    if (id.startsWith('bus.') || id.startsWith('l0.') || id.startsWith('l1.')) continue;
-    carried[`${layerPrefix(0)}${id}`] = v;
-    carried[`${layerPrefix(1)}${id}`] = v;
+    if (id.startsWith('bus.') || prefixes.some((p) => id.startsWith(p))) continue;
+    rack.forEach((_, i) => { if (mine[i]) carried[`${prefixes[i]}${id}`] = v; });
   }
   // The gains as PARAMS as well as in the rack, and written AFTER the copy so
   // the loop above cannot overwrite them from an engine that happens to declare
@@ -122,8 +138,7 @@ export function convertLaneToLayers(
   //
   // Unconditional — outside any "did the lane have params" branch. A lane with
   // none still has to come out of this with slot 1 silent.
-  carried[`${layerPrefix(0)}gain`] = 1;
-  carried[`${layerPrefix(1)}gain`] = 0;
+  rack.forEach((_, i) => { carried[`${prefixes[i]}gain`] = i === 0 ? 1 : 0; });
 
   // The MODULATORS, into both slots, wearing each slot's prefix.
   //
@@ -148,8 +163,11 @@ export function convertLaneToLayers(
       // LAYERS' own set first: the rack's LFO belongs to the rack, and is what
       // an inserted modulator would join.
       ...LAYERS_DEFAULT_MODULATORS(),
-      ...prefixModulators(liveMods, 0, lane.engineId),
-      ...prefixModulators(liveMods, 1, lane.engineId),
+      // Into the slots holding the same instrument, for the same reason the
+      // params are: an envelope aimed at `filter.env` means nothing to an engine
+      // that has no filter envelope. The other slots get theirs from the preset
+      // recalled into them.
+      ...rack.flatMap((_, i) => (mine[i] ? prefixModulators(liveMods, i, lane.engineId) : [])),
     ],
   };
 
