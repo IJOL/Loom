@@ -14,8 +14,9 @@ import { createWeaveSource, createMacroSource, type WeaveSource } from '../weave
 import { resolveSelection } from '../weave/weave-selection';
 import { avoidClash } from '../weave/harmony-guard';
 import {
-  applyProgression, progressionById, progressionBars, chordAtBar,
+  applyProgression, progressionBars, chordAtBar,
 } from '../arranger/progression';
+import { activeProgression } from '../arranger/chord-track';
 import { weaveLoopNotes, weaveLoopContext, rehookOnArrival } from './weave-loops';
 import { macroNeutral } from '../weave/weave-catalog';
 import { isHarmonic } from '../plugins/capabilities';
@@ -323,8 +324,12 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
   const withProgression = (laneId: string, source: WeaveSource): WeaveSource => () => {
     const notes = source();
     if (!notes || notes.length === 0 || !melodicLane(laneId)) return notes;
-    const prog = progressionById(state.progression ?? 'static')?.chords;
-    if (!prog) return notes;
+    // Through the ONE accessor: a progression the user WROTE wins over the
+    // catalogue entry, and spelling that precedence out here and in chordNow
+    // is two places to forget it — which reads as the panel naming one chord
+    // while the music plays another.
+    const prog = activeProgression(state);
+    if (prog.length === 0) return notes;
     const m = musicality();
     const barTicks = ticksPerBar(deps.getMeter());
     // Offset by where the transport is, so a two-bar clip under a four-bar
@@ -422,9 +427,9 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
      *  `bar` is 0-based within the lap and `bars` is the lap's length, so a
      *  caller shows `bar + 1` of `bars` without knowing anything else. */
     chordNow() {
-      const prog = progressionById(state.progression ?? 'static')?.chords;
-      const bars = prog ? progressionBars(prog) : 0;
-      if (!prog || bars <= 0) return null;
+      const prog = activeProgression(state);
+      const bars = progressionBars(prog);
+      if (bars <= 0) return null;
       const chord = chordAtBar(prog, barCursor);
       if (!chord) return null;
       return { bar: ((barCursor % bars) + bars) % bars, bars, degree: chord.degree };
@@ -525,8 +530,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
      *  The cursor is restored and every cache dropped afterwards, or the next
      *  scheduler tick would fold against whatever bar this loop stopped on. */
     lapNotes() {
-      const prog = progressionById(state.progression ?? 'static')?.chords;
-      const bars = Math.max(1, prog ? progressionBars(prog) : 1);
+      const bars = Math.max(1, progressionBars(activeProgression(state)));
       const barTicks = ticksPerBar(deps.getMeter());
       const lanes = deps.getState?.().lanes ?? [];
       const saved = barCursor;

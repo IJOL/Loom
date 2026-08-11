@@ -6,6 +6,7 @@
 
 import type { PanelWeave } from '@loom/plugin-sdk';
 import type { StyleId } from '../core/musicality';
+import type { Chord } from '../arranger/progression';
 import type { LoopWeight } from './topology-types';
 import { abWeights, type AbState } from './topology-ab';
 import { queueWeights, type QueueState } from './topology-queue';
@@ -179,6 +180,17 @@ export interface WeaveState {
    *  standing still is something the user chose rather than something nobody
    *  implemented. */
   progression?: string;
+  /** A progression written by hand. Present, it WINS over `progression` and the
+   *  dropdown reads Custom.
+   *
+   *  Absent by default and absent from `defaultWeaveState`: absent means "the
+   *  catalogue", which is what every existing session is, so nothing migrates.
+   *
+   *  Here rather than in the session because that is where it was born, not
+   *  because it belongs to the panel: it is session harmony, and if it outgrows
+   *  WEAVE it moves. Said out loud so nobody later mistakes the location for a
+   *  decision. */
+  chords?: Chord[];
 }
 
 export function defaultWeaveState(): WeaveState {
