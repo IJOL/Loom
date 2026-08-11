@@ -113,7 +113,15 @@ export function applyFlow(
    *  onto a fresh loop. */
   onWrap?: (laneId: string) => void,
   /** See flowPositions. With wrapping off no lane can ever wrap, so `onWrap`
-   *  cannot fire — which is exactly what STATIC means. */
+   *  cannot fire.
+   *
+   *  The two callers answer it differently, and both are right. A HAND on the
+   *  master fader wraps only while EVOLVE is on, because there reaching the far
+   *  end IS arriving and the lane hands over; STATIC gives that fader ends to
+   *  stop at. The CLOCK always wraps: its journey is a lap by construction, and
+   *  clamping it parked a FANNED scene at the far end one lane at a time —
+   *  each lane freezing as it arrived, then all of them lurching back together
+   *  when the flow lapped. */
   wrap = true,
 ): boolean {
   const current = laneIds.map((id) => {

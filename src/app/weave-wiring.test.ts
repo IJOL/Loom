@@ -740,3 +740,102 @@ describe('the scene walks a chord progression', () => {
     expect(heard.size).toBeGreaterThan(2);
   });
 });
+
+describe('the fan keeps turning, whatever EVOLVE says', () => {
+  // Reported from the app: "las lanes no avanzan correctamente cuando estan en
+  // offset, se paran y luego recontinuan de golpe".
+  //
+  // The journey's geometry used to be keyed off EVOLVE: with it OFF the flow
+  // CLAMPED instead of wrapping. In `together` that is a clean ending — the
+  // whole scene arrives at the far end and stops. In `offset` the lanes are
+  // spread ACROSS the journey, so the one that starts nearest the end arrives
+  // first and parks at 1, then the next, then the next: the fan collapses onto
+  // B one lane at a time and every parked lane lurches back together when the
+  // flow laps.
+  //
+  // STATIC means "do not change my loops" — that is the re-hook, and it stays
+  // off. It never meant "pile the lanes at the end".
+  const BAR_SEC = 2;
+
+  const threeLanes = (): SessionState => ({
+    lanes: ['lane1', 'lane2', 'lane3'].map((id) => ({
+      id,
+      engineId: 'subtractive',
+      clips: [
+        { id: `${id}A`, name: 'A', color: '#fff', lengthBars: 1, notes: A, gridResolution: '1/16' },
+        { id: `${id}B`, name: 'B', color: '#fff', lengthBars: 1, notes: B, gridResolution: '1/16' },
+      ],
+      inserts: [],
+    })),
+    scenes: [],
+    musicality: { ...DEFAULT_MUSICALITY },
+  } as unknown as SessionState);
+
+  /** Three fanned lanes travelling a four-bar lap, with EVOLVE off. */
+  const fanned = () => {
+    const state = threeLanes();
+    const w = createWeaveWiring({
+      getLaneStates: () => new Map<string, LanePlayState>(),
+      getMeter: () => DEFAULT_METER,
+      getBpm: () => 120,
+      getState: () => state,
+    });
+    for (const l of state.lanes) {
+      w.state.lanes[l.id] = {
+        weave: { kind: 'ab', a: `clip:${l.id}A`, b: `clip:${l.id}B`, x: 0 },
+        locked: false, harmonyLeader: false,
+      };
+    }
+    w.state.flow = { drift: 'offset', speedBars: 4, evolve: false };
+    return { w, ids: state.lanes.map((l) => l.id) };
+  };
+
+  const posOf = (w: ReturnType<typeof createWeaveWiring>, id: string) =>
+    (w.state.lanes[id]!.weave as { x: number }).x;
+
+  it('never parks a lane at the far end while the others travel', () => {
+    // The symptom, stated as the thing it is: a position of exactly 1 is a lane
+    // that has stopped, and in a fan the others are still going.
+    const { w, ids } = fanned();
+    for (let bar = 0; bar <= 8; bar += 0.25) {
+      w.advance(BAR_SEC * bar);
+      for (const id of ids) expect(posOf(w, id)).toBeLessThan(1);
+    }
+  });
+
+  it('keeps every lane MOVING across a whole lap', () => {
+    // The stall, measured: a parked lane reports the same position tick after
+    // tick while the flow advances.
+    const { w, ids } = fanned();
+    const seen = new Map(ids.map((id) => [id, new Set<number>()]));
+    const steps = 16;
+    for (let i = 0; i < steps; i++) {
+      w.advance(BAR_SEC * (i * 0.25));
+      for (const id of ids) seen.get(id)!.add(Number(posOf(w, id).toFixed(4)));
+    }
+    for (const id of ids) expect(seen.get(id)!.size).toBe(steps);
+  });
+
+  it('holds the fan s spacing all the way round', () => {
+    // What 'offset' MEANS: evenly spread, and staying that way. Clamping
+    // collapsed the spacing to zero as each lane hit the end.
+    const { w, ids } = fanned();
+    w.advance(BAR_SEC * 2.5);
+    const gap = (a: string, b: string) => ((posOf(w, b) - posOf(w, a)) % 1 + 1) % 1;
+    expect(gap(ids[0], ids[1])).toBeCloseTo(1 / 3, 5);
+    expect(gap(ids[1], ids[2])).toBeCloseTo(1 / 3, 5);
+  });
+
+  it('still refuses to re-hook while STATIC — the loops are untouched', () => {
+    // The half of STATIC that is real: the pair the user chose is the pair they
+    // keep, however many laps the fan turns.
+    const { w, ids } = fanned();
+    const pairs = ids.map((id) => JSON.stringify(w.state.lanes[id]!.weave));
+    for (let bar = 0; bar <= 12; bar += 0.5) w.advance(BAR_SEC * bar);
+    ids.forEach((id, i) => {
+      const now = w.state.lanes[id]!.weave as { a: string; b: string };
+      const was = JSON.parse(pairs[i]) as { a: string; b: string };
+      expect([now.a, now.b]).toEqual([was.a, was.b]);
+    });
+  });
+});

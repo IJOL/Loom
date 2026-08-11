@@ -496,12 +496,26 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       };
 
       // STATIC travels and never hands over: the pair the user chose is the pair
-      // they keep, and the journey simply stops at each end instead of lapping.
+      // they keep. That is the `rehook` below, and it is ALL that STATIC means.
+      //
+      // It used to mean the geometry too — with EVOLVE off the journey clamped
+      // instead of wrapping. In `together` that reads as a clean ending, so
+      // nobody noticed; in `offset` the lanes are spread ACROSS the journey, so
+      // the one starting nearest the end arrives first and parks at 1, then the
+      // next, then the next. The fan collapses onto B one lane at a time and
+      // every parked lane lurches back together when the flow laps. Reported as
+      // "se paran y luego recontinúan de golpe".
+      //
+      // So this always wraps: the clock's journey IS a lap — `flowAt` already
+      // folds it — and whether a lane hands over to a fresh loop on arrival is
+      // a separate question, asked one line above. The panel's own fader still
+      // clamps, because a fader has ends; that is a property of who is moving
+      // it, not of EVOLVE.
       const evolving = !!state.flow.evolve;
       if (applyFlow(
         state.lanes, laneIds, pos, state.flow.drift, base,
         evolving ? rehook : undefined,
-        evolving,
+        true,
       )) {
 
         sources.clear();

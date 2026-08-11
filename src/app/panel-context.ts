@@ -708,6 +708,13 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         mode,
         base && new Map(Object.entries(base)),
         evolving && advancing ? rehook : undefined,
+        // A HAND, and here the flag is right: with EVOLVE on, dragging to the
+        // far end IS arriving, so it folds and hands over; STATIC gives the
+        // fader ends to stop at. That is a fader's behaviour and it is tested.
+        //
+        // The CLOCK does not share it — see weave-wiring's advance. Its journey
+        // always laps, because a fanned scene that clamped parked its lanes at
+        // the far end one at a time.
         evolving,
       );
       deps.onWeaveChanged?.('*');
