@@ -799,17 +799,30 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       deps.onWeaveChanged?.('*');
     },
 
-    setClipLength(laneId, factor) {
-      // The clip editor's own operation, not a second one: applyClipLength keeps
-      // the bar count, the loop region and the automation curves in step with
-      // the notes. Building this on the note maths alone is how a clip ends up
-      // with automation that no longer lines up.
-      const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
-      const clip = lane?.clips.find((c) => c);
-      if (!clip) return;
-      applyClipLength(clip, factor, 'repeat', ticksPerBar(deps.seq.meter));
-      // The weave folds into a clip of a given length, so the phrase it plays
-      // just changed shape: the cached source has to go.
+    setLaneTime(laneId, factor) {
+      if (!(factor > 0)) return;
+      const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
+      // Two presses each way and no further. Past that a phrase is either one
+      // note every four bars or a chord, and both read as a broken control
+      // rather than as a tempo.
+      const next = Math.min(4, Math.max(0.25, (cur.timeScale ?? 1) * factor));
+      deps.weave.lanes[laneId] = { ...cur, timeScale: next };
+
+      // The ROOM, not the material. A half-time phrase is delivered whole and
+      // simply needs two bars to say it in, so the carrier clip grows with it —
+      // and shrinks back on the way down. This is the only thing here that
+      // touches the session, and it is the one thing that has to: the clip's
+      // LENGTH is what a weaving lane still hears.
+      //
+      // Through the clip editor's own operation, never note maths of its own:
+      // applyClipLength keeps the bar count, the loop region and the automation
+      // curves in step, and rebuilding that here is how a clip ends up with
+      // automation that no longer lines up.
+      const clip = deps.sessionHost.state.lanes
+        .find((l) => l.id === laneId)?.clips.find((c) => c);
+      if (clip) applyClipLength(clip, factor, 'repeat', ticksPerBar(deps.seq.meter));
+
+      // The phrase just changed shape in both ways: the cached fold has to go.
       deps.onWeaveChanged?.(laneId);
       repaintDesk();
       deps.refresh();

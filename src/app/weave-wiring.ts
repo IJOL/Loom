@@ -29,6 +29,7 @@ import { isHarmonic } from '../plugins/capabilities';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { ticksPerBar, type TimeSignature } from '../core/meter';
 import { applyFlow, flowAt } from '../weave/flow';
+import { retimeClip } from '../weave/clip-length';
 import { fillSteps } from '../automation/automation-steps';
 import { TICKS_PER_QUARTER } from '../core/notes';
 import type { NoteEvent } from '../core/notes';
@@ -256,15 +257,48 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     );
   };
 
+  /** The lane playing what it was handed at its OWN tempo.
+   *
+   *  `retimeClip` is the note arithmetic and it takes a RATE — greater than one
+   *  packs the notes closer — while the control is a time SCALE, where 2 means
+   *  half time. One is the reciprocal of the other; naming both the same way
+   *  round is how a button ends up doing the opposite of its label.
+   *
+   *  The phrase always arrives whole. Stretched, it simply needs more room than
+   *  one bar, which is why the same gesture also grows the carrier clip. */
+  const withTimeScale = (laneId: string, source: WeaveSource): WeaveSource => () => {
+    const scale = state.lanes[laneId]?.timeScale ?? 1;
+    if (!(scale > 0) || scale === 1) return source();
+    const notes = source();
+    return notes && retimeClip([...notes], 1 / scale);
+  };
+
   /** The lane's own fold, before any lane hears any other. Cached because it is
    *  what the leader search reads for EVERY lane on every ask. */
   const rawFor = (laneId: string): WeaveSource | undefined => {
     if (sources.has(laneId)) return sources.get(laneId);
     const built = build(laneId);
+    // The lane's own tempo goes on FIRST, before the progression and before the
+    // leader rule, and both of those are the reason.
+    //
+    // Before the progression: a half-time phrase spans two bars, and the chords
+    // walk the SESSION's bars — so bar one takes the first chord and bar two
+    // the second, exactly as everything else in the scene does. Stretching
+    // afterwards would drag the chord changes out with the notes and put the
+    // lane in a different harmony from the rest.
+    //
+    // Before the leader rule: the guard measures the lowest note that will
+    // actually sound, and a lane retimed after it was measured is a lane
+    // measured in the wrong place.
+    //
+    // And here rather than at the scheduler means PRINT gets it for nothing:
+    // `lapNotes` reads these same sources, so the scene it writes is the scene
+    // you heard.
+    const timed = built && withTimeScale(laneId, built);
     // The progression belongs INSIDE what the leader search reads: it moves
     // every lane at once, so measuring the bass before it had moved would
     // measure a note nobody plays.
-    const source = built && withProgression(laneId, built);
+    const source = timed && withProgression(laneId, timed);
     // Only real sources are cached. "Nothing to say" costs one map read and one
     // number compare to re-derive, cheaper than the sentinel a Map needs to
     // remember an absence — and it means a lane starts weaving on the tick after

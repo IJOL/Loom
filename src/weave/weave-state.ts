@@ -45,6 +45,21 @@ export interface LaneSelection {
   locked: boolean;
   forcedStyle?: StyleId;
   harmonyLeader: boolean;
+  /** How fast this lane plays what it is handed. 1 — the default — is as
+   *  written; 2 is half time, 0.5 is double time.
+   *
+   *  On the WEAVE state and not on the clip, which is the whole point. The
+   *  ×2 / ÷2 buttons used to reach into the session and rewrite the carrier
+   *  clip's bar count, which had two faults: on a weaving lane it changed
+   *  NOTHING you could hear — the fold refills whatever room there is, so you
+   *  got a bigger room and the same phrase — and what it did change survived
+   *  the weave being switched off, leaving an edited clip behind. A tool on top
+   *  of the session does not get to do that.
+   *
+   *  The phrase is always delivered WHOLE: half time stretches it and it takes
+   *  the room it needs, which is why the same gesture still grows the carrier
+   *  clip. The room is the lane's; the material is the weave's. */
+  timeScale?: number;
   /** The loops this lane has already travelled through, oldest first.
    *
    *  A journey that only ever draws forward is a journey you cannot re-hear:

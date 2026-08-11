@@ -569,14 +569,14 @@ function buildLaneRow(lane, ctx, engines) {
   });
   const length = el("div", "weave-len");
   for (const [label, factor, title] of [
-    ["\xF72", 0.5, "Halve this lane clip"],
-    ["\xD72", 2, "Double this lane clip, repeating the bar"]
+    ["\xF72", 0.5, "Double time: this lane plays its phrase twice as fast"],
+    ["\xD72", 2, "Half time: this lane stretches its phrase over twice the room"]
   ]) {
     const b = el("button", "weave-len-btn", label);
     b.type = "button";
     b.title = title;
     b.addEventListener("click", () => {
-      ctx.setClipLength(lane.id, factor);
+      ctx.setLaneTime(lane.id, factor);
       repaintCell();
     });
     length.appendChild(b);

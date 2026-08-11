@@ -447,34 +447,73 @@ describe('panel context — the evolve flag', () => {
   });
 });
 
-describe('clip length from the panel', () => {
-  it('doubles the lane clip, repeating the bar rather than stretching it', () => {
+describe('half time and double time from the panel', () => {
+  it('records the lane tempo on the WEAVE, not on the clip', () => {
+    // The point of the whole change: a tool on top of the session does not
+    // rewrite the session's material. Switch the weave off and the clip is as
+    // you left it.
     const h = harness();
     const id = h.ctx.addLane('subtractive');
-    const clip = h.state.lanes.find((l) => l.id === id)!.clips[0]!;
-    clip.notes = [{ start: 0, duration: 24, midi: 40, velocity: 100 }];
-    const bars = clip.lengthBars;
 
-    h.ctx.setClipLength(id, 2);
+    h.ctx.setLaneTime(id, 2);
 
-    expect(clip.lengthBars).toBe(bars * 2);
-    expect(clip.notes).toHaveLength(2);
-    expect(clip.notes[1].duration).toBe(24);   // repeated, not stretched
+    expect(h.weave.lanes[id].timeScale).toBe(2);
   });
 
-  it('halves it back', () => {
+  it('gives the phrase the ROOM it needs, because it is delivered whole', () => {
+    // Half time is not "play half of it twice": the phrase is stretched and the
+    // carrier clip grows to hold it.
     const h = harness();
     const id = h.ctx.addLane('subtractive');
     const clip = h.state.lanes.find((l) => l.id === id)!.clips[0]!;
     const bars = clip.lengthBars;
-    h.ctx.setClipLength(id, 2);
-    h.ctx.setClipLength(id, 0.5);
+
+    h.ctx.setLaneTime(id, 2);
+
+    expect(clip.lengthBars).toBe(bars * 2);
+  });
+
+  it('shrinks the room again on the way down', () => {
+    const h = harness();
+    const id = h.ctx.addLane('subtractive');
+    const clip = h.state.lanes.find((l) => l.id === id)!.clips[0]!;
+    const bars = clip.lengthBars;
+    h.ctx.setLaneTime(id, 2);
+    h.ctx.setLaneTime(id, 0.5);
     expect(clip.lengthBars).toBe(bars);
+    expect(h.weave.lanes[id].timeScale).toBe(1);
+  });
+
+  it('compounds, so two presses are four times', () => {
+    const h = harness();
+    const id = h.ctx.addLane('subtractive');
+    h.ctx.setLaneTime(id, 2);
+    h.ctx.setLaneTime(id, 2);
+    expect(h.weave.lanes[id].timeScale).toBe(4);
+  });
+
+  it('stops at two presses each way', () => {
+    // Past that a phrase is one note every four bars, or a chord. Both read as
+    // a broken control rather than as a tempo.
+    const h = harness();
+    const id = h.ctx.addLane('subtractive');
+    for (let i = 0; i < 5; i++) h.ctx.setLaneTime(id, 2);
+    expect(h.weave.lanes[id].timeScale).toBe(4);
+    for (let i = 0; i < 10; i++) h.ctx.setLaneTime(id, 0.5);
+    expect(h.weave.lanes[id].timeScale).toBe(0.25);
+  });
+
+  it('refuses a factor that is not a tempo', () => {
+    const h = harness();
+    const id = h.ctx.addLane('subtractive');
+    h.ctx.setLaneTime(id, 0);
+    h.ctx.setLaneTime(id, -2);
+    expect(h.weave.lanes[id]?.timeScale ?? 1).toBe(1);
   });
 
   it('says nothing about a lane that has no clip', () => {
     const h = harness(['lane1']);
-    expect(() => h.ctx.setClipLength('lane1', 2)).not.toThrow();
+    expect(() => h.ctx.setLaneTime('lane1', 2)).not.toThrow();
   });
 });
 

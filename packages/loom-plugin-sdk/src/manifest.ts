@@ -616,15 +616,19 @@ export interface PanelContext {
   /** Where the master flow stands. Read it per frame: with a speed set, the host
    *  is moving it and the panel is following, not driving. */
   flow(): PanelFlow;
-  /** Grow or shrink a lane's carrier clip by `factor` (2 doubles, 0.5 halves),
-   *  REPEATING the bar rather than stretching it — the same operation the clip
-   *  editor performs, through the same host function.
+  /** Play this lane at half or double time: `factor` 2 is half time, 0.5 is
+   *  double.
    *
-   *  Length rather than tempo, because on a WEAVING lane the clip's own notes
-   *  are replaced every tick and only its LENGTH survives: a phrase twice as
-   *  long is a thing you can hear, a compressed set of notes nobody will play
-   *  is not. */
-  setClipLength(laneId: string, factor: number): void;
+   *  The phrase is always delivered WHOLE — half time stretches it and it takes
+   *  the two bars it needs, rather than playing half of it twice. So the
+   *  carrier clip grows and shrinks with the material; the room belongs to the
+   *  lane, the material to the weave.
+   *
+   *  This replaced a call that only changed the ROOM. On a weaving lane that
+   *  was inaudible — the fold refills whatever space there is, so you got a
+   *  bigger room and the same phrase — and the change it did make outlived the
+   *  weave, leaving an edited clip behind when you switched the lane off. */
+  setLaneTime(laneId: string, factor: number): void;
   /** The project's key, scale, style and tempo — the session's own, not a copy. */
   musicality(): PanelMusicality;
   /** Move them. Goes through the host's ONE musicality path, so a change made

@@ -887,3 +887,73 @@ describe('the fan keeps turning, whatever EVOLVE says', () => {
     });
   });
 });
+
+describe('a lane at its own tempo', () => {
+  // The ×2 / ÷2 buttons used to change only the ROOM — the carrier clip's bar
+  // count — which on a weaving lane is inaudible: the fold refills whatever
+  // space there is, so you got a bigger room and the same phrase. Reported as
+  // "no veo diferencia al pulsarlos".
+  const NOTES = [hit(0, 60), hit(4, 62), hit(8, 64)];
+
+  function timedSession(): SessionState {
+    const clip = {
+      id: 'clipA', name: 'A', color: '#fff', lengthBars: 1, gridResolution: '1/16',
+      notes: NOTES,
+    };
+    return {
+      lanes: [{ id: 'lane1', engineId: 'subtractive', clips: [clip, clip], inserts: [] }],
+      scenes: [],
+      musicality: { ...DEFAULT_MUSICALITY },
+    } as unknown as SessionState;
+  }
+
+  const played = (timeScale?: number) => {
+    const w = wiring(timedSession());
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipA', x: 0 },
+      locked: false, harmonyLeader: false, timeScale,
+    };
+    return (w.notesFor('lane1')!() ?? []).slice().sort((a, b) => a.start - b.start);
+  };
+
+  it('stretches the phrase at half time', () => {
+    // Delivered WHOLE, not half of it twice: every note is still there and the
+    // last one lands twice as far in.
+    const plain = played();
+    const half = played(2);
+    expect(half).toHaveLength(plain.length);
+    expect(half[half.length - 1].start).toBe(plain[plain.length - 1].start * 2);
+  });
+
+  it('lengthens the notes with it, rather than leaving gaps', () => {
+    expect(played(2)[0].duration).toBe(played()[0].duration * 2);
+  });
+
+  it('packs it at double time', () => {
+    const plain = played();
+    const dbl = played(0.5);
+    expect(dbl).toHaveLength(plain.length);
+    expect(dbl[dbl.length - 1].start).toBe(plain[plain.length - 1].start / 2);
+  });
+
+  it('leaves a lane at 1 exactly as it was', () => {
+    // The escape hatch: absent or 1 must be bit-identical, or every existing
+    // session moves the day this ships.
+    expect(played(1)).toEqual(played());
+  });
+
+  it('reaches PRINT, so the scene you capture is the scene you heard', () => {
+    // lapNotes reads the same folds. If the tempo lived at the scheduler
+    // instead, PRINT would quietly write the un-stretched phrase.
+    const w = wiring(timedSession());
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipA', x: 0 },
+      locked: false, harmonyLeader: false, timeScale: 2,
+    };
+    const printed = w.lapNotes().byLane.get('lane1') ?? [];
+    const plain = played();
+    expect(printed.length).toBeGreaterThan(0);
+    expect(Math.max(...printed.map((n) => n.duration)))
+      .toBe(Math.max(...plain.map((n) => n.duration)) * 2);
+  });
+});

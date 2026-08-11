@@ -641,20 +641,22 @@ export function buildLaneRow(
     paintTopo();
     repaintCell();
   });
-  // How long the lane's phrase is, in the same two gestures the clip editor
-  // uses. The weave replaces a clip's NOTES every tick and respects its LENGTH,
-  // so this is the one thing about the carrier clip that a weaving lane can
-  // still hear: half a phrase, or twice as much room for the loop to fill.
+  // Half time and double time for this lane alone — the one thing that lets a
+  // pad sit under a beat rather than beside it.
+  //
+  // The phrase is always delivered whole: ×2 stretches it and it takes the room
+  // it needs. These used to change only that room, which on a weaving lane you
+  // could not hear at all — the fold refills whatever space there is.
   const length = el('div', 'weave-len');
   for (const [label, factor, title] of [
-    ['÷2', 0.5, 'Halve this lane clip'],
-    ['×2', 2, 'Double this lane clip, repeating the bar'],
+    ['÷2', 0.5, 'Double time: this lane plays its phrase twice as fast'],
+    ['×2', 2, 'Half time: this lane stretches its phrase over twice the room'],
   ] as [string, number, string][]) {
     const b = el('button', 'weave-len-btn', label) as HTMLButtonElement;
     b.type = 'button';
     b.title = title;
     b.addEventListener('click', () => {
-      ctx.setClipLength(lane.id, factor);
+      ctx.setLaneTime(lane.id, factor);
       repaintCell();
     });
     length.appendChild(b);
