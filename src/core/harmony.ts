@@ -4,44 +4,12 @@
 
 import { TICKS_PER_STEP, type NoteEvent } from './notes';
 import { scaleDegreeToMidi, midiToScaleDegree, scaleIntervals, type ScaleId, type StyleId } from './musicality';
+import { SHAPES, shapeForStyle } from './chord-rhythms';
 
-// ── Rhythmic pattern table ────────────────────────────────────────────────────
-// Each entry: list of [stepOffset, durationSteps] within one 4/4 bar.
-// Scale step positions by barTicks/16 so non-4/4 meters still work (barTicks
-// is always the canonical bar length from the project meter).
-interface HitPattern { stepOffset: number; durationSteps: number; }
-
-// Four comping shapes, shared by the styles that comp alike. Named so the table
-// below reads as "what the chords do", not as a wall of numbers.
-const OFFBEAT_STABS   = [2, 6, 10, 14].map((s) => ({ stepOffset: s, durationSteps: 1 }));
-const PULSING_EIGHTHS = [0, 2, 4, 6, 8, 10, 12, 14].map((s) => ({ stepOffset: s, durationSteps: 1 }));
-const SPARSE_STABS    = [{ stepOffset: 0, durationSteps: 2 }, { stepOffset: 8, durationSteps: 2 }];
-const SUSTAINED       = [{ stepOffset: 0, durationSteps: 16 }];
-// syncopated: downbeat + 16th ahead of beat 3 (step 9) + offbeat before bar end
-const SYNCOPATED      = [{ stepOffset: 0, durationSteps: 1 }, { stepOffset: 9, durationSteps: 1 }, { stepOffset: 14, durationSteps: 1 }];
-
-const STYLE_PATTERNS: Record<StyleId, HitPattern[]> = {
-  house:           OFFBEAT_STABS,
-  'deep-house':    OFFBEAT_STABS,
-  garage:          OFFBEAT_STABS,
-  techno:          SPARSE_STABS,
-  'acid-techno':   SPARSE_STABS,
-  'dub-techno':    OFFBEAT_STABS,
-  trance:          PULSING_EIGHTHS,
-  psytrance:       PULSING_EIGHTHS,
-  edm:             PULSING_EIGHTHS,
-  synthwave:       PULSING_EIGHTHS,
-  electro:         SPARSE_STABS,
-  breakbeat:       SYNCOPATED,
-  'drum-and-bass': SYNCOPATED,
-  jungle:          SYNCOPATED,
-  dubstep:         SPARSE_STABS,
-  idm:             SYNCOPATED,
-  glitch:          SYNCOPATED,
-  downtempo:       SUSTAINED,
-  'lo-fi':         SUSTAINED,
-  ambient:         SUSTAINED,
-};
+// The rhythm table used to live here, as five named arrays plus a per-style
+// map. It is in `chord-rhythms.ts` now, unchanged, because WEAVE's chordal
+// lanes need exactly the same five and could not import them from this file
+// without a cycle — so they had a SECOND copy, with no style map at all.
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -230,7 +198,7 @@ export function renderChordComp(
   const clipEnd = bars * barTicks;
 
   const roots = melodyToChordRoots(notes, key, scale, barTicks, bars);
-  const pattern = STYLE_PATTERNS[style] ?? STYLE_PATTERNS['acid-techno'];
+  const pattern = SHAPES[shapeForStyle(style)];
   const out: NoteEvent[] = [];
 
   // The previous bar's voicing, so each chord is voiced NEAR the last rather

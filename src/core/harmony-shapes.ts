@@ -19,40 +19,16 @@
 
 import { type NoteEvent } from './notes';
 import { diatonicTriad } from './harmony';
+import { SHAPES, type ChordShapeId } from './chord-rhythms';
 import type { ScaleId } from './musicality';
 
-export type ChordShapeId =
-  | 'sustained' | 'offbeat' | 'eighths' | 'sparse' | 'syncopated';
-
-interface Hit { stepOffset: number; durationSteps: number; }
-
-const SHAPES: Record<ChordShapeId, Hit[]> = {
-  sustained:  [{ stepOffset: 0, durationSteps: 16 }],
-  offbeat:    [2, 6, 10, 14].map((s) => ({ stepOffset: s, durationSteps: 1 })),
-  eighths:    [0, 2, 4, 6, 8, 10, 12, 14].map((s) => ({ stepOffset: s, durationSteps: 1 })),
-  sparse:     [{ stepOffset: 0, durationSteps: 2 }, { stepOffset: 8, durationSteps: 2 }],
-  syncopated: [
-    { stepOffset: 0, durationSteps: 1 },
-    { stepOffset: 9, durationSteps: 1 },
-    { stepOffset: 14, durationSteps: 1 },
-  ],
-};
-
-/** What a chordal lane is offered instead of loops. Five, because they are five
- *  ways of playing chords and not five settings of one. */
-export const CHORD_SHAPES: { id: ChordShapeId; label: string }[] = [
-  { id: 'sustained',  label: 'Sustained' },
-  { id: 'offbeat',    label: 'Offbeat stabs' },
-  { id: 'eighths',    label: 'Pulsing eighths' },
-  { id: 'sparse',     label: 'Sparse stabs' },
-  { id: 'syncopated', label: 'Syncopated' },
-];
-
-/** Validated, never cast. An id that parses but does not exist is a loop that
- *  shows in the dropdown and plays silence. */
-export function isChordShape(id: string): id is ChordShapeId {
-  return Object.prototype.hasOwnProperty.call(SHAPES, id);
-}
+// The five rhythms, their labels and the per-style map all live in
+// `chord-rhythms.ts`, which the Chords button reads too. Re-exported here so a
+// caller that thinks in SHAPES has one import, and so this module keeps its
+// job: turning one of them into notes.
+export {
+  CHORD_SHAPES, isChordShape, shapeForStyle, type ChordShapeId,
+} from './chord-rhythms';
 
 /** One bar of a shape, on the tonic triad.
  *

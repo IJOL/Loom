@@ -21,7 +21,7 @@ import { laneRoleOf } from '../session/lane-role';
 import { formatLoopId, parseLoopId } from '../weave/loop-ids';
 import { scaleForDarkness, styleForLane } from '../weave/style-mix';
 import { patternNotes, patternsFor, KIND_LABEL, type PatternKind } from '../patterns/pattern-library';
-import { CHORD_SHAPES, renderChordShape } from '../core/harmony-shapes';
+import { CHORD_SHAPES, renderChordShape, shapeForStyle } from '../core/harmony-shapes';
 
 export interface WeaveLoopContext {
   lane: SessionLane | undefined;
@@ -237,10 +237,23 @@ export function weaveLoopChoices(c: WeaveLoopContext): PanelChoice[] {
   // — the rhythm — because the notes are decided per bar by the progression
   // rather than by the choice.
   if (c.harmonic && isChordalRole(role)) {
-    for (const s of CHORD_SHAPES) {
+    // The style's OWN shape first, and marked. It is the answer — house comps
+    // offbeat, jungle syncopated, ambient sustained, and the table that says so
+    // has been in the tree since the Chords button was written. The other four
+    // stay, because they are alternatives and not mistakes; what changes is
+    // that the first one is now a recommendation instead of alphabetical luck.
+    //
+    // Being first is load-bearing, not decoration: a lane reseeded onto chords
+    // takes the head of this list, so the order IS what a Pad lane starts on.
+    const own = shapeForStyle(c.style);
+    const ordered = [
+      ...CHORD_SHAPES.filter((s) => s.id === own),
+      ...CHORD_SHAPES.filter((s) => s.id !== own),
+    ];
+    for (const s of ordered) {
       out.push({
         id: formatLoopId({ source: 'chord', shape: s.id }),
-        name: s.label,
+        name: s.id === own ? `${s.label} · this style` : s.label,
         group: 'Chords',
       });
     }

@@ -182,14 +182,20 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     );
   };
 
-  /** The library loops this lane may weave, in list order and nothing else.
-   *  Rotated by where the lane sits so two tracks added in a row are not
-   *  weaving the same pair. */
+  /** The SHELF this lane may weave — everything it is offered that is not one of
+   *  its own clips. Rotated by where the lane sits so two tracks added in a row
+   *  are not weaving the same pair.
+   *
+   *  "Not a clip", not "starts with lib:". A chordal lane reads no pattern shelf
+   *  at all — its material is generated and its ids start `chord:` — so the
+   *  narrower test handed it an EMPTY shelf, and a reseed of a lane marked Pad
+   *  produced no selection: the lane silently stopped weaving at the moment it
+   *  was told what to play. */
   const libraryFor = (laneId: string, offset = 0): string[] => {
     const lanes = deps.sessionHost.state.lanes;
     const library = weaveLoopChoices(loopContext(laneId))
       .map((c) => c.id)
-      .filter((id) => id.startsWith('lib:'));
+      .filter((id) => !id.startsWith('clip:'));
     const i = Math.max(0, lanes.findIndex((l) => l.id === laneId));
     const at = (2 * i + offset) % (library.length || 1);
     return [...library.slice(at), ...library.slice(0, at)];
