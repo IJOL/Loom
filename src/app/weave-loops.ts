@@ -157,8 +157,23 @@ export function sourcesFor(role: LaneRole | undefined, harmonic: boolean): Patte
  *  and a player choosing between A1 and A2 for a bass line does not think about
  *  it either. Six semitones up or six down keeps every key within half an octave
  *  of the register the patterns were written for. */
-function rootFor(kind: PatternKind, key: number): number {
-  const base = kind === 'bass' ? 36 : 48;
+/** Where each ROLE's material sits. A starting point to be adjusted by ear; what
+ *  matters and is tested is the ORDER — bass below pad below comp below melody —
+ *  so the parts do not sit on top of each other. */
+const ROLE_BASE: Record<LaneRole, number> = {
+  bass: 36, pad: 48, comp: 52, melody: 60, arp: 60,
+};
+
+export function rootFor(
+  role: LaneRole | undefined, kind: PatternKind | undefined, key: number,
+): number {
+  // The ROLE when the lane has one, the PATTERN's kind when it does not.
+  //
+  // The fallback is not tidiness: an unmarked lane playing a bass pattern has
+  // always sat at 36, and answering 48 for it would lift every existing
+  // session's bass loops an octave — which is the one thing an optional mark is
+  // supposed to guarantee it never does.
+  const base = role ? ROLE_BASE[role] : kind === 'bass' ? 36 : 48;
   return base + nearestOffset(key);
 }
 
@@ -212,7 +227,7 @@ export function weaveLoopNotes(id: string, c: WeaveLoopContext): NoteEvent[] | u
 
   const notes = patternNotes(
     parsed.style, parsed.kind, parsed.index,
-    rootFor(parsed.kind, c.key),
+    rootFor(c.lane?.role, parsed.kind, c.key),
     // The clip the loop has to fill. patternNotes repeats the bar itself — the
     // mechanism has been there since it was written, and passing `undefined`
     // here is what left the second half of a two-bar clip silent.
