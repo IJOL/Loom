@@ -27,7 +27,10 @@ import type { Sequencer } from '../core/sequencer';
 import { sceneCountdown } from '../core/scene-countdown';
 import { ticksPerBar } from '../core/meter';
 import { applyClipLength } from '../core/clip-time-scale';
-import { PROGRESSIONS, progressionById } from '../arranger/progression';
+import { PROGRESSIONS, progressionById, type Chord, type Progression } from '../arranger/progression';
+import {
+  activeProgression, setDegree, setLength, insertAfter, removeAt,
+} from '../arranger/chord-track';
 import { TICKS_PER_QUARTER } from '../core/notes';
 import { listEngines } from '../engines/registry';
 import { getCachedPresets } from '../presets/preset-loader';
@@ -212,6 +215,24 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
    *  still lists is the user's choice and must survive. This is deliberately not
    *  "the engine changed" — an id that resolves to the wrong kind of material is
    *  the failure, and that is a question about the LIST, not about the id. */
+  /** Every chord edit, through one seam: read what is PLAYING, apply the pure
+   *  op, store the result as a written track.
+   *
+   *  Reading through `activeProgression` is what makes the first edit of a
+   *  catalogue entry a copy rather than damage — the entry is read, the edit
+   *  lands on the copy, and the copy is what gets stored. The catalogue is
+   *  never written to.
+   *
+   *  `'*'` because the harmony belongs to no single lane: every lane's fold now
+   *  sits on different chords, so every cached one is stale. And this is the
+   *  only thing that tells the autosave the weave moved — a weave edit is
+   *  deliberately not an undo entry, so nothing else would. */
+  const editChords = (op: (t: Progression) => Chord[]): void => {
+    deps.weave.chords = op(activeProgression(deps.weave));
+    deps.onWeaveChanged?.('*');
+    deps.refresh();
+  };
+
   const reseedLaneIfLoopsMoved = (laneId: string): void => {
     const sel = deps.weave.lanes[laneId]?.weave;
     if (!sel) return;
@@ -506,8 +527,34 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
 
     setProgression(id) {
       deps.weave.progression = progressionById(id) ? id : 'static';
+      // Picking from the shelf throws away what was written, or the written one
+      // would go on winning and the dropdown would be naming a progression
+      // nobody is playing.
+      delete deps.weave.chords;
       // Every lane's fold moves onto different chords, so every cached one is
       // stale — this is material, not a param.
+      deps.onWeaveChanged?.('*');
+      deps.refresh();
+    },
+
+    chordTrack() {
+      // A COPY. The array is the scene's harmony; handing the real one over
+      // would let a panel edit it behind the host's back, which is the same
+      // reason `lanes()` hands out a flat summary.
+      return activeProgression(deps.weave).map((c) => ({ ...c }));
+    },
+
+    isCustomProgression() {
+      return !!deps.weave.chords && deps.weave.chords.length > 0;
+    },
+
+    setChordDegree(index, degree) { editChords((t) => setDegree(t, index, degree)); },
+    setChordBars(index, bars)     { editChords((t) => setLength(t, index, bars)); },
+    insertChordAfter(index)       { editChords((t) => insertAfter(t, index)); },
+    removeChord(index)            { editChords((t) => removeAt(t, index)); },
+
+    resetChordTrack() {
+      delete deps.weave.chords;
       deps.onWeaveChanged?.('*');
       deps.refresh();
     },

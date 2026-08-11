@@ -430,6 +430,30 @@ export interface PanelContext {
   progressions(): PanelChoice[];
   progression(): string;
   setProgression(id: string): void;
+  /** The progression as CELLS: the written one if there is one, else a copy of
+   *  the catalogue entry the scene is on. `degree` is 0-based; turning it into
+   *  a roman numeral is the panel's business, as `progression.ts` says outright.
+   *
+   *  A copy, always — a panel that could edit the returned array would be
+   *  changing the scene's harmony behind the host's back. */
+  chordTrack(): { degree: number; bars: number }[];
+  /** Whether the scene is walking a progression the user WROTE rather than a
+   *  catalogue entry. The dropdown reads Custom when it is. */
+  isCustomProgression(): boolean;
+  /** Point one cell at another degree. The FIRST edit of a catalogue entry
+   *  COPIES it: the catalogue is a shelf of starting points and is never
+   *  written to, or one edit would change every session that ever picks it. */
+  setChordDegree(index: number, degree: number): void;
+  /** How many bars a cell lasts. Never less than one: a zero-bar chord never
+   *  sounds, and the lap would silently skip it. */
+  setChordBars(index: number, bars: number): void;
+  /** Add a cell after this one, copying it — somewhere to edit FROM. */
+  insertChordAfter(index: number): void;
+  /** Remove a cell. The last one cannot be removed: an empty track means "no
+   *  progression", which would leave the editor with nothing in it. */
+  removeChord(index: number): void;
+  /** Throw the written progression away and go back to the catalogue entry. */
+  resetChordTrack(): void;
   /** Where the chord walk is right now, for anything that DRAWS it.
    *
    *  `bar` is 0-based within the lap and `bars` is the lap's length, so a
