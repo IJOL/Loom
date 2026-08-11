@@ -26,7 +26,8 @@ Beyond the engines, Loom has **note velocity & dynamics** (an Ableton-style velo
 |8|[MIDI & Samples](08-midi-and-samples.md)|
 |9|[Saving & Export](09-saving-and-export.md)|
 |10|[Performance & Arrangement](10-performance-and-arrangement.md)|
-|11|[Developer Guide](11-developer-guide.md)|
+|11|[WEAVE](11-weave.md)|
+|12|[Developer Guide](12-developer-guide.md)|
 
 ---
 

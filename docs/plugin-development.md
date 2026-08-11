@@ -298,7 +298,7 @@ gets **for free** instead:
 If you're a contributor adding a **built-in** engine (shipping inside the app,
 not as a separate directory), the five-step in-tree recipe is unchanged and is
 documented in full in
-[the developer guide](manual/11-developer-guide.md#add-a-synth-engine) — follow
+[the developer guide](manual/12-developer-guide.md#add-a-synth-engine) — follow
 that for an in-tree engine. Caveat: that chapter's own prose around plugin
 kinds (`kind: 'synth'`, `listPlugins('synth')`, the modulator ceiling) predates
 this rewrite and has the same drift this page just had; trust its five-step
