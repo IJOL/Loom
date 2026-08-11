@@ -418,20 +418,58 @@ function buildLaneRow(lane, ctx, engines) {
   const led = el("span", "weave-led");
   const ring = Loom.controls.loopRing({ label: `Loop position for ${lane.name}` });
   const name = el("span", "weave-lane-name", lane.name);
-  const engine = picker(
-    "weave-engine",
-    `Instrument for ${lane.name}`,
-    engines,
-    lane.engineId,
-    (id) => ctx.setEngine(lane.id, id)
-  );
-  const preset = picker(
-    "weave-preset",
-    `Preset for ${lane.name}`,
-    ctx.presets(lane.engineId),
-    lane.presetId,
-    (id) => ctx.setPreset(lane.id, id)
-  );
+  let slot = 0;
+  const engineHost = el("div", "weave-pick-host");
+  const presetHost = el("div", "weave-pick-host");
+  const slots = el("div", "weave-slotpick");
+  const paintPickers = () => {
+    const rack = ctx.laneSlots(lane.id);
+    const inRack = rack.length > 1;
+    if (slot >= rack.length) slot = 0;
+    slots.replaceChildren();
+    slots.classList.toggle("off", !inRack);
+    if (inRack) {
+      rack.forEach((_, i) => {
+        const b = el("button", `weave-slot-btn${i === slot ? " on" : ""}`, String(i + 1));
+        b.type = "button";
+        b.title = `Instrument ${i + 1} of this lane's rack \u2014 the ${i === 0 ? "near" : "far"} end of its sound fader`;
+        b.addEventListener("click", () => {
+          slot = i;
+          paintPickers();
+        });
+        slots.appendChild(b);
+      });
+    }
+    const held = inRack ? rack[slot].engineId : lane.engineId;
+    engineHost.replaceChildren(picker(
+      "weave-engine",
+      inRack ? `Instrument ${slot + 1} for ${lane.name}` : `Instrument for ${lane.name}`,
+      inRack ? ctx.slotEngines() : engines,
+      held,
+      (id) => {
+        if (inRack) {
+          ctx.setLaneSlotEngine(lane.id, slot, id);
+          paintPickers();
+        } else ctx.setEngine(lane.id, id);
+      }
+    ));
+    const chosen = inRack ? rack[slot].presetName ? `engine:${rack[slot].presetName}` : void 0 : lane.presetId;
+    engineHost.classList.toggle("in-rack", inRack);
+    presetHost.replaceChildren(picker(
+      "weave-preset",
+      inRack ? `Preset for instrument ${slot + 1} of ${lane.name}` : `Preset for ${lane.name}`,
+      ctx.presets(held),
+      chosen,
+      (id) => {
+        const bare = id.startsWith("engine:") ? id.slice("engine:".length) : id;
+        if (inRack) {
+          ctx.setLaneSlotPreset(lane.id, slot, bare);
+          paintPickers();
+        } else ctx.setPreset(lane.id, id);
+      }
+    ));
+  };
+  paintPickers();
   const transport = el("div", "weave-transport");
   const tbtn = (cls, text, title, on) => {
     const b = el("button", `weave-tbtn ${cls}`, text);
@@ -619,7 +657,7 @@ function buildLaneRow(lane, ctx, engines) {
   row.append(led, ring.el, name, transport, levelWrap, topo, cellHost, soundWrap);
   const strip = noteStrip(lane.id, ctx);
   const setup = el("div", "weave-lane-setup");
-  setup.append(strip.el, engine, preset, role, style, length, octave);
+  setup.append(strip.el, slots, engineHost, presetHost, role, style, length, octave);
   const wrap = el("div", "weave-lane-wrap");
   wrap.append(row, setup);
   return {

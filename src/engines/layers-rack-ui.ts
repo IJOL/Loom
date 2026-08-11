@@ -18,7 +18,7 @@ import { melodicSynthEngineIds } from './engine-selector-ui';
 import type { EngineUIContext, SynthEngine } from './engine-types';
 import type { SessionLane } from '../session/session';
 import { LAYERS_ENGINE_ID, LAYERS_DEFAULT_MODULATORS, laneLayers } from './layers-engine';
-import { layerPrefix, MAX_LAYERS, type LayerSpec } from '../audio-dsp/layers/layer-spec';
+import { layerPrefix, MAX_LAYERS, readRack, type LayerSpec } from '../audio-dsp/layers/layer-spec';
 import { getCachedPresets } from '../presets/preset-loader';
 import { commitParamForLane } from './engine-param-commit';
 import { prefixModulators, replaceLayerModulators } from './layer-modulators';
@@ -191,10 +191,26 @@ export function hiddenLayerParam(laneId: string, paramId: string): boolean {
  *  a LAYERS would build its own sub-engines at spawn with nothing bounding the
  *  depth — one rack pointing at itself is an infinite tower of synths inside the
  *  audio callback. */
-function slotChoices() {
+export function slotChoices() {
   const allowed = new Set(melodicSynthEngineIds());
   return listEngines('polyhost')
     .filter((e) => e.id !== LAYERS_ENGINE_ID && allowed.has(e.id));
+}
+
+/** Put a different INSTRUMENT in one slot.
+ *
+ *  Through the same door the rack's own dropdown uses, which writes the rack and
+ *  rebuilds the engine behind it — changing what a slot holds changes the lane's
+ *  param numbering, and a lane's numbering is fixed for its lifetime.
+ *
+ *  False when there is nothing to write, so a caller can tell "not a rack" from
+ *  "done". */
+export function setLayerEngine(lane: SessionLane | undefined, i: number, engineId: string): boolean {
+  if (!deps || !lane) return false;
+  const rack = readRack(lane.engineState?.layers);
+  if (i < 0 || i >= rack.length) return false;
+  deps.setRack(lane.id, rack.map((l, k) => (k === i ? { ...l, engineId } : l)));
+  return true;
 }
 
 /** A preset for this slot that is NOT the one it is already on.

@@ -20,6 +20,8 @@ import { stylesWithPatterns } from '../patterns/pattern-library';
 import { STYLE_CATALOG, SCALE_CATALOG, rootName, type StyleId } from '../core/musicality';
 import type { MusicalityState, LaneRole } from '../session/session-types';
 import { isHarmonic, usesKitPresets } from '../plugins/capabilities';
+import { laneLayers } from '../engines/layers-engine';
+import { slotChoices, setLayerEngine, recallLayerPreset } from '../engines/layers-rack-ui';
 import { roleMembers } from './panel-context-role';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { emptyClip } from '../session/session';
@@ -241,6 +243,16 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     deps.onWeaveChanged?.('*');
     deps.refresh();
   };
+
+  /** Is this lane a RACK of instruments rather than one?
+   *
+   *  Asked of the destination CATALOGUE rather than of the lane's engine id: it
+   *  is the live truth — a lane converted once and swapped back still carries
+   *  the stored rack — it is the same question the sound-fader applier asks
+   *  before each write, and it needs no core comparison against the name of an
+   *  engine. */
+  const isRack = (laneId: string): boolean =>
+    (deps.destinations?.() ?? []).some((d) => d.id === `${laneId}.l0.gain`);
 
   const reseedLaneIfLoopsMoved = (laneId: string): void => {
     const sel = deps.weave.lanes[laneId]?.weave;
@@ -687,8 +699,7 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // fader land" is exactly the question, it is the same one the applier
       // asks before each write, and it needs no core comparison against the name
       // of an engine.
-      const canLand = (deps.destinations?.() ?? []).some((d) => d.id === `${laneId}.l0.gain`);
-      if (value !== null && !canLand) {
+      if (value !== null && !isRack(laneId)) {
         // With a CONTRASTING second slot, or the press would end with a fader
         // between two copies of the same sound.
         deps.sessionHost.callbacks.onConvertToLayered?.(laneId, { contrast: true });
@@ -861,6 +872,45 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // The phrase just changed shape in both ways: the cached fold has to go.
       deps.onWeaveChanged?.(laneId);
       repaintDesk();
+      deps.refresh();
+    },
+
+    laneSlots(laneId) {
+      // Only a lane that IS one. `engineState.layers` alone would answer yes for
+      // a lane converted once and swapped back since — the stored rack outlives
+      // the instrument. The catalogue is the live truth and it is the same
+      // question the sound fader asks.
+      if (!isRack(laneId)) return [];
+      const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
+      return laneLayers(lane)
+        .filter((l) => l.engineId !== '')
+        .map((l) => ({ engineId: l.engineId, presetName: l.presetName }));
+    },
+
+    slotEngines() {
+      // The host's own rule, not a list assembled here: a rack inside a rack is
+      // an unbounded tower of synths in the audio callback, and the Sampler and
+      // the drum machine are unreachable from the worklet's renderer registry.
+      return slotChoices().map((e) => ({ id: e.id, name: e.name }));
+    },
+
+    setLaneSlotEngine(laneId, slot, engineId) {
+      const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
+      // The rack door, which rebuilds the lane: what a slot HOLDS changes the
+      // lane's param numbering, and a lane is numbered once for its lifetime.
+      setLayerEngine(lane, slot, engineId);
+      deps.refresh();
+    },
+
+    setLaneSlotPreset(laneId, slot, presetName) {
+      const engine = deps.sessionHost.deps?.laneResources?.get(laneId)?.engine;
+      const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
+      const held = lane && laneLayers(lane)[slot]?.engineId;
+      if (!engine || !held) return;
+      // Sound AND label, through the one door that owns both — and NEVER through
+      // the rack door, which would rebuild the engine and throw the preset's
+      // params away one line after they were written.
+      recallLayerPreset(engine, deps.sessionHost.state, laneId, slot, held, presetName);
       deps.refresh();
     },
 

@@ -450,10 +450,73 @@ export function buildLaneRow(
 
   // Instrument and preset go through the HOST's own doors, so a change made here
   // behaves — and undoes — exactly like the same change made in the Session grid.
-  const engine = picker('weave-engine', `Instrument for ${lane.name}`, engines, lane.engineId,
-    (id) => ctx.setEngine(lane.id, id));
-  const preset = picker('weave-preset', `Preset for ${lane.name}`, ctx.presets(lane.engineId),
-    lane.presetId, (id) => ctx.setPreset(lane.id, id));
+  //
+  // On a RACK lane they point somewhere else: at one of the two instruments
+  // inside it, chosen by the 1|2 buttons beside them. The lane's own engine is
+  // the rack, which ships no presets and cannot be swapped without throwing the
+  // rack away — so left as they were, the two sounds a converted lane is made of
+  // were reachable only from another page.
+  //
+  // Rebuilt rather than repainted, because `picker` builds a select from a list:
+  // both the list and the current value change when the slot does.
+  let slot = 0;
+  const engineHost = el('div', 'weave-pick-host');
+  const presetHost = el('div', 'weave-pick-host');
+  const slots = el('div', 'weave-slotpick');
+
+  const paintPickers = () => {
+    const rack = ctx.laneSlots(lane.id);
+    const inRack = rack.length > 1;
+    if (slot >= rack.length) slot = 0;
+
+    // The slot buttons only exist for a lane that has slots. One instrument
+    // needs no "which one".
+    slots.replaceChildren();
+    slots.classList.toggle('off', !inRack);
+    if (inRack) {
+      rack.forEach((_, i) => {
+        const b = el('button', `weave-slot-btn${i === slot ? ' on' : ''}`, String(i + 1)) as HTMLButtonElement;
+        b.type = 'button';
+        b.title = `Instrument ${i + 1} of this lane's rack — the ${i === 0 ? 'near' : 'far'} end of its sound fader`;
+        b.addEventListener('click', () => { slot = i; paintPickers(); });
+        slots.appendChild(b);
+      });
+    }
+
+    const held = inRack ? rack[slot].engineId : lane.engineId;
+    engineHost.replaceChildren(picker(
+      'weave-engine',
+      inRack ? `Instrument ${slot + 1} for ${lane.name}` : `Instrument for ${lane.name}`,
+      inRack ? ctx.slotEngines() : engines,
+      held,
+      (id) => {
+        if (inRack) { ctx.setLaneSlotEngine(lane.id, slot, id); paintPickers(); }
+        else ctx.setEngine(lane.id, id);
+      },
+    ));
+
+    // A slot remembers its preset by BARE name; the dropdown's vocabulary is
+    // `engine:<name>`, which is what the lane's own picker stores verbatim. The
+    // two have to be translated in both directions or the current selection can
+    // never match an option — which reads as a slot playing a sound while its
+    // picker says nothing is chosen.
+    const chosen = inRack
+      ? (rack[slot].presetName ? `engine:${rack[slot].presetName}` : undefined)
+      : lane.presetId;
+    engineHost.classList.toggle('in-rack', inRack);
+    presetHost.replaceChildren(picker(
+      'weave-preset',
+      inRack ? `Preset for instrument ${slot + 1} of ${lane.name}` : `Preset for ${lane.name}`,
+      ctx.presets(held),
+      chosen,
+      (id) => {
+        const bare = id.startsWith('engine:') ? id.slice('engine:'.length) : id;
+        if (inRack) { ctx.setLaneSlotPreset(lane.id, slot, bare); paintPickers(); }
+        else ctx.setPreset(lane.id, id);
+      },
+    ));
+  };
+  paintPickers();
 
   // ── transport: play, stop, mute, solo ────────────────────────────────────
   //
@@ -726,7 +789,7 @@ export function buildLaneRow(
   const setup = el('div', 'weave-lane-setup');
   // What you set once and leave: which instrument, which preset, which part,
   // which shelf, how many bars, which octave. None of them is a gesture.
-  setup.append(strip.el, engine, preset, role, style, length, octave);
+  setup.append(strip.el, slots, engineHost, presetHost, role, style, length, octave);
 
   const wrap = el('div', 'weave-lane-wrap');
   wrap.append(row, setup);

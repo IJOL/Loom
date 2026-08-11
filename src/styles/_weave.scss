@@ -236,23 +236,55 @@
 // that emptiness is what the settings moved into.
 .weave-lane-setup {
   display: grid;
-  // Notes at a quarter, then instrument, preset, part, shelf, bars — and the
-  // bars sit straight after the shelf rather than at the end of a long gap,
-  // because a control marooned in white space reads as belonging to nothing.
+  // Notes at a quarter, then which SLOT, instrument, preset, part, shelf, bars,
+  // octave — and the filler LAST, so nothing sits marooned in white space.
   //
   // The selects are wider than they were upstairs: "BASS Acid Classic" and
   // "Acid Techno" were both truncating, and a name you cannot read is a name
   // you cannot pick by.
   //
   // The PART sits immediately before the shelf because the two answer halves of
-  // one question — which material this lane draws — and it keeps its column on a
-  // drum lane, which has no part to pick. Dropping the cell there would slide
-  // the shelf and the bars one place left on those rows alone, which reads as a
-  // mis-built row rather than as an absent control.
-  grid-template-columns: 25% 110px 190px 118px 130px auto 1fr;
+  // one question — which material this lane draws.
+  //
+  // Every column is here on every row, even when its control has nothing to
+  // show: a cell that DISAPPEARS slides everything after it one place left on
+  // that row alone, which reads as a mis-built row rather than as an absent
+  // control. The slot buttons and the part are both empty on the lanes that have
+  // no use for them, never missing.
+  grid-template-columns: 25% auto 110px 190px 118px 130px auto auto 1fr;
   gap: 8px;
   align-items: center;
   padding: 2px 8px 4px;
+}
+
+// The two selects live in hosts because they are REBUILT, not repainted: on a
+// rack lane they name one of the instruments inside the lane, and both the list
+// and the current value change when you pick the other slot.
+.weave-pick-host { min-width: 0; }
+
+// Which of a rack's two instruments the pair beside this is pointing at. Absent
+// on an ordinary lane — one instrument needs no "which one" — and the column
+// simply collapses.
+// Empty rather than GONE when the lane is not a rack. `display: none` would take
+// the cell out of the grid and slide every control after it one column left on
+// those rows alone — which reads as a mis-built row, not as an absent control.
+// An empty flex box costs its gap and nothing else.
+.weave-slotpick {
+  display: flex;
+  gap: 2px;
+}
+
+.weave-slot-btn {
+  padding: 3px 5px;
+  font-size: 9px;
+  min-width: 0;
+
+  &.on {
+    background: var(--amber);
+    border-color: var(--amber);
+    color: var(--bg);
+    font-weight: 700;
+  }
 }
 
 .weave-bar {

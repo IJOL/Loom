@@ -647,6 +647,20 @@ export interface PanelContext {
    *  clip: switch the weave off and the material is exactly as it was. */
   laneOctave(laneId: string): number;
   setLaneOctave(laneId: string, delta: number): void;
+  /** The instruments inside a lane that is a RACK — the two the sound fader
+   *  balances — in slot order, filled ones only.
+   *
+   *  EMPTY for an ordinary lane, and that is the test: a lane with slots has an
+   *  instrument per slot, and its own engine and preset dropdowns name the rack
+   *  rather than anything you can hear. Without this the two sounds were
+   *  reachable only from another page. */
+  laneSlots(laneId: string): { engineId: string; presetName?: string }[];
+  /** What a rack slot may hold. Narrower than the lane list on purpose: a rack
+   *  inside a rack builds its own sub-engines at spawn with nothing bounding the
+   *  depth. */
+  slotEngines(): PanelChoice[];
+  setLaneSlotEngine(laneId: string, slot: number, engineId: string): void;
+  setLaneSlotPreset(laneId: string, slot: number, presetName: string): void;
   /** The project's key, scale, style and tempo — the session's own, not a copy. */
   musicality(): PanelMusicality;
   /** Move them. Goes through the host's ONE musicality path, so a change made

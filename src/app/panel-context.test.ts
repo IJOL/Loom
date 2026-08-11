@@ -240,6 +240,15 @@ describe('createPanelContext — the sound fader', () => {
     expect(h.ctx.laneSound('lane1')).toBe(0.5);
   });
 
+  it('reports no slots for an ordinary lane, so its own pickers stand', () => {
+    // The lane row asks this to decide whether its instrument and preset
+    // dropdowns name the LANE or one of the instruments inside it. An ordinary
+    // lane must answer empty, or its own two controls would start pointing at a
+    // rack that does not exist.
+    const h = harness(['lane1']);
+    expect(h.ctx.laneSlots('lane1')).toEqual([]);
+  });
+
   it('never converts on the way OFF', () => {
     // Turning the fader off means "go back to routing each note by the loop it
     // came from". Swapping the lane's instrument on that press would be the
