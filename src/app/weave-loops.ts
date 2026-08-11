@@ -21,7 +21,8 @@ import { laneRoleOf } from '../session/lane-role';
 import { formatLoopId, parseLoopId } from '../weave/loop-ids';
 import { scaleForDarkness, styleForLane } from '../weave/style-mix';
 import { patternNotes, patternsFor, KIND_LABEL, type PatternKind } from '../patterns/pattern-library';
-import { CHORD_SHAPES, renderChordShape, shapeForStyle } from '../core/harmony-shapes';
+import { PAD_LOOPS, renderPadLoop } from '../core/pad-loops';
+import { shapeForStyle } from '../core/chord-rhythms';
 
 export interface WeaveLoopContext {
   lane: SessionLane | undefined;
@@ -245,10 +246,10 @@ export function weaveLoopChoices(c: WeaveLoopContext): PanelChoice[] {
     //
     // Being first is load-bearing, not decoration: a lane reseeded onto chords
     // takes the head of this list, so the order IS what a Pad lane starts on.
-    const own = shapeForStyle(c.style);
+    const own = shapeForStyle(c.style) as string;
     const ordered = [
-      ...CHORD_SHAPES.filter((s) => s.id === own),
-      ...CHORD_SHAPES.filter((s) => s.id !== own),
+      ...PAD_LOOPS.filter((s) => s.id === own),
+      ...PAD_LOOPS.filter((s) => s.id !== own),
     ];
     for (const s of ordered) {
       out.push({
@@ -282,7 +283,7 @@ export function weaveLoopNotes(id: string, c: WeaveLoopContext): NoteEvent[] | u
     // it against without one. Absent means unresolvable, which the caller
     // already substitutes for.
     if (!c.barTicks) return undefined;
-    return renderChordShape(parsed.shape, {
+    return renderPadLoop(parsed.shape, {
       key: c.key,
       scale: c.scale,
       // The RAW base for this role, not rootFor's — the triad adds the key

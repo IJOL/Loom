@@ -11,7 +11,7 @@
 
 import type { StyleId } from '../core/musicality';
 import type { PatternKind } from '../patterns/pattern-library';
-import { isChordShape, type ChordShapeId } from '../core/harmony-shapes';
+import { isPadLoop } from '../core/pad-loops';
 
 export type LoopId =
   | { source: 'clip'; clipId: string }
@@ -26,7 +26,7 @@ export type LoopId =
    *  kind to that union typechecks SILENTLY and then every id of it fails to
    *  parse — the loop lists and plays nothing, which is the failure this
    *  module's header is about. */
-  | { source: 'chord'; shape: ChordShapeId };
+  | { source: 'chord'; shape: string };
 
 const PATTERN_KINDS: PatternKind[] = ['drums', 'bass', 'synth'];
 
@@ -47,7 +47,7 @@ export function parseLoopId(id: string): LoopId | null {
   if (id.startsWith('chord:')) {
     const shape = id.slice(6);
     // VALIDATED, never cast — the whole reason this is a source and not a kind.
-    return isChordShape(shape) ? { source: 'chord', shape } : null;
+    return isPadLoop(shape) ? { source: 'chord', shape } : null;
   }
   if (!id.startsWith('lib:')) return null;
 
