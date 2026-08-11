@@ -257,23 +257,60 @@ describe('createPanelContext — swapping a lane\'s instrument', () => {
 });
 
 describe('createPanelContext — pointing a lane at another style', () => {
-  it('re-picks the loops, because that is what the control is FOR', () => {
-    // Left alone the selection went on naming the old style's ids — which still
-    // RESOLVE, so the lane kept playing the style you had just left while every
-    // picker read as a dash. Reported as "switching Session and Weave loses what
-    // I had in cloud": the style change orphaned it, and the remount showed it.
+  // It used to re-pick BOTH ends on the spot, and both ends is the problem: the
+  // lane cut to two loops it had never been travelling towards, mid-phrase,
+  // from wherever the crossfade stood. Reported as "no es musical, debería
+  // evolucionar — cambiar el siguiente, no el actual".
+  it('leaves the lane playing what it is playing', () => {
     withLibrary(() => {
       const h = harness(['lane1']);
       h.weave.lanes.lane1 = {
-        weave: { kind: 'ab', a: 'lib:acid-techno:bass:0', b: 'lib:acid-techno:bass:1', x: 0 },
+        weave: { kind: 'ab', a: 'lib:acid-techno:bass:0', b: 'lib:acid-techno:bass:1', x: 0.4 },
         locked: false, harmonyLeader: false,
       };
+
       h.ctx.setLaneStyle('lane1', 'house');
-      const sel = h.weave.lanes.lane1?.weave as { a: string } | null;
-      expect(sel?.a).not.toBe('lib:acid-techno:bass:0');
+
+      const sel = h.weave.lanes.lane1?.weave as { a: string; b: string; x: number };
+      expect(sel.a).toBe('lib:acid-techno:bass:0');
+      expect(sel.b).toBe('lib:acid-techno:bass:1');
+      // And it does not jump back to the start of the leg either.
+      expect(sel.x).toBe(0.4);
+    });
+  });
+
+  it('records the style, so the NEXT loop drawn is in it', () => {
+    // Which is the whole mechanism: rehookOnArrival draws from the choices as
+    // they are NOW, so the lane crosses into the new style the way it crosses
+    // into everything else.
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      h.ctx.setLaneStyle('lane1', 'house');
+      expect(h.ctx.laneStyle('lane1')).toBe('house');
+    });
+  });
+
+  it('does NOT orphan the selection', () => {
+    // The fault the old immediate re-pick was guarding, kept: reported as
+    // "switching Session and Weave loses what I had in cloud". A selection left
+    // naming the previous style still RESOLVES — that is what lets the lane go
+    // on playing while it waits to arrive — and it must survive a remount.
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      h.weave.lanes.lane1 = {
+        weave: { kind: 'cloud', corners: [0, 1, 2, 3].map((i) => `lib:acid-techno:bass:${i}`), x: 0.5, y: 0.5 },
+        locked: false, harmonyLeader: false,
+      };
+
+      h.ctx.setLaneStyle('lane1', 'house');
+
+      const sel = h.weave.lanes.lane1?.weave as { corners: string[] } | null;
+      expect(sel?.corners).toHaveLength(4);
+      expect(sel?.corners[0]).toBe('lib:acid-techno:bass:0');
     });
   });
 });
+
 
 describe('createPanelContext — the lane lock', () => {
   it('round-trips, and survives switching topology', () => {

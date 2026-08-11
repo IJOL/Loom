@@ -460,12 +460,28 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     setLaneStyle(laneId, styleId) {
       const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
       deps.weave.lanes[laneId] = { ...cur, forcedStyle: styleId as StyleId };
-      // The whole point of this control is WHICH shelf the lane draws from, so
-      // the loops have to move with it. Left alone the selection went on naming
-      // the old style's ids — which still RESOLVE, so the lane kept playing the
-      // style you just left while every picker showed a dash.
-      reseedLaneIfLoopsMoved(laneId);
+      // NO reseed. It used to replace both ends at once, and both ends is the
+      // whole problem: the lane cut to two loops it had never been travelling
+      // towards, mid-phrase, from whatever position the crossfade happened to
+      // be at. Musically that is not a style change, it is a splice.
+      //
+      // The style lands on the NEXT loop instead. `rehookOnArrival` draws from
+      // `weaveLoopChoices`, which reads the style as it is NOW, so the first
+      // loop drawn after this is already in the new one and the lane crosses
+      // into it the way it crosses into everything else.
+      //
+      // What the reseed was guarding is real but smaller than it looks: the
+      // selection goes on naming the old style's ids, and those still resolve,
+      // so the lane keeps playing the style you just left until it arrives.
+      // That IS the wanted behaviour here. The picker says so rather than
+      // showing a dash — `picker` labels a loop that is off the shelf this list
+      // shows, which is exactly this case and why that path exists.
+      //
+      // With EVOLVE off there is no next loop, and that is coherent rather than
+      // broken: STATIC means the pair you chose is the pair you keep. The list
+      // still moves, so the change is one pick away.
       deps.onWeaveChanged?.(laneId);
+      deps.refresh();
     },
 
     laneLocked(laneId) {
