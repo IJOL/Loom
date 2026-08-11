@@ -17,8 +17,10 @@ import {
 } from './weave-loops';
 import { stylesWithPatterns } from '../patterns/pattern-library';
 import { STYLE_CATALOG, SCALE_CATALOG, rootName, type StyleId } from '../core/musicality';
-import type { MusicalityState } from '../session/session-types';
-import { isHarmonic } from '../plugins/capabilities';
+import type { MusicalityState, LaneRole } from '../session/session-types';
+import { isHarmonic, defaultRoleOf } from '../plugins/capabilities';
+import { LANE_ROLES, roleLabel } from '../session/lane-role';
+import { withUndo } from '../save/history-wiring';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { emptyClip } from '../session/session';
 import type { SessionHost } from '../session/session-host';
@@ -260,6 +262,10 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         // fourth answer here would make the asymmetry worse rather than expose
         // it. See REMAINING-WORK.
         presetId: pagePresetName.get(l.id) ?? l.enginePresetName,
+        // The MARK, not `laneRoleOf` — a summary that resolved the fallback
+        // would leave a panel unable to tell "the user said Bass" from "the
+        // instrument is a bass machine and nobody has said anything".
+        role: l.role,
       }));
     },
 
@@ -416,6 +422,50 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // style you just left while every picker showed a dash.
       reseedLaneIfLoopsMoved(laneId);
       deps.onWeaveChanged?.(laneId);
+    },
+
+    roleChoices(laneId) {
+      const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
+      // A drum lane cannot have a part: it draws percussion whatever anyone
+      // says. An empty list is how this ABI says "do not show the control" —
+      // a picker whose every choice is ignored is worse than no picker.
+      if (!lane || !isHarmonic(lane.engineId)) return [];
+      const auto = defaultRoleOf(lane.engineId);
+      return [
+        // Named after what it actually does. On an instrument that declares the
+        // part it is built for, leaving this alone is not "no part" — it is
+        // that part, and a bare dash would read as the lane being unassigned
+        // while its loop list showed only basslines.
+        { id: '', name: auto ? `— auto · ${roleLabel(auto)} —` : '— any —' },
+        ...LANE_ROLES.map((r) => ({ id: r.id, name: r.label })),
+      ];
+    },
+
+    laneRole(laneId) {
+      return deps.sessionHost.state.lanes.find((l) => l.id === laneId)?.role ?? null;
+    },
+
+    setLaneRole(laneId, role) {
+      const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
+      if (!lane) return;
+      // Undoable, unlike the style beside it. The asymmetry is deliberate and
+      // not an oversight: the style is WEAVE's own state, which is deliberately
+      // not an undo entry, and the role is on the LANE — session state, saved
+      // by the same whole-object clone as its name.
+      const run = (): void => {
+        if (role === null) delete lane.role;
+        else lane.role = role as LaneRole;
+        // The material a part draws from IS the point of the mark, so the loops
+        // move with it — the same reason setLaneStyle reseeds. A loop id
+        // carries its own kind and still RESOLVES whatever the role says, so
+        // without this a lane marked Pad goes on playing the lead loop it had
+        // while its picker lists five chord shapes, none of them selected.
+        reseedLaneIfLoopsMoved(laneId);
+        deps.onWeaveChanged?.(laneId);
+        deps.refresh();
+      };
+      const hd = deps.sessionHost.deps?.historyDeps;
+      if (hd) withUndo(hd, run); else run();
     },
 
     laneLocked(laneId) {

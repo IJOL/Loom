@@ -204,6 +204,13 @@ export interface PanelLane {
   name: string;
   engineId: string;
   presetId?: string;
+  /** What part the USER has marked this lane as, absent if they have not.
+   *
+   *  The mark, not the resolved answer: an engine may declare a part it is
+   *  built for, and a control that showed the fallback as if it were a choice
+   *  would offer no way to tell the two apart. A plain string, not the host's
+   *  union — a panel is compiled separately and must not depend on our types. */
+  role?: string;
 }
 
 /** What the host hands a panel when it mounts.
@@ -379,6 +386,22 @@ export interface PanelContext {
   /** Point a lane at another style. Its loops change; what it is weaving does
    *  not, until the user picks again. */
   setLaneStyle(laneId: string, styleId: string): void;
+  /** The parts this lane may be marked as, the unmarked option first.
+   *
+   *  Per-lane, and the host writes every label, for two reasons a panel cannot
+   *  know: the unmarked option says what the lane falls back to when its ENGINE
+   *  declares a part ("— auto · Bass —" on a 303), and a lane that can have no
+   *  part at all — a drum lane — gets an EMPTY list. Empty means show no
+   *  control, which is the honest rendering of a question that does not apply.
+   *  The unmarked option's id is the empty string. */
+  roleChoices(laneId: string): PanelChoice[];
+  /** What part the user has marked this lane as, or null if unmarked. The MARK,
+   *  never the fallback — see PanelLane.role. */
+  laneRole(laneId: string): string | null;
+  /** Mark a lane, or clear it with null. Its loops move with it: the material a
+   *  part draws from IS the point of the mark, so a lane left playing the shelf
+   *  it just left would show a picker that had visibly done nothing. */
+  setLaneRole(laneId: string, role: string | null): void;
   /** Whether this lane sits out the master flow's journey.
    *
    *  A locked lane holds its position while everything else travels — the way

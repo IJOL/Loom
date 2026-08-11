@@ -14,6 +14,24 @@
 import type { LaneRole, SessionLane } from './session-types';
 import { defaultRoleOf, isHarmonic } from '../plugins/capabilities';
 
+/** The parts, in the order a picker should offer them: low to high, then the
+ *  two that are a chord part played differently.
+ *
+ *  The labels live here rather than in the panel that shows them because the
+ *  panel is compiled separately — it would be a second copy of the vocabulary,
+ *  free to drift, in a bundle we do not typecheck against this one. */
+export const LANE_ROLES: { id: LaneRole; label: string }[] = [
+  { id: 'bass',   label: 'Bass' },
+  { id: 'comp',   label: 'Comp' },
+  { id: 'pad',    label: 'Pad' },
+  { id: 'arp',    label: 'Arp' },
+  { id: 'melody', label: 'Melody' },
+];
+
+export function roleLabel(role: LaneRole): string {
+  return LANE_ROLES.find((r) => r.id === role)?.label ?? role;
+}
+
 export function laneRoleOf(lane: SessionLane | undefined): LaneRole | undefined {
   if (!lane) return undefined;
   // A drum lane has no role and cannot be given one: it draws percussion
