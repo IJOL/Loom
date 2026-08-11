@@ -6,8 +6,10 @@ import type { SessionState, SessionClip, SessionLane } from './session';
 import { resolveTonality, DEFAULT_MUSICALITY, resolveClipContext } from './session';
 import { beginInlineRename } from './inline-rename';
 import { rootName, SCALE_CATALOG, STYLE_CATALOG, type StyleId } from '../core/musicality';
-import { patternNotes } from '../patterns/pattern-library';
-import { patternKindFor, fillStyleSelect, fillPatternSelect, patternRootFor } from '../patterns/pattern-picker-ui';
+import { patternNotes, type PatternKind } from '../patterns/pattern-library';
+import { fillStyleSelect, fillPatternSelect } from '../patterns/pattern-picker-ui';
+import { sourcesFor, nearestOffset } from '../app/weave-loops';
+import { laneRoleOf } from './lane-role';
 import type { LanePlayState } from './session-runtime';
 import type { Sequencer } from '../core/sequencer';
 import { renderClipEditor, classifyClip, chooseClipEditor, type ClipEditorDeps } from './clip-editors/clip-editor-router';
@@ -36,10 +38,15 @@ import { html, render } from 'lit-html';
 import { renderElement } from '../core/lit-fragment';
 import { isHarmonic, isAudioEngine } from '../plugins/capabilities';
 
-function genKindFor(engineId: string): GenKind {
-  if (engineId === 'tb303') return 'bass';
-  if (engineId === 'drums-machine') return 'beat';
-  return 'melody';
+/** The lane's part in the GENERATOR's smaller vocabulary.
+ *
+ *  Not a second answer to "what part is this lane" — a projection of the one
+ *  answer onto the three words `generate` knows. It used to be an engineId map
+ *  of its own, which is how a 303 lane and a WEAVE 303 lane could disagree
+ *  about being a bass. */
+function genKindOf(lane: SessionLane): GenKind {
+  if (!isHarmonic(lane.engineId)) return 'beat';
+  return laneRoleOf(lane) === 'bass' ? 'bass' : 'melody';
 }
 
 export interface InspectorDeps {
@@ -439,7 +446,7 @@ export class SessionInspector {
         const ton = resolveTonality(lane!, this.deps.state);
         const style = this.deps.state.musicality?.style ?? 'acid-techno';
         const stepsPerBarVal = stepsPerBar(this.deps.seq.meter);
-        clip.notes = generate(genKindFor(lane!.engineId), style, {
+        clip.notes = generate(genKindOf(lane!), style, {
           key: ton.key, scale: ton.scale,
           bars: clip.lengthBars, stepsPerBar: stepsPerBarVal,
           octaveBase: octaveBase - 12,   // bass sounds one octave below the view
@@ -451,7 +458,7 @@ export class SessionInspector {
       if (d) withUndo(d, run); else run();
     };
     const style = () => this.deps.state.musicality?.style ?? 'acid-techno';
-    const exKind = genKindFor(lane!.engineId);
+    const exKind = genKindOf(lane!);
 
     // ── Vary / Mirror / Reverse ───────────────────────────────────────────────
     // Shared helper: wraps any clip-note mutation in undo + octave-restore,
@@ -501,13 +508,16 @@ export class SessionInspector {
     // Saving an example must make it show up in the list; assigned below.
     let reloadPatternList: () => void = () => {};
     if (styleSel && patSel) {
-      const kind = patternKindFor(lane!.engineId);
+      // Which shelves this lane may read — the SAME door WEAVE asks, so the two
+      // pickers stop disagreeing about what a lane is for. A list, not one
+      // kind: an unmarked melodic lane legitimately reads both.
+      const kinds = sourcesFor(laneRoleOf(lane!), isHarmonic(lane!.engineId));
       // Our own examples for the style live in the same dropdown, under their
       // own group — they do the same job, so one list, not two.
       const exampleKinds = exKind === 'beat' ? ['beat'] : ['bass', 'melody'];
       let ourExamples: Example[] = [];
       const fillPatterns = (s: StyleId): void =>
-        fillPatternSelect(patSel, s, kind, ourExamples.map((e) => ({ id: e.id, name: e.name, source: e.source })));
+        fillPatternSelect(patSel, s, kinds, ourExamples.map((e) => ({ id: e.id, name: e.name, source: e.source })));
       const refreshExamples = (s: StyleId): void => {
         void loadAllExamples(s)
           .then((list) => { ourExamples = list.filter((e) => exampleKinds.includes(e.kind)); fillPatterns(s); })
@@ -533,7 +543,8 @@ export class SessionInspector {
 
       patSel.onchange = () => {
         if (patSel.value === '') return;
-        const [source, ref] = patSel.value.split(':');
+        const [source, ...rest] = patSel.value.split(':');
+        const ref = rest[0];
 
         // An example of ours: scale degrees rendered into the project tonality.
         if (source === 'ex') {
@@ -550,7 +561,10 @@ export class SessionInspector {
           return;
         }
 
-        const index = Number(ref);
+        // `lib:<kind>:<index>` — the kind rides along because the list may show
+        // two shelves at once, and an index alone no longer names a pattern.
+        const pickedKind = ref as PatternKind;
+        const index = Number(rest[1]);
         // Melodic patterns are semitone offsets: root them at the octave the
         // roll is showing, minus one — same convention as the 🎲 generator.
         const octaveBase = (this.roll?.getOctaveBase?.() ?? 60) - 12;
@@ -562,7 +576,12 @@ export class SessionInspector {
           // Library patterns are one bar; clips are two by default. Tile to fill,
           // or the back half of the clip plays nothing.
           const notes = patternNotes(
-            style(), kind, index, patternRootFor(octaveBase, ton.key),
+            // The octave stays the VIEW's — you get the pattern where you are
+            // looking — but the key moves it to the NEAREST tonic, the same
+            // rule WEAVE's rootFor uses. Adding the key outright, which is what
+            // this did, walks a pattern up to eleven semitones out of the
+            // register the roll is showing.
+            style(), pickedKind, index, octaveBase + nearestOffset(ton.key),
             clip.lengthBars, ticksPerBar(this.deps.seq.meter),
             locked ? { key: ton.key, scale: ton.scale } : undefined,
           );

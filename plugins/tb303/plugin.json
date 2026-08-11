@@ -46,7 +46,8 @@
         "clipContent": "notes",
         "shortLabel": "tb-303",
         "outputTrim": 0.45,
-        "slide": "overlap"
+        "slide": "overlap",
+        "defaultRole": "bass"
       }
     }
   ]

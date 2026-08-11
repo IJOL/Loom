@@ -15,6 +15,14 @@ import {
 
 export type PatternKind = 'drums' | 'bass' | 'synth';
 
+/** What to call a shelf on screen. Here beside the union rather than in each
+ *  picker: WEAVE's loop list and the inspector's pattern dropdown both head
+ *  their groups with it, and two copies would drift into a lane being offered
+ *  "Lead" in one place and "Synth" in the other. */
+export const KIND_LABEL: Record<PatternKind, string> = {
+  drums: 'Drums', bass: 'Bass', synth: 'Lead',
+};
+
 /** One entry as the dropdown shows it. `index` is its position in the style's
  *  pattern array — what patternNotes() takes. */
 export interface PatternEntry {

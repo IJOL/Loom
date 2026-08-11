@@ -46,6 +46,7 @@ function groupsError(c: unknown, i: number): string | null {
 const ASSET_KINDS = ['audio-file'];
 const CLIP_CONTENTS = ['notes', 'audio'];
 const NOTE_VIEWS = ['pitches', 'pads'];
+const LANE_ROLES = ['bass', 'melody', 'comp', 'pad', 'arp'];
 
 function capabilitiesError(c: unknown, i: number): string | null {
   if (!isObj(c)) return `components[${i}].capabilities is not an object`;
@@ -55,6 +56,12 @@ function capabilitiesError(c: unknown, i: number): string | null {
   if (c.defaultNoteView !== undefined
       && c.defaultNoteView !== 'pitches' && c.defaultNoteView !== 'pads') {
     return `components[${i}].capabilities.defaultNoteView must be ${NOTE_VIEWS.join('|')}`;
+  }
+  // Checked rather than trusted: an unknown role would reach the loop filter as
+  // a string nothing matches, and the lane would simply be offered no material
+  // at all — a silent empty dropdown, not an error.
+  if (c.defaultRole !== undefined && !LANE_ROLES.includes(c.defaultRole as string)) {
+    return `components[${i}].capabilities.defaultRole must be ${LANE_ROLES.join('|')}`;
   }
   if (!isStr(c.shortLabel)) return `components[${i}].capabilities.shortLabel must be a non-empty string`;
   // No default: a missing trim is a plugin that never thought about gain

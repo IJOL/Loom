@@ -123,17 +123,25 @@ is the single largest missing piece.
 rather than stamping section scenes.
 
 ```ts
-export type PartRole = 'drums' | 'bass' | 'comp' | 'arp' | 'pad'
+import type { LaneRole } from '../session/session-types';
 export interface PartSpec {
-  role: PartRole; engineId: string; presetId?: string; name: string;
+  role?: LaneRole; engineId: string; presetId?: string; name: string;
   noteFx?: NoteFxState[];        // the arp part ships an 'arp' note-FX
-  patternKind: PatternKind;      // which library pool this part draws from
 }
 export interface StyleKit { parts: PartSpec[] }
 export const STYLE_KITS: Record<StyleId, StyleKit>   // exhaustive
 ```
 
 `Record<StyleId, …>` is deliberate: a new style must fail to compile until its kit exists.
+
+**`PartRole` and `PartSpec.patternKind` are gone**, and this is not a rename. Both were a
+fourth and fifth answer to "what part is this", and the lane-roles round retired the other
+three into one: a part's role is a `LaneRole`, written onto the lane it seeds, and which
+shelf it draws from is `sourcesFor(role)` — the same door WEAVE's loop list and the
+inspector's pattern dropdown ask. `drums` is not a role: whether a lane is a drum lane is
+answered by its engine's `harmonic` capability, and a role on such a lane is ignored.
+`role` is optional because it can be: an engine that IS a part declares `defaultRole` in its
+own manifest (the 303 says `bass`), so a kit that names `tb303` need not repeat it.
 
 **`seedBand(styleId)`** then creates one lane per part through the existing
 `onAddLane`/`swapLaneEngine` path, applies the preset, and gives each lane a `LaneSelection`
@@ -184,7 +192,8 @@ Only for what this spec adds; what landed already carries its own tests.
 - `analysis-scope` — a drum lane contributes nothing; a busy lane does not outvote a sparse one;
   a muted lane is skipped.
 - `style-kits` — the record is exhaustive at runtime too (iterate `STYLE_CATALOG`); every
-  `engineId` is registered; every `patternKind` has patterns in at least one style.
+  `engineId` is registered; every part's resolved role (`laneRoleOf`) has material to draw
+  from in at least one style — patterns for a pattern role, shapes for a chordal one.
 - `seedBand` — creates one lane per part; each lane ends with a `LaneSelection` whose two loops
   both resolve (an id that lists but does not resolve is a loop that shows in the dropdown and
   plays silence).

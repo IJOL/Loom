@@ -94,6 +94,18 @@ export type AssetKind = 'audio-file';
 /** Every question the host used to answer comparing engine ids.
  *  OMITTING is the normal case: a manifest that says nothing behaves like an
  *  ordinary melodic instrument. Only the unusual gets declared. */
+/** What part a lane plays — the ONE vocabulary for "what is this lane FOR".
+ *
+ *  It lives in the SDK rather than in the host because an engine DECLARES the
+ *  part it is built for (`defaultRole` below), so the union is part of the
+ *  contract a plugin writes against. The host re-exports it as
+ *  `session-types.ts`'s `LaneRole` so there is exactly one definition.
+ *
+ *  Percussion is deliberately NOT a role: whether a lane is a drum lane is
+ *  already answered by `harmonic`, and a second answer to one question is the
+ *  fault this vocabulary exists to reduce. */
+export type LaneRole = 'bass' | 'melody' | 'comp' | 'pad' | 'arp';
+
 export interface EngineCapabilities {
   /** What a clip of this engine CONTAINS, and therefore what kind of lane it is.
    *  Binary on purpose: 'notes' is any instrument — melodic, sampler or drum
@@ -115,6 +127,16 @@ export interface EngineCapabilities {
   acceptsNoteFx?: boolean;
   /** False for engines that cannot host a chord accompaniment. Default true. */
   harmonic?: boolean;
+  /** The part this engine is BUILT for, when it is built for one. The 303 is a
+   *  bass machine — that is a fact about the instrument, not about any lane
+   *  holding it — and before this existed the host answered it with an
+   *  `engineId === 'tb303'` in two separate files, which this project forbids.
+   *
+   *  It is only a DEFAULT: a lane the user has marked overrules it, and an
+   *  engine that says nothing leaves its lanes unmarked, which is offered every
+   *  melodic shelf exactly as before. Meaningless when `harmonic` is false —
+   *  a drum lane draws percussion whatever anyone says. */
+  defaultRole?: LaneRole;
   /** Whether the "🎲 Sound" dice means anything for this engine. A melodic
    *  instrument has this: its sound is a bag of params the dice can roll. The
    *  sampler and the drum machine do not — their sound is a loaded kit or

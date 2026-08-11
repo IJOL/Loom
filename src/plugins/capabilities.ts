@@ -4,7 +4,7 @@
 // Two sources, and the caller cannot tell which: a built-in component registers
 // from code, a plugin one from its manifest. Migrating an engine in slice 3
 // moves its answer from one source to the other WITHOUT touching the core.
-import type { EngineCapabilities, GmHint } from '@loom/plugin-sdk';
+import type { EngineCapabilities, GmHint, LaneRole } from '@loom/plugin-sdk';
 import { CATEGORY_GAIN } from '../audio-dsp/gain-staging';
 
 const caps = new Map<string, EngineCapabilities>();
@@ -59,6 +59,18 @@ export function isHarmonic(id: string): boolean {
  *  Default: true, so an instrument that says nothing gets its dice. */
 export function isRandomizable(id: string): boolean {
   return caps.get(id)?.isRandomizable ?? true;
+}
+/** The part this ENGINE is built for, if it is built for one.
+ *
+ *  "The 303 is a bass machine" is a fact about the instrument, and it used to be
+ *  written as `engineId === 'tb303'` in two different core files. It belongs
+ *  here for the ordinary reason: the core may not know a plugin's name.
+ *
+ *  undefined is the honest answer for a general-purpose instrument, and it means
+ *  its lanes stay unmarked — every melodic shelf offered, exactly as before.
+ *  Read through `laneRoleOf`, which lets the user's mark overrule it. */
+export function defaultRoleOf(id: string): LaneRole | undefined {
+  return caps.get(id)?.defaultRole;
 }
 export function shortLabelFor(id: string): string | undefined {
   return caps.get(id)?.shortLabel;

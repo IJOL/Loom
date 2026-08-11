@@ -5,6 +5,7 @@
 // which of the two a given lane is meant to be and guessing would hide half the
 // library". The role is that missing sentence.
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { sourcesFor, rootFor } from './weave-loops';
 
 describe('sourcesFor', () => {
@@ -67,6 +68,33 @@ describe('rootFor', () => {
     for (let key = 0; key < 12; key++) {
       expect(Math.abs(rootFor('bass', undefined, key) - 36)).toBeLessThanOrEqual(6);
       expect(Math.abs(rootFor(undefined, 'synth', key) - 48)).toBeLessThanOrEqual(6);
+    }
+  });
+});
+
+describe('one answer, not four', () => {
+  // Grep IS the test, and it is the only kind that can hold this. Each of these
+  // was a separate answer to "what part is this lane", and two of them were an
+  // `engineId === '…'` in the core, which the project forbids. Nothing about the
+  // BEHAVIOUR of the code left behind would notice one of them creeping back in
+  // beside the door — only its absence says the round did what it claimed.
+  const src = (p: string) => readFileSync(new URL(p, import.meta.url), 'utf8');
+
+  it('has retired patternKindFor and patternRootFor', () => {
+    const f = src('../patterns/pattern-picker-ui.ts');
+    expect(f).not.toContain('patternKindFor');
+    expect(f).not.toContain('patternRootFor');
+  });
+
+  it('has retired genKindFor', () => {
+    expect(src('../session/session-inspector.ts')).not.toContain('genKindFor');
+  });
+
+  it('leaves no engine-id comparison in either file', () => {
+    // What the three had in common, and the reason they could not simply be
+    // moved: the core is not allowed to know a plugin's name.
+    for (const p of ['../patterns/pattern-picker-ui.ts', '../session/session-inspector.ts']) {
+      expect(src(p)).not.toMatch(/engineId === '/);
     }
   });
 });

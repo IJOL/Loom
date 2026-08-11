@@ -17,9 +17,10 @@ import type { ScaleId, StyleId } from '../core/musicality';
 import type { SessionLane } from '../session/session';
 import type { LaneRole } from '../session/session-types';
 import { isHarmonic } from '../plugins/capabilities';
+import { laneRoleOf } from '../session/lane-role';
 import { formatLoopId, parseLoopId } from '../weave/loop-ids';
 import { scaleForDarkness, styleForLane } from '../weave/style-mix';
-import { patternNotes, patternsFor, type PatternKind } from '../patterns/pattern-library';
+import { patternNotes, patternsFor, KIND_LABEL, type PatternKind } from '../patterns/pattern-library';
 import { CHORD_SHAPES, renderChordShape } from '../core/harmony-shapes';
 
 export interface WeaveLoopContext {
@@ -193,10 +194,6 @@ export function nearestOffset(key: number): number {
   return ((((key % 12) + 12) % 12) + 6) % 12 - 6;
 }
 
-const KIND_LABEL: Record<PatternKind, string> = {
-  drums: 'Drums', bass: 'Bass', synth: 'Lead',
-};
-
 export function weaveLoopChoices(c: WeaveLoopContext): PanelChoice[] {
   const out: PanelChoice[] = [];
 
@@ -212,7 +209,11 @@ export function weaveLoopChoices(c: WeaveLoopContext): PanelChoice[] {
     });
   }
 
-  for (const kind of sourcesFor(c.lane?.role, c.harmonic)) {
+  // Resolved, not read raw: an engine may declare the part it is built for, and
+  // the 303's lanes have to come out as bass whether or not anyone marked them.
+  const role = laneRoleOf(c.lane);
+
+  for (const kind of sourcesFor(role, c.harmonic)) {
     for (const p of patternsFor(c.style, kind)) {
       out.push({
         id: formatLoopId({ source: 'pattern', style: c.style, kind, index: p.index }),
@@ -225,7 +226,7 @@ export function weaveLoopChoices(c: WeaveLoopContext): PanelChoice[] {
   // A chordal lane reads no shelf, so this is its whole list. Offered by SHAPE
   // — the rhythm — because the notes are decided per bar by the progression
   // rather than by the choice.
-  if (sourcesFor(c.lane?.role, c.harmonic).length === 0 && c.harmonic && c.lane?.role) {
+  if (sourcesFor(role, c.harmonic).length === 0 && c.harmonic && role) {
     for (const s of CHORD_SHAPES) {
       out.push({
         id: formatLoopId({ source: 'chord', shape: s.id }),
@@ -263,14 +264,14 @@ export function weaveLoopNotes(id: string, c: WeaveLoopContext): NoteEvent[] | u
       scale: c.scale,
       // The RAW base for this role, not rootFor's — the triad adds the key
       // itself, so a base that already carried it would apply it twice.
-      octaveBase: roleOctaveBase(c.lane?.role),
+      octaveBase: roleOctaveBase(laneRoleOf(c.lane)),
       barTicks: c.barTicks,
     });
   }
 
   const notes = patternNotes(
     parsed.style, parsed.kind, parsed.index,
-    rootFor(c.lane?.role, parsed.kind, c.key),
+    rootFor(laneRoleOf(c.lane), parsed.kind, c.key),
     // The clip the loop has to fill. patternNotes repeats the bar itself — the
     // mechanism has been there since it was written, and passing `undefined`
     // here is what left the second half of a two-bar clip silent.

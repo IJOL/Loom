@@ -4,6 +4,7 @@
 
 import type { NoteEvent } from '../core/notes';
 import type { ScaleId, StyleId } from '../core/musicality';
+import type { LaneRole } from '@loom/plugin-sdk';
 
 export interface MusicalityState {
   key: number;        // pitch class 0-11 (0 = Do … 9 = La)
@@ -108,8 +109,13 @@ export interface SessionClip {
  *
  *  Percussion is deliberately NOT here: whether a lane is a drum lane is
  *  already answered by `isHarmonic` at the capability door, and a second answer
- *  is the fault this vocabulary exists to reduce. */
-export type LaneRole = 'bass' | 'melody' | 'comp' | 'pad' | 'arp';
+ *  is the fault this vocabulary exists to reduce.
+ *
+ *  DEFINED IN THE SDK, re-exported here. An engine declares the part it is
+ *  built for (`EngineCapabilities.defaultRole`), so the union is part of the
+ *  contract a plugin writes against; the host has no business owning a second
+ *  copy of it. This name is the one the session uses. */
+export type { LaneRole };
 
 export interface SessionLane {
   id: string;

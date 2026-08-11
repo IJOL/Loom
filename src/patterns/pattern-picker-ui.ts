@@ -11,28 +11,7 @@ import { html, type TemplateResult } from 'lit-html';
 import { ifDefined } from 'lit-html/directives/if-defined.js';
 import { renderInto } from '../core/lit-fill';
 import { STYLE_CATALOG, type StyleId } from '../core/musicality';
-import { patternsFor, type PatternKind } from './pattern-library';
-
-/** Which pattern pool suits a lane's engine. Drum lanes want drum patterns;
- *  the 303 is a bass machine; everything else melodic reads the synth pool. */
-export function patternKindFor(engineId: string): PatternKind {
-  if (engineId === 'drums-machine') return 'drums';
-  if (engineId === 'tb303') return 'bass';
-  return 'synth';
-}
-
-/** Where a library pattern's root note sits.
- *
- *  A library pattern is semitone offsets from a root, so the root is what makes
- *  it transposable. Rooting it on the octave alone would play every pattern in C
- *  regardless of the project's key — our own examples are scale degrees and
- *  transpose for free, and a pattern must behave the same way.
- *
- *  `octaveBase` keeps the octave selector honoured; `key` (0-11) moves it to the
- *  project's tonic. */
-export function patternRootFor(octaveBase: number, key: number): number {
-  return octaveBase + key;
-}
+import { patternsFor, KIND_LABEL, type PatternKind } from './pattern-library';
 
 /** Fill the style dropdown with every style, selecting `current`. */
 export function fillStyleSelect(sel: HTMLSelectElement, current: StyleId): void {
@@ -51,16 +30,25 @@ export interface PickerExample {
  *  examples for that style, grouped, in ONE list — both do the same job (put a
  *  pattern in the clip), so two dropdowns would just be two places to look.
  *
- *  Values are prefixed by source (`lib:<index>` / `ex:<id>`) because the two
- *  are applied differently: library patterns are semitone offsets from the
- *  root, examples are scale degrees rendered into the project's tonality.
+ *  `kinds` is which SHELVES this lane may read, and it comes from `sourcesFor`
+ *  — the one door — so this list and WEAVE's offer the same material. It is a
+ *  list rather than one kind because that answer legitimately has two entries:
+ *  a melodic lane nobody has marked reads bass AND lead, and picking one of them
+ *  here on the lane's behalf is the guess this round exists to stop making. Each
+ *  shelf gets its own heading, so a two-shelf list still reads as two shelves.
+ *
+ *  Values are prefixed by source (`lib:<kind>:<index>` / `ex:<id>`) because the
+ *  two are applied differently: library patterns are semitone offsets from the
+ *  root, examples are scale degrees rendered into the project's tonality. The
+ *  KIND rides in the value for the plain reason that with two shelves listed an
+ *  index no longer identifies a pattern on its own.
  *
  *  Descriptions ride along as the option's title, so hovering explains a
  *  pattern without opening anything. */
 export function fillPatternSelect(
   sel: HTMLSelectElement,
   style: StyleId,
-  kind: PatternKind,
+  kinds: PatternKind[],
   examples: PickerExample[] = [],
 ): void {
   // Empty groups render nothing — the old imperative fill never appended an
@@ -68,11 +56,14 @@ export function fillPatternSelect(
   const group = (label: string, items: TemplateResult[]) =>
     items.length ? html`<optgroup label=${label}>${items}</optgroup>` : null;
 
-  const lib = patternsFor(style, kind).map((p) =>
-    html`<option value=${`lib:${p.index}`} title=${ifDefined(p.desc || undefined)}>${p.name}</option>`);
+  const shelves = kinds.map((kind) => group(
+    kinds.length > 1 ? `Library · ${KIND_LABEL[kind]}` : 'Library',
+    patternsFor(style, kind).map((p) =>
+      html`<option value=${`lib:${kind}:${p.index}`} title=${ifDefined(p.desc || undefined)}>${p.name}</option>`),
+  ));
   const ex = examples.map((e) =>
     html`<option value=${`ex:${e.id}`}>${e.source === 'user' ? `★ ${e.name}` : e.name}</option>`);
 
-  renderInto(sel, html`<option value="">— pattern… —</option>${group('Library', lib)}${group('Examples', ex)}`);
+  renderInto(sel, html`<option value="">— pattern… —</option>${shelves}${group('Examples', ex)}`);
   sel.value = '';
 }
