@@ -21,7 +21,7 @@
  * refs — per-frame work never goes through a template diff.
  */
 
-import { html, render as litRender } from 'lit-html';
+import { createMeterColumn, type MeterColumnHandle } from './controls/meter-column';
 
 // ── Scale constants ───────────────────────────────────────────────────────────
 
@@ -74,15 +74,27 @@ export interface LevelMeterHandle {
 
 interface MeterRegistration {
   analyser: AnalyserNode;
-  segments: HTMLDivElement[];
   buffer: Float32Array<ArrayBuffer>;
-  lastLitCount: number;
-  peak: {
-    idx: number;       // segment index of peak (0-based), -1 = none
-    heldUntil: number; // timestamp ms
-    lastDecayAt: number;
-  };
+  /** The segments and the peak marker, which know nothing about analysers —
+   *  see controls/meter-column.ts. What is left here is the READING. */
+  column: MeterColumnHandle;
   el: HTMLElement;
+}
+
+/** The RMS of what this analyser is carrying right now, in dBFS.
+ *
+ *  Exported because the meter is no longer the only reader: a panel plugin
+ *  cannot hold an AnalyserNode, so the host answers "how loud is this lane" for
+ *  it — and it must be the SAME reading the mixer's own meter shows, or the two
+ *  disagree about a number the user can see in both places at once.
+ *
+ *  The floor is 1e-4 rather than 0 so silence reads as −80 dB instead of −∞. */
+export function dbfsOf(analyser: AnalyserNode, buffer: Float32Array<ArrayBuffer>): number {
+  analyser.getFloatTimeDomainData(buffer);
+  let sum = 0;
+  for (let i = 0; i < buffer.length; i++) sum += buffer[i] * buffer[i];
+  const rms = Math.sqrt(sum / buffer.length);
+  return 20 * Math.log10(Math.max(rms, 1e-4));
 }
 
 // ── Shared RAF loop ───────────────────────────────────────────────────────────
@@ -92,54 +104,7 @@ let rafId: number | null = null;
 
 function tick(now: number): void {
   for (const reg of meters) {
-    // Measure RMS over time-domain buffer
-    reg.analyser.getFloatTimeDomainData(reg.buffer);
-    let sum = 0;
-    const len = reg.buffer.length;
-    for (let i = 0; i < len; i++) {
-      sum += reg.buffer[i] * reg.buffer[i];
-    }
-    const rms = Math.sqrt(sum / len);
-    const dbfs = 20 * Math.log10(Math.max(rms, 1e-4));
-
-    const litCount = litCountForDb(dbfs);
-
-    // Update lit segments (only touch class when state changes)
-    if (litCount !== reg.lastLitCount) {
-      const lo = Math.min(litCount, reg.lastLitCount);
-      const hi = Math.max(litCount, reg.lastLitCount);
-      for (let i = lo; i < hi; i++) {
-        if (i < reg.segments.length) {
-          reg.segments[i].classList.toggle('lit', i < litCount);
-        }
-      }
-      reg.lastLitCount = litCount;
-    }
-
-    // Peak-hold logic
-    const peakSegIdx = litCount - 1; // highest lit segment index (-1 if silent)
-    const p = reg.peak;
-    if (peakSegIdx >= p.idx) {
-      // New peak: snap and reset hold timer
-      if (p.idx >= 0 && p.idx < reg.segments.length) {
-        reg.segments[p.idx].classList.remove('lit-peak');
-      }
-      p.idx = peakSegIdx;
-      p.heldUntil = now + 1500;
-      if (p.idx >= 0 && p.idx < reg.segments.length) {
-        reg.segments[p.idx].classList.add('lit-peak');
-      }
-    } else if (now > p.heldUntil && now > p.lastDecayAt + 120) {
-      // Hold expired: decay one segment
-      if (p.idx >= 0 && p.idx < reg.segments.length) {
-        reg.segments[p.idx].classList.remove('lit-peak');
-      }
-      p.idx--;
-      p.lastDecayAt = now;
-      if (p.idx >= 0 && p.idx < reg.segments.length) {
-        reg.segments[p.idx].classList.add('lit-peak');
-      }
-    }
+    reg.column.set(dbfsOf(reg.analyser, reg.buffer), now);
   }
 
   if (meters.size > 0) {
@@ -178,40 +143,15 @@ function unregisterMeter(reg: MeterRegistration): void {
  */
 export function createLevelMeter(opts: LevelMeterOpts): LevelMeterHandle {
   const { analyser } = opts;
-
-  // Build segments bottom-first; CSS flex-direction: column-reverse makes
-  // index 0 appear at the bottom visually. querySelectorAll returns document
-  // order, so segments[0] stays the bottom LED.
-  const frag = document.createDocumentFragment();
-  litRender(html`
-    <div class="mix-vu-host">
-      <div class="mix-vu">
-        ${SEGMENT_ZONES.map((zone) => html`<div class="mix-vu-seg mix-vu-seg--${zone}"></div>`)}
-      </div>
-    </div>
-  `, frag);
-  const el = frag.firstElementChild as HTMLElement;
-  const segments = [...el.querySelectorAll<HTMLDivElement>('.mix-vu-seg')];
-
-  const bufferSize = analyser.fftSize; // fftSize=512 → 512 time-domain samples
-  const buffer = new Float32Array(bufferSize) as Float32Array<ArrayBuffer>;
-
-  const reg: MeterRegistration = {
-    analyser,
-    segments,
-    buffer,
-    lastLitCount: 0,
-    peak: { idx: -1, heldUntil: 0, lastDecayAt: 0 },
-    el,
-  };
-
+  const column = createMeterColumn();
+  const buffer = new Float32Array(analyser.fftSize) as Float32Array<ArrayBuffer>;
+  const reg: MeterRegistration = { analyser, buffer, column, el: column.el };
   registerMeter(reg);
-
   return {
-    el,
+    el: column.el,
     dispose() {
       unregisterMeter(reg);
-      el.remove();
+      column.el.remove();
     },
   };
 }

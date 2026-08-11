@@ -415,7 +415,8 @@ function noteStrip(laneId, ctx) {
 }
 function buildLaneRow(lane, ctx, engines) {
   const row = el("div", "weave-lane");
-  const led = el("span", "weave-led");
+  const meter = Loom.controls.levelMeter();
+  meter.el.classList.add("weave-vu");
   const ring = Loom.controls.loopRing({ label: `Loop position for ${lane.name}` });
   const name = el("span", "weave-lane-name", lane.name);
   let slot = 0;
@@ -673,7 +674,7 @@ function buildLaneRow(lane, ctx, engines) {
   paintTopo();
   repaintCell();
   paintSound();
-  row.append(led, ring.el, name, transport, levelWrap, topo, cellHost, soundWrap);
+  row.append(meter.el, ring.el, name, transport, levelWrap, topo, cellHost, soundWrap);
   const strip = noteStrip(lane.id, ctx);
   const setup = el("div", "weave-lane-setup");
   setup.append(strip.el, slots, engineHost, presetHost, role, style, length, octave);
@@ -682,7 +683,7 @@ function buildLaneRow(lane, ctx, engines) {
   return {
     laneId: lane.id,
     el: wrap,
-    led,
+    meter,
     ring,
     syncTransport,
     // Called from the panel's rAF while the master flow is travelling: the host
@@ -1321,18 +1322,16 @@ function mountWeave(host, ctx) {
   let lastChordBar = -1;
   const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
   const SILENT = { state: "silent", frac: 0, bars: 0, centerText: "" };
-  const frame = () => {
+  const frame = (now = performance.now()) => {
     raf = requestAnimationFrame(frame);
     const phase = ctx.bypassed() ? -1 : ctx.barPhase();
     for (const l of laneRows) l.followWeave(phase);
+    for (const l of laneRows) l.meter.set(ctx.laneLevelNow(l.laneId), now);
     if (phase < 0) {
       if (lastStep !== -1) {
         lastStep = -1;
         for (const c of cells) c.classList.remove("on");
-        for (const l of laneRows) {
-          l.led.classList.remove("hit");
-          l.ring.set(SILENT);
-        }
+        for (const l of laneRows) l.ring.set(SILENT);
         rack.style.removeProperty("--weave-pulse");
       }
       return;
@@ -1354,8 +1353,6 @@ function mountWeave(host, ctx) {
     if (step !== lastStep) {
       lastStep = step;
       cells.forEach((c, i) => c.classList.toggle("on", i === step));
-      const onBeat = step % 4 === 0;
-      for (const l of laneRows) l.led.classList.toggle("hit", onBeat);
       for (const l of laneRows) l.syncTransport();
     }
     if (!reduced) {

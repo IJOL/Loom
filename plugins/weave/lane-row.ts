@@ -16,7 +16,9 @@ import { endlessDial } from './endless-dial';
 export interface LaneRowHandle {
   laneId: string;
   el: HTMLElement;
-  led: HTMLElement;
+  /** The track's VU. Driven by the panel's one rAF, from the host's reading of
+   *  the same analyser the mixer column meters. */
+  meter: { el: HTMLElement; set(dbfs: number, now: number): void };
   ring: { el: HTMLElement; set(phase: PanelLoopPhase): void };
   /** Repaint the transport buttons from the host. Driven by the panel's one rAF
    *  rather than by a click handler, because a lane can start or stop from the
@@ -444,7 +446,14 @@ export function buildLaneRow(
   engines: PanelChoice[],
 ): LaneRowHandle {
   const row = el('div', 'weave-lane');
-  const led = el('span', 'weave-led');
+  // What this track is actually PUTTING OUT, not what the clock is doing.
+  //
+  // It was a dot that flashed on the beat, which told you the transport was
+  // running — and the loop ring eighteen pixels to its right already says that,
+  // in more detail and continuously. Two clocks and no level. This is the
+  // mixer's own VU column, so a lane reads the same here as it does at the desk.
+  const meter = Loom.controls.levelMeter();
+  meter.el.classList.add('weave-vu');
   const ring = Loom.controls.loopRing({ label: `Loop position for ${lane.name}` });
   const name = el('span', 'weave-lane-name', lane.name);
 
@@ -819,7 +828,7 @@ export function buildLaneRow(
   // the position, the name, the transport, the LEVEL, the topology, the loops
   // and the sound fader. Everything up here got wider for it — the level fader
   // was 44px, which is nine steps of a percentage, and is now 88.
-  row.append(led, ring.el, name, transport, levelWrap, topo, cellHost, soundWrap);
+  row.append(meter.el, ring.el, name, transport, levelWrap, topo, cellHost, soundWrap);
 
   // The bar this track is about to play, at a QUARTER of the width. It is the
   // OUTPUT, and the playhead only ever travels across it, so the other three
@@ -835,7 +844,7 @@ export function buildLaneRow(
   wrap.append(row, setup);
 
   return {
-    laneId: lane.id, el: wrap, led, ring, syncTransport,
+    laneId: lane.id, el: wrap, meter, ring, syncTransport,
     // Called from the panel's rAF while the master flow is travelling: the host
     // owns the position then, and the row FOLLOWS it. Without this the lanes sat
     // at whatever they were built with while the music crossed away underneath.

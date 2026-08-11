@@ -753,7 +753,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
   const SILENT: PanelLoopPhase = { state: 'silent', frac: 0, bars: 0, centerText: '' };
 
-  const frame = () => {
+  const frame = (now: number = performance.now()) => {
     raf = requestAnimationFrame(frame);
     // Unplugged reads as stopped, and it has to: the panel went on pulsing,
     // sweeping its rings and running its playheads while contributing nothing,
@@ -772,6 +772,11 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     // which is indistinguishable from a dead control.
     for (const l of laneRows) l.followWeave(phase);
 
+    // Every frame and whatever the transport is doing: a VU is a picture of what
+    // is coming out, and a track can be making sound with the clock stopped —
+    // a held note, a reverb tail, a preset auditioned from the row.
+    for (const l of laneRows) l.meter.set(ctx.laneLevelNow(l.laneId), now);
+
     if (phase < 0) {
       // Stopped: everything settles rather than freezing mid-flash, so a still
       // panel looks deliberate instead of hung. The rings go silent explicitly
@@ -781,7 +786,10 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
       if (lastStep !== -1) {
         lastStep = -1;
         for (const c of cells) c.classList.remove('on');
-        for (const l of laneRows) { l.led.classList.remove('hit'); l.ring.set(SILENT); }
+        // The rings go silent; the METERS do not, because they are still telling
+        // the truth — what a track is putting out right now is a fact about the
+        // audio, not about the transport.
+        for (const l of laneRows) l.ring.set(SILENT);
         rack.style.removeProperty('--weave-pulse');
       }
       return;
@@ -810,10 +818,6 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     if (step !== lastStep) {
       lastStep = step;
       cells.forEach((c, i) => c.classList.toggle('on', i === step));
-      // The LEDs flash on the quarter, not on every sixteenth: sixteen flashes
-      // a bar reads as flicker rather than as a beat.
-      const onBeat = step % 4 === 0;
-      for (const l of laneRows) l.led.classList.toggle('hit', onBeat);
       // Once a beat, not once a frame: a lane can start or stop from the grid,
       // from a scene launch or from a MIDI pad, none of which pass through this
       // row — but four reads a second is plenty to notice.

@@ -25,6 +25,7 @@ import {
   slotChoices, setLayerEngine, recallLayerPreset, contrastPresetName, fillEmptyLayerSlots,
 } from '../engines/layers-rack-ui';
 import { commitParamForLane } from '../engines/engine-param-commit';
+import { dbfsOf } from '../core/level-meter';
 import { roleMembers } from './panel-context-role';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { emptyClip } from '../session/session';
@@ -254,6 +255,9 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
    *  the stored rack — it is the same question the sound-fader applier asks
    *  before each write, and it needs no core comparison against the name of an
    *  engine. */
+  /** One reading buffer per lane, kept for the life of the panel context. */
+  const meterBuffers = new Map<string, Float32Array<ArrayBuffer>>();
+
   const isRack = (laneId: string): boolean =>
     (deps.destinations?.() ?? []).some((d) => d.id === `${laneId}.l0.gain`);
 
@@ -995,6 +999,24 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // params away one line after they were written.
       recallLayerPreset(engine, deps.sessionHost.state, laneId, slot, held, presetName);
       deps.refresh();
+    },
+
+    laneLevelNow(laneId) {
+      // The strip's OWN meter analyser, the one the mixer column reads. A second
+      // tap would meter a different point in the chain and the two would
+      // disagree about a number the user can see in both places at once.
+      const strip = deps.sessionHost.deps?.laneResources?.get(laneId)?.strip;
+      if (!strip) return -Infinity;
+      const analyser = strip.getMeterAnalyser();
+      // Per lane and kept, because this is called once per frame per lane: a
+      // fresh Float32Array sixty times a second per track is garbage the audio
+      // thread eventually pays for.
+      let buf = meterBuffers.get(laneId);
+      if (!buf || buf.length !== analyser.fftSize) {
+        buf = new Float32Array(analyser.fftSize) as Float32Array<ArrayBuffer>;
+        meterBuffers.set(laneId, buf);
+      }
+      return dbfsOf(analyser, buf);
     },
 
     laneOctave(laneId) {

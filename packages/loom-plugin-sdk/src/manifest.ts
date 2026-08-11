@@ -651,6 +651,13 @@ export interface PanelContext {
    *  `setLaneOctave` takes a DELTA — the control is two buttons and each press
    *  is one octave — and clamps to three each way. On the weave, never on the
    *  clip: switch the weave off and the material is exactly as it was. */
+  /** How loud this lane is RIGHT NOW, in dBFS, off the same analyser the mixer
+   *  column meters — one reading, so a lane cannot show two levels in two
+   *  places at once. −Infinity for a lane with no strip yet.
+   *
+   *  A number and not a meter, because the host owns the audio node and the
+   *  panel owns its own frame loop. */
+  laneLevelNow(laneId: string): number;
   laneOctave(laneId: string): number;
   setLaneOctave(laneId: string, delta: number): void;
   /** The instruments inside a lane that is a RACK — the two the sound fader
@@ -786,6 +793,11 @@ export interface LoomApi {
       x: number; y: number; label?: string;
       onChange(x: number, y: number): void;
     }): { el: HTMLElement; set(x: number, y: number): void };
+    /** The mixer's own VU column, driven by a NUMBER rather than by an audio
+     *  node: a plugin can never be handed an AnalyserNode, and a second meter
+     *  drawn by a panel would be a second opinion about what −12 dB looks like.
+     *  Feed it `laneLevelNow` from a frame loop you already run. */
+    levelMeter(): { el: HTMLElement; set(dbfs: number, now: number): void };
     queue(opts: {
       length: number; value: number; label?: string;
       onChange(v: number): void;

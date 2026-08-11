@@ -861,20 +861,19 @@
 .weave-preset:disabled,
 .weave-role:disabled { color: var(--text-faint); }
 
-.weave-led {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--surface-3);
-  box-shadow: inset 0 0 0 1px var(--border);
-  // Fast in, slow out: a lamp that fades looks like a hit, one that fades in
-  // looks like a bug.
-  transition: background-color 40ms linear, box-shadow 260ms ease-out;
-}
-
-.weave-led.hit {
-  background: var(--green);
-  box-shadow: 0 0 9px rgba(124, 179, 66, 0.75);
+// The track's VU, in the column a blinking dot used to occupy. The dot said the
+// transport was running, which the loop ring beside it already said — two clocks
+// and no level. This is the mixer's own meter, so a track reads the same in both
+// places.
+//
+// It fills the row's height rather than taking one of its own, so swapping the
+// dot for a meter cost nothing vertically.
+.weave-vu {
+  height: 100%;
+  min-height: 22px;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
 }
 
 .weave-empty {
