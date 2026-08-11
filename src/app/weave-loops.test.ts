@@ -144,6 +144,57 @@ describe('what a lane hands over TO', () => {
     expect(next).toMatchObject({ a: `lib:${STYLE}:bass:0`, b: `lib:${STYLE}:bass:1` });
   });
 
+  it('a CLOUD swaps the corner the dot is furthest from', () => {
+    // Reported as "cloud no cambia en evolve". A lap used to return null for
+    // anything but A→B, so a square crossed its four loops and then crossed the
+    // same four for ever — and it is the topology that most needs evolving.
+    //
+    // The corner nobody is hearing is the one that may change without a cut,
+    // which is the same rule the dice follows. Near the top-left, that is the
+    // bottom-right.
+    setLibrary({
+      synth: {}, drums: {}, bass: { [STYLE]: [OFF_SCALE, OFF_SCALE, OFF_SCALE] }, catalog: {},
+    } as never);
+    const c = ctxFor(laneWith([]));
+    const corners = [`lib:${STYLE}:bass:0`, `lib:${STYLE}:bass:1`, `lib:${STYLE}:bass:0`, `lib:${STYLE}:bass:1`];
+    const next = rehookOnArrival(
+      { kind: 'cloud', corners, x: 0.1, y: 0.1 } as never, c, 1, 'l1',
+    );
+    const after = (next as { corners: string[] }).corners;
+    expect(after.slice(0, 3)).toEqual(corners.slice(0, 3));
+    expect(after[3]).toBe(`lib:${STYLE}:bass:2`);
+  });
+
+  it('a cloud with the whole shelf already in play holds what it has', () => {
+    // Null rather than a corner swapped for a copy of its neighbour: nothing
+    // new to draw is a lane that stays as it is, not a square that degrades.
+    setLibrary({
+      synth: {}, drums: {}, bass: { [STYLE]: [OFF_SCALE, OFF_SCALE] }, catalog: {},
+    } as never);
+    const c = ctxFor(laneWith([]));
+    const next = rehookOnArrival(
+      {
+        kind: 'cloud',
+        corners: [`lib:${STYLE}:bass:0`, `lib:${STYLE}:bass:1`, `lib:${STYLE}:bass:0`, `lib:${STYLE}:bass:1`],
+        x: 0.5, y: 0.5,
+      } as never,
+      c, 1, 'l1',
+    );
+    expect(next).toBeNull();
+  });
+
+  it('never re-draws a QUEUE, which is a list the user ordered', () => {
+    setLibrary({
+      synth: {}, drums: {}, bass: { [STYLE]: [OFF_SCALE, OFF_SCALE, OFF_SCALE] }, catalog: {},
+    } as never);
+    const c = ctxFor(laneWith([]));
+    const next = rehookOnArrival(
+      { kind: 'queue', loops: [`lib:${STYLE}:bass:0`, `lib:${STYLE}:bass:1`], x: 0.2 } as never,
+      c, 1, 'l1',
+    );
+    expect(next).toBeNull();
+  });
+
   it('stays put rather than falling silent when there is nowhere at all', () => {
     // One pattern, no clips: abAdvance holds the pair it has. A loop that
     // repeats is better than a lane that stops.

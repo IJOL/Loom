@@ -19,6 +19,7 @@ import type { LaneRole } from '../session/session-types';
 import { isHarmonic } from '../plugins/capabilities';
 import { laneRoleOf } from '../session/lane-role';
 import { formatLoopId, parseLoopId } from '../weave/loop-ids';
+import { redrawQuietest } from '../weave/weave-selection';
 import { scaleForDarkness, styleForLane } from '../weave/style-mix';
 import { patternNotes, patternsFor, KIND_LABEL, type PatternKind } from '../patterns/pattern-library';
 import { PAD_LOOPS, renderPadLoop } from '../core/pad-loops';
@@ -327,9 +328,11 @@ export function weaveLoopNotes(id: string, c: WeaveLoopContext): NoteEvent[] | u
  *  one and the same two loops crossed again, which is the "static on purpose"
  *  the panel exists to avoid.
  *
- *  Only A→B. The queue is a finite list the user ordered and the cloud's four
- *  corners are four choices; re-drawing either behind the user's back would be
- *  changing the material rather than continuing the journey.
+ *  A→B and the CLOUD, each in the way its own shape allows — the pair hands over
+ *  and draws a new far end, the square swaps the corner the dot is furthest
+ *  from. Not the queue: it is a finite list the user ORDERED, and re-drawing an
+ *  entry of it behind their back would be changing the material rather than
+ *  continuing the journey.
  *
  *  The draw is DETERMINISTIC — seeded by the scene, the lane and the loop just
  *  arrived at — for the same reason the style draw is: the same scene has to
@@ -338,13 +341,51 @@ export function weaveLoopNotes(id: string, c: WeaveLoopContext): NoteEvent[] | u
  *
  *  Returns null when there is nothing to do, so a caller running per tick can
  *  skip the write. */
+/** A number from the parts, for choosing without a counter.
+ *
+ *  Nothing stores how many laps a lane has run, so the draw is seeded by WHERE
+ *  the lane is instead — which differs every lap by construction, since a lap
+ *  always changes at least one of the loops in play. */
+function hashOf(parts: readonly string[]): number {
+  let v = 2166136261;
+  for (const s of parts) {
+    for (let i = 0; i < s.length; i++) v = Math.imul(v ^ s.charCodeAt(i), 16777619) >>> 0;
+  }
+  return v;
+}
+
 export function rehookOnArrival(
   sel: PanelWeave | null | undefined,
   c: WeaveLoopContext,
   seed: number,
   laneId: string,
 ): PanelWeave | null {
-  if (!sel || sel.kind !== 'ab') return null;
+  if (!sel) return null;
+
+  // A CLOUD evolves by swapping out the corner nobody is hearing.
+  //
+  // It used to be refused outright — "four corners are four choices, and
+  // re-drawing one behind the user's back would be changing the material". That
+  // reasoning applied to replacing the square; replacing the FURTHEST corner is
+  // the same move A→B makes, and for the same reason: the far end is the one you
+  // are not listening to, so the material can change there without a cut.
+  // Reported as "cloud no cambia en evolve", and it is the topology that most
+  // needs it — a lap of a cloud crosses four loops and then crossed the same
+  // four for ever.
+  //
+  // Four laps renew the whole square, one corner at a time, which is evolution
+  // rather than a shuffle.
+  if (sel.kind === 'cloud') {
+    const pool = weaveLoopChoices(c).map((ch) => ch.id).filter((id) => !id.startsWith('clip:'));
+    if (pool.length === 0) return null;
+    // Rotated by where the square IS, so consecutive laps do not keep offering
+    // the same first candidate. The corners change every lap, so the rotation
+    // does too.
+    const at = hashOf([String(seed), laneId, sel.corners.join('|')]) % pool.length;
+    return redrawQuietest(sel, [...pool.slice(at), ...pool.slice(0, at)]);
+  }
+
+  if (sel.kind !== 'ab') return null;
 
   // A lane's CLIPS are an arrangement: they advance IN ORDER, and shuffling
   // them would not be evolution, it would be noise. Only the library is drawn.
@@ -376,17 +417,10 @@ export function rehookOnArrival(
   const pool = weaveLoopChoices(c).map((ch) => ch.id).filter((id) => !id.startsWith('clip:'));
   if (pool.length === 0) return null;
 
-  // A hash rather than a counter: nothing stores how many laps a lane has run,
-  // and the loop it just arrived at stands in for "where the journey is" — it
-  // differs on every leg by construction, since the draw never picks the loop it
-  // came from.
-  const pick = (n: number) => {
-    let v = 2166136261;
-    for (const s of [String(seed), laneId, sel.b]) {
-      for (let i = 0; i < s.length; i++) v = Math.imul(v ^ s.charCodeAt(i), 16777619) >>> 0;
-    }
-    return v % Math.max(1, n);
-  };
+  // The loop it just arrived at stands in for "where the journey is": it differs
+  // on every leg by construction, since the draw never picks the loop it came
+  // from.
+  const pick = (n: number) => hashOf([String(seed), laneId, sel.b]) % Math.max(1, n);
 
   const next = abAdvance({ a: sel.a, b: sel.b, x: 1 }, 1, pool, pick);
   // The POSITION stays the flow's: it has already wrapped to the near end of the
