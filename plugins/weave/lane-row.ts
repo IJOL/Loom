@@ -548,6 +548,26 @@ export function buildLaneRow(
       repaintCell();
     });
 
+  // What PART this lane plays. It decides which shelf the picker beside it then
+  // picks a style from, which is why the two sit together.
+  //
+  // The host hands over the choices AND their labels, including the unmarked
+  // option's — on an instrument that declares the part it is built for, that
+  // option is not "no part" but "the part this instrument is", and only the host
+  // knows which. An EMPTY list means the question does not apply to this lane —
+  // a drum lane — and the picker renders as a disabled dash rather than
+  // vanishing, so the row keeps its shape.
+  const roleChoices = ctx.roleChoices(lane.id);
+  const role = picker('weave-role', `Part played by ${lane.name}`, roleChoices,
+    ctx.laneRole(lane.id) ?? '', (id) => {
+      ctx.setLaneRole(lane.id, id || null);
+      // The material moved with it — the whole point of the mark — so the loop
+      // cell has to be rebuilt from the new list rather than left showing ids
+      // this lane no longer reads.
+      repaintCell();
+    });
+  if (roleChoices.length === 0) role.title = 'A drum lane plays percussion, whatever part anything says';
+
   const topo = el('div', 'weave-topo');
   const buttons = TOPOS.map((t) => {
     const b = el('button', 'weave-topo-btn', t.label) as HTMLButtonElement;
@@ -605,9 +625,9 @@ export function buildLaneRow(
   // settings went.
   const strip = noteStrip(lane.id, ctx);
   const setup = el('div', 'weave-lane-setup');
-  // What you set once and leave: which instrument, which preset, which shelf,
-  // how many bars. None of them is a gesture.
-  setup.append(strip.el, engine, preset, style, length);
+  // What you set once and leave: which instrument, which preset, which part,
+  // which shelf, how many bars. None of them is a gesture.
+  setup.append(strip.el, engine, preset, role, style, length);
 
   const wrap = el('div', 'weave-lane-wrap');
   wrap.append(row, setup);

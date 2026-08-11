@@ -46,6 +46,7 @@
 
 .weave-key,
 .weave-scale,
+.weave-role,
 .weave-style,
 .weave-add-engine {
   background: var(--surface-2);
@@ -210,14 +211,20 @@
 // that emptiness is what the settings moved into.
 .weave-lane-setup {
   display: grid;
-  // Notes at a quarter, then instrument, preset, shelf, bars — and the bars sit
-  // straight after the shelf rather than at the end of a long gap, because a
-  // control marooned in white space reads as belonging to nothing.
+  // Notes at a quarter, then instrument, preset, part, shelf, bars — and the
+  // bars sit straight after the shelf rather than at the end of a long gap,
+  // because a control marooned in white space reads as belonging to nothing.
   //
   // The selects are wider than they were upstairs: "BASS Acid Classic" and
   // "Acid Techno" were both truncating, and a name you cannot read is a name
   // you cannot pick by.
-  grid-template-columns: 25% 110px 190px 130px auto 1fr;
+  //
+  // The PART sits immediately before the shelf because the two answer halves of
+  // one question — which material this lane draws — and it keeps its column on a
+  // drum lane, which has no part to pick. Dropping the cell there would slide
+  // the shelf and the bars one place left on those rows alone, which reads as a
+  // mis-built row rather than as an absent control.
+  grid-template-columns: 25% 110px 190px 118px 130px auto 1fr;
   gap: 8px;
   align-items: center;
   padding: 2px 8px 4px;
@@ -704,6 +711,7 @@
 
 .weave-engine,
 .weave-preset,
+.weave-role,
 .weave-style {
   width: 100%;
   min-width: 0;
@@ -713,9 +721,10 @@
   max-width: none;
 }
 
-// An engine that ships no presets shows a disabled dash rather than an empty
-// box, which reads as broken.
-.weave-preset:disabled { color: var(--text-faint); }
+// An engine that ships no presets — or a drum lane, which has no part to play
+// — shows a disabled dash rather than an empty box, which reads as broken.
+.weave-preset:disabled,
+.weave-role:disabled { color: var(--text-faint); }
 
 .weave-led {
   width: 9px;

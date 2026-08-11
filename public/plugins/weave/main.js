@@ -467,6 +467,18 @@ function buildLaneRow(lane, ctx, engines) {
       repaintCell();
     }
   );
+  const roleChoices = ctx.roleChoices(lane.id);
+  const role = picker(
+    "weave-role",
+    `Part played by ${lane.name}`,
+    roleChoices,
+    ctx.laneRole(lane.id) ?? "",
+    (id) => {
+      ctx.setLaneRole(lane.id, id || null);
+      repaintCell();
+    }
+  );
+  if (roleChoices.length === 0) role.title = "A drum lane plays percussion, whatever part anything says";
   const topo = el("div", "weave-topo");
   const buttons = TOPOS.map((t) => {
     const b = el("button", "weave-topo-btn", t.label);
@@ -506,7 +518,7 @@ function buildLaneRow(lane, ctx, engines) {
   row.append(led, ring.el, name, transport, levelWrap, topo, cellHost, soundWrap);
   const strip = noteStrip(lane.id, ctx);
   const setup = el("div", "weave-lane-setup");
-  setup.append(strip.el, engine, preset, style, length);
+  setup.append(strip.el, engine, preset, role, style, length);
   const wrap = el("div", "weave-lane-wrap");
   wrap.append(row, setup);
   return {
