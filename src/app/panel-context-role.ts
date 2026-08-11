@@ -35,10 +35,13 @@ Pick<PanelContext, 'roleChoices' | 'laneRole' | 'setLaneRole'> {
     roleChoices: (laneId) => roleChoices(d, laneId),
     laneRole: (laneId) => laneRole(d, laneId),
     setLaneRole: (laneId, role) => {
-      // Undoable, unlike the style beside it. The asymmetry is deliberate and
-      // not an oversight: the style is WEAVE's own state, which is deliberately
-      // not an undo entry, and the part is on the LANE — session state, saved
-      // by the same whole-object clone as its name.
+      // A role change IS undoable — but not because of this wrapper, which is
+      // worth writing down because the wrapper reads as if it were. `withUndo`
+      // is NEUTRALISED (see its own doc in save/history-wiring): it runs the
+      // mutation and nothing else, and AutoHistory captures the result on the
+      // next interaction checkpoint. It survives at 59 call sites purely so
+      // they keep compiling. Kept here for consistency with those, not because
+      // it does anything.
       const run = (): void => setLaneRole(d, laneId, role);
       const hd = d.history();
       if (hd) withUndo(hd, run); else run();
