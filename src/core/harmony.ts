@@ -55,6 +55,60 @@ export function diatonicTriad(
   return [0, 2, 4].map((offset) => scaleDegreeToMidi(rootDegree + offset, octaveBase, key, scale));
 }
 
+/** The same chord in each of its positions: root, 1st, 2nd.
+ *
+ *  An inversion rotates the lowest voice up an octave. THREE positions for a
+ *  triad, not four — a third inversion needs a seventh chord, which this file
+ *  does not build; when sevenths arrive this grows a position rather than
+ *  changing shape.
+ *
+ *  Every result stays ascending, because `nearestVoicing` compares voicings
+ *  voice by voice and a re-ordered one would compare against the wrong note. */
+export function inversions(triad: number[]): number[][] {
+  const out: number[][] = [triad];
+  let cur = triad;
+  for (let i = 1; i < triad.length; i++) {
+    const [low, ...rest] = cur;
+    cur = [...rest, low + 12];
+    out.push(cur);
+  }
+  return out;
+}
+
+/** The voicing of `triad` closest to `prev`, by total semitone movement.
+ *
+ *  This is what makes a generated chord part sound played rather than computed.
+ *  `diatonicTriad` builds every bar from scratch in root position, so a
+ *  progression moves the part a long way between bars for no musical reason:
+ *  i-VI-III-VII in A minor from base 48 moves 25, then 15, then 21 semitones —
+ *  61 across four bars, measured.
+ *
+ *  Bounded to within an octave of the chord's own root position. Unbounded, a
+ *  long progression walks the part out of the register its caller put it in,
+ *  one small nearest step at a time — every move locally reasonable and the sum
+ *  of them not.
+ *
+ *  `prev === null` is the first bar and gives root position: there is nothing
+ *  to be near, and choosing a voicing then would only move where the part
+ *  starts. A `prev` of a different size is left alone for the same reason —
+ *  there is no voice-by-voice comparison to make. */
+export function nearestVoicing(triad: number[], prev: number[] | null): number[] {
+  if (!prev || prev.length !== triad.length) return triad;
+  const home = triad[0];
+  let best = triad;
+  let bestCost = Infinity;
+  for (const cand of inversions(triad)) {
+    for (const shift of [-12, 0, 12]) {
+      const v = cand.map((m) => m + shift);
+      if (Math.abs(v[0] - home) > 12) continue;
+      let cost = 0;
+      for (let i = 0; i < v.length; i++) cost += Math.abs(v[i] - prev[i]);
+      if (cost < bestCost) { bestCost = cost; best = v; }
+    }
+  }
+  return best;
+}
+
 /**
  * Per bar, pick the chord root degree (0-based scale degree class) that best
  * harmonises the melody notes in that bar. Strategy: count scale-degree pitch
@@ -133,8 +187,13 @@ export function renderChordComp(
   const pattern = STYLE_PATTERNS[style] ?? STYLE_PATTERNS['acid-techno'];
   const out: NoteEvent[] = [];
 
+  // The previous bar's voicing, so each chord is voiced NEAR the last rather
+  // than rebuilt in root position — see nearestVoicing. Same degrees, same
+  // rhythm, same notes of the scale; only which octave each voice sits in.
+  let prevVoicing: number[] | null = null;
   for (let bar = 0; bar < bars; bar++) {
-    const triad = diatonicTriad(roots[bar], octaveBase, key, scale);
+    const triad = nearestVoicing(diatonicTriad(roots[bar], octaveBase, key, scale), prevVoicing);
+    prevVoicing = triad;
     let firstHitInBar = true;
     for (const hit of pattern) {
       const start = bar * barTicks + hit.stepOffset * stepTicks;
