@@ -84,6 +84,19 @@ export function defaultLaneSelection(): LaneSelection {
 export interface FlowState {
   drift: DriftMode;
   speedBars: number;
+  /** THERE AND BACK: how many laps out before the journey turns round and comes
+   *  home. 0 — the default — is the plain journey, which only ever goes forward.
+   *
+   *  It changes what EVOLVE does at each end rather than replacing it. Going
+   *  out, a lane that arrives DRAWS a fresh loop, exactly as it always has;
+   *  coming home it walks the trail of the ones it already played, so the way
+   *  back is the way you came and the next lap out draws again from there.
+   *
+   *  Note the count: `laps` laps of TRAVEL, and the turn consumes one boundary
+   *  in each direction, so four laps out is three fresh loops and three
+   *  retraced. Counting handovers instead would make the control read "3" for
+   *  a journey that plainly goes round four times. */
+  pingPongLaps?: number;
   /** Where the lanes were when the current journey began, per lane id.
    *
    *  Only 'free' needs it, and it needs it badly: that mode positions each lane

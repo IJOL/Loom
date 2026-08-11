@@ -101,10 +101,22 @@ export function flowPositions(
  *  A speed of 0 means "not moving", and that is the DEFAULT: the flow does
  *  nothing until asked, because a panel that starts travelling the moment it is
  *  opened would change a session nobody touched. */
-export function flowAt(bars: number, barsPerLap: number): number {
+export function flowAt(bars: number, barsPerLap: number, laps = 0): number {
   if (!Number.isFinite(barsPerLap) || barsPerLap <= 0) return 0;
   if (!Number.isFinite(bars)) return 0;
-  return wrap01(bars / barsPerLap);
+  const total = bars / barsPerLap;
+  if (!Number.isFinite(laps) || laps <= 0) return wrap01(total);
+
+  // THERE AND BACK: `laps` laps out, then the same number home. A triangle
+  // where the plain journey is a sawtooth, and the whole of the difference.
+  //
+  // What makes it worth having is what happens at each end of it downstream:
+  // going out, a lane arriving DRAWS a fresh loop; coming home it walks the
+  // trail of the ones it already played. So the way back is the way you came,
+  // in reverse, and the next lap out draws again from there.
+  const cycle = 2 * laps;
+  const u = ((total % cycle) + cycle) % cycle;
+  return wrap01(u < laps ? u : cycle - u);
 }
 
 /** Move every lane's stored selection to where this flow puts it.

@@ -228,3 +228,70 @@ describe('with wrapping off, the journey has ends', () => {
     expect(wrapped).toEqual([]);
   });
 });
+
+describe('there and back', () => {
+  // The plain journey is a sawtooth and only ever goes forward. This is the
+  // triangle: `laps` out, then the same number home — which is what lets EVOLVE
+  // draw on the way out and retrace on the way back.
+  const walk = (laps: number, speed = 1, step = 0.02) => {
+    let prev = flowAt(0, speed, laps);
+    let out = 0;
+    let home = 0;
+    for (let bars = step; bars <= speed * 2 * laps + 1e-9; bars += step) {
+      const p = flowAt(bars, speed, laps);
+      // The same two readings applyFlow makes: a drop past half a lap is an
+      // arrival, a jump past half a lap is a rewind.
+      if (p < prev - 0.5) out++;
+      else if (p > prev + 0.5) home++;
+      prev = p;
+    }
+    return { out, home };
+  };
+
+  it('goes out and comes back the same number of times', () => {
+    // The invariant that matters: every loop drawn on the way out is retraced
+    // on the way home. Uneven, the trail would drift — running dry at one end
+    // or growing without bound at the other.
+    for (const laps of [2, 4, 8]) {
+      const { out, home } = walk(laps);
+      expect(out).toBe(home);
+      expect(out).toBeGreaterThan(0);
+    }
+  });
+
+  it('turns round further out the more laps you ask for', () => {
+    expect(walk(8).out).toBeGreaterThan(walk(2).out);
+  });
+
+  it('is the plain one-way journey at zero', () => {
+    // Off is the default, and off has to mean EXACTLY what it meant before this
+    // existed — a session nobody touched must travel the way it always did.
+    for (const bars of [0, 0.25, 1.5, 7.75]) {
+      expect(flowAt(bars, 4, 0)).toBe(flowAt(bars, 4));
+    }
+  });
+
+  it('never leaves 0..1, whatever it is asked', () => {
+    for (const laps of [0, 1, 2, 5]) {
+      for (let bars = 0; bars < 40; bars += 0.37) {
+        const p = flowAt(bars, 3, laps);
+        expect(p).toBeGreaterThanOrEqual(0);
+        expect(p).toBeLessThan(1);
+      }
+    }
+  });
+
+  it('comes home to where it set out', () => {
+    // A full there-and-back cycle lands on the start, so the journey repeats
+    // rather than creeping.
+    for (const laps of [2, 4]) {
+      expect(flowAt(2 * laps * 4, 4, laps)).toBeCloseTo(flowAt(0, 4, laps));
+    }
+  });
+
+  it('ignores a count that is not a journey', () => {
+    for (const bad of [-3, NaN, Infinity]) {
+      expect(flowAt(2.5, 4, bad)).toBe(flowAt(2.5, 4));
+    }
+  });
+});

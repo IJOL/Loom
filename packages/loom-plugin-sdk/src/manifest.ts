@@ -302,6 +302,12 @@ export interface PanelFlow {
   speedBars: number;
   /** Whether arriving at the far end hands over to new material. */
   evolve: boolean;
+  /** THERE AND BACK: how many laps out before the journey turns round. 0 is the
+   *  plain journey, which only ever goes forward.
+   *
+   *  It does not replace EVOLVE, it gives it a way home: going out a lane that
+   *  arrives draws a fresh loop, coming back it retraces the ones it played. */
+  pingPongLaps?: number;
 }
 
 /** Which loops a lane is weaving, and where between them it sits.
@@ -602,7 +608,11 @@ export interface PanelContext {
    *  simply has two ends. True, arriving at the far end is a handover: what was
    *  on the right becomes the left and new material arrives on the right, so the
    *  scene keeps moving instead of crossing the same two loops for ever. */
-  setFlow(position: number, drift: string, speedBars: number, evolve: boolean): void;
+  setFlow(
+    position: number, drift: string, speedBars: number, evolve: boolean,
+    /** Laps out before the journey turns round; 0 or absent keeps it one-way. */
+    pingPongLaps?: number,
+  ): void;
   /** Where the master flow stands. Read it per frame: with a speed set, the host
    *  is moving it and the panel is following, not driving. */
   flow(): PanelFlow;

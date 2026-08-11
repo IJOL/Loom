@@ -1017,8 +1017,19 @@ function mountWeave(host, ctx) {
     o.textContent = bars2 === 0 ? "Off" : `${bars2} bars`;
     speed.appendChild(o);
   }
+  const pingPong = document.createElement("select");
+  pingPong.className = "weave-pingpong";
+  pingPong.setAttribute("aria-label", "Laps out before the journey turns round");
+  for (const laps of [0, 2, 4, 8]) {
+    const o = document.createElement("option");
+    o.value = String(laps);
+    o.textContent = laps === 0 ? "One way" : `\u21C4 ${laps}`;
+    o.title = laps === 0 ? "The journey only ever goes forward" : `${laps} laps out, then back over the same loops`;
+    pingPong.appendChild(o);
+  }
   drift.value = flowNow.drift;
   speed.value = String(flowNow.speedBars);
+  pingPong.value = String(flowNow.pingPongLaps ?? 0);
   const evolve = document.createElement("button");
   evolve.className = "weave-evolve";
   evolve.id = "weave-evolve";
@@ -1030,11 +1041,11 @@ function mountWeave(host, ctx) {
   };
   paintEvolve();
   evolve.addEventListener("click", () => {
-    ctx.setFlow(flowWound, drift.value, Number(speed.value), !ctx.flow().evolve);
+    ctx.setFlow(flowWound, drift.value, Number(speed.value), !ctx.flow().evolve, Number(pingPong.value));
     paintEvolve();
   });
   function pushFlow(wound) {
-    ctx.setFlow(wound, drift.value, Number(speed.value), !!ctx.flow().evolve);
+    ctx.setFlow(wound, drift.value, Number(speed.value), !!ctx.flow().evolve, Number(pingPong.value));
     following = Number(speed.value) > 0;
     flowDial.el.classList.toggle("following", following);
     showFlow();
@@ -1044,6 +1055,7 @@ function mountWeave(host, ctx) {
   const resend = () => pushFlow(flowWound);
   drift.addEventListener("change", resend);
   speed.addEventListener("change", resend);
+  pingPong.addEventListener("change", resend);
   const driftLabel = el3("span", "weave-label");
   driftLabel.textContent = "Drift";
   const speedLabel = el3("span", "weave-label");
@@ -1074,6 +1086,10 @@ function mountWeave(host, ctx) {
     drift,
     speedLabel,
     speed,
+    // Beside the speed, because the two are one question: how long a lap takes,
+    // and how many of them before the journey turns round. Before EVOLVE,
+    // because EVOLVE is what happens AT the ends this decides.
+    pingPong,
     evolve,
     chordWrap
   );

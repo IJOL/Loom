@@ -18,7 +18,8 @@ import {
 } from '../arranger/progression';
 import { activeProgression } from '../arranger/chord-track';
 import {
-  weaveLoopNotes, weaveLoopContext, rehookOnArrival, isChordalRole, roleOctaveBase,
+  weaveLoopNotes, weaveLoopContext, rehookOnArrival, rehookOnRewind, pushTrail,
+  isChordalRole, roleOctaveBase,
 } from './weave-loops';
 import { laneRoleOf } from '../session/lane-role';
 import { diatonicTriad, revoiceChords } from '../core/harmony';
@@ -507,7 +508,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       // both share. Only 'free' has one; the other two say where a lane IS.
       const base = state.flow.base && new Map(Object.entries(state.flow.base));
 
-      const pos = flowAt(nowSec / barSec, speed);
+      const pos = flowAt(nowSec / barSec, speed, state.flow.pingPongLaps ?? 0);
       // A lap of 64 bars moves the position by ~0.0005 per tick, which is below
       // what any topology can act on and still costs a full source rebuild. The
       // journey is quantised to a thousandth so the ticks that change nothing
@@ -521,7 +522,30 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       const rehook = (laneId: string) => {
         const entry = state.lanes[laneId];
         const next = rehookOnArrival(entry?.weave, loopContext(laneId), state.seed, laneId);
-        if (next && entry) state.lanes[laneId] = { ...entry, weave: next };
+        if (!next || !entry) return;
+        // Remember what it is leaving. Only the way OUT records: the way home
+        // walks this list, and pushing there would leave a trail that grew as
+        // fast as it was read and a journey that never came back.
+        const leaving = entry.weave?.kind === 'ab' ? entry.weave.a : undefined;
+        state.lanes[laneId] = {
+          ...entry,
+          weave: next,
+          trail: leaving ? pushTrail(entry.trail, leaving) : entry.trail,
+        };
+      };
+
+      /** Coming home: walk the loops already played instead of drawing.
+       *
+       *  The clock can only produce this on a THERE-AND-BACK journey — the
+       *  plain one only ever advances, and a backwards wrap from it would be a
+       *  bug pretending to be a gesture, which is why this is passed only when
+       *  the journey turns round. */
+      const rewind = (laneId: string) => {
+        const entry = state.lanes[laneId];
+        const back = rehookOnRewind(entry?.weave, entry?.trail);
+        if (back && entry) {
+          state.lanes[laneId] = { ...entry, weave: back.weave, trail: back.trail };
+        }
       };
 
       // STATIC travels and never hands over: the pair the user chose is the pair
@@ -544,10 +568,15 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       if (applyFlow(
         state.lanes, laneIds, pos, state.flow.drift, base,
         evolving ? rehook : undefined,
-        // No rewind from the CLOCK: its journey only ever advances, so a
-        // backwards wrap here could only be a bug pretending to be a gesture.
-        // Winding back is a hand on the wheel — see panel-context.
-        undefined,
+        // Only on a THERE-AND-BACK journey. A plain one advances and nothing
+        // else, so a backwards wrap from the clock could only be a bug
+        // pretending to be a gesture — passing a handler for it would turn that
+        // bug into silently changed material.
+        //
+        // And unlike the draw, it does NOT ask EVOLVE: re-hearing a loop you
+        // already played is not new material, and a scene that could travel out
+        // but not home would be a stranger control than either.
+        state.flow.pingPongLaps ? rewind : undefined,
         true,
       )) {
 

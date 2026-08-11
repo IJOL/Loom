@@ -426,8 +426,31 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     speed.appendChild(o);
   }
 
+  // THERE AND BACK: how many laps out before the journey turns round and
+  // retraces its steps. Off by default — a journey that only goes forward is
+  // what a lap has always meant, and reversing one nobody asked to reverse
+  // would rewrite a scene on its own.
+  //
+  // It does not replace EVOLVE, it gives it a way home: going out a lane that
+  // arrives draws a fresh loop, coming back it walks the ones it already
+  // played. Which is why this reads in LAPS and not in bars — the number of
+  // loops you travel out before turning is the musical decision.
+  const pingPong = document.createElement('select');
+  pingPong.className = 'weave-pingpong';
+  pingPong.setAttribute('aria-label', 'Laps out before the journey turns round');
+  for (const laps of [0, 2, 4, 8]) {
+    const o = document.createElement('option');
+    o.value = String(laps);
+    o.textContent = laps === 0 ? 'One way' : `⇄ ${laps}`;
+    o.title = laps === 0
+      ? 'The journey only ever goes forward'
+      : `${laps} laps out, then back over the same loops`;
+    pingPong.appendChild(o);
+  }
+
   drift.value = flowNow.drift;
   speed.value = String(flowNow.speedBars);
+  pingPong.value = String(flowNow.pingPongLaps ?? 0);
 
   // Two jobs, one switch. STATIC is a scene you place by hand and it stays
   // placed; EVOLVE is a scene that keeps finding new material. Default is
@@ -446,7 +469,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   };
   paintEvolve();
   evolve.addEventListener('click', () => {
-    ctx.setFlow(flowWound, drift.value, Number(speed.value), !ctx.flow().evolve);
+    ctx.setFlow(flowWound, drift.value, Number(speed.value), !ctx.flow().evolve, Number(pingPong.value));
     paintEvolve();
   });
 
@@ -454,7 +477,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   // so the host can tell a completed lap from a hand turning back. The other two
   // controls re-send wherever the dial currently stands.
   function pushFlow(wound: number) {
-    ctx.setFlow(wound, drift.value, Number(speed.value), !!ctx.flow().evolve);
+    ctx.setFlow(wound, drift.value, Number(speed.value), !!ctx.flow().evolve, Number(pingPong.value));
     // Travelling on its own, the dial is a readout and not a handle. Left live
     // it would fight the host for the position every frame.
     following = Number(speed.value) > 0;
@@ -466,6 +489,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   const resend = () => pushFlow(flowWound);
   drift.addEventListener('change', resend);
   speed.addEventListener('change', resend);
+  pingPong.addEventListener('change', resend);
 
   const driftLabel = el('span', 'weave-label');
   driftLabel.textContent = 'Drift';
@@ -503,7 +527,11 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   paintChord();
 
   flowRow.append(
-    flowLabel, flowDial.el, flowOut, driftLabel, drift, speedLabel, speed, evolve, chordWrap,
+    flowLabel, flowDial.el, flowOut, driftLabel, drift, speedLabel, speed,
+    // Beside the speed, because the two are one question: how long a lap takes,
+    // and how many of them before the journey turns round. Before EVOLVE,
+    // because EVOLVE is what happens AT the ends this decides.
+    pingPong, evolve, chordWrap,
   );
 
   // ── the progression, written by hand ─────────────────────────────────────

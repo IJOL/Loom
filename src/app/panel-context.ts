@@ -684,10 +684,11 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         drift: f?.drift ?? 'together',
         speedBars: f?.speedBars ?? 0,
         evolve: !!f?.evolve,
+        pingPongLaps: f?.pingPongLaps ?? 0,
       };
     },
 
-    setFlow(position, drift, speedBars, evolve) {
+    setFlow(position, drift, speedBars, evolve, pingPongLaps) {
       const mode = asDrift(drift);
       const was = deps.weave.flow;
       const evolving = !!evolve;
@@ -706,6 +707,10 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
 
       deps.weave.flow = {
         drift: mode, speedBars: Math.max(0, speedBars || 0), base, evolve: evolving,
+        // Floored, not trusted: the count comes off a dropdown but reaches the
+        // clock's arithmetic, and a fractional or negative one would turn round
+        // in the middle of a lap for ever.
+        pingPongLaps: Math.max(0, Math.floor(pingPongLaps || 0)),
       };
       // The SAME writer the auto-advance uses, with the SAME starting line. A
       // hand on the fader and a clock driving it are one journey; two answers
