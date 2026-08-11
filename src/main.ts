@@ -21,7 +21,9 @@ import { getStripParam, setStripParam } from './core/channel-strip-params';
 import { defaultWeaveState } from './weave/weave-state';
 import { createWeaveParamMacros } from './app/weave-param-macros';
 import { createWeaveSound } from './app/weave-sound';
-import { printScene } from './session/session-runtime';
+import { printScene, nextSceneName } from './session/session-runtime';
+import { envelopesForPrint } from './weave/print-automation';
+import { envelopeValueLength } from './core/clip-envelope-length';
 import type { NoteEvent } from './core/notes';
 import { wireLayersRack } from './engines/layers-rack-ui';
 import { LAYERS_ENGINE_ID } from './engines/layers-engine';
@@ -707,7 +709,22 @@ const performanceFeature = createPerformanceFeature({
     // With no progression the lap is one bar and this is exactly what it always
     // did, which is the right degenerate case.
     const { bars, byLane } = weaveWiring.lapNotes();
-    const scene = printScene(sessionHost.state, byLane, 'Weave', bars);
+    // The step rack too, or the print keeps the notes and loses the MOVEMENT:
+    // a filter that was opening and closing under your hand arrives frozen
+    // wherever the playhead happened to be. A row's shape is one bar long and
+    // repeats, so the lap is that shape tiled — envelopesForPrint owns that.
+    const envelopes = envelopesForPrint(
+      weaveWiring.state.steps,
+      sessionHost.state.lanes.map((l) => l.id),
+      bars,
+      envelopeValueLength(1, seq.meter),
+    );
+    // Numbered, because a session with a dozen prints was a dozen rows called
+    // "Weave" — and the clips carry the scene's name, so a dozen clips too.
+    const scene = printScene(
+      sessionHost.state, byLane, nextSceneName(sessionHost.state.scenes, 'Weave'), bars,
+      envelopes,
+    );
     if (!scene) return 0;
     sessionHost.renderWithMixer();
     sessionHost.deps.saveSession?.();

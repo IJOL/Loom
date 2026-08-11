@@ -1,7 +1,7 @@
 // Live performance state for Session mode. Holds per-lane play position,
 // queue, and the tick-side scheduler that is called from the main 25 ms loop.
 
-import type { SessionClip, SessionState, LaunchQuantize, SessionLane, ClipSample, SessionScene } from './session';
+import type { SessionClip, SessionState, LaunchQuantize, SessionLane, ClipSample, SessionScene, ClipEnvelope } from './session';
 import { emptyScene, emptyClip, clipRowCount, cloneClipWithNewId } from './session';
 import { tickLane, noteTrigger } from '../core/lane-scheduler';
 import type { WeaveSource } from '../weave/weave-runtime';
@@ -90,6 +90,29 @@ export function captureSceneFromPlaying(
   return state.scenes[newRow];
 }
 
+/** The next free name in a numbered family — "Weave 1", "Weave 2", …
+ *
+ *  Printing used to hand every scene the same word, so a session with a dozen
+ *  prints was a dozen rows called "Weave" and no way to tell which was which.
+ *  The clips carry the scene's name too, so it was a dozen clips as well.
+ *
+ *  Counts from the HIGHEST number already there rather than from how many
+ *  match, so deleting scene 2 of three does not make the next print collide
+ *  with scene 3. A bare stem with no number counts as 1, which is what the
+ *  prints made before this existed are.
+ *
+ *  Pure: names in, name out. */
+export function nextSceneName(scenes: readonly { name?: string }[], stem: string): string {
+  const pattern = new RegExp(`^${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?: (\\d+))?$`);
+  let highest = 0;
+  for (const s of scenes) {
+    const m = pattern.exec((s.name ?? '').trim());
+    if (!m) continue;
+    highest = Math.max(highest, m[1] ? Number(m[1]) : 1);
+  }
+  return `${stem} ${highest + 1}`;
+}
+
 /** Write a set of per-lane NOTES into a new scene row.
  *
  *  The sibling of `captureSceneFromPlaying`, sharing its row-and-scene
@@ -110,6 +133,13 @@ export function printScene(
   notesByLane: ReadonlyMap<string, NoteEvent[]>,
   name: string,
   lengthBars = 1,
+  /** Automation to print alongside the notes, by lane.
+   *
+   *  A printed scene that captured only the notes arrived with the movement
+   *  gone — a filter that was opening and closing under your hand froze
+   *  wherever the playhead stopped. Absent for every caller that has none, and
+   *  a lane with no entry simply gets no envelopes. */
+  envelopesByLane?: ReadonlyMap<string, ClipEnvelope[]>,
 ): SessionScene | null {
   const written = state.lanes.filter((l) => (notesByLane.get(l.id)?.length ?? 0) > 0);
   if (written.length === 0) return null;
@@ -124,6 +154,11 @@ export function printScene(
       // that shared its array would keep changing under the user — which is the
       // opposite of what printing is for.
       notes: notesByLane.get(lane.id)!.map((n) => ({ ...n })),
+      // Copied for the same reason the notes are: the rack keeps writing after
+      // this, and a clip sharing its arrays would keep changing under the user.
+      ...(envelopesByLane?.get(lane.id)?.length
+        ? { envelopes: envelopesByLane.get(lane.id)!.map((e) => ({ ...e, values: [...e.values] })) }
+        : {}),
     };
   }
   while (state.scenes.length <= newRow) {
