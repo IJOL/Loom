@@ -51,6 +51,54 @@ function wiring(
 
 
 
+describe('a chordal lane is voiced after the progression', () => {
+  // The trap this guards is the one the file header is about: avoidClash was
+  // written, tested and never called. `revoiceChords` has its own unit tests in
+  // core/harmony-revoice.test.ts; what only THIS level can say is that the
+  // wiring reaches it, and reaches it for the right lanes.
+  const TRIAD = [72, 75, 79];        // A minor, two octaves above the pad register
+
+  function padSession(role?: 'pad'): SessionState {
+    const clip = {
+      id: 'clipA', name: 'A', color: '#fff', lengthBars: 1, gridResolution: '1/16',
+      notes: TRIAD.map((midi) => ({ start: 0, duration: BAR, midi, velocity: 100 })),
+    };
+    return {
+      lanes: [{ id: 'lane1', engineId: 'subtractive', role, clips: [clip, clip], inserts: [] }],
+      scenes: [],
+      musicality: { ...DEFAULT_MUSICALITY, key: 9, scale: 'minor' },
+    } as unknown as SessionState;
+  }
+
+  const played = (role?: 'pad'): number[] => {
+    const w = wiring(padSession(role));
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipA', x: 0 },
+      locked: false, harmonyLeader: false,
+    };
+    return (w.notesFor('lane1')!() ?? []).map((n) => n.midi).sort((a, b) => a - b);
+  };
+
+  it('brings a lane marked Pad down into the pad register', () => {
+    // Written two octaves high on purpose: the shift a progression applies lands
+    // a chord wherever it lands, and nothing downstream used to pull it back.
+    const pad = played('pad');
+    const unmarked = played();
+    expect(Math.abs(pad[0] - 48)).toBeLessThan(Math.abs(unmarked[0] - 48));
+  });
+
+  it('leaves an UNMARKED lane exactly as it was', () => {
+    // The escape hatch, at this level too: a lane nobody marked plays what its
+    // loops say, note for note.
+    expect(played()).toEqual(TRIAD);
+  });
+
+  it('plays the same chord it was handed', () => {
+    const classes = (ms: number[]) => [...new Set(ms.map((m) => ((m % 12) + 12) % 12))].sort();
+    expect(classes(played('pad'))).toEqual(classes(TRIAD));
+  });
+});
+
 describe('createWeaveWiring — the weave actually reaches the scheduler', () => {
   it('has nothing to say about an untouched lane', () => {
     // The whole feature is additive: a session nobody has woven schedules

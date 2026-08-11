@@ -145,6 +145,16 @@ export function sourcesFor(role: LaneRole | undefined, harmonic: boolean): Patte
   }
 }
 
+/** Whether this part's material is CHORDS.
+ *
+ *  Derived from the one door rather than listed again: a part that reads no
+ *  pattern shelf reads no pattern shelf because its material is generated, and
+ *  a second list of which parts those are is exactly the kind of thing that
+ *  ends up disagreeing with the first. */
+export function isChordalRole(role: LaneRole | undefined): boolean {
+  return !!role && sourcesFor(role, true).length === 0;
+}
+
 /** Where a melodic pattern's root sits. Bass an octave under the lead, both
  *  moved to the session key so a library loop lands in the same tonality as
  *  everything already playing.
@@ -226,7 +236,7 @@ export function weaveLoopChoices(c: WeaveLoopContext): PanelChoice[] {
   // A chordal lane reads no shelf, so this is its whole list. Offered by SHAPE
   // — the rhythm — because the notes are decided per bar by the progression
   // rather than by the choice.
-  if (sourcesFor(role, c.harmonic).length === 0 && c.harmonic && role) {
+  if (c.harmonic && isChordalRole(role)) {
     for (const s of CHORD_SHAPES) {
       out.push({
         id: formatLoopId({ source: 'chord', shape: s.id }),

@@ -17,7 +17,12 @@ import {
   applyProgression, progressionBars, chordAtBar,
 } from '../arranger/progression';
 import { activeProgression } from '../arranger/chord-track';
-import { weaveLoopNotes, weaveLoopContext, rehookOnArrival } from './weave-loops';
+import {
+  weaveLoopNotes, weaveLoopContext, rehookOnArrival, isChordalRole, roleOctaveBase,
+} from './weave-loops';
+import { laneRoleOf } from '../session/lane-role';
+import { diatonicTriad, revoiceChords } from '../core/harmony';
+import type { ScaleId } from '../core/musicality';
 import { macroNeutral } from '../weave/weave-catalog';
 import { isHarmonic } from '../plugins/capabilities';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
@@ -336,7 +341,31 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     // progression hears all four chords instead of the first two twice.
     const shifted = notes.map((n) => ({ ...n, start: n.start + barCursor * barTicks }));
     const moved = applyProgression(shifted, prog, barTicks, m.key, m.scale);
-    return moved.map((n, i) => ({ ...notes[i], midi: n.midi })) as typeof notes;
+    // A chordal lane draws its shape on the TONIC and has just been shifted by
+    // the degree of each bar — the right chord, in whatever position the shift
+    // landed on. Voice-leading it is what stops a pad jumping between bars, and
+    // it has to happen HERE rather than where the shape is rendered: the shape
+    // does not know which chord it will be moved onto.
+    //
+    // Only for a part that IS chords. A bass or a melody is one note at a time,
+    // and revoiceChords leaves those alone anyway — asking first just saves
+    // building an anchor for every lane on every ask.
+    const voiced = revoiceChords(moved, chordalAnchor(laneId, m));
+    return voiced.map((n, i) => ({ ...notes[i], midi: n.midi })) as typeof notes;
+  };
+
+  /** The chord this lane's voicings are placed against, or null when the lane
+   *  does not play chords.
+   *
+   *  The tonic triad in the lane's own register — the same place its shapes are
+   *  drawn — so voicing pulls a part back towards where it was put rather than
+   *  towards wherever the progression happens to wander. */
+  const chordalAnchor = (
+    laneId: string, m: { key: number; scale: ScaleId },
+  ): number[] | null => {
+    const role = laneRoleOf(deps.getState?.().lanes.find((l) => l.id === laneId));
+    if (!isChordalRole(role)) return null;
+    return diatonicTriad(0, roleOctaveBase(role), m.key, m.scale);
   };
 
   /** A lane's fold, with the leader's worst intervals kept off it.

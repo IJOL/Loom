@@ -109,6 +109,52 @@ export function nearestVoicing(triad: number[], prev: number[] | null): number[]
   return best;
 }
 
+/** Voice-lead a part that is already written — every simultaneous stack moved
+ *  to the inversion nearest a fixed `anchor` chord.
+ *
+ *  This is the other end of `nearestVoicing` from `renderChordComp`, and it
+ *  exists because WEAVE does not go through that function at all. A woven
+ *  chordal lane draws its shape on the TONIC and the progression then shifts
+ *  every note by the degree of its bar — the right chord, in whatever position
+ *  the shift happened to land on, so the part jumps between bars for no musical
+ *  reason.
+ *
+ *  Anchored rather than CHAINED bar to bar, which is what `renderChordComp`
+ *  does, and the difference is not style. WEAVE re-derives a lane's notes on
+ *  every scheduling ask, over a window that is usually shorter than the
+ *  progression: a chain would restart from root position at the top of each
+ *  fold, so the seam between folds would jump exactly as before, and the
+ *  voicing of a bar would depend on how much of the phrase happened to be in
+ *  view. Anchored, every bar is placed against the same reference, so the
+ *  answer is the same however the notes arrive — and consecutive bars end up
+ *  near each other because both are near the anchor.
+ *
+ *  Grouped by START rather than by bar: a bar of a stab shape holds four
+ *  separate chords, and voicing all twelve notes as one stack would be
+ *  meaningless. A stack of ONE is left alone — a bass or a melody is one note
+ *  at a time and has no voicing to choose. */
+export function revoiceChords(
+  notes: readonly NoteEvent[], anchor: number[] | null,
+): NoteEvent[] {
+  if (!anchor) return [...notes];
+  const byStart = new Map<number, NoteEvent[]>();
+  for (const n of notes) {
+    const at = byStart.get(n.start);
+    if (at) at.push(n); else byStart.set(n.start, [n]);
+  }
+  const moved = new Map<NoteEvent, number>();
+  for (const stack of byStart.values()) {
+    if (stack.length < 2) continue;
+    const ascending = [...stack].sort((a, b) => a.midi - b.midi);
+    const voiced = nearestVoicing(ascending.map((n) => n.midi), anchor);
+    // nearestVoicing returns its input unchanged when the sizes disagree, so a
+    // stack the anchor cannot describe — a four-note chord under a triad —
+    // simply stays as written rather than being voiced against the wrong notes.
+    ascending.forEach((n, i) => moved.set(n, voiced[i]));
+  }
+  return notes.map((n) => (moved.has(n) ? { ...n, midi: moved.get(n)! } : n));
+}
+
 /**
  * Per bar, pick the chord root degree (0-based scale degree class) that best
  * harmonises the melody notes in that bar. Strategy: count scale-degree pitch
