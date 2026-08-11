@@ -503,23 +503,12 @@ function buildLaneRow(lane, ctx, engines) {
   };
   paintTopo();
   repaintCell();
-  row.append(
-    led,
-    ring.el,
-    name,
-    transport,
-    levelWrap,
-    engine,
-    preset,
-    style,
-    topo,
-    length,
-    cellHost,
-    soundWrap
-  );
+  row.append(led, ring.el, name, transport, levelWrap, topo, cellHost, soundWrap);
   const strip = noteStrip(lane.id, ctx);
+  const setup = el("div", "weave-lane-setup");
+  setup.append(strip.el, engine, preset, style, length);
   const wrap = el("div", "weave-lane-wrap");
-  wrap.append(row, strip.el);
+  wrap.append(row, setup);
   return {
     laneId: lane.id,
     el: wrap,
@@ -1063,11 +1052,7 @@ function mountWeave(host, ctx) {
     "Lane",
     "",
     "Level",
-    "Instrument",
-    "Preset",
-    "Style",
     "Topology",
-    "Bars",
     "Loops",
     "Sound"
   ]) {

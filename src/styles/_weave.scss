@@ -204,6 +204,25 @@
 // COMPACT by default. It is also the one thing that adds a second line to every
 // lane, and eight lanes of tall piano rolls is a screen you scroll rather than
 // read. The header's Notes button trades size for detail when asked.
+// The lane's SECOND line: the bar it is about to play, and everything you set
+// once and leave. The bar is a quarter of the width because the playhead only
+// travels across it — the other three quarters were empty by construction, and
+// that emptiness is what the settings moved into.
+.weave-lane-setup {
+  display: grid;
+  // Notes at a quarter, then instrument, preset, shelf, bars — and the bars sit
+  // straight after the shelf rather than at the end of a long gap, because a
+  // control marooned in white space reads as belonging to nothing.
+  //
+  // The selects are wider than they were upstairs: "BASS Acid Classic" and
+  // "Acid Techno" were both truncating, and a name you cannot read is a name
+  // you cannot pick by.
+  grid-template-columns: 25% 110px 190px 130px auto 1fr;
+  gap: 8px;
+  align-items: center;
+  padding: 2px 8px 4px;
+}
+
 .weave-bar {
   display: block;
   width: 100%;
@@ -458,12 +477,17 @@
   // exactly what adding the level and sound faders did — buttons piled up, the
   // bar buttons stretched across the full width and the loop pickers vanished.
   //
-  // SOUND is the widest of the two faders on purpose, and twice what it
-  // shipped with: it is a CROSSFADE between two instruments, so its travel is
-  // the gesture, where LEVEL is a balance trim you nudge. At 74px the button
-  // beside it left about 45px of throw — enough to set a value, not enough to
-  // ride one.
-  grid-template-columns: 14px 30px 74px 96px 78px 96px 118px 106px 118px 56px 1fr 148px;
+  // EIGHT columns, not twelve: the lane is split across two lines by what you
+  // DO with a control. Up here is only what a hand reaches for while the music
+  // runs — lamp, position, name, transport, LEVEL, topology, loops, sound. What
+  // you set once and leave went to the second line, and everything left up here
+  // grew into the room it freed.
+  //
+  // Both faders are the point of that. LEVEL had 44px of throw, which is nine
+  // steps of a percentage and unusable as a fader; SOUND is a crossfade between
+  // two instruments, so its travel IS the gesture. Loops still takes whatever
+  // is left, because it is the only cell whose contents change shape.
+  grid-template-columns: 14px 30px 74px 96px 160px 118px 1fr 220px;
   gap: 8px;
   align-items: center;
   background: var(--surface-2);
@@ -683,6 +707,10 @@
 .weave-style {
   width: 100%;
   min-width: 0;
+  // The shared rule above caps every select at 11ch, which was right when this
+  // sat in a 106px column and truncated "Acid Techno" to "Acid T". Its own cell
+  // bounds it now, so the cap only costs readability.
+  max-width: none;
 }
 
 // An engine that ships no presets shows a disabled dash rather than an empty

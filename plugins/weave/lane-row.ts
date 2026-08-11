@@ -590,17 +590,27 @@ export function buildLaneRow(
   paintTopo();
   repaintCell();
 
-  row.append(
-    led, ring.el, name, transport, levelWrap, engine, preset, style, topo, length,
-    cellHost, soundWrap,
-  );
+  // The lane in TWO lines, split by what you do with a control rather than by
+  // what it controls.
+  //
+  // Up here, only what a hand reaches for while the music is running: the lamp,
+  // the position, the name, the transport, the LEVEL, the topology, the loops
+  // and the sound fader. Everything up here got wider for it — the level fader
+  // was 44px, which is nine steps of a percentage, and is now 88.
+  row.append(led, ring.el, name, transport, levelWrap, topo, cellHost, soundWrap);
 
-  // The bar, under the controls and across the whole row. A second line rather
-  // than a tenth column because it is the OUTPUT and the row above it is the
-  // input: reading it as another setting is exactly the wrong shape.
+  // The bar this track is about to play, at a QUARTER of the width. It is the
+  // OUTPUT, and the playhead only ever travels across it, so the other three
+  // quarters of the line were empty by construction — that is where the
+  // settings went.
   const strip = noteStrip(lane.id, ctx);
+  const setup = el('div', 'weave-lane-setup');
+  // What you set once and leave: which instrument, which preset, which shelf,
+  // how many bars. None of them is a gesture.
+  setup.append(strip.el, engine, preset, style, length);
+
   const wrap = el('div', 'weave-lane-wrap');
-  wrap.append(row, strip.el);
+  wrap.append(row, setup);
 
   return {
     laneId: lane.id, el: wrap, led, ring, syncTransport,

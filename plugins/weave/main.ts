@@ -600,9 +600,10 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   // here shifts every heading one column to the left, which is subtler than a
   // broken layout and reads as the row being mislabelled rather than as a bug.
   const head2 = el('div', 'weave-lane weave-lane-head');
+  // EIGHT now, one per child of the top line — the settings moved to the lane's
+  // second line and took their headings with them.
   for (const label of [
-    '', '', 'Lane', '', 'Level', 'Instrument', 'Preset', 'Style', 'Topology',
-    'Bars', 'Loops', 'Sound',
+    '', '', 'Lane', '', 'Level', 'Topology', 'Loops', 'Sound',
   ]) {
     const c = el('span', 'weave-col');
     c.textContent = label;
