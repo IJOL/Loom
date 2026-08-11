@@ -12,6 +12,7 @@ import { DEFAULT_METER } from '../core/meter';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { registerEngineCapabilities, __resetCapabilities } from '../plugins/capabilities';
 import { setLibrary } from '../patterns/pattern-library';
+import { getNoteFxChain, clearNoteFxChains } from '../notefx/notefx-registry';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { PanelWeave } from '@loom/plugin-sdk';
@@ -64,6 +65,7 @@ beforeEach(() => {
     bass: read('patterns-t8-bass.json'),
     catalog: read('catalog.json'),
   });
+  clearNoteFxChains();
   __resetCapabilities();
   registerEngineCapabilities('subtractive', {
     clipContent: 'notes', shortLabel: 'sub', outputTrim: 1,
@@ -179,5 +181,53 @@ describe('the loops move with the mark', () => {
     const h = harness();
     h.ctx.setLaneRole('lane1', 'pad');
     expect(h.changed).toContain('lane1');
+  });
+});
+
+describe('an ARP lane actually arpeggiates', () => {
+  // Without this the part is a promise the app does not keep: every chordal
+  // part draws the same five shapes, so marking a lane Arp gave you a pad in
+  // the lead register and nothing else. The note-FX is what turns a held chord
+  // into one note at a time.
+  const arpsOn = (laneId: string) =>
+    getNoteFxChain(laneId).noteFx.filter((s) => s.kind === 'arp');
+
+  it('seeds an arpeggiator onto the lane', () => {
+    const h = harness();
+    h.ctx.setLaneRole('lane1', 'arp');
+    expect(arpsOn('lane1')).toHaveLength(1);
+    expect(arpsOn('lane1')[0].enabled).toBe(true);
+  });
+
+  it('mirrors it into the session, or it dies on reload', () => {
+    // The chain is live and the session is what gets SAVED. The panel's own add
+    // button mirrors through the same seam.
+    const h = harness();
+    h.ctx.setLaneRole('lane1', 'arp');
+    expect(h.state.lanes[0].engineState?.noteFx?.some((s) => s.kind === 'arp')).toBe(true);
+  });
+
+  it('seeds ONE, however many times you mark it', () => {
+    const h = harness();
+    h.ctx.setLaneRole('lane1', 'arp');
+    h.ctx.setLaneRole('lane1', null);
+    h.ctx.setLaneRole('lane1', 'arp');
+    expect(arpsOn('lane1')).toHaveLength(1);
+  });
+
+  it('leaves it behind when the mark is cleared', () => {
+    // By then it is a card in the lane's note-FX panel with the user's own
+    // settings on it. Quietly deleting somebody's edits because they changed a
+    // dropdown is worse than leaving a control they can see and switch off.
+    const h = harness();
+    h.ctx.setLaneRole('lane1', 'arp');
+    h.ctx.setLaneRole('lane1', null);
+    expect(arpsOn('lane1')).toHaveLength(1);
+  });
+
+  it('seeds nothing for any other part', () => {
+    const h = harness();
+    for (const role of ['bass', 'melody', 'comp', 'pad']) h.ctx.setLaneRole('lane1', role);
+    expect(arpsOn('lane1')).toHaveLength(0);
   });
 });
