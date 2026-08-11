@@ -127,7 +127,33 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
    *  toggled from a panel changes the audio immediately and leaves the desk's
    *  button looking untouched until something else rebuilds it. Rebuilding here
    *  is what keeps the two surfaces telling the same story. */
-  const repaintDesk = () => deps.sessionHost.renderWithMixer();
+  /** Repaint the grid and the mixer, at most ONCE per frame.
+   *
+   *  It used to be a direct call, and a fader is what made that untenable: a
+   *  range input fires `input` several times per frame under a drag, and each
+   *  one rebuilt the whole desk. The main thread spent the gesture re-rendering
+   *  instead of following the pointer, so the fader stalled and you had to let
+   *  go and grab it again. Reported exactly that way.
+   *
+   *  Coalescing is the honest fix rather than repainting less often: the desk
+   *  still shows the move as it happens, it just does it once per frame like
+   *  everything else that draws. The GAIN is written on every event regardless —
+   *  what is deferred is the picture, never the sound. */
+  let deskPending = false;
+  const repaintDesk = () => {
+    if (deskPending) return;
+    deskPending = true;
+    // A frame when there is one, a timeout when there is not. Half this file's
+    // callers run in a fixture with no DOM at all, and a repaint that THREW
+    // there would make every unrelated test depend on the browser.
+    const soon = typeof requestAnimationFrame === 'function'
+      ? requestAnimationFrame
+      : (fn: () => void) => setTimeout(fn, 0);
+    soon(() => {
+      deskPending = false;
+      deps.sessionHost.renderWithMixer();
+    });
+  };
 
   /** The weave the master flow READS as its own position.
    *
