@@ -8,7 +8,7 @@
 import type { PanelContext, PanelLane, PanelLoopPhase, PanelWeave } from '@loom/plugin-sdk';
 import { defaultLaneSelection, defaultWeaveSteps } from '../weave/weave-state';
 import {
-  retopologise, positionOf, defaultSelection, selectionLoopIds,
+  retopologise, positionOf, defaultSelection, selectionLoopIds, redrawQuietest,
 } from '../weave/weave-selection';
 import { applyFlow, asDrift } from '../weave/flow';
 import { stepPreset } from '../automation/automation-steps';
@@ -908,7 +908,7 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       return made.id;
     },
 
-    reseed() {
+    reseed(scope = 'quiet') {
       // The dice, and it deals LOOPS.
       //
       // It used to move the seed and nothing else, which fed exactly one thing:
@@ -926,7 +926,20 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         // the lock is what the dice obeys.
         if (!entry?.weave || entry.locked) continue;
         const cur = entry.weave;
-        const next = defaultSelection(cur.kind, libraryFor(lane.id, rollOffset(lane.id)));
+        const shelf = libraryFor(lane.id, rollOffset(lane.id));
+
+        // A press deals the QUIET end only: what you are listening to survives
+        // and what the lane is travelling towards is new, so the dice is
+        // something you can hit at any moment rather than only between phrases.
+        // Holding the button is how you ask for the other thing — leave here
+        // entirely — and that is the one that replaces every slot.
+        if (scope === 'quiet') {
+          const next = redrawQuietest(cur, shelf);
+          if (next) deps.weave.lanes[lane.id] = { ...entry, weave: next };
+          continue;
+        }
+
+        const next = defaultSelection(cur.kind, shelf);
         // The MATERIAL is re-dealt; WHERE the scene is in its journey is not.
         // Rolling the dice mid-crossfade must not snap every lane back to the
         // start — that would be a cut, and a cut is the one thing this panel is

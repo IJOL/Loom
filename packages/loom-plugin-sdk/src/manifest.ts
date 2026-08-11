@@ -336,6 +336,17 @@ export const CLOUD_PATHS: { id: CloudPath; label: string; title: string }[] = [
   },
 ];
 
+/** How much of a lane's selection the dice re-deals.
+ *
+ *  `'quiet'` replaces only the loop that is NOT being heard — the end of the
+ *  crossfade the lane has travelled away from, or the corner the dot is furthest
+ *  from. Re-dealing the loud one is a CUT, and a cut is the one thing this panel
+ *  exists to avoid: the dice becomes something you can press mid-phrase.
+ *
+ *  `'all'` replaces every loop at once, which is the old behaviour and still the
+ *  right one when you want to leave where you are entirely. */
+export type ReshuffleScope = 'quiet' | 'all';
+
 export type PanelWeave =
   | { kind: 'ab'; a: string; b: string; x: number }
   | { kind: 'queue'; loops: string[]; x: number }
@@ -649,10 +660,12 @@ export interface PanelContext {
    *  empty would leave the panel exactly as useless as it was — picking the
    *  loops is the difference between "add a track" and "start weaving". */
   addLane(engineId: string): string;
-  /** Re-draw which style each lane strays to. The style MIX stays where it is —
-   *  this shuffles the deal, it does not change how far from home the lanes are
-   *  allowed to wander. */
-  reseed(): void;
+  /** Re-draw what every unlocked lane is weaving. The style MIX stays where it
+   *  is — this shuffles the deal, it does not change how far from home the lanes
+   *  are allowed to wander.
+   *
+   *  `'quiet'` is the default and the musical one: see `ReshuffleScope`. */
+  reseed(scope?: ReshuffleScope): void;
   /** Freeze what the weave is playing RIGHT NOW into a new scene.
    *
    *  An output, never the goal: the panel exists so the music keeps moving, and

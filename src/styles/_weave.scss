@@ -71,8 +71,32 @@
   padding: 3px 9px;
   font-size: 11px;
   cursor: pointer;
+  // The bar below fills INSIDE the button.
+  position: relative;
+  overflow: hidden;
 
   &:hover { color: var(--amber); border-color: var(--amber-soft); }
+
+  // Holding deals every loop instead of only the quiet one, and a gesture with a
+  // deadline has to show it running: without this the button looks unresponsive
+  // for half a second and then does something bigger than you asked for. The
+  // duration comes from the panel as `--weave-hold`, so the bar and the timer
+  // that fires cannot drift apart.
+  &.arming::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--amber-soft, #6a5320);
+    opacity: 0.35;
+    transform-origin: left center;
+    animation: weave-reseed-hold var(--weave-hold, 450ms) linear forwards;
+    pointer-events: none;
+  }
+}
+
+@keyframes weave-reseed-hold {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
 
 // A HELD button, and it has to LOOK held — a momentary gesture with no visible

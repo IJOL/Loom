@@ -48,7 +48,14 @@ function arcPath(frac: number): string {
  *  editing the strip, never by choosing it here. */
 const CUSTOM = '__custom';
 
-const svg = (tag: string) => document.createElementNS('http://www.w3.org/2000/svg', tag);
+/** How long Reshuffle must be held before it deals EVERY loop instead of only
+ *  the quiet one. Long enough that a normal press never trips it, short enough
+ *  to be a press and not a wait — and it is handed to the CSS as
+ *  `--weave-hold`, so the bar that fills across the button and the timer that
+ *  fires cannot disagree about how long the gesture is. */
+const HOLD_MS = 450;
+
+const svg =(tag: string) => document.createElementNS('http://www.w3.org/2000/svg', tag);
 const el = (tag: string, cls?: string) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -273,13 +280,50 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   // can see both of at once. Key and style stay, because up there they are a
   // CHIP that opens a dialog — these are the same values, one click closer.
 
-  // A different deal from the same deck: which style each lane strays to is
-  // re-drawn, while HOW FAR it may stray — the Style knob — stays where the
-  // user put it.
+  // A different deal from the same deck, and the press is TWO gestures.
+  //
+  // A tap deals only the loop nobody is hearing — the far end of each lane's
+  // crossfade — so what is playing carries on and only what the lane is heading
+  // towards changes. That is what makes this pressable mid-phrase: replacing the
+  // loud end is a cut. HOLD it and every loop goes, which is the old behaviour
+  // and still the right one when you want to leave where you are entirely.
+  //
+  // How far a lane may stray — the Style knob — is untouched either way.
   const reseed = el('button', 'weave-reseed');
   reseed.textContent = '⟳ Reshuffle';
-  reseed.title = 'Deal the lane styles again — the Style amount stays where it is';
-  reseed.addEventListener('click', () => ctx.reseed());
+  reseed.title = 'Tap: deal the loop you are NOT hearing · Hold: deal them all';
+  reseed.style.setProperty('--weave-hold', `${HOLD_MS}ms`);
+
+  // Armed on pointerdown, fired by the timer, and the CLICK that follows is
+  // swallowed — a hold ends in a click too, and letting both through would deal
+  // twice. The click path is what keyboards reach (Enter and Space raise one
+  // with no pointer sequence at all), so it stays the tap's own trigger rather
+  // than being replaced by pointerup.
+  let holdFired = false;
+  let holdTimer = 0;
+  const disarm = () => {
+    if (holdTimer) { clearTimeout(holdTimer); holdTimer = 0; }
+    reseed.classList.remove('arming');
+  };
+  reseed.addEventListener('pointerdown', () => {
+    holdFired = false;
+    reseed.classList.add('arming');
+    holdTimer = window.setTimeout(() => {
+      holdFired = true;
+      disarm();
+      ctx.reseed('all');
+    }, HOLD_MS);
+  });
+  reseed.addEventListener('pointerup', disarm);
+  // Leaving the button cancels the hold AND the tap: a press dragged off a
+  // control is the standard way to change your mind, and the browser already
+  // withholds the click for it.
+  reseed.addEventListener('pointerleave', disarm);
+  reseed.addEventListener('pointercancel', () => { disarm(); holdFired = false; });
+  reseed.addEventListener('click', () => {
+    if (holdFired) { holdFired = false; return; }
+    ctx.reseed('quiet');
+  });
 
   // The bars are COMPACT by default and open on request. They are the one thing
   // here that shows what the panel makes, and they are also the one thing that

@@ -749,6 +749,7 @@ function arcPath(frac) {
   return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
 }
 var CUSTOM = "__custom";
+var HOLD_MS = 450;
 var svg = (tag) => document.createElementNS("http://www.w3.org/2000/svg", tag);
 var el3 = (tag, cls) => {
   const n = document.createElement(tag);
@@ -912,8 +913,39 @@ function mountWeave(host, ctx) {
   });
   const reseed = el3("button", "weave-reseed");
   reseed.textContent = "\u27F3 Reshuffle";
-  reseed.title = "Deal the lane styles again \u2014 the Style amount stays where it is";
-  reseed.addEventListener("click", () => ctx.reseed());
+  reseed.title = "Tap: deal the loop you are NOT hearing \xB7 Hold: deal them all";
+  reseed.style.setProperty("--weave-hold", `${HOLD_MS}ms`);
+  let holdFired = false;
+  let holdTimer = 0;
+  const disarm = () => {
+    if (holdTimer) {
+      clearTimeout(holdTimer);
+      holdTimer = 0;
+    }
+    reseed.classList.remove("arming");
+  };
+  reseed.addEventListener("pointerdown", () => {
+    holdFired = false;
+    reseed.classList.add("arming");
+    holdTimer = window.setTimeout(() => {
+      holdFired = true;
+      disarm();
+      ctx.reseed("all");
+    }, HOLD_MS);
+  });
+  reseed.addEventListener("pointerup", disarm);
+  reseed.addEventListener("pointerleave", disarm);
+  reseed.addEventListener("pointercancel", () => {
+    disarm();
+    holdFired = false;
+  });
+  reseed.addEventListener("click", () => {
+    if (holdFired) {
+      holdFired = false;
+      return;
+    }
+    ctx.reseed("quiet");
+  });
   const bars = el3("button", "weave-bars-toggle");
   const paintBars = () => {
     const open = rack.classList.contains("bars-open");

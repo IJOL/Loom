@@ -14,6 +14,9 @@ import type { PanelWeave } from '@loom/plugin-sdk';
 import type { NoteEvent } from '../core/notes';
 import type { LoopRef } from './topology-types';
 import type { LaneWeave } from './weave-state';
+import { abWeights } from './topology-ab';
+import { queueWeights } from './topology-queue';
+import { cloudWeights } from './topology-cloud';
 
 export type { PanelWeave };
 
@@ -88,6 +91,81 @@ export function selectionLoopIds(sel: PanelWeave): string[] {
     : sel.kind === 'queue' ? sel.loops
       : sel.corners;
   return [...new Set(ids)];
+}
+
+/** Every loop id a selection names, in order, WITH its duplicates — one entry per
+ *  slot, so an index into this list addresses a slot. `selectionLoopIds` answers
+ *  the other question ("what material is in play") and dedupes; a cloud with the
+ *  same loop on two corners still has four corners. */
+function slotIds(sel: PanelWeave): string[] {
+  if (sel.kind === 'ab') return [sel.a, sel.b];
+  if (sel.kind === 'queue') return [...sel.loops];
+  return [...sel.corners];
+}
+
+/** How loudly each slot is sounding right now, in `slotIds` order.
+ *
+ *  Through the topologies' OWN weight functions rather than re-deriving the
+ *  arithmetic: a second copy of "what x means" is how the dice would end up
+ *  disagreeing with the blend about which loop the user can hear. They take
+ *  resolved refs, and the weights ignore the notes — so an empty array stands in
+ *  for material this question does not need. */
+export function slotWeights(sel: PanelWeave): number[] {
+  const none: NoteEvent[] = [];
+  const ref = (id: string): LoopRef => ({ id, notes: none });
+
+  if (sel.kind === 'ab') {
+    return abWeights({ a: ref(sel.a), b: ref(sel.b), x: sel.x }).map((w) => w.weight);
+  }
+  if (sel.kind === 'queue') {
+    return queueWeights({ loops: sel.loops.map(ref), x: sel.x }).map((w) => w.weight);
+  }
+  // Padded to four the same way `resolveSelection` pads: a short save must not
+  // make this throw, and the missing corners are silent by construction.
+  const corners = Array.from({ length: CORNERS }, (_, i) => ref(sel.corners[i] ?? sel.corners[0] ?? ''));
+  return cloudWeights({
+    corners: corners as [LoopRef, LoopRef, LoopRef, LoopRef], x: sel.x, y: sel.y,
+  }).map((w) => w.weight);
+}
+
+/** Put a fresh loop on one slot, leaving the geometry and the position alone. */
+function withSlot(sel: PanelWeave, at: number, id: string): PanelWeave {
+  if (sel.kind === 'ab') return at === 0 ? { ...sel, a: id } : { ...sel, b: id };
+  if (sel.kind === 'queue') {
+    return { ...sel, loops: sel.loops.map((cur, i) => (i === at ? id : cur)) };
+  }
+  return { ...sel, corners: sel.corners.map((cur, i) => (i === at ? id : cur)) };
+}
+
+/** Re-deal the ONE loop the lane is not being heard playing.
+ *
+ *  The dice used to replace every slot at once, which is a CUT: press it while a
+ *  crossfade is anywhere but hard against one end and the sound you are listening
+ *  to is gone mid-phrase. Replacing only the quiet slot makes the dice something
+ *  you can press at any moment — what you hear carries on, and what the lane is
+ *  travelling TOWARDS is new.
+ *
+ *  Ties go to the LATER slot: at the start of an A→B leg both readings are
+ *  defensible, and B is the end the journey is heading for.
+ *
+ *  Never draws a loop the selection already names, or the press would look like
+ *  it did nothing. Null when the shelf has nothing else to offer, so a caller can
+ *  leave the lane exactly as it was. */
+export function redrawQuietest(
+  sel: PanelWeave, shelf: readonly string[],
+): PanelWeave | null {
+  const ids = slotIds(sel);
+  if (ids.length === 0) return null;
+
+  const weights = slotWeights(sel);
+  let at = 0;
+  for (let i = 1; i < ids.length; i++) {
+    if ((weights[i] ?? 0) <= (weights[at] ?? 0)) at = i;
+  }
+
+  const taken = new Set(ids);
+  const draw = shelf.find((id) => !taken.has(id));
+  return draw === undefined ? null : withSlot(sel, at, draw);
 }
 
 // A `setSlot` and a `slotNames` used to live here, written for the panel to

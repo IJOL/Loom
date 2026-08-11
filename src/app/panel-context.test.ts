@@ -68,12 +68,18 @@ function harness(
  *  the library back. Two, because that is the fewest that can be the two ends of
  *  a crossfade — the point of the test is WHICH ids get picked, not what they
  *  sound like. */
-function withLibrary(fn: () => void): void {
+function withLibrary(fn: () => void, count = 2): void {
   const step = (semi: number) => ({ semi, vel: 0.8, slide: false });
   const style = DEFAULT_MUSICALITY.style;
+  const two = [[step(0), null, step(7), null], [step(3), step(5), null, null]];
+  // Above two, the shelf grows with patterns that differ only in pitch: a test
+  // about WHICH id gets drawn needs a third the selection does not already name,
+  // and nothing here listens to them.
+  const more = Array.from({ length: Math.max(0, count - two.length) },
+    (_, i) => [step(2 + i), null, null, step(9)]);
   setLibrary({
     synth: {}, drums: {},
-    bass: { [style]: [[step(0), null, step(7), null], [step(3), step(5), null, null]] },
+    bass: { [style]: [...two, ...more] },
     catalog: {},
   } as never);
   try { fn(); } finally { setLibrary(null as never); }
@@ -149,6 +155,57 @@ describe('createPanelContext — reshuffle', () => {
     h.weave.macros.styleMix = 0.7;
     h.ctx.reseed();
     expect(h.weave.macros.styleMix).toBe(0.7);
+  });
+
+  it('a tap deals ONLY the end nobody is hearing', () => {
+    // The report: pressing Reshuffle replaced both ends at once, so whatever was
+    // sounding stopped mid-phrase. A fifth of the way across the leg, A is four
+    // fifths of what you hear — it survives, and B becomes the one loop on the
+    // shelf the selection does not already name.
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      h.weave.lanes.lane1 = {
+        weave: { kind: 'ab', a: 'lib:acid-techno:bass:0', b: 'lib:acid-techno:bass:1', x: 0.2 },
+        locked: false, harmonyLeader: false,
+      };
+      h.ctx.reseed();
+      expect(h.weave.lanes.lane1!.weave).toEqual({
+        kind: 'ab', a: 'lib:acid-techno:bass:0', b: 'lib:acid-techno:bass:2', x: 0.2,
+      });
+    }, 3);
+  });
+
+  it('holding deals the loud end too', () => {
+    // The other gesture, and the whole reason the tap can be narrow: when you do
+    // want to leave where you are entirely, hold. The loud end here is a CLIP,
+    // and the dice deals from the LIBRARY — so a library id in its place is
+    // proof the end that was sounding got replaced.
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      h.weave.lanes.lane1 = {
+        weave: { kind: 'ab', a: 'clip:c1', b: 'lib:acid-techno:bass:1', x: 0.2 },
+        locked: false, harmonyLeader: false,
+      };
+      h.ctx.reseed('all');
+      const sel = h.weave.lanes.lane1!.weave as { a: string; x: number };
+      expect(sel.a.startsWith('lib:')).toBe(true);
+      // And still exactly where it was in its journey: re-dealing the material
+      // must not snap the lane back to the start of the leg.
+      expect(sel.x).toBe(0.2);
+    }, 3);
+  });
+
+  it('obeys the LOCK either way', () => {
+    // The lock is the point of the dice — roll, keep what you like, roll again —
+    // and the narrower tap must not have quietly become a way round it.
+    withLibrary(() => {
+      const h = harness(['lane1']);
+      const weave = { kind: 'ab' as const, a: 'lib:acid-techno:bass:0', b: 'lib:acid-techno:bass:1', x: 0.2 };
+      h.weave.lanes.lane1 = { weave, locked: true, harmonyLeader: false };
+      h.ctx.reseed();
+      h.ctx.reseed('all');
+      expect(h.weave.lanes.lane1!.weave).toEqual(weave);
+    }, 3);
   });
 });
 

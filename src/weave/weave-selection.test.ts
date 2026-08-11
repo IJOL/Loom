@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   defaultSelection, retopologise, selectionLoopIds, resolveSelection,
+  redrawQuietest, slotWeights,
 } from './weave-selection';
 import type { PanelWeave } from './weave-selection';
 import type { NoteEvent } from '../core/notes';
@@ -97,3 +98,75 @@ describe('resolveSelection', () => {
 // Local alias so the cloud assertions can reach into the resolved state without
 // importing the whole weave-state surface into a selection test.
 type LaneWeaveLike = NonNullable<ReturnType<typeof resolveSelection>>;
+
+// The dice, from the side that decides WHICH loop it takes.
+//
+// Reported as a cut you could not avoid: pressing Reshuffle replaced both ends
+// of every crossfade, so whatever was sounding stopped mid-phrase. The rule is
+// that a press may only take a loop nobody is hearing.
+
+const leg = (a: string, b: string, x: number): PanelWeave => ({ kind: 'ab', a, b, x });
+const square = (corners: string[], x: number, y: number): PanelWeave =>
+  ({ kind: 'cloud', corners, x, y });
+
+const SHELF = ['c1', 'c2', 'c3'];
+
+describe('redrawQuietest — A→B', () => {
+  it('takes the FAR end while the near one is being heard', () => {
+    // A fifth of the way across the leg: A is four fifths of what you hear, so
+    // A is the one that must survive.
+    const next = redrawQuietest(leg('a', 'b', 0.2), SHELF);
+    expect(next).toEqual({ kind: 'ab', a: 'a', b: 'c1', x: 0.2 });
+  });
+
+  it('takes the NEAR end once the journey has crossed over', () => {
+    // Past the middle the roles swap, and so must the answer — a rule that only
+    // ever redrew B would cut the sound in the second half of every leg.
+    const next = redrawQuietest(leg('a', 'b', 0.9), SHELF);
+    expect(next).toEqual({ kind: 'ab', a: 'c1', b: 'b', x: 0.9 });
+  });
+
+  it('never draws a loop the selection already names', () => {
+    // Taking the loud end back would leave the lane crossfading from a loop to
+    // itself: the fader moves and nothing happens, which reads as a dice that
+    // did nothing at all.
+    expect(redrawQuietest(leg('c1', 'c2', 0.2), SHELF)).toEqual({
+      kind: 'ab', a: 'c1', b: 'c3', x: 0.2,
+    });
+  });
+
+  it('returns null when the shelf has nothing else to offer', () => {
+    // A lane whose whole shelf is already in play holds what it has. Null so the
+    // caller can skip the write rather than storing an identical selection.
+    expect(redrawQuietest(leg('c1', 'c2', 0.2), ['c1', 'c2'])).toBeNull();
+  });
+});
+
+describe('redrawQuietest — cloud', () => {
+  it('takes the corner the dot is furthest from', () => {
+    // Near the top-left, so the bottom-right contributes least — and the other
+    // three, all of them audible, are untouched.
+    const next = redrawQuietest(square(['tl', 'tr', 'bl', 'br'], 0.1, 0.1), SHELF);
+    expect((next as Extract<PanelWeave, { kind: 'cloud' }>).corners)
+      .toEqual(['tl', 'tr', 'bl', 'c1']);
+  });
+
+  it('keeps both axes and the path it is walking', () => {
+    // A cloud's position is two numbers plus where it is round its lap. Dropping
+    // any of them would teleport the dot on every press.
+    const sel: PanelWeave = {
+      kind: 'cloud', corners: ['tl', 'tr', 'bl', 'br'], x: 0.2, y: 0.8, path: 'cross', t: 0.6,
+    };
+    expect(redrawQuietest(sel, SHELF))
+      .toMatchObject({ x: 0.2, y: 0.8, path: 'cross', t: 0.6 });
+  });
+});
+
+describe('slotWeights', () => {
+  it('answers one weight per SLOT, duplicates included', () => {
+    // Not `selectionLoopIds`, which dedupes: a cloud with the same loop on two
+    // corners still has four corners, and an index into this list has to address
+    // the corner rather than the material.
+    expect(slotWeights(square(['same', 'same', 'bl', 'br'], 0.5, 0.5))).toHaveLength(4);
+  });
+});
