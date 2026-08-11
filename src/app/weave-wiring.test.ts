@@ -9,6 +9,9 @@ import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { DEFAULT_METER, ticksPerBar } from '../core/meter';
 import { inScale } from '../core/musicality';
 import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
+import {
+  registerEngineCapabilities, unregisterEngineCapabilities,
+} from '../plugins/capabilities';
 import type { SessionState } from '../session/session';
 import type { LanePlayState } from '../session/session-runtime';
 
@@ -885,6 +888,72 @@ describe('the fan keeps turning, whatever EVOLVE says', () => {
       const was = JSON.parse(pairs[i]) as { a: string; b: string };
       expect([now.a, now.b]).toEqual([was.a, was.b]);
     });
+  });
+});
+
+describe('a lane in its own register', () => {
+  // The same idea as the lane tempo and for the same reason: the same part,
+  // somewhere it fits, without a note of the session's material being rewritten.
+  const NOTES = [hit(0, 60), hit(4, 62), hit(8, 64)];
+
+  function octSession(engineId = 'subtractive'): SessionState {
+    const clip = {
+      id: 'clipA', name: 'A', color: '#fff', lengthBars: 1, gridResolution: '1/16',
+      notes: NOTES,
+    };
+    return {
+      lanes: [{ id: 'lane1', engineId, clips: [clip, clip], inserts: [] }],
+      scenes: [],
+      musicality: { ...DEFAULT_MUSICALITY },
+    } as unknown as SessionState;
+  }
+
+  const pitches = (octave?: number, engineId?: string) => {
+    const w = wiring(octSession(engineId));
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipA', x: 0 },
+      locked: false, harmonyLeader: false, octave,
+    };
+    return (w.notesFor('lane1')!() ?? []).map((n) => n.midi).sort((a, b) => a - b);
+  };
+
+  it('moves the whole phrase down twelve semitones an octave', () => {
+    expect(pitches(-1)).toEqual(pitches().map((m) => m - 12));
+  });
+
+  it('and up, by the same twelve', () => {
+    expect(pitches(2)).toEqual(pitches().map((m) => m + 24));
+  });
+
+  it('keeps every note — the phrase moves, it does not thin out', () => {
+    expect(pitches(3)).toHaveLength(pitches().length);
+  });
+
+  it('leaves a percussion lane exactly where it was', () => {
+    // A drum note picks a VOICE, not a pitch, so an octave on a drum lane would
+    // change the instrument rather than the register.
+    registerEngineCapabilities('drums-machine', {
+      harmonic: false, clipContent: 'notes', shortLabel: 'DR', outputTrim: 1,
+    });
+    try {
+      expect(pitches(-2, 'drums-machine')).toEqual(pitches(0, 'drums-machine'));
+    } finally {
+      unregisterEngineCapabilities('drums-machine');
+    }
+  });
+
+  it('reaches PRINT, so the scene you capture is the scene you heard', () => {
+    // Being in the FOLD is what buys this: lapNotes reads the same sources, so
+    // an octave applied at the scheduler instead would have PRINT quietly
+    // writing the un-shifted phrase.
+    const w = wiring(octSession());
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipA', x: 0 },
+      locked: false, harmonyLeader: false, octave: -1,
+    };
+    const printed = w.lapNotes().byLane.get('lane1') ?? [];
+    expect(printed.length).toBeGreaterThan(0);
+    expect(Math.min(...printed.map((n) => n.midi))).toBe(Math.min(...pitches()) - 12);
   });
 });
 

@@ -625,6 +625,33 @@
   min-width: 0;
 }
 
+// The register: down, how far from home, up. Three columns rather than the
+// tempo's two, because the middle one is a READING and not a button — the state
+// is the interesting part and a control that shows nothing makes you press it to
+// find out where you are.
+.weave-oct {
+  display: grid;
+  grid-template-columns: 1fr 2ch 1fr;
+  align-items: center;
+  gap: 2px;
+
+  // At home it is out of the way. Away from home it says so, in the same amber
+  // every other "this lane is not at its default" reading uses.
+  &.off .weave-oct-out { color: var(--fg-dim, #888); }
+}
+
+.weave-oct-btn {
+  padding: 3px 0;
+  font-size: 9px;
+  min-width: 0;
+}
+
+.weave-oct-out {
+  font-size: 9px;
+  text-align: center;
+  color: var(--amber);
+}
+
 // ── the weaving cell — a fader, a queue or a pad ───────────────────────────
 .weave-cell-host { min-width: 0; }
 

@@ -864,6 +864,25 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       deps.refresh();
     },
 
+    laneOctave(laneId) {
+      return deps.weave.lanes[laneId]?.octave ?? 0;
+    },
+
+    setLaneOctave(laneId, delta) {
+      if (!Number.isFinite(delta) || delta === 0) return;
+      const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
+      // Three each way. Past that a part is either under the bass or above the
+      // top of the keyboard, and both read as a control that broke rather than
+      // as a register.
+      const next = Math.min(3, Math.max(-3, (cur.octave ?? 0) + Math.round(delta)));
+      deps.weave.lanes[laneId] = { ...cur, octave: next };
+      // MATERIAL: the fold now hands out different pitches, so every cached
+      // source for this lane is answering the wrong question. This is also what
+      // carries it to PRINT — `lapNotes` reads the same sources.
+      deps.onWeaveChanged?.(laneId);
+      deps.refresh();
+    },
+
     musicality() {
       const m = deps.sessionHost.state.musicality ?? DEFAULT_MUSICALITY;
       return { key: m.key, scale: m.scale, style: m.style, bpm: deps.seq.bpm };

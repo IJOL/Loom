@@ -581,6 +581,29 @@ function buildLaneRow(lane, ctx, engines) {
     });
     length.appendChild(b);
   }
+  const octave = el("div", "weave-oct");
+  const octOut = el("span", "weave-oct-out");
+  const paintOct = () => {
+    const v = ctx.laneOctave(lane.id);
+    octOut.textContent = v === 0 ? "0" : v > 0 ? `+${v}` : String(v);
+    octave.classList.toggle("off", v === 0);
+  };
+  for (const [label, delta, title] of [
+    ["\u2212", -1, "Down an octave"],
+    ["+", 1, "Up an octave"]
+  ]) {
+    const b = el("button", "weave-oct-btn", label);
+    b.type = "button";
+    b.title = `${title} \u2014 the lane's register, never its notes`;
+    b.addEventListener("click", () => {
+      ctx.setLaneOctave(lane.id, delta);
+      paintOct();
+      repaintCell();
+    });
+    if (delta > 0) octave.appendChild(octOut);
+    octave.appendChild(b);
+  }
+  paintOct();
   const paintTopo = () => {
     const kind = ctx.laneWeave(lane.id)?.kind;
     if (kind && !TOPOS.some((t) => t.kind === kind) && !topo.querySelector(`option[value="${kind}"]`)) {
@@ -596,7 +619,7 @@ function buildLaneRow(lane, ctx, engines) {
   row.append(led, ring.el, name, transport, levelWrap, topo, cellHost, soundWrap);
   const strip = noteStrip(lane.id, ctx);
   const setup = el("div", "weave-lane-setup");
-  setup.append(strip.el, engine, preset, role, style, length);
+  setup.append(strip.el, engine, preset, role, style, length, octave);
   const wrap = el("div", "weave-lane-wrap");
   wrap.append(row, setup);
   return {

@@ -640,6 +640,13 @@ export interface PanelContext {
    *  bigger room and the same phrase — and the change it did make outlived the
    *  weave, leaving an edited clip behind when you switched the lane off. */
   setLaneTime(laneId: string, factor: number): void;
+  /** How many octaves this lane is shifted, and by how much to move it.
+   *
+   *  `setLaneOctave` takes a DELTA — the control is two buttons and each press
+   *  is one octave — and clamps to three each way. On the weave, never on the
+   *  clip: switch the weave off and the material is exactly as it was. */
+  laneOctave(laneId: string): number;
+  setLaneOctave(laneId: string, delta: number): void;
   /** The project's key, scale, style and tempo — the session's own, not a copy. */
   musicality(): PanelMusicality;
   /** Move them. Goes through the host's ONE musicality path, so a change made

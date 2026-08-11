@@ -662,6 +662,37 @@ export function buildLaneRow(
     length.appendChild(b);
   }
 
+  // The REGISTER, beside the tempo, because they are the same kind of thing: two
+  // ways to say "the same part, somewhere it fits" without touching a note of
+  // the material. The reading sits between the buttons, because the interesting
+  // state is how far from home the lane is and a control that shows nothing
+  // makes you press it to find out.
+  const octave = el('div', 'weave-oct');
+  const octOut = el('span', 'weave-oct-out');
+  const paintOct = () => {
+    const v = ctx.laneOctave(lane.id);
+    octOut.textContent = v === 0 ? '0' : v > 0 ? `+${v}` : String(v);
+    octave.classList.toggle('off', v === 0);
+  };
+  for (const [label, delta, title] of [
+    ['−', -1, 'Down an octave'],
+    ['+', 1, 'Up an octave'],
+  ] as [string, number, string][]) {
+    const b = el('button', 'weave-oct-btn', label) as HTMLButtonElement;
+    b.type = 'button';
+    b.title = `${title} — the lane's register, never its notes`;
+    b.addEventListener('click', () => {
+      ctx.setLaneOctave(lane.id, delta);
+      paintOct();
+      repaintCell();
+    });
+    // The readout goes between them, so down is on the left of the number and up
+    // on the right — which is the only arrangement that needs no label.
+    if (delta > 0) octave.appendChild(octOut);
+    octave.appendChild(b);
+  }
+  paintOct();
+
   const paintTopo = () => {
     const kind = ctx.laneWeave(lane.id)?.kind;
     // A lane on a topology this list no longer offers — a saved QUEUE — gets
@@ -694,8 +725,8 @@ export function buildLaneRow(
   const strip = noteStrip(lane.id, ctx);
   const setup = el('div', 'weave-lane-setup');
   // What you set once and leave: which instrument, which preset, which part,
-  // which shelf, how many bars. None of them is a gesture.
-  setup.append(strip.el, engine, preset, role, style, length);
+  // which shelf, how many bars, which octave. None of them is a gesture.
+  setup.append(strip.el, engine, preset, role, style, length, octave);
 
   const wrap = el('div', 'weave-lane-wrap');
   wrap.append(row, setup);

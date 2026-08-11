@@ -273,6 +273,30 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     return notes && retimeClip([...notes], 1 / scale);
   };
 
+  /** The lane moved into the register you want it in.
+   *
+   *  AFTER the progression, not before: the octave is "wherever this lane ends
+   *  up, put it N octaves from there", and applying it first would leave the
+   *  chord walk free to move it back. Still BEFORE the leader rule, because the
+   *  guard measures the lowest note that will actually sound — a bass dropped an
+   *  octave and measured where it used to be is a bass nobody is following.
+   *
+   *  Percussion is skipped: a drum note picks a voice, not a pitch, so an octave
+   *  on a drum lane changes the instrument rather than the register.
+   *
+   *  A note that would leave the MIDI range is CLAMPED rather than dropped. Both
+   *  are wrong and clamping is the wrong you can hear: a phrase that quietly
+   *  loses its lowest notes at the third press reads as a broken control, and
+   *  the note still sounding an octave from where it was asked to be reads as
+   *  what it is — the end of the keyboard. */
+  const withOctave = (laneId: string, source: WeaveSource): WeaveSource => () => {
+    const oct = state.lanes[laneId]?.octave ?? 0;
+    const notes = source();
+    if (!oct || !notes || notes.length === 0 || !melodicLane(laneId)) return notes;
+    const by = oct * 12;
+    return notes.map((n) => ({ ...n, midi: Math.min(127, Math.max(0, n.midi + by)) }));
+  };
+
   /** The lane's own fold, before any lane hears any other. Cached because it is
    *  what the leader search reads for EVERY lane on every ask. */
   const rawFor = (laneId: string): WeaveSource | undefined => {
@@ -298,7 +322,10 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     // The progression belongs INSIDE what the leader search reads: it moves
     // every lane at once, so measuring the bass before it had moved would
     // measure a note nobody plays.
-    const source = timed && withProgression(laneId, timed);
+    const walked = timed && withProgression(laneId, timed);
+    // And last, the register. Inside what the leader search reads, so a lane
+    // dropped an octave is measured where it now sounds.
+    const source = walked && withOctave(laneId, walked);
     // Only real sources are cached. "Nothing to say" costs one map read and one
     // number compare to re-derive, cheaper than the sentinel a Map needs to
     // remember an absence — and it means a lane starts weaving on the tick after

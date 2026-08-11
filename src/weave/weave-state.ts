@@ -60,6 +60,19 @@ export interface LaneSelection {
    *  the room it needs, which is why the same gesture still grows the carrier
    *  clip. The room is the lane's; the material is the weave's. */
   timeScale?: number;
+  /** How many OCTAVES this lane plays what it is handed, up or down. 0 is as
+   *  written.
+   *
+   *  On the WEAVE state for the same reason the tempo is: a tool on top of the
+   *  session does not rewrite the session's material. Switch the weave off and
+   *  the clip is exactly as you left it — and the octave travels with the lane
+   *  rather than with whichever loop happens to be drawn next, which is what
+   *  makes it usable at all on a lane that is evolving.
+   *
+   *  Whole octaves and nothing between. A part that moves by a fifth is a
+   *  different part; one that moves by an octave is the same part in a register
+   *  where it fits, which is the only thing this is for. */
+  octave?: number;
   /** The loops this lane has already travelled through, oldest first.
    *
    *  A journey that only ever draws forward is a journey you cannot re-hear:

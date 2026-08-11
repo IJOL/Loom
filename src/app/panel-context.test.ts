@@ -653,6 +653,54 @@ describe('half time and double time from the panel', () => {
   });
 });
 
+describe('octaves from the panel', () => {
+  it('records the register on the WEAVE, never on the clip', () => {
+    // Same rule as the lane tempo: a tool on top of the session does not
+    // rewrite the session's material. Switch the weave off and the notes are as
+    // you left them.
+    const h = harness();
+    const id = h.ctx.addLane('subtractive');
+    const clip = h.state.lanes.find((l) => l.id === id)!.clips[0]!;
+    const before = clip.notes.map((n) => n.midi);
+
+    h.ctx.setLaneOctave(id, -1);
+
+    expect(h.ctx.laneOctave(id)).toBe(-1);
+    expect(clip.notes.map((n) => n.midi)).toEqual(before);
+  });
+
+  it('compounds, because each press is one octave', () => {
+    const h = harness();
+    const id = h.ctx.addLane('subtractive');
+    h.ctx.setLaneOctave(id, 1);
+    h.ctx.setLaneOctave(id, 1);
+    expect(h.ctx.laneOctave(id)).toBe(2);
+  });
+
+  it('stops at three each way', () => {
+    // Past that a part is under the bass or off the top of the keyboard, and
+    // both read as a control that broke rather than as a register.
+    const h = harness();
+    const id = h.ctx.addLane('subtractive');
+    for (let i = 0; i < 6; i++) h.ctx.setLaneOctave(id, 1);
+    expect(h.ctx.laneOctave(id)).toBe(3);
+    for (let i = 0; i < 12; i++) h.ctx.setLaneOctave(id, -1);
+    expect(h.ctx.laneOctave(id)).toBe(-3);
+  });
+
+  it('drops the cached fold, so the next tick plays the new register', () => {
+    const h = harness(['lane1']);
+    h.ctx.setLaneOctave('lane1', 1);
+    expect(h.changed).toContain('lane1');
+  });
+
+  it('says nothing when asked to move by nothing', () => {
+    const h = harness(['lane1']);
+    h.ctx.setLaneOctave('lane1', 0);
+    expect(h.changed).toEqual([]);
+  });
+});
+
 describe('a hand going BACKWARDS has not arrived anywhere', () => {
   // Seen in the browser: in EVOLVE, dragging the fader from 0.95 to 0.20 in one
   // move handed over — `Clip 1 / Clip 2` became `Clip 2 / Clip 3`. applyFlow
