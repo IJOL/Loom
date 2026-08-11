@@ -9,6 +9,8 @@
 //
 // Pure: no state, no clock, no DOM. The runtime decides WHEN; this decides WHERE.
 
+import { cloudPathPoint, type CloudPath } from './topology-cloud';
+
 /** How the lanes relate as the master flow moves.
  *
  *  Three, because they are three musical intentions and not three settings:
@@ -37,6 +39,27 @@ const wrap01 = (v: number) => (v >= 0 && v < 1 ? v : ((v % 1) + 1) % 1);
  *  far end, or dragging it all the way over lands you back where you started —
  *  which is the bug this pair exists to fix. */
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+/** Where a selection is along its JOURNEY, 0..1.
+ *
+ *  For every topology but one that IS `x`: the fader position and the lap
+ *  position are the same number. A cloud's `x` is a COORDINATE in its square,
+ *  so it keeps its lap in `t` and derives x,y from it — see `place` below. */
+const journeyOf = (sel: PositionedWeave): number =>
+  typeof sel.t === 'number' ? sel.t : sel.x;
+
+/** The selection this lane should hold `t` of the way through its lap.
+ *
+ *  A cloud is the one topology whose position is not one number, and the flow
+ *  is. Before this it wrote `x` and left `y` alone, so a travelling cloud slid
+ *  along whatever horizontal line the dot happened to be on and three of its
+ *  four corners were unreachable. The path is what turns one number into two;
+ *  the lap itself is kept in `t`, because `x` is now a coordinate and no longer
+ *  says how far round the lane has been. */
+const place = (sel: PositionedWeave, t: number): PositionedWeave =>
+  (sel.kind === 'cloud'
+    ? { ...sel, t, ...cloudPathPoint(sel.path as CloudPath | undefined, t) }
+    : { ...sel, x: t });
 
 /** Where each lane's cross-fade should sit for this flow position.
  *
@@ -126,7 +149,7 @@ export function applyFlow(
 ): boolean {
   const current = laneIds.map((id) => {
     const stored = lanes[id]?.weave;
-    return base?.get(id) ?? (stored ? stored.x : 0);
+    return base?.get(id) ?? (stored ? journeyOf(stored) : 0);
   });
   const next = flowPositions(flow, laneIds.length, drift, current, wrap);
 
@@ -138,14 +161,14 @@ export function applyFlow(
     // locking one lane does not re-space the others under it — the lock is a
     // lane sitting out the journey, not a lane leaving the scene.
     if (entry?.locked) return;
-    if (!entry || !sel || sel.x === next[i]) return;
+    if (!entry || !sel || journeyOf(sel) === next[i]) return;
     // Backwards by more than half a lap is a WRAP, not a rewind: the journey
     // only ever goes forward, so a big drop is the far end folding round to the
     // near one. Half a lap is the threshold because a tick can legitimately move
     // a lane a long way — a fast speed, or a hand on the master fader — and
     // anything short of that is just travelling.
-    const wrapped = next[i] < sel.x - 0.5;
-    lanes[id] = { ...entry, weave: { ...sel, x: next[i] } };
+    const wrapped = next[i] < journeyOf(sel) - 0.5;
+    lanes[id] = { ...entry, weave: place(sel, next[i]) };
     moved = true;
     // AFTER the write, never before. Called first, whatever the handler put in
     // the map was immediately overwritten by the line above — which still held

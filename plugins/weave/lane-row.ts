@@ -9,6 +9,7 @@
 // Nothing musical is decided here. Which loops survive a change of topology is a
 // rule with a home in the host (`setLaneTopology`); this file asks.
 
+import { CLOUD_PATHS } from '@loom/plugin-sdk';
 import type { PanelChoice, PanelContext, PanelLoopPhase, PanelWeave } from '@loom/plugin-sdk';
 import { endlessDial } from './endless-dial';
 
@@ -271,8 +272,37 @@ function weaveCell(
     label: 'Drag: how much of each of the four loops is playing',
     onChange: (x, y) => { ctx.setLaneWeave(laneId, { ...sel, x, y }); },
   });
-  pad.el.classList.add('cn-pad');
-  cloud.append(pickers[0], pad.el, pickers[1], pickers[2], pickers[3]);
+
+  // WHICH WAY the master flow drags the dot. A cloud needs saying because the
+  // flow is one number and the cloud is two: RIM walks the four sides, so the
+  // lap is a chain of clean two-loop crossfades; CROSS alternates side and
+  // diagonal, touching the same corners but crossing the middle — the one point
+  // where all four loops sound at once — twice a lap.
+  const path = el('div', 'weave-path');
+  const pathBtns = CLOUD_PATHS.map((p) => {
+    const b = el('button', 'weave-topo-btn', p.label) as HTMLButtonElement;
+    b.type = 'button';
+    b.title = p.title;
+    b.addEventListener('click', () => {
+      // The POSITION is left where it is. Changing the shape of a journey
+      // mid-lap must not also teleport the lane to the start of it.
+      ctx.setLaneWeave(laneId, { ...sel, path: p.id });
+      paintPath(p.id);
+    });
+    path.appendChild(b);
+    return { id: p.id, b };
+  });
+  const paintPath = (cur: string) => {
+    for (const { id, b } of pathBtns) {
+      b.classList.toggle('on', id === cur);
+      b.setAttribute('aria-pressed', String(id === cur));
+    }
+  };
+  paintPath(sel.path ?? 'rim');
+
+  const padWrap = el('div', 'cn-pad');
+  padWrap.append(pad.el, path);
+  cloud.append(pickers[0], padWrap, pickers[1], pickers[2], pickers[3]);
   cell.appendChild(cloud);
   let at = { x: sel.x, y: sel.y };
   return {

@@ -1,3 +1,46 @@
+// packages/loom-plugin-sdk/src/manifest.ts
+var CLOUD_PATHS = [
+  { id: "rim", label: "RIM", title: "Travel the four sides of the square" },
+  {
+    id: "cross",
+    label: "CROSS",
+    title: "Side, diagonal, side, diagonal \u2014 every corner, through the middle twice"
+  }
+];
+
+// packages/loom-plugin-sdk/src/dsp/mod-env-host.ts
+var EMPTY = new Float64Array(0);
+
+// packages/loom-plugin-sdk/src/dsp/ladder.ts
+var TWO_PI = Math.PI * 2;
+
+// packages/loom-plugin-sdk/src/dsp/unison.ts
+var TWO_PI2 = Math.PI * 2;
+
+// packages/loom-plugin-sdk/src/dsp/filter-kinds.ts
+var FILTER_MODES = [
+  { value: "dig", label: "DIG", taps: ["lp", "hp", "bp", "notch"] },
+  { value: "mog", label: "MOG", taps: ["lp", "hp", "bp"] },
+  { value: "acid", label: "303", taps: ["lp", "hp", "bp"] },
+  { value: "comb", label: "COMB", taps: ["comb+", "comb-", "combff"] }
+];
+var TAP_LABELS = {
+  lp: "LP",
+  hp: "HP",
+  bp: "BP",
+  notch: "NOTCH",
+  "comb+": "POS",
+  "comb-": "NEG",
+  combff: "FF"
+};
+var clampIdx = (v, n) => Math.max(0, Math.min(n - 1, Math.round(v)));
+function typeOptionsFor(model) {
+  const m = FILTER_MODES[clampIdx(model, FILTER_MODES.length)];
+  return m.taps.map((t) => ({ value: t, label: TAP_LABELS[t] }));
+}
+var TYPE_OPTIONS_BY_MODE = Object.fromEntries(FILTER_MODES.map((_m, i) => [String(i), typeOptionsFor(i)]));
+var FILTER_MODE_OPTIONS = FILTER_MODES.map((m) => ({ value: m.value, label: m.label }));
+
 // plugins/weave/endless-dial.ts
 var SWEEP = 360;
 var START = 0;
@@ -268,8 +311,28 @@ function weaveCell(laneId, ctx, loops, onChanged) {
       ctx.setLaneWeave(laneId, { ...sel, x, y });
     }
   });
-  pad.el.classList.add("cn-pad");
-  cloud.append(pickers[0], pad.el, pickers[1], pickers[2], pickers[3]);
+  const path = el("div", "weave-path");
+  const pathBtns = CLOUD_PATHS.map((p) => {
+    const b = el("button", "weave-topo-btn", p.label);
+    b.type = "button";
+    b.title = p.title;
+    b.addEventListener("click", () => {
+      ctx.setLaneWeave(laneId, { ...sel, path: p.id });
+      paintPath(p.id);
+    });
+    path.appendChild(b);
+    return { id: p.id, b };
+  });
+  const paintPath = (cur) => {
+    for (const { id, b } of pathBtns) {
+      b.classList.toggle("on", id === cur);
+      b.setAttribute("aria-pressed", String(id === cur));
+    }
+  };
+  paintPath(sel.path ?? "rim");
+  const padWrap = el("div", "cn-pad");
+  padWrap.append(pad.el, path);
+  cloud.append(pickers[0], padWrap, pickers[1], pickers[2], pickers[3]);
   cell.appendChild(cloud);
   let at = { x: sel.x, y: sel.y };
   return {

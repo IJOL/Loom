@@ -303,10 +303,41 @@ export interface PanelFlow {
  *
  *  The three shapes are the three topologies, and every one of them reduces to a
  *  list of (loop, weight) before anything downstream sees it. */
+/** How the master flow drags a cloud's dot around its square.
+ *
+ *  In the SDK because the panel RENDERS the choice and the host WALKS it, so
+ *  the two have to agree on the words. The pair is fixed and its labels are
+ *  fixed, which is why it is a constant here rather than another ABI member
+ *  the host would answer identically every time. */
+export type CloudPath = 'rim' | 'cross';
+
+export const CLOUD_PATHS: { id: CloudPath; label: string; title: string }[] = [
+  { id: 'rim', label: 'RIM', title: 'Travel the four sides of the square' },
+  {
+    id: 'cross',
+    label: 'CROSS',
+    title: 'Side, diagonal, side, diagonal — every corner, through the middle twice',
+  },
+];
+
 export type PanelWeave =
   | { kind: 'ab'; a: string; b: string; x: number }
   | { kind: 'queue'; loops: string[]; x: number }
-  | { kind: 'cloud'; corners: string[]; x: number; y: number };
+  | {
+      kind: 'cloud'; corners: string[]; x: number; y: number;
+      /** Which way the master flow drags the dot round the square: 'rim' walks
+       *  the four sides, 'cross' alternates side and diagonal. Absent ⇒ 'rim'.
+       *
+       *  A cloud needs one because the flow is ONE number and the cloud is two.
+       *  Without it the flow moved x and left y alone, so a travelling cloud
+       *  slid along one horizontal line and three corners were unreachable. */
+      path?: CloudPath;
+      /** How far round its lap this lane is, 0..1 — written by the host, read
+       *  by nobody. It exists because x and y are now COORDINATES on that lap
+       *  and neither of them says how far along it the lane has got. Carry it
+       *  through when you spread this object; do not invent one. */
+      t?: number;
+    };
 
 /** Where one loop is right now — the same reading the Session view's scene ring
  *  shows, narrowed to a single lane.
