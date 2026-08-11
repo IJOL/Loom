@@ -13,7 +13,8 @@ import {
 import { applyFlow, asDrift } from '../weave/flow';
 import { stepPreset } from '../automation/automation-steps';
 import {
-  weaveLoopChoices, weaveLoopContext, rehookOnArrival, type WeaveLoopContext,
+  weaveLoopChoices, weaveLoopContext, rehookOnArrival, rehookOnRewind, pushTrail,
+  type WeaveLoopContext,
 } from './weave-loops';
 import { stylesWithPatterns } from '../patterns/pattern-library';
 import { STYLE_CATALOG, SCALE_CATALOG, rootName, type StyleId } from '../core/musicality';
@@ -713,7 +714,26 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         const next = rehookOnArrival(
           entry?.weave, loopContext(laneId), deps.weave.seed, laneId,
         );
-        if (next && entry) deps.weave.lanes[laneId] = { ...entry, weave: next };
+        if (!next || !entry) return;
+        // Remember what it is leaving, so winding the wheel back can find it.
+        // The loop left behind is the NEAR end of the leg just finished, not
+        // the far one — the far one is where the lane still is.
+        const leaving = entry.weave?.kind === 'ab' ? entry.weave.a : undefined;
+        deps.weave.lanes[laneId] = {
+          ...entry,
+          weave: next,
+          trail: leaving ? pushTrail(entry.trail, leaving) : entry.trail,
+        };
+      };
+
+      /** The wheel turned BACK: walk the loops already played instead of
+       *  drawing new ones. Winding to and fro must review the journey, not
+       *  shred it into a different one. */
+      const rewind = (laneId: string) => {
+        const entry = deps.weave.lanes[laneId];
+        const back = rehookOnRewind(entry?.weave, entry?.trail);
+        if (!back || !entry) return;
+        deps.weave.lanes[laneId] = { ...entry, weave: back.weave, trail: back.trail };
       };
 
       // Locked, the SETTINGS above are still written — drift, speed and EVOLVE
@@ -729,6 +749,11 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         mode,
         base && new Map(Object.entries(base)),
         evolving && advancing ? rehook : undefined,
+        // Going back needs no EVOLVE. Handing over to a FRESH loop is what
+        // EVOLVE decides; re-hearing one you already played is not evolution,
+        // it is the way back — and a STATIC scene that could not be wound back
+        // would be the same dead end this whole thing is about.
+        advancing ? undefined : rewind,
         // A HAND, and here the flag is right: with EVOLVE on, dragging to the
         // far end IS arriving, so it folds and hands over; STATIC gives the
         // fader ends to stop at. That is a fader's behaviour and it is tested.

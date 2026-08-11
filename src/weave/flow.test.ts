@@ -223,7 +223,7 @@ describe('with wrapping off, the journey has ends', () => {
       l1: { weave: { x: 0.99 } },
     };
     const wrapped: string[] = [];
-    applyFlow(lanes, ['l1'], 1, 'together', undefined, (id) => wrapped.push(id), false);
+    applyFlow(lanes, ['l1'], 1, 'together', undefined, (id) => wrapped.push(id), undefined, false);
     expect(lanes.l1.weave.x).toBe(1);
     expect(wrapped).toEqual([]);
   });

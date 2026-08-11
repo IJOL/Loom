@@ -135,6 +135,17 @@ export function applyFlow(
    *  fire. A lane that wrapped has completed a lap, which is where A→B re-hooks
    *  onto a fresh loop. */
   onWrap?: (laneId: string) => void,
+  /** Called for a lane whose position wrapped BACKWARDS past the start of its
+   *  journey — the same event as `onWrap`, with the hand turning the other way.
+   *
+   *  Separate rather than a direction flag on one callback because the two mean
+   *  different things and only one of them draws: arriving hands over to a
+   *  FRESH loop, and rewinding must walk back through the ones already played
+   *  or the way back would be a different journey from the way out.
+   *
+   *  Only a hand can produce this. The clock's journey only advances, which is
+   *  why the caller passes this in one case and not the other. */
+  onRewind?: (laneId: string) => void,
   /** See flowPositions. With wrapping off no lane can ever wrap, so `onWrap`
    *  cannot fire.
    *
@@ -167,7 +178,12 @@ export function applyFlow(
     // near one. Half a lap is the threshold because a tick can legitimately move
     // a lane a long way — a fast speed, or a hand on the master fader — and
     // anything short of that is just travelling.
-    const wrapped = next[i] < journeyOf(sel) - 0.5;
+    const at = journeyOf(sel);
+    const wrapped = next[i] < at - 0.5;
+    // The same threshold read the other way. Half a lap is the line because a
+    // tick can legitimately move a lane a long way; anything short of that is
+    // just travelling, in whichever direction.
+    const rewound = next[i] > at + 0.5;
     lanes[id] = { ...entry, weave: place(sel, next[i]) };
     moved = true;
     // AFTER the write, never before. Called first, whatever the handler put in
@@ -175,6 +191,7 @@ export function applyFlow(
     // the entry captured at the top of this iteration. The re-hook happened and
     // vanished in the same tick.
     if (wrapped) onWrap?.(id);
+    else if (rewound) onRewind?.(id);
   });
   return moved;
 }

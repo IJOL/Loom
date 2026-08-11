@@ -45,6 +45,17 @@ export interface LaneSelection {
   locked: boolean;
   forcedStyle?: StyleId;
   harmonyLeader: boolean;
+  /** The loops this lane has already travelled through, oldest first.
+   *
+   *  A journey that only ever draws forward is a journey you cannot re-hear:
+   *  land on something good, keep going, and it is gone — the draw is seeded so
+   *  it is reproducible from the start, but not reachable from where you are.
+   *  Winding the wheel BACK walks this instead of drawing, so the way back is
+   *  the way you came.
+   *
+   *  Capped, because it is saved with the session and a scene left running for
+   *  an hour would otherwise carry thousands of ids nobody will wind back to. */
+  trail?: string[];
   /** The SOUND fader: which instrument this lane's notes are played on, 0..1
    *  between the two slots of its rack.
    *

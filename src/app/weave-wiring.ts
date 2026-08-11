@@ -544,6 +544,10 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       if (applyFlow(
         state.lanes, laneIds, pos, state.flow.drift, base,
         evolving ? rehook : undefined,
+        // No rewind from the CLOCK: its journey only ever advances, so a
+        // backwards wrap here could only be a bug pretending to be a gesture.
+        // Winding back is a hand on the wheel — see panel-context.
+        undefined,
         true,
       )) {
 

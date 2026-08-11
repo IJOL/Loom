@@ -394,3 +394,47 @@ export function rehookOnArrival(
   // of a bar every lap.
   return { ...sel, a: next.a, b: next.b };
 }
+
+/** How many legs back a lane can be wound. Saved with the session, so it is a
+ *  memory and not a log: a scene left running for an hour would otherwise carry
+ *  thousands of ids nobody is going to wind back to. */
+export const TRAIL_MAX = 16;
+
+/** Remember the loop this lane is leaving behind, so the wheel has somewhere to
+ *  go back to. Oldest first; the newest is the one a rewind reaches first. */
+export function pushTrail(trail: readonly string[] | undefined, leaving: string): string[] {
+  const next = [...(trail ?? []), leaving];
+  return next.length > TRAIL_MAX ? next.slice(next.length - TRAIL_MAX) : next;
+}
+
+/** Wind one leg BACK, onto the loop this lane came from.
+ *
+ *  The counterpart of `rehookOnArrival`, and deliberately not a mirror of it:
+ *  going forward DRAWS — that is what makes the journey endless — and going
+ *  back must not, or the way back would be a different journey from the way out
+ *  and winding the wheel to and fro would shred the material instead of
+ *  reviewing it.
+ *
+ *  The loop the lane is on becomes the FAR end, because that is where it was
+ *  arrived at from; the one before it becomes the near end. The position is
+ *  left to the caller — it has already wrapped round to the far end of this
+ *  leg, which is exactly where a rewind lands.
+ *
+ *  Null when there is nothing behind: a lane at the start of its trail holds
+ *  what it has rather than drawing something new, which would be travelling
+ *  forwards while the hand went back. */
+export function rehookOnRewind(
+  sel: PanelWeave | null | undefined,
+  trail: readonly string[] | undefined,
+): { weave: PanelWeave; trail: string[] } | null {
+  if (!sel || sel.kind !== 'ab') return null;
+  if (!trail || trail.length === 0) return null;
+  const back = trail[trail.length - 1];
+  // The loop it came from IS the loop it is on: nothing to wind back to, and
+  // swapping would make a leg from a loop to itself.
+  if (back === sel.a) return null;
+  return {
+    weave: { ...sel, a: back, b: sel.a },
+    trail: trail.slice(0, -1),
+  };
+}
