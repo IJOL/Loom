@@ -49,6 +49,53 @@ describe('the shelf', () => {
   });
 });
 
+describe('filling the clip it is going into', () => {
+  // Reported from the panel: on a Pad or a Comp lane the chords stopped after
+  // one bar and the second half of the clip was silent. A shape IS one bar, and
+  // a Loom clip is two by default — the library's own patterns take a bar count
+  // and repeat, and this branch never passed one. The same bug, arriving twice
+  // and fixed once.
+  const lastStart = (id: string, bars?: number) => Math.max(
+    ...renderPadLoop(id, { ...OPTS, bars }).map((n) => n.start),
+  );
+
+  it('repeats the shape across every bar of the clip', () => {
+    for (const p of PAD_LOOPS) {
+      const one = renderPadLoop(p.id, OPTS);
+      const two = renderPadLoop(p.id, { ...OPTS, bars: 2 });
+      expect(two).toHaveLength(one.length * 2);
+    }
+  });
+
+  it('reaches into the LAST bar, which is the half that went silent', () => {
+    for (const p of PAD_LOOPS) {
+      expect(lastStart(p.id, 2)).toBeGreaterThanOrEqual(BAR);
+      expect(lastStart(p.id, 4)).toBeGreaterThanOrEqual(BAR * 3);
+    }
+  });
+
+  it('accents the downbeat of every bar, not just the first', () => {
+    // A repeated shape has to read as bars, not as one long phrase that happens
+    // to restart.
+    const notes = renderPadLoop(PAD_LOOPS[0].id, { ...OPTS, bars: 2 });
+    const loud = notes.filter((n) => n.velocity >= 115).map((n) => n.start);
+    expect(loud.some((s) => s < BAR)).toBe(true);
+    expect(loud.some((s) => s >= BAR)).toBe(true);
+  });
+
+  it('is ONE bar when nobody says otherwise', () => {
+    // The old behaviour, kept: a caller that knows nothing about the clip gets
+    // exactly the shape, and the blend still folds it by position within a bar.
+    for (const p of PAD_LOOPS) expect(lastStart(p.id)).toBeLessThan(BAR);
+  });
+
+  it('refuses a nonsense bar count rather than emitting nothing', () => {
+    for (const bars of [0, -3, 0.5]) {
+      expect(renderPadLoop(PAD_LOOPS[0].id, { ...OPTS, bars }).length).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe('rendering one', () => {
   it('puts every note in the scale, whatever the loop', () => {
     for (const p of PAD_LOOPS) {

@@ -149,23 +149,46 @@ export function padLoop(id: string): PadLoop | undefined {
  *  by `scaleDegreeToMidi`, so a base that already carried it applies it twice. */
 export function renderPadLoop(
   id: string,
-  opts: { key: number; scale: ScaleId; octaveBase: number; barTicks: number },
+  opts: {
+    key: number; scale: ScaleId; octaveBase: number; barTicks: number;
+    /** How many bars the clip this is going into runs for. A shape is ONE bar,
+     *  so it repeats to fill the rest.
+     *
+     *  Absent ⇒ one bar, which is what this did before and what left the second
+     *  half of a two-bar clip silent on every Pad and Comp lane. The library's
+     *  own patterns are one bar too and `patternNotes` has taken a bar count
+     *  since it was written — the chord branch simply never passed one, so the
+     *  identical bug arrived twice and was fixed once. */
+    bars?: number;
+  },
 ): NoteEvent[] {
   const loop = BY_ID.get(id);
   if (!loop) return [];
   const { key, scale, octaveBase, barTicks } = opts;
   const stepTicks = barTicks / 16;
+  const bars = Math.max(1, Math.floor(opts.bars ?? 1));
   const out: NoteEvent[] = [];
-  let first = true;
-  for (const hit of loop.hits) {
-    const start = hit.stepOffset * stepTicks;
-    if (start >= barTicks) continue;
-    const duration = Math.min(hit.durationSteps * stepTicks, barTicks - start);
-    // The downbeat louder, the way the comping generator already accents it.
-    const velocity = first ? 115 : 95;
-    first = false;
-    for (const d of hit.degrees ?? TRIAD) {
-      out.push({ start, duration, midi: scaleDegreeToMidi(d, octaveBase, key, scale), velocity });
+  for (let bar = 0; bar < bars; bar++) {
+    const base = bar * barTicks;
+    // Per BAR, not per loop: every bar gets its own accented downbeat, which is
+    // what makes a repeated shape read as a bar line rather than as one long
+    // phrase that happens to restart.
+    let first = true;
+    for (const hit of loop.hits) {
+      const start = hit.stepOffset * stepTicks;
+      if (start >= barTicks) continue;
+      const duration = Math.min(hit.durationSteps * stepTicks, barTicks - start);
+      // The downbeat louder, the way the comping generator already accents it.
+      const velocity = first ? 115 : 95;
+      first = false;
+      for (const d of hit.degrees ?? TRIAD) {
+        out.push({
+          start: base + start,
+          duration,
+          midi: scaleDegreeToMidi(d, octaveBase, key, scale),
+          velocity,
+        });
+      }
     }
   }
   return out;

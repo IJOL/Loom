@@ -291,6 +291,11 @@ export function weaveLoopNotes(id: string, c: WeaveLoopContext): NoteEvent[] | u
       // itself, so a base that already carried it would apply it twice.
       octaveBase: roleOctaveBase(laneRoleOf(c.lane)),
       barTicks: c.barTicks,
+      // The clip this has to FILL. A shape is one bar and a Loom clip is two by
+      // default, so without this a Pad or Comp lane went silent for the second
+      // half of every clip — the same bug the library patterns had, fixed for
+      // them on the line below and never carried across to here.
+      bars: c.clipBars,
     });
   }
 
