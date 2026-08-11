@@ -8,9 +8,19 @@
       "file": "korgt3/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "korgt3/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "korgt3/snare.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "korgt3/clap.wav"
     },
     {
       "voice": "closedHat",
@@ -23,14 +33,9 @@
       "file": "korgt3/openHat.wav"
     },
     {
-      "voice": "clap",
-      "note": 39,
-      "file": "korgt3/clap.wav"
-    },
-    {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "korgt3/cowbell.wav"
+      "voice": "shaker",
+      "note": 82,
+      "file": "korgt3/shaker.wav"
     }
   ]
 }

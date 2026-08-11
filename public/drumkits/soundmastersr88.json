@@ -23,9 +23,9 @@
       "file": "soundmastersr88/openHat.wav"
     },
     {
-      "voice": "ride",
-      "note": 51,
-      "file": "soundmastersr88/ride.wav"
+      "voice": "crash",
+      "note": 49,
+      "file": "soundmastersr88/crash.wav"
     }
   ]
 }

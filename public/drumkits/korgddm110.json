@@ -8,9 +8,24 @@
       "file": "korgddm110/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "korgddm110/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "korgddm110/snare.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "korgddm110/clap.wav"
+    },
+    {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "korgddm110/tomLo.wav"
     },
     {
       "voice": "closedHat",
@@ -23,24 +38,14 @@
       "file": "korgddm110/openHat.wav"
     },
     {
-      "voice": "clap",
-      "note": 39,
-      "file": "korgddm110/clap.wav"
+      "voice": "tomHi",
+      "note": 48,
+      "file": "korgddm110/tomHi.wav"
     },
     {
-      "voice": "tom",
-      "note": 45,
-      "file": "korgddm110/tom.wav"
-    },
-    {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "korgddm110/cowbell.wav"
-    },
-    {
-      "voice": "ride",
-      "note": 51,
-      "file": "korgddm110/ride.wav"
+      "voice": "crash",
+      "note": 49,
+      "file": "korgddm110/crash.wav"
     }
   ]
 }

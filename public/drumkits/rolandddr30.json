@@ -13,9 +13,14 @@
       "file": "rolandddr30/snare.wav"
     },
     {
-      "voice": "tom",
-      "note": 45,
-      "file": "rolandddr30/tom.wav"
+      "voice": "tomLo",
+      "note": 41,
+      "file": "rolandddr30/tomLo.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "rolandddr30/tomHi.wav"
     }
   ]
 }

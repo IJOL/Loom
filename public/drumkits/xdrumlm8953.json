@@ -8,9 +8,19 @@
       "file": "xdrumlm8953/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "xdrumlm8953/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "xdrumlm8953/snare.wav"
+    },
+    {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "xdrumlm8953/tomLo.wav"
     },
     {
       "voice": "closedHat",
@@ -18,29 +28,34 @@
       "file": "xdrumlm8953/closedHat.wav"
     },
     {
-      "voice": "openHat",
-      "note": 46,
-      "file": "xdrumlm8953/openHat.wav"
-    },
-    {
-      "voice": "clap",
-      "note": 39,
-      "file": "xdrumlm8953/clap.wav"
-    },
-    {
       "voice": "tom",
       "note": 45,
       "file": "xdrumlm8953/tom.wav"
     },
     {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "xdrumlm8953/cowbell.wav"
+      "voice": "openHat",
+      "note": 46,
+      "file": "xdrumlm8953/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "xdrumlm8953/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "xdrumlm8953/crash.wav"
     },
     {
       "voice": "ride",
       "note": 51,
       "file": "xdrumlm8953/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "xdrumlm8953/tamb.wav"
     }
   ]
 }

@@ -33,6 +33,16 @@ export interface RandomProcessorParams {
   velChance: number;
   /** Velocity random range (0..1): at 1 a note can vary from ~silent to ~2x. */
   velRandom: number;
+  /** 0 = an independent draw per note (WHITE noise, matching Strudel's `rand`);
+   *  1 = value noise over time (SMOOTH, matching its `perlin`). In between
+   *  crossfades the two. Default 0, so existing sessions are unaffected.
+   *
+   *  The difference is not subtlety: white noise sparkles note to note, smooth
+   *  noise drifts in phrases, because consecutive samples are correlated. */
+  velSmooth: number;
+  /** How fast the smooth noise drifts, in Hz. Strudel samples perlin once per
+   *  cycle, so a patch at cps .75 wants 0.75. */
+  velSmoothRate: number;
 
   /** 0..1 chance that gate duration is randomized. */
   durChance: number;
@@ -54,6 +64,8 @@ export const RANDOM_PROCESSOR_DEFAULTS: RandomProcessorParams = {
   scale: '',
   velChance: 0,
   velRandom: 0.3,
+  velSmooth: 0,
+  velSmoothRate: 1,
   durChance: 0,
   durRandom: 0.3,
   dropChance: 0,
@@ -79,6 +91,20 @@ function deriveSeed(base: number, note: NoteFxEvent, index: number, param: strin
     h = Math.imul(h ^ param.charCodeAt(i), 1664525);
   }
   return h >>> 0;
+}
+
+/** 1D value noise: draw at the integer lattice, interpolate with a smoothstep.
+ *  This is what makes perlin read as phrasing rather than sparkle — consecutive
+ *  samples are correlated instead of independent. Same seed + same time always
+ *  gives the same value, so a run stays reproducible. */
+function smoothNoise(seed: number, t: number): number {
+  const i = Math.floor(t);
+  const f = t - i;
+  const at = (k: number) => mulberry32((seed ^ Math.imul(k, 1664525)) >>> 0)();
+  const a = at(i);
+  const b = at(i + 1);
+  const s = f * f * (3 - 2 * f);
+  return a + (b - a) * s;
 }
 
 export class RandomProcessor implements NoteFxProcessor {
@@ -137,7 +163,14 @@ export class RandomProcessor implements NoteFxProcessor {
         if (velRng() < p.velChance) {
           const hadVelocity = velocity !== undefined;
           const baseVel = velocity ?? (e.accent ? 127 : 100);
-          const factor = 1 + (velRng() * 2 - 1) * p.velRandom;
+          // The ?? guards matter: a session saved before velSmooth existed has
+          // no such key, and must behave exactly as it did.
+          const white = velRng();
+          const smoothAmt = p.velSmooth ?? 0;
+          const blend = smoothAmt > 0
+            ? white + smoothAmt * (smoothNoise(seed ^ 0x5eed, e.time * (p.velSmoothRate ?? 1)) - white)
+            : white;
+          const factor = 1 + (blend * 2 - 1) * p.velRandom;
           const next = Math.round(Math.max(1, Math.min(127, baseVel * factor)));
           if (hadVelocity || next !== baseVel) velocity = next;
           accent = next >= 100;

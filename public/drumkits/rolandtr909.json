@@ -8,19 +8,14 @@
       "file": "rolandtr909/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "rolandtr909/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "rolandtr909/snare.wav"
-    },
-    {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "rolandtr909/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "rolandtr909/openHat.wav"
     },
     {
       "voice": "clap",
@@ -28,14 +23,34 @@
       "file": "rolandtr909/clap.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "rolandtr909/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolandtr909/closedHat.wav"
+    },
+    {
       "voice": "tom",
       "note": 45,
       "file": "rolandtr909/tom.wav"
     },
     {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "rolandtr909/cowbell.wav"
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolandtr909/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "rolandtr909/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "rolandtr909/crash.wav"
     },
     {
       "voice": "ride",

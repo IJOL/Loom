@@ -1,0 +1,21 @@
+{
+  "id": "strudel-melting",
+  "name": "Melting Submarine Drums",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "strudel-melting/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "strudel-melting/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "strudel-melting/closedHat.wav"
+    }
+  ]
+}

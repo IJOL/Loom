@@ -31,6 +31,7 @@ import type { PerformanceFeature } from './performance-feature';
 import type { DemoItem } from './menu-actions';
 import { emptySessionState } from '../session/session';
 import { fetchDemoSession } from '../demo/demo-loader';
+import type { TimeSignature } from '../core/meter';
 import { wireDemoPicker } from '../demo/demo-picker';
 import { confirmDialog } from '../core/dialog';
 
@@ -47,6 +48,9 @@ export interface SessionLifecycleDeps {
   /** The canonical BPM setter — a demo's optional tempo has to reach the
    *  scheduler, the BPM input, every insert chain and every tempo-locked engine. */
   setTransportBpm(bpm: number): void;
+  /** The canonical meter setter — a demo that is not in 4/4 has to reach both
+   *  the scheduler and the meter selector. Sibling of setTransportBpm. */
+  setTransportMeter(meter: TimeSignature): void;
   /** Late-bound on purpose: AutoHistory is built AFTER this factory runs in boot,
    *  so the undo stack can only be resolved at call time. */
   markClean(): void;
@@ -74,7 +78,7 @@ export interface SessionLifecycle {
 
 export function wireSessionLifecycle(deps: SessionLifecycleDeps): SessionLifecycle {
   const {
-    sessionHost, presetsLoaded, workletReady, setTransportBpm,
+    sessionHost, presetsLoaded, workletReady, setTransportBpm, setTransportMeter,
     markClean, performanceFeature, stopTransport,
   } = deps;
 
@@ -91,6 +95,7 @@ export function wireSessionLifecycle(deps: SessionLifecycleDeps): SessionLifecyc
     .then(() => fetchDemoSession(`${import.meta.env.BASE_URL}demos/minimal-techno.json`))
     .then((state) => {
       sessionHost.replaceSession(state);
+      if (state.timeSignature) setTransportMeter(state.timeSignature);
       if (typeof state.bpm === 'number') setTransportBpm(state.bpm);
       markClean();
     })
@@ -108,6 +113,38 @@ export function wireSessionLifecycle(deps: SessionLifecycleDeps): SessionLifecyc
     { label: 'Acid Rain', path: `${import.meta.env.BASE_URL}demos/acid-rain.json` },
     { label: 'Cordillera', path: `${import.meta.env.BASE_URL}demos/cordillera.json` },
     { label: 'Neon Drive', path: `${import.meta.env.BASE_URL}demos/neon-drive.json` },
+    { label: 'Coastline', path: `${import.meta.env.BASE_URL}demos/coastline.json` },
+    { label: 'Broken Cut', path: `${import.meta.env.BASE_URL}demos/broken-cut.json` },
+    { label: 'Swimming', path: `${import.meta.env.BASE_URL}demos/swimming.json` },
+    { label: 'World 1-1', path: `${import.meta.env.BASE_URL}demos/sml1.json` },
+    { label: "Zelda's Rescue", path: `${import.meta.env.BASE_URL}demos/zeldas-rescue.json` },
+    { label: 'Waa2', path: `${import.meta.env.BASE_URL}demos/waa2.json` },
+    { label: 'Acidic Tooth', path: `${import.meta.env.BASE_URL}demos/acidic-tooth.json` },
+    { label: 'Flatrave', path: `${import.meta.env.BASE_URL}demos/flatrave.json` },
+    { label: 'Caverave', path: `${import.meta.env.BASE_URL}demos/caverave.json` },
+    { label: 'Giant Steps', path: `${import.meta.env.BASE_URL}demos/giant-steps.json` },
+    { label: 'Jux und Tollerei', path: `${import.meta.env.BASE_URL}demos/jux-und-tollerei.json` },
+    { label: 'Underground Plumber', path: `${import.meta.env.BASE_URL}demos/underground-plumber.json` },
+    { label: 'Barry Harris', path: `${import.meta.env.BASE_URL}demos/barry-harris.json` },
+    { label: 'Echo Piano', path: `${import.meta.env.BASE_URL}demos/echo-piano.json` },
+    { label: 'Festival of Fingers', path: `${import.meta.env.BASE_URL}demos/festival-of-fingers.json` },
+    { label: 'Festival of Fingers 3', path: `${import.meta.env.BASE_URL}demos/festival-of-fingers-3.json` },
+    { label: 'Good Times', path: `${import.meta.env.BASE_URL}demos/good-times.json` },
+    { label: 'Arpoon', path: `${import.meta.env.BASE_URL}demos/arpoon.json` },
+    { label: 'Melting Submarine', path: `${import.meta.env.BASE_URL}demos/meltingsubmarine.json` },
+    { label: 'Blippy Rhodes', path: `${import.meta.env.BASE_URL}demos/blippy-rhodes.json` },
+    { label: 'Dinofunk', path: `${import.meta.env.BASE_URL}demos/dinofunk.json` },
+    { label: 'Amensister', path: `${import.meta.env.BASE_URL}demos/amensister.json` },
+    { label: 'Belldub', path: `${import.meta.env.BASE_URL}demos/belldub.json` },
+    { label: 'Wavy Kalimba', path: `${import.meta.env.BASE_URL}demos/wavy-kalimba.json` },
+    { label: 'Sample Demo', path: `${import.meta.env.BASE_URL}demos/sample-demo.json` },
+    { label: 'Random Bells', path: `${import.meta.env.BASE_URL}demos/random-bells.json` },
+    { label: 'Bass Fuge', path: `${import.meta.env.BASE_URL}demos/bass-fuge.json` },
+    { label: 'Holy Flute', path: `${import.meta.env.BASE_URL}demos/holyflute.json` },
+    { label: 'Chop', path: `${import.meta.env.BASE_URL}demos/chop.json` },
+    { label: 'Orbit', path: `${import.meta.env.BASE_URL}demos/orbit.json` },
+    { label: 'Delay', path: `${import.meta.env.BASE_URL}demos/delay-tune.json` },
+    { label: 'Sample Drums', path: `${import.meta.env.BASE_URL}demos/sample-drums.json` },
   ];
   const demoPicker = document.getElementById('demo-picker') as HTMLSelectElement | null;
   if (demoPicker) {
@@ -121,6 +158,7 @@ export function wireSessionLifecycle(deps: SessionLifecycleDeps): SessionLifecyc
         selectEl: demoPicker,
         demos: DEMOS,
         applyBpm: setTransportBpm,
+        applyMeter: setTransportMeter,
         onLoaded: () => markClean(),
       });
     });

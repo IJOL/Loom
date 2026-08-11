@@ -8,9 +8,19 @@
       "file": "rolandd110/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "rolandd110/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "rolandd110/snare.wav"
+    },
+    {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "rolandd110/tomLo.wav"
     },
     {
       "voice": "closedHat",
@@ -23,14 +33,19 @@
       "file": "rolandd110/openHat.wav"
     },
     {
-      "voice": "clap",
-      "note": 39,
-      "file": "rolandd110/clap.wav"
+      "voice": "crash",
+      "note": 49,
+      "file": "rolandd110/crash.wav"
     },
     {
-      "voice": "tom",
-      "note": 45,
-      "file": "rolandd110/tom.wav"
+      "voice": "ride",
+      "note": 51,
+      "file": "rolandd110/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "rolandd110/tamb.wav"
     },
     {
       "voice": "cowbell",
@@ -38,9 +53,9 @@
       "file": "rolandd110/cowbell.wav"
     },
     {
-      "voice": "ride",
-      "note": 51,
-      "file": "rolandd110/ride.wav"
+      "voice": "shaker",
+      "note": 82,
+      "file": "rolandd110/shaker.wav"
     }
   ]
 }

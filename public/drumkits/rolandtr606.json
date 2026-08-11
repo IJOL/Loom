@@ -13,6 +13,11 @@
       "file": "rolandtr606/snare.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "rolandtr606/tomLo.wav"
+    },
+    {
       "voice": "closedHat",
       "note": 42,
       "file": "rolandtr606/closedHat.wav"
@@ -23,14 +28,14 @@
       "file": "rolandtr606/openHat.wav"
     },
     {
-      "voice": "tom",
-      "note": 45,
-      "file": "rolandtr606/tom.wav"
+      "voice": "tomHi",
+      "note": 48,
+      "file": "rolandtr606/tomHi.wav"
     },
     {
-      "voice": "ride",
-      "note": 51,
-      "file": "rolandtr606/ride.wav"
+      "voice": "crash",
+      "note": 49,
+      "file": "rolandtr606/crash.wav"
     }
   ]
 }

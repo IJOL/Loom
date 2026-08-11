@@ -310,3 +310,50 @@ Las siguientes fuentes están bajo **CC0 1.0 (dominio público)** y **no exigen 
   - **Formatos AIFF** (Rhodes de tim.kahn, upright de beskhu) requieren conversión a WAV; la licencia no se ve afectada.
   - **SF2/SFZ** hay que desempaquetar a WAV para cargarlos en una lane Sampler de Loom.
 - **Huecos reales del catálogo:** **Organ** no tiene fuente confirmada en estos datos (pendiente de verificar en FreePats/VCSL). **Pluck** y **Lead/Keys** no tienen multisample dedicado verificado — la recomendación honesta es apoyarse en los engines nativos (Karplus, FM, Wavetable, Subtractive) o reutilizar Synth Bass/VCSL transpuestos. **Strings** de sección grande tampoco existe libre de alta gama: VSCO 2 CE (cámara, CC0) es el techo realista.
+
+
+<!-- ── Strudel port (2026-08-11) — written in English per the repo convention ── -->
+
+## Samples fetched for the Strudel demos
+
+Thirty of Strudel's published tunes are ported as demos, and their sounds come
+from the banks Strudel itself resolves rather than from substitutes. Fetched by
+,  and
+; re-encoded to 16-bit mono 44.1 kHz by
+. **Licences are NOT audited here** — this section
+records PROVENANCE so the question can be answered later without re-deriving it.
+
+| Asset | Source | Notes |
+| --- | --- | --- |
+|  (29 zones) | felixroos/dough-samples  | What  plays. Kept as mp3. |
+|  (15 pads) | tidalcycles/uzu-drumkit | Strudel's prebake DEFAULT for a bare //. |
+| , , ,  | tidalcycles/Dirt-Samples | One kit per SOURCE: a tune that spells its own file list means ITS indices. |
+| , , ,  | sgossner/VCSL | 24-bit stereo at source; re-encoded and pruned to the zones a demo reaches. |
+| , , , , , ,  | freesound.org previews, linked by the tunes themselves | ⚠️ Per-sound licences vary and are UNVERIFIED. |
+|  | cleary/samples-flbass | Only the first articulation is used. |
+|  | FluidR3 GM via webaudiofont | **The one substitution in the port.** Blippy Rhodes' own samples were on loophole-letters, which now 404s entirely. |
+
+
+<!-- ── Strudel port (2026-08-11) — written in English per the repo convention ── -->
+
+## Samples fetched for the Strudel demos
+
+Thirty of Strudel's published tunes are ported as demos, and their sounds come
+from the banks Strudel itself resolves rather than from substitutes. Fetched by
+`tools/fetch-strudel-samples.mjs`, `tools/fetch-strudel-piano.mjs` and
+`tools/render-chop-slices.mjs`; re-encoded to 16-bit mono 44.1 kHz by
+`tools/shrink-samples.mjs`. **Licences are NOT audited here** — this section
+records PROVENANCE so the question can be answered later without re-deriving it.
+
+| Asset | Source | Notes |
+| --- | --- | --- |
+| `strudel-piano` (29 zones) | felixroos/dough-samples `piano.json` | What `.piano()` plays. Kept as mp3. |
+| `strudel-uzu` (15 pads) | tidalcycles/uzu-drumkit | Strudel's prebake DEFAULT for a bare `bd`/`sd`/`hh`. |
+| `strudel-tidal-lo`, `strudel-melting`, `strudel-bassfuge`, `strudel-amencutup` | tidalcycles/Dirt-Samples | One kit per SOURCE: a tune that spells its own file list means ITS indices, so `bd:1` is not the same kick twice. |
+| `strudel-vcsl-perc`, `strudel-clavisynth`, `strudel-psaltery`, `strudel-ocarina` | sgossner/VCSL | 24-bit stereo at source; re-encoded, and pruned to the zones a demo can actually reach (Psaltery keeps 1 of 11). |
+| `strudel-kalimba`, `strudel-handbell`, `strudel-bells`, `strudel-bells-bass`, `strudel-dino`, `strudel-dinobass`, `strudel-chop` | freesound.org previews, at the URLs the tunes themselves link | ⚠️ Per-sound licences vary and are UNVERIFIED. |
+| `strudel-flbass` | cleary/samples-flbass | Only the first articulation is used; the tune's other six select articulations we do not model. |
+| `strudel-rhodes` | FluidR3 GM electric piano 1, rendered via webaudiofont | **The one substitution in the whole port.** Blippy Rhodes' own samples lived on loophole-letters, which now 404s entirely. |
+
+Three tunes pointed at that same dead host for their copies of Dirt-Samples
+files; those come from the source repo instead, which is the same audio.

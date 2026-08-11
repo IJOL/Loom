@@ -8,19 +8,14 @@
       "file": "yamahary30/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "yamahary30/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "yamahary30/snare.wav"
-    },
-    {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "yamahary30/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "yamahary30/openHat.wav"
     },
     {
       "voice": "clap",
@@ -28,9 +23,44 @@
       "file": "yamahary30/clap.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "yamahary30/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "yamahary30/closedHat.wav"
+    },
+    {
       "voice": "tom",
       "note": 45,
       "file": "yamahary30/tom.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "yamahary30/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "yamahary30/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "yamahary30/crash.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "yamahary30/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "yamahary30/tamb.wav"
     },
     {
       "voice": "cowbell",
@@ -38,9 +68,9 @@
       "file": "yamahary30/cowbell.wav"
     },
     {
-      "voice": "ride",
-      "note": 51,
-      "file": "yamahary30/ride.wav"
+      "voice": "shaker",
+      "note": 82,
+      "file": "yamahary30/shaker.wav"
     }
   ]
 }

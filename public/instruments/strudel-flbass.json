@@ -1,0 +1,13 @@
+{
+  "id": "strudel-flbass",
+  "name": "Fingered Bass",
+  "family": "melodic",
+  "zones": [
+    {
+      "file": "strudel-flbass/00_c2_finger_long_neck.wav",
+      "rootNote": 36,
+      "loNote": 0,
+      "hiNote": 127
+    }
+  ]
+}

@@ -12,6 +12,10 @@
     "name": "Dirt (samples)"
   },
   {
+    "id": "gm-percussion",
+    "name": "GM Percussion"
+  },
+  {
     "id": "ajkpercusyn",
     "name": "AJKPercusyn"
   },
@@ -268,7 +272,39 @@
     "name": "Yamaha TG 33"
   },
   {
-    "id": "gm-percussion",
-    "name": "GM Percussion"
+    "id": "crate",
+    "name": "Crate (Coastline)"
+  },
+  {
+    "id": "brokencut",
+    "name": "Broken Cut"
+  },
+  {
+    "id": "strudel-uzu",
+    "name": "Uzu (Strudel default)"
+  },
+  {
+    "id": "strudel-tidal-lo",
+    "name": "Tidal (Dirt)"
+  },
+  {
+    "id": "strudel-melting",
+    "name": "Melting Submarine Drums"
+  },
+  {
+    "id": "strudel-bassfuge",
+    "name": "Bass Fuge Drums"
+  },
+  {
+    "id": "strudel-amencutup",
+    "name": "Amen Cutup"
+  },
+  {
+    "id": "strudel-vcsl-perc",
+    "name": "VCSL Percussion"
+  },
+  {
+    "id": "strudel-chop",
+    "name": "Chop Slices"
   }
 ]

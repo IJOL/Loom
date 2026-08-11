@@ -1,0 +1,43 @@
+{
+  "id": "strudel-clavisynth",
+  "name": "Clavisynth",
+  "family": "melodic",
+  "zones": [
+    {
+      "file": "strudel-clavisynth/Clavisynth_C3_vl3.wav",
+      "rootNote": 48,
+      "loNote": 0,
+      "hiNote": 50
+    },
+    {
+      "file": "strudel-clavisynth/Clavisynth_E3_vl3.wav",
+      "rootNote": 52,
+      "loNote": 51,
+      "hiNote": 54
+    },
+    {
+      "file": "strudel-clavisynth/Clavisynth_Gsharp3_vl3.wav",
+      "rootNote": 56,
+      "loNote": 55,
+      "hiNote": 58
+    },
+    {
+      "file": "strudel-clavisynth/Clavisynth_C4_vl3.wav",
+      "rootNote": 60,
+      "loNote": 59,
+      "hiNote": 62
+    },
+    {
+      "file": "strudel-clavisynth/Clavisynth_E4_vl3.wav",
+      "rootNote": 64,
+      "loNote": 63,
+      "hiNote": 66
+    },
+    {
+      "file": "strudel-clavisynth/Clavisynth_Gsharp4_vl3.wav",
+      "rootNote": 68,
+      "loNote": 67,
+      "hiNote": 127
+    }
+  ]
+}

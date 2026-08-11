@@ -11,7 +11,14 @@
 //                     through setBaseValue).
 //   user:<NAME>     — a subtractive user-saved preset (localStorage, stored as
 //                     PolySynthParams). Genuinely different storage.
-//   sampler:<KIND>:<ID> — a sampler instrument / drumkit / loop ref (async load).
+//
+// `sampler:<KIND>:<ID>` — a drumkit / melodic instrument / loop ref — is part of
+// the dropdown's vocabulary but NOT of this function's: loading one is an async
+// fetch + decode, so it goes through `SamplerWorkletEngine.loadFamilyRef`, and a
+// sampler lane records what it plays in `engineState.sampler` rather than in
+// `enginePresetName`. This listed it as if it were handled here, which it never
+// was — the call would have fallen through to `engine.applyPreset('sampler:…')`
+// and silently no-opped.
 //
 // The helper is pure WRT the UI: it does NOT refresh the preset dropdown or
 // knob handles. Call sites that need UI sync (the session-host's

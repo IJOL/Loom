@@ -1,0 +1,1143 @@
+{
+  "bpm": 120,
+  "name": "World 1-1",
+  "lanes": [
+    {
+      "id": "melody-1",
+      "engineId": "subtractive",
+      "name": "Melody",
+      "inserts": [],
+      "clips": [
+        {
+          "id": "melody-1",
+          "name": "Melody",
+          "color": "#f4c8a8",
+          "gridResolution": "1/16",
+          "lengthBars": 24,
+          "notes": [
+            {
+              "start": 0,
+              "duration": 91,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 192,
+              "duration": 61,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 256,
+              "duration": 30,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 352,
+              "duration": 30,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 672,
+              "duration": 61,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 736,
+              "duration": 30,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 768,
+              "duration": 91,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 864,
+              "duration": 91,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 960,
+              "duration": 91,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 1056,
+              "duration": 91,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 1152,
+              "duration": 91,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 1248,
+              "duration": 91,
+              "midi": 77,
+              "velocity": 99
+            },
+            {
+              "start": 1344,
+              "duration": 91,
+              "midi": 79,
+              "velocity": 99
+            },
+            {
+              "start": 1440,
+              "duration": 91,
+              "midi": 81,
+              "velocity": 99
+            },
+            {
+              "start": 1632,
+              "duration": 91,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 1728,
+              "duration": 91,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 1824,
+              "duration": 91,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 1920,
+              "duration": 91,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 2016,
+              "duration": 61,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 2080,
+              "duration": 30,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 2208,
+              "duration": 91,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 2304,
+              "duration": 91,
+              "midi": 77,
+              "velocity": 99
+            },
+            {
+              "start": 2400,
+              "duration": 91,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 2496,
+              "duration": 91,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 2592,
+              "duration": 91,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 2784,
+              "duration": 91,
+              "midi": 91,
+              "velocity": 99
+            },
+            {
+              "start": 2880,
+              "duration": 91,
+              "midi": 91,
+              "velocity": 99
+            },
+            {
+              "start": 3072,
+              "duration": 91,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 3264,
+              "duration": 61,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 3328,
+              "duration": 30,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 3424,
+              "duration": 30,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 3744,
+              "duration": 61,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 3808,
+              "duration": 30,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 3840,
+              "duration": 91,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 3936,
+              "duration": 91,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 4032,
+              "duration": 91,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 4128,
+              "duration": 91,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 4224,
+              "duration": 91,
+              "midi": 81,
+              "velocity": 99
+            },
+            {
+              "start": 4320,
+              "duration": 91,
+              "midi": 79,
+              "velocity": 99
+            },
+            {
+              "start": 4416,
+              "duration": 91,
+              "midi": 84,
+              "velocity": 99
+            },
+            {
+              "start": 4512,
+              "duration": 61,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 4576,
+              "duration": 30,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 4704,
+              "duration": 91,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 4800,
+              "duration": 91,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 4896,
+              "duration": 91,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 4992,
+              "duration": 91,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 5088,
+              "duration": 61,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 5152,
+              "duration": 30,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 5280,
+              "duration": 91,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 5376,
+              "duration": 91,
+              "midi": 77,
+              "velocity": 99
+            },
+            {
+              "start": 5472,
+              "duration": 91,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 5568,
+              "duration": 91,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 5664,
+              "duration": 91,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 5808,
+              "duration": 30,
+              "midi": 91,
+              "velocity": 99
+            },
+            {
+              "start": 5952,
+              "duration": 91,
+              "midi": 79,
+              "velocity": 99
+            },
+            {
+              "start": 6240,
+              "duration": 91,
+              "midi": 81,
+              "velocity": 99
+            },
+            {
+              "start": 6336,
+              "duration": 91,
+              "midi": 83,
+              "velocity": 99
+            },
+            {
+              "start": 6432,
+              "duration": 91,
+              "midi": 84,
+              "velocity": 99
+            },
+            {
+              "start": 6528,
+              "duration": 73,
+              "midi": 83,
+              "velocity": 99
+            },
+            {
+              "start": 6682,
+              "duration": 36,
+              "midi": 79,
+              "velocity": 99
+            },
+            {
+              "start": 6912,
+              "duration": 91,
+              "midi": 77,
+              "velocity": 99
+            },
+            {
+              "start": 7104,
+              "duration": 61,
+              "midi": 79,
+              "velocity": 99
+            },
+            {
+              "start": 7168,
+              "duration": 30,
+              "midi": 77,
+              "velocity": 99
+            },
+            {
+              "start": 7296,
+              "duration": 46,
+              "midi": 76,
+              "velocity": 99
+            },
+            {
+              "start": 7392,
+              "duration": 46,
+              "midi": 77,
+              "velocity": 99
+            },
+            {
+              "start": 7488,
+              "duration": 46,
+              "midi": 78,
+              "velocity": 99
+            },
+            {
+              "start": 7584,
+              "duration": 46,
+              "midi": 79,
+              "velocity": 99
+            },
+            {
+              "start": 7776,
+              "duration": 91,
+              "midi": 81,
+              "velocity": 99
+            },
+            {
+              "start": 7872,
+              "duration": 91,
+              "midi": 83,
+              "velocity": 99
+            },
+            {
+              "start": 7968,
+              "duration": 91,
+              "midi": 84,
+              "velocity": 99
+            },
+            {
+              "start": 8064,
+              "duration": 73,
+              "midi": 83,
+              "velocity": 99
+            },
+            {
+              "start": 8218,
+              "duration": 36,
+              "midi": 79,
+              "velocity": 99
+            },
+            {
+              "start": 8448,
+              "duration": 91,
+              "midi": 87,
+              "velocity": 99
+            },
+            {
+              "start": 8544,
+              "duration": 91,
+              "midi": 86,
+              "velocity": 99
+            },
+            {
+              "start": 8736,
+              "duration": 91,
+              "midi": 84,
+              "velocity": 99
+            }
+          ]
+        }
+      ],
+      "enginePresetName": "engine:LEAD Square",
+      "engineState": {
+        "params": {
+          "osc1.wave": 1,
+          "osc1.level": 0.7,
+          "osc2.level": 0,
+          "filter.cutoff": 0.62,
+          "filter.resonance": 0.08,
+          "filter.envAmount": 0.1,
+          "amp.attack": 0.01,
+          "amp.decay": 0.5,
+          "amp.sustain": 0.75,
+          "amp.release": 0.25,
+          "bus.reverbSend": 0.16
+        }
+      }
+    },
+    {
+      "id": "sub-1",
+      "engineId": "subtractive",
+      "name": "Sub Melody",
+      "inserts": [],
+      "clips": [
+        {
+          "id": "sub-1",
+          "name": "Sub Melody",
+          "color": "#a8e0d8",
+          "gridResolution": "1/16",
+          "lengthBars": 24,
+          "notes": [
+            {
+              "start": 96,
+              "duration": 96,
+              "midi": 67,
+              "velocity": 80
+            },
+            {
+              "start": 288,
+              "duration": 96,
+              "midi": 67,
+              "velocity": 80
+            },
+            {
+              "start": 480,
+              "duration": 96,
+              "midi": 68,
+              "velocity": 80
+            },
+            {
+              "start": 672,
+              "duration": 96,
+              "midi": 68,
+              "velocity": 80
+            },
+            {
+              "start": 864,
+              "duration": 96,
+              "midi": 69,
+              "velocity": 80
+            },
+            {
+              "start": 1056,
+              "duration": 96,
+              "midi": 69,
+              "velocity": 80
+            },
+            {
+              "start": 1248,
+              "duration": 96,
+              "midi": 70,
+              "velocity": 80
+            },
+            {
+              "start": 1440,
+              "duration": 96,
+              "midi": 70,
+              "velocity": 80
+            },
+            {
+              "start": 1632,
+              "duration": 96,
+              "midi": 69,
+              "velocity": 80
+            },
+            {
+              "start": 1824,
+              "duration": 96,
+              "midi": 69,
+              "velocity": 80
+            },
+            {
+              "start": 2016,
+              "duration": 96,
+              "midi": 67,
+              "velocity": 80
+            },
+            {
+              "start": 2208,
+              "duration": 96,
+              "midi": 67,
+              "velocity": 80
+            },
+            {
+              "start": 2304,
+              "duration": 96,
+              "midi": 62,
+              "velocity": 80
+            },
+            {
+              "start": 2400,
+              "duration": 96,
+              "midi": 64,
+              "velocity": 80
+            },
+            {
+              "start": 2496,
+              "duration": 96,
+              "midi": 65,
+              "velocity": 80
+            },
+            {
+              "start": 2592,
+              "duration": 96,
+              "midi": 66,
+              "velocity": 80
+            },
+            {
+              "start": 3168,
+              "duration": 96,
+              "midi": 67,
+              "velocity": 80
+            },
+            {
+              "start": 3360,
+              "duration": 96,
+              "midi": 67,
+              "velocity": 80
+            },
+            {
+              "start": 3552,
+              "duration": 96,
+              "midi": 68,
+              "velocity": 80
+            },
+            {
+              "start": 3744,
+              "duration": 96,
+              "midi": 68,
+              "velocity": 80
+            },
+            {
+              "start": 3936,
+              "duration": 96,
+              "midi": 69,
+              "velocity": 80
+            },
+            {
+              "start": 4128,
+              "duration": 96,
+              "midi": 69,
+              "velocity": 80
+            },
+            {
+              "start": 4320,
+              "duration": 96,
+              "midi": 70,
+              "velocity": 80
+            },
+            {
+              "start": 4512,
+              "duration": 96,
+              "midi": 70,
+              "velocity": 80
+            },
+            {
+              "start": 4704,
+              "duration": 96,
+              "midi": 69,
+              "velocity": 80
+            },
+            {
+              "start": 4896,
+              "duration": 96,
+              "midi": 69,
+              "velocity": 80
+            },
+            {
+              "start": 5088,
+              "duration": 96,
+              "midi": 67,
+              "velocity": 80
+            },
+            {
+              "start": 5280,
+              "duration": 96,
+              "midi": 67,
+              "velocity": 80
+            },
+            {
+              "start": 5376,
+              "duration": 96,
+              "midi": 62,
+              "velocity": 80
+            },
+            {
+              "start": 5472,
+              "duration": 96,
+              "midi": 64,
+              "velocity": 80
+            },
+            {
+              "start": 5568,
+              "duration": 96,
+              "midi": 65,
+              "velocity": 80
+            },
+            {
+              "start": 5664,
+              "duration": 96,
+              "midi": 66,
+              "velocity": 80
+            },
+            {
+              "start": 6240,
+              "duration": 96,
+              "midi": 72,
+              "velocity": 80
+            },
+            {
+              "start": 6432,
+              "duration": 96,
+              "midi": 72,
+              "velocity": 80
+            },
+            {
+              "start": 6624,
+              "duration": 96,
+              "midi": 72,
+              "velocity": 80
+            },
+            {
+              "start": 6816,
+              "duration": 96,
+              "midi": 72,
+              "velocity": 80
+            },
+            {
+              "start": 7008,
+              "duration": 96,
+              "midi": 69,
+              "velocity": 80
+            },
+            {
+              "start": 7200,
+              "duration": 96,
+              "midi": 69,
+              "velocity": 80
+            },
+            {
+              "start": 7296,
+              "duration": 48,
+              "midi": 60,
+              "velocity": 80
+            },
+            {
+              "start": 7392,
+              "duration": 48,
+              "midi": 62,
+              "velocity": 80
+            },
+            {
+              "start": 7488,
+              "duration": 48,
+              "midi": 63,
+              "velocity": 80
+            },
+            {
+              "start": 7584,
+              "duration": 48,
+              "midi": 64,
+              "velocity": 80
+            },
+            {
+              "start": 7776,
+              "duration": 96,
+              "midi": 72,
+              "velocity": 80
+            },
+            {
+              "start": 7968,
+              "duration": 96,
+              "midi": 72,
+              "velocity": 80
+            },
+            {
+              "start": 8160,
+              "duration": 96,
+              "midi": 72,
+              "velocity": 80
+            },
+            {
+              "start": 8352,
+              "duration": 96,
+              "midi": 72,
+              "velocity": 80
+            },
+            {
+              "start": 8544,
+              "duration": 96,
+              "midi": 75,
+              "velocity": 80
+            },
+            {
+              "start": 8736,
+              "duration": 96,
+              "midi": 75,
+              "velocity": 80
+            },
+            {
+              "start": 8832,
+              "duration": 48,
+              "midi": 67,
+              "velocity": 80
+            },
+            {
+              "start": 8880,
+              "duration": 48,
+              "midi": 67,
+              "velocity": 80
+            },
+            {
+              "start": 8928,
+              "duration": 48,
+              "midi": 65,
+              "velocity": 80
+            },
+            {
+              "start": 9024,
+              "duration": 48,
+              "midi": 64,
+              "velocity": 80
+            },
+            {
+              "start": 9120,
+              "duration": 48,
+              "midi": 62,
+              "velocity": 80
+            }
+          ]
+        }
+      ],
+      "enginePresetName": "engine:LEAD Soft Sine",
+      "engineState": {
+        "params": {
+          "osc1.wave": 2,
+          "osc1.level": 0.7,
+          "osc2.level": 0,
+          "filter.cutoff": 0.62,
+          "filter.resonance": 0.08,
+          "filter.envAmount": 0.1,
+          "amp.attack": 0.01,
+          "amp.decay": 0.5,
+          "amp.sustain": 0.75,
+          "amp.release": 0.25,
+          "bus.reverbSend": 0.2,
+          "bus.level": 0.8
+        }
+      }
+    },
+    {
+      "id": "bass-1",
+      "engineId": "subtractive",
+      "name": "Bass",
+      "inserts": [],
+      "clips": [
+        {
+          "id": "bass-1",
+          "name": "Bass",
+          "color": "#a8c8e8",
+          "gridResolution": "1/16",
+          "lengthBars": 24,
+          "notes": [
+            {
+              "start": 0,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 192,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 384,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 576,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 768,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 960,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 1152,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 1344,
+              "duration": 96,
+              "midi": 57,
+              "velocity": 99
+            },
+            {
+              "start": 1536,
+              "duration": 96,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 1728,
+              "duration": 96,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 1920,
+              "duration": 96,
+              "midi": 52,
+              "velocity": 99
+            },
+            {
+              "start": 2112,
+              "duration": 96,
+              "midi": 52,
+              "velocity": 99
+            },
+            {
+              "start": 3072,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 3264,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 3456,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 3648,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 3840,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 4032,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 4224,
+              "duration": 96,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 4416,
+              "duration": 96,
+              "midi": 57,
+              "velocity": 99
+            },
+            {
+              "start": 4608,
+              "duration": 96,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 4800,
+              "duration": 96,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 4992,
+              "duration": 96,
+              "midi": 52,
+              "velocity": 99
+            },
+            {
+              "start": 5184,
+              "duration": 96,
+              "midi": 52,
+              "velocity": 99
+            },
+            {
+              "start": 6144,
+              "duration": 96,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 6336,
+              "duration": 96,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 6528,
+              "duration": 96,
+              "midi": 52,
+              "velocity": 99
+            },
+            {
+              "start": 6720,
+              "duration": 96,
+              "midi": 52,
+              "velocity": 99
+            },
+            {
+              "start": 6912,
+              "duration": 96,
+              "midi": 50,
+              "velocity": 99
+            },
+            {
+              "start": 7104,
+              "duration": 96,
+              "midi": 50,
+              "velocity": 99
+            },
+            {
+              "start": 7680,
+              "duration": 96,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 7872,
+              "duration": 96,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 8064,
+              "duration": 96,
+              "midi": 52,
+              "velocity": 99
+            },
+            {
+              "start": 8256,
+              "duration": 96,
+              "midi": 52,
+              "velocity": 99
+            },
+            {
+              "start": 8448,
+              "duration": 96,
+              "midi": 56,
+              "velocity": 99
+            },
+            {
+              "start": 8640,
+              "duration": 96,
+              "midi": 56,
+              "velocity": 99
+            }
+          ]
+        }
+      ],
+      "enginePresetName": "engine:BASS Square",
+      "engineState": {
+        "params": {
+          "osc1.wave": 1,
+          "osc1.level": 0.7,
+          "osc2.level": 0,
+          "filter.cutoff": 0.42,
+          "filter.resonance": 0.08,
+          "filter.envAmount": 0.1,
+          "amp.attack": 0.01,
+          "amp.decay": 0.5,
+          "amp.sustain": 0.75,
+          "amp.release": 0.25,
+          "bus.reverbSend": 0.05
+        }
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-1",
+      "name": "World 1-1",
+      "clipPerLane": {
+        "melody-1": 0,
+        "sub-1": 0,
+        "bass-1": 0
+      }
+    }
+  ],
+  "globalQuantize": "1/1",
+  "musicality": {
+    "key": 0,
+    "scale": "minor",
+    "style": "acid-techno",
+    "lock": false
+  },
+  "sends": [
+    {
+      "id": "A",
+      "label": "Send A (Delay)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "sml1-send-a",
+          "pluginId": "delay",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Send B (Reverb)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "sml1-send-b",
+          "pluginId": "reverb",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    }
+  ],
+  "masterInserts": [],
+  "timeSignature": {
+    "num": 4,
+    "den": 4
+  }
+}

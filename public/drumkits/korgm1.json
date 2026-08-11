@@ -8,19 +8,14 @@
       "file": "korgm1/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "korgm1/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "korgm1/snare.wav"
-    },
-    {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "korgm1/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "korgm1/openHat.wav"
     },
     {
       "voice": "clap",
@@ -28,9 +23,39 @@
       "file": "korgm1/clap.wav"
     },
     {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "korgm1/closedHat.wav"
+    },
+    {
       "voice": "tom",
       "note": 45,
       "file": "korgm1/tom.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "korgm1/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "korgm1/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "korgm1/crash.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "korgm1/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "korgm1/tamb.wav"
     },
     {
       "voice": "cowbell",
@@ -38,9 +63,9 @@
       "file": "korgm1/cowbell.wav"
     },
     {
-      "voice": "ride",
-      "note": 51,
-      "file": "korgm1/ride.wav"
+      "voice": "shaker",
+      "note": 82,
+      "file": "korgm1/shaker.wav"
     }
   ]
 }

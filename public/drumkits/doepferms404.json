@@ -13,6 +13,11 @@
       "file": "doepferms404/snare.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "doepferms404/tomLo.wav"
+    },
+    {
       "voice": "closedHat",
       "note": 42,
       "file": "doepferms404/closedHat.wav"
@@ -21,11 +26,6 @@
       "voice": "openHat",
       "note": 46,
       "file": "doepferms404/openHat.wav"
-    },
-    {
-      "voice": "tom",
-      "note": 45,
-      "file": "doepferms404/tom.wav"
     }
   ]
 }

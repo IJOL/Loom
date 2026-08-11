@@ -1,0 +1,646 @@
+{
+  "id": "strudel-chop",
+  "name": "Chop Slices",
+  "samples": [
+    {
+      "voice": "slice0",
+      "note": 0,
+      "file": "strudel-chop/0.wav"
+    },
+    {
+      "voice": "slice1",
+      "note": 1,
+      "file": "strudel-chop/1.wav"
+    },
+    {
+      "voice": "slice2",
+      "note": 2,
+      "file": "strudel-chop/2.wav"
+    },
+    {
+      "voice": "slice3",
+      "note": 3,
+      "file": "strudel-chop/3.wav"
+    },
+    {
+      "voice": "slice4",
+      "note": 4,
+      "file": "strudel-chop/4.wav"
+    },
+    {
+      "voice": "slice5",
+      "note": 5,
+      "file": "strudel-chop/5.wav"
+    },
+    {
+      "voice": "slice6",
+      "note": 6,
+      "file": "strudel-chop/6.wav"
+    },
+    {
+      "voice": "slice7",
+      "note": 7,
+      "file": "strudel-chop/7.wav"
+    },
+    {
+      "voice": "slice8",
+      "note": 8,
+      "file": "strudel-chop/8.wav"
+    },
+    {
+      "voice": "slice9",
+      "note": 9,
+      "file": "strudel-chop/9.wav"
+    },
+    {
+      "voice": "slice10",
+      "note": 10,
+      "file": "strudel-chop/10.wav"
+    },
+    {
+      "voice": "slice11",
+      "note": 11,
+      "file": "strudel-chop/11.wav"
+    },
+    {
+      "voice": "slice12",
+      "note": 12,
+      "file": "strudel-chop/12.wav"
+    },
+    {
+      "voice": "slice13",
+      "note": 13,
+      "file": "strudel-chop/13.wav"
+    },
+    {
+      "voice": "slice14",
+      "note": 14,
+      "file": "strudel-chop/14.wav"
+    },
+    {
+      "voice": "slice15",
+      "note": 15,
+      "file": "strudel-chop/15.wav"
+    },
+    {
+      "voice": "slice16",
+      "note": 16,
+      "file": "strudel-chop/16.wav"
+    },
+    {
+      "voice": "slice17",
+      "note": 17,
+      "file": "strudel-chop/17.wav"
+    },
+    {
+      "voice": "slice18",
+      "note": 18,
+      "file": "strudel-chop/18.wav"
+    },
+    {
+      "voice": "slice19",
+      "note": 19,
+      "file": "strudel-chop/19.wav"
+    },
+    {
+      "voice": "slice20",
+      "note": 20,
+      "file": "strudel-chop/20.wav"
+    },
+    {
+      "voice": "slice21",
+      "note": 21,
+      "file": "strudel-chop/21.wav"
+    },
+    {
+      "voice": "slice22",
+      "note": 22,
+      "file": "strudel-chop/22.wav"
+    },
+    {
+      "voice": "slice23",
+      "note": 23,
+      "file": "strudel-chop/23.wav"
+    },
+    {
+      "voice": "slice24",
+      "note": 24,
+      "file": "strudel-chop/24.wav"
+    },
+    {
+      "voice": "slice25",
+      "note": 25,
+      "file": "strudel-chop/25.wav"
+    },
+    {
+      "voice": "slice26",
+      "note": 26,
+      "file": "strudel-chop/26.wav"
+    },
+    {
+      "voice": "slice27",
+      "note": 27,
+      "file": "strudel-chop/27.wav"
+    },
+    {
+      "voice": "slice28",
+      "note": 28,
+      "file": "strudel-chop/28.wav"
+    },
+    {
+      "voice": "slice29",
+      "note": 29,
+      "file": "strudel-chop/29.wav"
+    },
+    {
+      "voice": "slice30",
+      "note": 30,
+      "file": "strudel-chop/30.wav"
+    },
+    {
+      "voice": "slice31",
+      "note": 31,
+      "file": "strudel-chop/31.wav"
+    },
+    {
+      "voice": "slice32",
+      "note": 32,
+      "file": "strudel-chop/32.wav"
+    },
+    {
+      "voice": "slice33",
+      "note": 33,
+      "file": "strudel-chop/33.wav"
+    },
+    {
+      "voice": "slice34",
+      "note": 34,
+      "file": "strudel-chop/34.wav"
+    },
+    {
+      "voice": "slice35",
+      "note": 35,
+      "file": "strudel-chop/35.wav"
+    },
+    {
+      "voice": "slice36",
+      "note": 36,
+      "file": "strudel-chop/36.wav"
+    },
+    {
+      "voice": "slice37",
+      "note": 37,
+      "file": "strudel-chop/37.wav"
+    },
+    {
+      "voice": "slice38",
+      "note": 38,
+      "file": "strudel-chop/38.wav"
+    },
+    {
+      "voice": "slice39",
+      "note": 39,
+      "file": "strudel-chop/39.wav"
+    },
+    {
+      "voice": "slice40",
+      "note": 40,
+      "file": "strudel-chop/40.wav"
+    },
+    {
+      "voice": "slice41",
+      "note": 41,
+      "file": "strudel-chop/41.wav"
+    },
+    {
+      "voice": "slice42",
+      "note": 42,
+      "file": "strudel-chop/42.wav"
+    },
+    {
+      "voice": "slice43",
+      "note": 43,
+      "file": "strudel-chop/43.wav"
+    },
+    {
+      "voice": "slice44",
+      "note": 44,
+      "file": "strudel-chop/44.wav"
+    },
+    {
+      "voice": "slice45",
+      "note": 45,
+      "file": "strudel-chop/45.wav"
+    },
+    {
+      "voice": "slice46",
+      "note": 46,
+      "file": "strudel-chop/46.wav"
+    },
+    {
+      "voice": "slice47",
+      "note": 47,
+      "file": "strudel-chop/47.wav"
+    },
+    {
+      "voice": "slice48",
+      "note": 48,
+      "file": "strudel-chop/48.wav"
+    },
+    {
+      "voice": "slice49",
+      "note": 49,
+      "file": "strudel-chop/49.wav"
+    },
+    {
+      "voice": "slice50",
+      "note": 50,
+      "file": "strudel-chop/50.wav"
+    },
+    {
+      "voice": "slice51",
+      "note": 51,
+      "file": "strudel-chop/51.wav"
+    },
+    {
+      "voice": "slice52",
+      "note": 52,
+      "file": "strudel-chop/52.wav"
+    },
+    {
+      "voice": "slice53",
+      "note": 53,
+      "file": "strudel-chop/53.wav"
+    },
+    {
+      "voice": "slice54",
+      "note": 54,
+      "file": "strudel-chop/54.wav"
+    },
+    {
+      "voice": "slice55",
+      "note": 55,
+      "file": "strudel-chop/55.wav"
+    },
+    {
+      "voice": "slice56",
+      "note": 56,
+      "file": "strudel-chop/56.wav"
+    },
+    {
+      "voice": "slice57",
+      "note": 57,
+      "file": "strudel-chop/57.wav"
+    },
+    {
+      "voice": "slice58",
+      "note": 58,
+      "file": "strudel-chop/58.wav"
+    },
+    {
+      "voice": "slice59",
+      "note": 59,
+      "file": "strudel-chop/59.wav"
+    },
+    {
+      "voice": "slice60",
+      "note": 60,
+      "file": "strudel-chop/60.wav"
+    },
+    {
+      "voice": "slice61",
+      "note": 61,
+      "file": "strudel-chop/61.wav"
+    },
+    {
+      "voice": "slice62",
+      "note": 62,
+      "file": "strudel-chop/62.wav"
+    },
+    {
+      "voice": "slice63",
+      "note": 63,
+      "file": "strudel-chop/63.wav"
+    },
+    {
+      "voice": "slice64",
+      "note": 64,
+      "file": "strudel-chop/64.wav"
+    },
+    {
+      "voice": "slice65",
+      "note": 65,
+      "file": "strudel-chop/65.wav"
+    },
+    {
+      "voice": "slice66",
+      "note": 66,
+      "file": "strudel-chop/66.wav"
+    },
+    {
+      "voice": "slice67",
+      "note": 67,
+      "file": "strudel-chop/67.wav"
+    },
+    {
+      "voice": "slice68",
+      "note": 68,
+      "file": "strudel-chop/68.wav"
+    },
+    {
+      "voice": "slice69",
+      "note": 69,
+      "file": "strudel-chop/69.wav"
+    },
+    {
+      "voice": "slice70",
+      "note": 70,
+      "file": "strudel-chop/70.wav"
+    },
+    {
+      "voice": "slice71",
+      "note": 71,
+      "file": "strudel-chop/71.wav"
+    },
+    {
+      "voice": "slice72",
+      "note": 72,
+      "file": "strudel-chop/72.wav"
+    },
+    {
+      "voice": "slice73",
+      "note": 73,
+      "file": "strudel-chop/73.wav"
+    },
+    {
+      "voice": "slice74",
+      "note": 74,
+      "file": "strudel-chop/74.wav"
+    },
+    {
+      "voice": "slice75",
+      "note": 75,
+      "file": "strudel-chop/75.wav"
+    },
+    {
+      "voice": "slice76",
+      "note": 76,
+      "file": "strudel-chop/76.wav"
+    },
+    {
+      "voice": "slice77",
+      "note": 77,
+      "file": "strudel-chop/77.wav"
+    },
+    {
+      "voice": "slice78",
+      "note": 78,
+      "file": "strudel-chop/78.wav"
+    },
+    {
+      "voice": "slice79",
+      "note": 79,
+      "file": "strudel-chop/79.wav"
+    },
+    {
+      "voice": "slice80",
+      "note": 80,
+      "file": "strudel-chop/80.wav"
+    },
+    {
+      "voice": "slice81",
+      "note": 81,
+      "file": "strudel-chop/81.wav"
+    },
+    {
+      "voice": "slice82",
+      "note": 82,
+      "file": "strudel-chop/82.wav"
+    },
+    {
+      "voice": "slice83",
+      "note": 83,
+      "file": "strudel-chop/83.wav"
+    },
+    {
+      "voice": "slice84",
+      "note": 84,
+      "file": "strudel-chop/84.wav"
+    },
+    {
+      "voice": "slice85",
+      "note": 85,
+      "file": "strudel-chop/85.wav"
+    },
+    {
+      "voice": "slice86",
+      "note": 86,
+      "file": "strudel-chop/86.wav"
+    },
+    {
+      "voice": "slice87",
+      "note": 87,
+      "file": "strudel-chop/87.wav"
+    },
+    {
+      "voice": "slice88",
+      "note": 88,
+      "file": "strudel-chop/88.wav"
+    },
+    {
+      "voice": "slice89",
+      "note": 89,
+      "file": "strudel-chop/89.wav"
+    },
+    {
+      "voice": "slice90",
+      "note": 90,
+      "file": "strudel-chop/90.wav"
+    },
+    {
+      "voice": "slice91",
+      "note": 91,
+      "file": "strudel-chop/91.wav"
+    },
+    {
+      "voice": "slice92",
+      "note": 92,
+      "file": "strudel-chop/92.wav"
+    },
+    {
+      "voice": "slice93",
+      "note": 93,
+      "file": "strudel-chop/93.wav"
+    },
+    {
+      "voice": "slice94",
+      "note": 94,
+      "file": "strudel-chop/94.wav"
+    },
+    {
+      "voice": "slice95",
+      "note": 95,
+      "file": "strudel-chop/95.wav"
+    },
+    {
+      "voice": "slice96",
+      "note": 96,
+      "file": "strudel-chop/96.wav"
+    },
+    {
+      "voice": "slice97",
+      "note": 97,
+      "file": "strudel-chop/97.wav"
+    },
+    {
+      "voice": "slice98",
+      "note": 98,
+      "file": "strudel-chop/98.wav"
+    },
+    {
+      "voice": "slice99",
+      "note": 99,
+      "file": "strudel-chop/99.wav"
+    },
+    {
+      "voice": "slice100",
+      "note": 100,
+      "file": "strudel-chop/100.wav"
+    },
+    {
+      "voice": "slice101",
+      "note": 101,
+      "file": "strudel-chop/101.wav"
+    },
+    {
+      "voice": "slice102",
+      "note": 102,
+      "file": "strudel-chop/102.wav"
+    },
+    {
+      "voice": "slice103",
+      "note": 103,
+      "file": "strudel-chop/103.wav"
+    },
+    {
+      "voice": "slice104",
+      "note": 104,
+      "file": "strudel-chop/104.wav"
+    },
+    {
+      "voice": "slice105",
+      "note": 105,
+      "file": "strudel-chop/105.wav"
+    },
+    {
+      "voice": "slice106",
+      "note": 106,
+      "file": "strudel-chop/106.wav"
+    },
+    {
+      "voice": "slice107",
+      "note": 107,
+      "file": "strudel-chop/107.wav"
+    },
+    {
+      "voice": "slice108",
+      "note": 108,
+      "file": "strudel-chop/108.wav"
+    },
+    {
+      "voice": "slice109",
+      "note": 109,
+      "file": "strudel-chop/109.wav"
+    },
+    {
+      "voice": "slice110",
+      "note": 110,
+      "file": "strudel-chop/110.wav"
+    },
+    {
+      "voice": "slice111",
+      "note": 111,
+      "file": "strudel-chop/111.wav"
+    },
+    {
+      "voice": "slice112",
+      "note": 112,
+      "file": "strudel-chop/112.wav"
+    },
+    {
+      "voice": "slice113",
+      "note": 113,
+      "file": "strudel-chop/113.wav"
+    },
+    {
+      "voice": "slice114",
+      "note": 114,
+      "file": "strudel-chop/114.wav"
+    },
+    {
+      "voice": "slice115",
+      "note": 115,
+      "file": "strudel-chop/115.wav"
+    },
+    {
+      "voice": "slice116",
+      "note": 116,
+      "file": "strudel-chop/116.wav"
+    },
+    {
+      "voice": "slice117",
+      "note": 117,
+      "file": "strudel-chop/117.wav"
+    },
+    {
+      "voice": "slice118",
+      "note": 118,
+      "file": "strudel-chop/118.wav"
+    },
+    {
+      "voice": "slice119",
+      "note": 119,
+      "file": "strudel-chop/119.wav"
+    },
+    {
+      "voice": "slice120",
+      "note": 120,
+      "file": "strudel-chop/120.wav"
+    },
+    {
+      "voice": "slice121",
+      "note": 121,
+      "file": "strudel-chop/121.wav"
+    },
+    {
+      "voice": "slice122",
+      "note": 122,
+      "file": "strudel-chop/122.wav"
+    },
+    {
+      "voice": "slice123",
+      "note": 123,
+      "file": "strudel-chop/123.wav"
+    },
+    {
+      "voice": "slice124",
+      "note": 124,
+      "file": "strudel-chop/124.wav"
+    },
+    {
+      "voice": "slice125",
+      "note": 125,
+      "file": "strudel-chop/125.wav"
+    },
+    {
+      "voice": "slice126",
+      "note": 126,
+      "file": "strudel-chop/126.wav"
+    },
+    {
+      "voice": "slice127",
+      "note": 127,
+      "file": "strudel-chop/127.wav"
+    }
+  ]
+}

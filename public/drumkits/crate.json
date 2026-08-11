@@ -1,0 +1,51 @@
+{
+  "id": "crate",
+  "name": "Crate (Coastline)",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "crate/kick.wav"
+    },
+    {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "crate/rimshot.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "crate/snare.wav"
+    },
+    {
+      "voice": "snare2",
+      "note": 40,
+      "file": "crate/snare2.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "crate/closedHat.wav"
+    },
+    {
+      "voice": "pedalHat",
+      "note": 44,
+      "file": "crate/pedalHat.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "crate/openHat.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "crate/ride.wav"
+    },
+    {
+      "voice": "ride2",
+      "note": 59,
+      "file": "crate/ride2.wav"
+    }
+  ]
+}

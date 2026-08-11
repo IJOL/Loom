@@ -1,0 +1,55 @@
+{
+  "id": "gm-epiano1",
+  "name": "GM Electric Piano",
+  "family": "melodic",
+  "zones": [
+    {
+      "file": "gm-epiano1/56.wav",
+      "rootNote": 56,
+      "loNote": 56,
+      "hiNote": 56
+    },
+    {
+      "file": "gm-epiano1/60.wav",
+      "rootNote": 60,
+      "loNote": 60,
+      "hiNote": 60
+    },
+    {
+      "file": "gm-epiano1/61.wav",
+      "rootNote": 61,
+      "loNote": 61,
+      "hiNote": 61
+    },
+    {
+      "file": "gm-epiano1/63.wav",
+      "rootNote": 63,
+      "loNote": 63,
+      "hiNote": 63
+    },
+    {
+      "file": "gm-epiano1/65.wav",
+      "rootNote": 65,
+      "loNote": 65,
+      "hiNote": 65
+    },
+    {
+      "file": "gm-epiano1/67.wav",
+      "rootNote": 67,
+      "loNote": 67,
+      "hiNote": 67
+    },
+    {
+      "file": "gm-epiano1/70.wav",
+      "rootNote": 70,
+      "loNote": 70,
+      "hiNote": 70
+    },
+    {
+      "file": "gm-epiano1/72.wav",
+      "rootNote": 72,
+      "loNote": 72,
+      "hiNote": 72
+    }
+  ]
+}

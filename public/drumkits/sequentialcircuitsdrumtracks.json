@@ -8,9 +8,19 @@
       "file": "sequentialcircuitsdrumtracks/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "sequentialcircuitsdrumtracks/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "sequentialcircuitsdrumtracks/snare.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "sequentialcircuitsdrumtracks/clap.wav"
     },
     {
       "voice": "closedHat",
@@ -23,14 +33,24 @@
       "file": "sequentialcircuitsdrumtracks/openHat.wav"
     },
     {
-      "voice": "clap",
-      "note": 39,
-      "file": "sequentialcircuitsdrumtracks/clap.wav"
+      "voice": "tomHi",
+      "note": 48,
+      "file": "sequentialcircuitsdrumtracks/tomHi.wav"
     },
     {
-      "voice": "tom",
-      "note": 45,
-      "file": "sequentialcircuitsdrumtracks/tom.wav"
+      "voice": "crash",
+      "note": 49,
+      "file": "sequentialcircuitsdrumtracks/crash.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "sequentialcircuitsdrumtracks/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "sequentialcircuitsdrumtracks/tamb.wav"
     },
     {
       "voice": "cowbell",
@@ -38,9 +58,9 @@
       "file": "sequentialcircuitsdrumtracks/cowbell.wav"
     },
     {
-      "voice": "ride",
-      "note": 51,
-      "file": "sequentialcircuitsdrumtracks/ride.wav"
+      "voice": "shaker",
+      "note": 82,
+      "file": "sequentialcircuitsdrumtracks/shaker.wav"
     }
   ]
 }

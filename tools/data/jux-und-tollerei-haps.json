@@ -1,0 +1,7074 @@
+{
+  "source": "strudel — \"Jux und tollerei\"",
+  "cycles": 32,
+  "cps": 0.5,
+  "events": [
+    {
+      "begin": 0,
+      "end": 0.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1100,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1100,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1275.5812898145155,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1275.5812898145155,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1444.4150891285808,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1444.4150891285808,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 0.505,
+      "end": 1.005,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1447.6776848789743,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 0.505,
+      "end": 1.005,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1447.6776848789743,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1600.013209717642,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1600.013209717642,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1736.3961030678927,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1736.3961030678927,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 1.005,
+      "end": 1.505,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1738.8903112897613,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 1.005,
+      "end": 1.505,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1738.8903112897613,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1848.322651072291,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1848.322651072291,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1931.491579260158,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1931.491579260158,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 1.505,
+      "end": 2.005,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1932.8376793617758,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 1.505,
+      "end": 2.005,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1932.8376793617758,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1982.7067523629073,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1982.7067523629073,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 2000,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 2000,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 2.005,
+      "end": 2.505,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1999.9930604433234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 2.005,
+      "end": 2.505,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1999.9930604433234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1982.7067523629073,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1982.7067523629073,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1931.491579260158,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1931.491579260158,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 2.505,
+      "end": 3.005,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1930.132656529784,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 2.505,
+      "end": 3.005,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1930.132656529784,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1848.322651072291,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1848.322651072291,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1736.3961030678927,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1736.3961030678927,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 3.005,
+      "end": 3.505,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1733.8920808308558,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 3.005,
+      "end": 3.505,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1733.8920808308558,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1600.013209717642,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1600.013209717642,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 3.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1444.4150891285808,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 3.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1444.4150891285808,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 3.505,
+      "end": 4.005,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1441.1471820714514,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 3.505,
+      "end": 4.005,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1441.1471820714514,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1275.5812898145157,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1275.5812898145157,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1100.0000000000002,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1100.0000000000002,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 4.005,
+      "end": 4.505,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1096.4657173485748,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 4.005,
+      "end": 4.505,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1096.4657173485748,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 924.4187101854844,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 924.4187101854844,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 4.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 755.5849108714193,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 4.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 755.5849108714193,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 4.505,
+      "end": 5.005,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 752.3223151210259,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 4.505,
+      "end": 5.005,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 752.3223151210259,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 5,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 599.9867902823582,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 5,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 599.9867902823582,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 463.60389693210726,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 463.60389693210726,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 5.005,
+      "end": 5.505,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 461.10968871023897,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 5.005,
+      "end": 5.505,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 461.10968871023897,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 351.6773489277093,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 351.6773489277093,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 5.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 268.5084207398421,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 5.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 268.5084207398421,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 5.505,
+      "end": 6.005,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 267.1623206382243,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 5.505,
+      "end": 6.005,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 267.1623206382243,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 6,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 217.29324763709272,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 6,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 217.29324763709272,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 200,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 200,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 6.005,
+      "end": 6.505,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 200.0069395566765,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 6.005,
+      "end": 6.505,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 200.0069395566765,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 217.2932476370926,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 217.2932476370926,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 6.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 268.50842073984205,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 6.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 268.50842073984205,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 6.505,
+      "end": 7.005,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 269.86734347021576,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 6.505,
+      "end": 7.005,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 269.86734347021576,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 7,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 351.6773489277091,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 7,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 351.6773489277091,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 463.6038969321071,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 463.6038969321071,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 7.005,
+      "end": 7.505,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 466.1079191691444,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 7.005,
+      "end": 7.505,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 466.1079191691444,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 7.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 599.986790282358,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 7.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 599.986790282358,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 7.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 755.5849108714186,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 7.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 755.5849108714186,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 7.505,
+      "end": 8.005,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 758.8528179285485,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 7.505,
+      "end": 8.005,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 758.8528179285485,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 8,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 924.4187101854841,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 8,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 924.4187101854841,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1099.9999999999998,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1099.9999999999998,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 8.005,
+      "end": 8.505,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1103.5342826514254,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 8.005,
+      "end": 8.505,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1103.5342826514254,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1275.5812898145155,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1275.5812898145155,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1444.415089128581,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1444.415089128581,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 8.505,
+      "end": 9.005,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1447.6776848789746,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 8.505,
+      "end": 9.005,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1447.6776848789746,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1600.0132097176415,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1600.0132097176415,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1736.3961030678927,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1736.3961030678927,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 9.005,
+      "end": 9.505,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1738.8903112897613,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 9.005,
+      "end": 9.505,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1738.8903112897613,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1848.322651072291,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1848.322651072291,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1931.4915792601578,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1931.4915792601578,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 9.505,
+      "end": 10.005,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1932.837679361776,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 9.505,
+      "end": 10.005,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1932.837679361776,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1982.7067523629073,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1982.7067523629073,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 2000,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 2000,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 10.005,
+      "end": 10.505,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1999.9930604433234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 10.005,
+      "end": 10.505,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1999.9930604433234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1982.7067523629075,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1982.7067523629075,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1931.491579260158,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1931.491579260158,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 10.505,
+      "end": 11.005,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1930.132656529784,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 10.505,
+      "end": 11.005,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1930.132656529784,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 11,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1848.322651072291,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 11,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1848.322651072291,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1736.3961030678936,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1736.3961030678936,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 11.005,
+      "end": 11.505,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1733.892080830855,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 11.005,
+      "end": 11.505,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1733.892080830855,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1600.013209717642,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1600.013209717642,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 11.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1444.4150891285815,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 11.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1444.4150891285815,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 11.505,
+      "end": 12.005,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1441.1471820714517,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 11.505,
+      "end": 12.005,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1441.1471820714517,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1275.5812898145152,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1275.5812898145152,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1100.0000000000005,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1100.0000000000005,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 12.005,
+      "end": 12.505,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1096.4657173485748,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 12.005,
+      "end": 12.505,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1096.4657173485748,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 924.4187101854855,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 924.4187101854855,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 12.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 755.5849108714192,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 12.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 755.5849108714192,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 12.505,
+      "end": 13.005,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 752.3223151210253,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 12.505,
+      "end": 13.005,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 752.3223151210253,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 13,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 599.9867902823585,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 13,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 599.9867902823585,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 463.60389693210686,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 463.60389693210686,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 13.005,
+      "end": 13.505,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 461.1096887102383,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 13.005,
+      "end": 13.505,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 461.1096887102383,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 351.6773489277094,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 351.6773489277094,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 13.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 268.5084207398422,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 13.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 268.5084207398422,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 13.505,
+      "end": 14.005,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 267.1623206382243,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 13.505,
+      "end": 14.005,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 267.1623206382243,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 217.29324763709252,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 217.29324763709252,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 200,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 200,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 14.005,
+      "end": 14.505,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 200.0069395566765,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 14.005,
+      "end": 14.505,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 200.0069395566765,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 217.2932476370924,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 217.2932476370924,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 14.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 268.50842073984194,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 14.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 268.50842073984194,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 14.505,
+      "end": 15.005,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 269.8673434702159,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 14.505,
+      "end": 15.005,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 269.8673434702159,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 15,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 351.677348927709,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 15,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 351.677348927709,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 463.6038969321064,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 463.6038969321064,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 15.005,
+      "end": 15.505,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 466.1079191691449,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 15.005,
+      "end": 15.505,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 466.1079191691449,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 599.9867902823578,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 599.9867902823578,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 15.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 755.5849108714184,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 15.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 755.5849108714184,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 15.505,
+      "end": 16.005,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 758.8528179285482,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 15.505,
+      "end": 16.005,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 758.8528179285482,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 16,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 924.4187101854848,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 16,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 924.4187101854848,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1099.9999999999995,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1099.9999999999995,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 16.005,
+      "end": 16.505,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1103.5342826514236,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 16.005,
+      "end": 16.505,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1103.5342826514236,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1275.5812898145143,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1275.5812898145143,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 16.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1444.4150891285806,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 16.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1444.4150891285806,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 16.505,
+      "end": 17.005,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1447.677684878973,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 16.505,
+      "end": 17.005,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1447.677684878973,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 16.75,
+      "end": 17,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1600.0132097176415,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 16.75,
+      "end": 17,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1600.0132097176415,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1736.3961030678931,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1736.3961030678931,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 17.005,
+      "end": 17.505,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1738.8903112897603,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 17.005,
+      "end": 17.505,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1738.8903112897603,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 17.25,
+      "end": 17.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1848.3226510722905,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 17.25,
+      "end": 17.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1848.3226510722905,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 17.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1931.4915792601578,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 17.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1931.4915792601578,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 17.505,
+      "end": 18.005,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1932.8376793617756,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 17.505,
+      "end": 18.005,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1932.8376793617756,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 18,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1982.7067523629073,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 18,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1982.7067523629073,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 2000,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 2000,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 18.005,
+      "end": 18.505,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1999.9930604433234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 18.005,
+      "end": 18.505,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1999.9930604433234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 18.25,
+      "end": 18.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1982.7067523629075,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 18.25,
+      "end": 18.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1982.7067523629075,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 18.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1931.4915792601582,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 18.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1931.4915792601582,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 18.505,
+      "end": 19.005,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1930.1326565297848,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 18.505,
+      "end": 19.005,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1930.1326565297848,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 19,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1848.3226510722911,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 19,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1848.3226510722911,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1736.3961030678938,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1736.3961030678938,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 19.005,
+      "end": 19.505,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1733.8920808308565,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 19.005,
+      "end": 19.505,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1733.8920808308565,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 19.25,
+      "end": 19.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1600.0132097176424,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 19.25,
+      "end": 19.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1600.0132097176424,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 19.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1444.4150891285817,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 19.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1444.4150891285817,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 19.505,
+      "end": 20.005,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1441.1471820714519,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 19.505,
+      "end": 20.005,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1441.1471820714519,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 20,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1275.5812898145155,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 20,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1275.5812898145155,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1100.0000000000005,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1100.0000000000005,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 20.005,
+      "end": 20.505,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1096.4657173485766,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 20.005,
+      "end": 20.505,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1096.4657173485766,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 20.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 924.4187101854857,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 20.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 924.4187101854857,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 20.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 755.5849108714208,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 20.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 755.5849108714208,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 20.505,
+      "end": 21.005,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 752.3223151210256,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 20.505,
+      "end": 21.005,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 752.3223151210256,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 20.75,
+      "end": 21,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 599.9867902823573,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 20.75,
+      "end": 21,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 599.9867902823573,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 463.6038969321071,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 463.6038969321071,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 21.005,
+      "end": 21.505,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 461.1096887102396,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 21.005,
+      "end": 21.505,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 461.1096887102396,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 21.25,
+      "end": 21.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 351.6773489277095,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 21.25,
+      "end": 21.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 351.6773489277095,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 21.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 268.50842073984234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 21.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 268.50842073984234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 21.505,
+      "end": 22.005,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 267.162320638225,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 21.505,
+      "end": 22.005,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 267.162320638225,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 21.75,
+      "end": 22,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 217.29324763709292,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 21.75,
+      "end": 22,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 217.29324763709292,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 200,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 200,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 22.005,
+      "end": 22.505,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 200.0069395566765,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 22.005,
+      "end": 22.505,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 200.0069395566765,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 22.25,
+      "end": 22.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 217.29324763709272,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 22.25,
+      "end": 22.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 217.29324763709272,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 22.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 268.5084207398418,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 22.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 268.5084207398418,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 22.505,
+      "end": 23.005,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 269.86734347021525,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 22.505,
+      "end": 23.005,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 269.86734347021525,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 22.75,
+      "end": 23,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 351.67734892770875,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 22.75,
+      "end": 23,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 351.67734892770875,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 463.6038969321062,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 463.6038969321062,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 23.005,
+      "end": 23.505,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 466.1079191691424,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 23.005,
+      "end": 23.505,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 466.1079191691424,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 23.25,
+      "end": 23.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 599.9867902823564,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 23.25,
+      "end": 23.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 599.9867902823564,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 23.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 755.5849108714198,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 23.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 755.5849108714198,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 23.505,
+      "end": 24.005,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 758.8528179285481,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 23.505,
+      "end": 24.005,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 758.8528179285481,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 23.75,
+      "end": 24,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 924.4187101854845,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 23.75,
+      "end": 24,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 924.4187101854845,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1099.9999999999993,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1099.9999999999993,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 24.005,
+      "end": 24.505,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1103.5342826514234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 24.005,
+      "end": 24.505,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1103.5342826514234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 24.25,
+      "end": 24.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1275.581289814514,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 24.25,
+      "end": 24.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1275.581289814514,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 24.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1444.415089128579,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 24.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1444.415089128579,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 24.505,
+      "end": 25.005,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1447.6776848789743,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 24.505,
+      "end": 25.005,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1447.6776848789743,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1600.0132097176427,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1600.0132097176427,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1736.396103067893,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1736.396103067893,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 25.005,
+      "end": 25.505,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1738.8903112897603,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 25.005,
+      "end": 25.505,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1738.8903112897603,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 25.25,
+      "end": 25.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1848.3226510722905,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 25.25,
+      "end": 25.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1848.3226510722905,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 25.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1931.4915792601578,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 25.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1931.4915792601578,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 25.505,
+      "end": 26.005,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1932.837679361775,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 25.505,
+      "end": 26.005,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1932.837679361775,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 25.75,
+      "end": 26,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1982.706752362907,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 25.75,
+      "end": 26,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1982.706752362907,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 2000,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 2000,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 26.005,
+      "end": 26.505,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1999.9930604433234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 26.005,
+      "end": 26.505,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1999.9930604433234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 26.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1982.7067523629073,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 26.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1982.7067523629073,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 26.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1931.4915792601582,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 26.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1931.4915792601582,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 26.505,
+      "end": 27.005,
+      "value": {
+        "note": 65,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1930.1326565297848,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 26.505,
+      "end": 27.005,
+      "value": {
+        "note": 55,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1930.1326565297848,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 26.75,
+      "end": 27,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1848.3226510722911,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 26.75,
+      "end": 27,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1848.3226510722911,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1736.3961030678938,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1736.3961030678938,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 27.005,
+      "end": 27.505,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1733.8920808308576,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 27.005,
+      "end": 27.505,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1733.8920808308576,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 27.25,
+      "end": 27.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1600.0132097176438,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 27.25,
+      "end": 27.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1600.0132097176438,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 27.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1444.4150891285803,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 27.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1444.4150891285803,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 27.505,
+      "end": 28.005,
+      "value": {
+        "note": 58,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1441.147182071452,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 27.505,
+      "end": 28.005,
+      "value": {
+        "note": 62,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1441.147182071452,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 28,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1275.5812898145157,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 28,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1275.5812898145157,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 1100.000000000001,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1100.000000000001,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 28.005,
+      "end": 28.505,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 1096.4657173485766,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 28.005,
+      "end": 28.505,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 1096.4657173485766,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 28.25,
+      "end": 28.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 924.4187101854859,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 28.25,
+      "end": 28.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 924.4187101854859,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 28.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 755.584910871421,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 28.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 755.584910871421,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 28.505,
+      "end": 29.005,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 752.3223151210258,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 28.505,
+      "end": 29.005,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 752.3223151210258,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 28.75,
+      "end": 29,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 599.9867902823576,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 28.75,
+      "end": 29,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 599.9867902823576,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 463.6038969321072,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 463.6038969321072,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 29.005,
+      "end": 29.505,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 461.1096887102397,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 29.005,
+      "end": 29.505,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 461.1096887102397,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 29.25,
+      "end": 29.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 351.6773489277096,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 29.25,
+      "end": 29.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 351.6773489277096,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 29.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 268.50842073984234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 29.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 268.50842073984234,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 29.505,
+      "end": 30.005,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 267.1623206382251,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 29.505,
+      "end": 30.005,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 267.1623206382251,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 30,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 217.29324763709292,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 30,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 217.29324763709292,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 200,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 200,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 30.005,
+      "end": 30.505,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 200.0069395566764,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 30.005,
+      "end": 30.505,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 200.0069395566764,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 30.25,
+      "end": 30.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 217.2932476370926,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 30.25,
+      "end": 30.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 217.2932476370926,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 30.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 268.50842073984177,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 30.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 268.50842073984177,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 30.505,
+      "end": 31.005,
+      "value": {
+        "note": 70,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 269.86734347021513,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 30.505,
+      "end": 31.005,
+      "value": {
+        "note": 60,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 269.86734347021513,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 30.75,
+      "end": 31,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 351.6773489277087,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 30.75,
+      "end": 31,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 351.6773489277087,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.25,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 463.60389693210607,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 463.60389693210607,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 31.005,
+      "end": 31.505,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 466.1079191691423,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 31.005,
+      "end": 31.505,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 466.1079191691423,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 31.25,
+      "end": 31.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 599.9867902823562,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 31.25,
+      "end": 31.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 599.9867902823562,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 31.75,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 755.5849108714195,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 31.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 755.5849108714195,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 31.505,
+      "end": 32.005,
+      "value": {
+        "note": 63,
+        "s": "triangle",
+        "pan": 0,
+        "cutoff": 758.8528179285479,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 31.505,
+      "end": 32.005,
+      "value": {
+        "note": 67,
+        "s": "triangle",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 758.8528179285479,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 31.75,
+      "end": 32,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "pan": 0,
+        "cutoff": 924.4187101854842,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    },
+    {
+      "begin": 31.75,
+      "end": 32,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "pan": 1,
+        "color": "green",
+        "cutoff": 924.4187101854842,
+        "lpattack": 0.2,
+        "lpenv": -2,
+        "decay": 0.05,
+        "sustain": 0,
+        "room": 0.6,
+        "delay": 0.5,
+        "delaytime": 0.1,
+        "delayfeedback": 0.4
+      }
+    }
+  ]
+}

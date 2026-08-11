@@ -1,0 +1,5211 @@
+{
+  "source": "strudel — \"Arpoon\"",
+  "cycles": 32,
+  "cps": 0.5,
+  "events": [
+    {
+      "begin": 0,
+      "end": 0.3333333333333333,
+      "value": {
+        "note": 55,
+        "clip": 2,
+        "cutoff": 500,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999996,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.3333333333333333,
+      "value": {
+        "note": 64,
+        "clip": 2,
+        "cutoff": 500,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999996,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 0,
+      "end": 1,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 0,
+      "end": 1,
+      "value": {
+        "note": 33.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 0.3333333333333333,
+      "end": 0.6666666666666666,
+      "value": {
+        "note": 60.00052866221468,
+        "clip": 2,
+        "cutoff": 509.2515887569149,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5249999999999999,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 1,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.6666666666666666,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 0.6666666666666666,
+      "end": 1,
+      "value": {
+        "note": 59.003688107962134,
+        "clip": 2,
+        "cutoff": 564.5418893373399,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676657,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 0.6666666666666666,
+      "end": 1,
+      "value": {
+        "note": 64.00368810796213,
+        "clip": 2,
+        "cutoff": 564.5418893373399,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676657,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.3333333333333333,
+      "value": {
+        "note": 60.010756146386846,
+        "clip": 2,
+        "cutoff": 688.232561769837,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.6,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 1,
+      "end": 2,
+      "value": {
+        "note": 28,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 1,
+      "end": 2,
+      "value": {
+        "note": 28.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.3333333333333333,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 1.3333333333333333,
+      "end": 1.6666666666666667,
+      "value": {
+        "note": 55.021807942732615,
+        "clip": 2,
+        "cutoff": 881.6389978207924,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676658,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 1.3333333333333333,
+      "end": 1.6666666666666667,
+      "value": {
+        "note": 64.02180794273262,
+        "clip": 2,
+        "cutoff": 881.6389978207924,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676658,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 2,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.6666666666666667,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 1.6666666666666667,
+      "end": 2,
+      "value": {
+        "note": 60.03601667931771,
+        "clip": 2,
+        "cutoff": 1130.29188805996,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5249999999999999,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 1.6666666666666667,
+      "end": 1.8333333333333333,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 1.6666666666666667,
+      "end": 1.8333333333333333,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 1.8333333333333333,
+      "end": 2,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.3333333333333335,
+      "value": {
+        "note": 59.051954216510055,
+        "clip": 2,
+        "cutoff": 1409.1987889260054,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.45,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.3333333333333335,
+      "value": {
+        "note": 64.05195421651005,
+        "clip": 2,
+        "cutoff": 1409.1987889260054,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.45,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 2,
+      "end": 3,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 2,
+      "end": 3,
+      "value": {
+        "note": 33.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 2.3333333333333335,
+      "end": 2.6666666666666665,
+      "value": {
+        "note": 60.067891753702405,
+        "clip": 2,
+        "cutoff": 1688.1056897920512,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.375,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.6666666666666665,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 2.6666666666666665,
+      "end": 3,
+      "value": {
+        "note": 55.0821004902875,
+        "clip": 2,
+        "cutoff": 1936.7585800312174,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323342,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 2.6666666666666665,
+      "end": 3,
+      "value": {
+        "note": 64.0821004902875,
+        "clip": 2,
+        "cutoff": 1936.7585800312174,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323342,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 2.6666666666666665,
+      "end": 2.8333333333333335,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 2.8333333333333335,
+      "end": 3,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.3333333333333335,
+      "value": {
+        "note": 60.09315228663327,
+        "clip": 2,
+        "cutoff": 2130.1650160821737,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 3,
+      "end": 4,
+      "value": {
+        "note": 28,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 3,
+      "end": 4,
+      "value": {
+        "note": 28.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.3333333333333335,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 3.3333333333333335,
+      "end": 3.6666666666666665,
+      "value": {
+        "note": 59.10022032505798,
+        "clip": 2,
+        "cutoff": 2253.8556885146713,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323342,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 3.3333333333333335,
+      "end": 3.6666666666666665,
+      "value": {
+        "note": 64.10022032505798,
+        "clip": 2,
+        "cutoff": 2253.8556885146713,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323342,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 3.6666666666666665,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 3.6666666666666665,
+      "end": 4,
+      "value": {
+        "note": 60.10337977080543,
+        "clip": 2,
+        "cutoff": 2309.1459890950955,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3749999999999999,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 3.8333333333333335,
+      "end": 4,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 3.8333333333333335,
+      "end": 4,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.333333333333333,
+      "value": {
+        "note": 58.103908433020116,
+        "clip": 2,
+        "cutoff": 2318.3975778520107,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999996,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.333333333333333,
+      "value": {
+        "note": 69.10390843302011,
+        "clip": 2,
+        "cutoff": 2318.3975778520107,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999996,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 4,
+      "end": 5,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 4,
+      "end": 5,
+      "value": {
+        "note": 33.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 4.333333333333333,
+      "end": 4.666666666666667,
+      "value": {
+        "note": 64.10435614147634,
+        "clip": 2,
+        "cutoff": 2326.2324758359255,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5249999999999999,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 4.666666666666667,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 4.666666666666667,
+      "end": 5,
+      "value": {
+        "note": 62.10703178300856,
+        "clip": 2,
+        "cutoff": 2373.0562026497482,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676658,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 4.666666666666667,
+      "end": 5,
+      "value": {
+        "note": 69.10703178300855,
+        "clip": 2,
+        "cutoff": 2373.0562026497482,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676658,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 4.833333333333333,
+      "end": 5,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.333333333333333,
+      "value": {
+        "note": 64.1130174965394,
+        "clip": 2,
+        "cutoff": 2477.806189439434,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.6,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 5,
+      "end": 6,
+      "value": {
+        "note": 28,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 5,
+      "end": 6,
+      "value": {
+        "note": 28.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.333333333333333,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 5.333333333333333,
+      "end": 5.666666666666667,
+      "value": {
+        "note": 58.1223769372996,
+        "clip": 2,
+        "cutoff": 2641.59640274298,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676659,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 5.333333333333333,
+      "end": 5.666666666666667,
+      "value": {
+        "note": 69.1223769372996,
+        "clip": 2,
+        "cutoff": 2641.59640274298,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676659,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 6,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 5.666666666666667,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 5.666666666666667,
+      "end": 6,
+      "value": {
+        "note": 64.134409897751,
+        "clip": 2,
+        "cutoff": 2852.1732106424165,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5249999999999999,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 5.666666666666667,
+      "end": 5.833333333333333,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 5.833333333333333,
+      "end": 6,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.333333333333333,
+      "value": {
+        "note": 62.14790692850947,
+        "clip": 2,
+        "cutoff": 3088.3712489157915,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.45000000000000007,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.333333333333333,
+      "value": {
+        "note": 69.14790692850947,
+        "clip": 2,
+        "cutoff": 3088.3712489157915,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.45000000000000007,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 6,
+      "end": 7,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 6,
+      "end": 7,
+      "value": {
+        "note": 33.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 6.333333333333333,
+      "end": 6.666666666666667,
+      "value": {
+        "note": 64.16140395926796,
+        "clip": 2,
+        "cutoff": 3324.5692871891665,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3750000000000001,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 7,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 6.666666666666667,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 6.666666666666667,
+      "end": 7,
+      "value": {
+        "note": 58.17343691971935,
+        "clip": 2,
+        "cutoff": 3535.146095088602,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323342,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 6.666666666666667,
+      "end": 7,
+      "value": {
+        "note": 69.17343691971935,
+        "clip": 2,
+        "cutoff": 3535.146095088602,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323342,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 6.666666666666667,
+      "end": 6.833333333333333,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.333333333333333,
+      "value": {
+        "note": 64.18279636047956,
+        "clip": 2,
+        "cutoff": 3698.936308392149,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 7,
+      "end": 8,
+      "value": {
+        "note": 28,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 7,
+      "end": 8,
+      "value": {
+        "note": 28.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.333333333333333,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 7.333333333333333,
+      "end": 7.666666666666667,
+      "value": {
+        "note": 62.18878207401039,
+        "clip": 2,
+        "cutoff": 3803.6862951818352,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323341,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 7.333333333333333,
+      "end": 7.666666666666667,
+      "value": {
+        "note": 69.18878207401039,
+        "clip": 2,
+        "cutoff": 3803.6862951818352,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323341,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 7.666666666666667,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 7.666666666666667,
+      "end": 8,
+      "value": {
+        "note": 64.19145771554261,
+        "clip": 2,
+        "cutoff": 3850.510021995657,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.375,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 7.666666666666667,
+      "end": 7.833333333333333,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.333333333333334,
+      "value": {
+        "note": 57.19190542399883,
+        "clip": 2,
+        "cutoff": 3858.3449199795723,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999996,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.333333333333334,
+      "value": {
+        "note": 67.19190542399883,
+        "clip": 2,
+        "cutoff": 3858.3449199795723,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999996,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 8,
+      "end": 9,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 8,
+      "end": 9,
+      "value": {
+        "note": 41.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 8.333333333333334,
+      "end": 8.666666666666666,
+      "value": {
+        "note": 64.19115015673431,
+        "clip": 2,
+        "cutoff": 3845.1277428503313,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.525,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 9,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.666666666666666,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 8.666666666666666,
+      "end": 9,
+      "value": {
+        "note": 60.18663645047568,
+        "clip": 2,
+        "cutoff": 3766.137883324395,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676657,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 8.666666666666666,
+      "end": 9,
+      "value": {
+        "note": 67.18663645047567,
+        "clip": 2,
+        "cutoff": 3766.137883324395,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676657,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 8.666666666666666,
+      "end": 8.833333333333334,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 8.833333333333334,
+      "end": 9,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.333333333333334,
+      "value": {
+        "note": 64.17653877771154,
+        "clip": 2,
+        "cutoff": 3589.4286099519377,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.6,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 9,
+      "end": 10,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 9,
+      "end": 10,
+      "value": {
+        "note": 36.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.333333333333334,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 9.333333333333334,
+      "end": 9.666666666666666,
+      "value": {
+        "note": 57.16074975447062,
+        "clip": 2,
+        "cutoff": 3313.120703235912,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676657,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 9.333333333333334,
+      "end": 9.666666666666666,
+      "value": {
+        "note": 67.16074975447063,
+        "clip": 2,
+        "cutoff": 3313.120703235912,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676657,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 10,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.666666666666666,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 9.666666666666666,
+      "end": 10,
+      "value": {
+        "note": 64.1404506044368,
+        "clip": 2,
+        "cutoff": 2957.8855776438527,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5250000000000002,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 9.666666666666666,
+      "end": 9.833333333333334,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 9.666666666666666,
+      "end": 9.833333333333334,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 9.833333333333334,
+      "end": 10,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.333333333333334,
+      "value": {
+        "note": 60.11768162306398,
+        "clip": 2,
+        "cutoff": 2559.428403619677,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.45000000000000007,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.333333333333334,
+      "value": {
+        "note": 67.11768162306399,
+        "clip": 2,
+        "cutoff": 2559.428403619677,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.45000000000000007,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 10,
+      "end": 11,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 10,
+      "end": 11,
+      "value": {
+        "note": 41.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 10.333333333333334,
+      "end": 10.666666666666666,
+      "value": {
+        "note": 64.09491264169117,
+        "clip": 2,
+        "cutoff": 2160.9712295955014,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.37500000000000017,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.666666666666666,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 10.666666666666666,
+      "end": 11,
+      "value": {
+        "note": 57.07461349165734,
+        "clip": 2,
+        "cutoff": 1805.7361040034414,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323343,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 10.666666666666666,
+      "end": 11,
+      "value": {
+        "note": 67.07461349165735,
+        "clip": 2,
+        "cutoff": 1805.7361040034414,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323343,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.333333333333334,
+      "value": {
+        "note": 64.05882446841642,
+        "clip": 2,
+        "cutoff": 1529.428197287416,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 11,
+      "end": 12,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 11,
+      "end": 12,
+      "value": {
+        "note": 36.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.333333333333334,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 11.333333333333334,
+      "end": 11.666666666666666,
+      "value": {
+        "note": 60.048726795652286,
+        "clip": 2,
+        "cutoff": 1352.7189239149586,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233425,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 11.333333333333334,
+      "end": 11.666666666666666,
+      "value": {
+        "note": 67.04872679565229,
+        "clip": 2,
+        "cutoff": 1352.7189239149586,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233425,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 11.666666666666666,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 11.666666666666666,
+      "end": 12,
+      "value": {
+        "note": 64.04421308939365,
+        "clip": 2,
+        "cutoff": 1273.729064389025,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.375,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 11.666666666666666,
+      "end": 11.833333333333334,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 11.833333333333334,
+      "end": 12,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.166666666666666,
+      "value": {
+        "note": 56.04345782212913,
+        "clip": 2,
+        "cutoff": 1260.5118872597814,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999984,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.166666666666666,
+      "value": {
+        "note": 67.04345782212913,
+        "clip": 2,
+        "cutoff": 1260.5118872597814,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999984,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 12,
+      "end": 13,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 12,
+      "end": 13,
+      "value": {
+        "note": 41.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 12.166666666666666,
+      "end": 12.333333333333334,
+      "value": {
+        "note": 63.04343930883117,
+        "clip": 2,
+        "cutoff": 1260.1879045453716,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.48882285676537773,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 12.333333333333334,
+      "end": 12.5,
+      "value": {
+        "note": 60.043319085405635,
+        "clip": 2,
+        "cutoff": 1258.0839945986318,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5249999999999998,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 12.333333333333334,
+      "end": 12.5,
+      "value": {
+        "note": 67.04331908540564,
+        "clip": 2,
+        "cutoff": 1258.0839945986318,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5249999999999998,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 12.666666666666666,
+      "value": {
+        "note": 63.043020098725606,
+        "clip": 2,
+        "cutoff": 1252.8517276981006,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5560660171779821,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 12.666666666666666,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 12.666666666666666,
+      "end": 12.833333333333334,
+      "value": {
+        "note": 56.04248995266475,
+        "clip": 2,
+        "cutoff": 1243.5741716331836,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676657,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 12.666666666666666,
+      "end": 12.833333333333334,
+      "value": {
+        "note": 67.04248995266475,
+        "clip": 2,
+        "cutoff": 1243.5741716331836,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676657,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 12.833333333333334,
+      "end": 13,
+      "value": {
+        "note": 63.04169844239732,
+        "clip": 2,
+        "cutoff": 1229.722741953068,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5948888739433602,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 12.833333333333334,
+      "end": 13,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.166666666666666,
+      "value": {
+        "note": 60.04063508869804,
+        "clip": 2,
+        "cutoff": 1211.1140522156347,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.6,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.166666666666666,
+      "value": {
+        "note": 67.04063508869804,
+        "clip": 2,
+        "cutoff": 1211.1140522156347,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.6,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 13,
+      "end": 14,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 13,
+      "end": 14,
+      "value": {
+        "note": 36.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.333333333333334,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 13.166666666666666,
+      "end": 13.333333333333334,
+      "value": {
+        "note": 63.03930667224208,
+        "clip": 2,
+        "cutoff": 1187.8667642363725,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5948888739433602,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 13.333333333333334,
+      "end": 13.5,
+      "value": {
+        "note": 56.037734767904986,
+        "clip": 2,
+        "cutoff": 1160.3584383372906,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676657,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 13.333333333333334,
+      "end": 13.5,
+      "value": {
+        "note": 67.037734767905,
+        "clip": 2,
+        "cutoff": 1160.3584383372906,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676657,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 13.666666666666666,
+      "value": {
+        "note": 63.03595327906262,
+        "clip": 2,
+        "cutoff": 1129.1823835958326,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5560660171779823,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 13.666666666666666,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 13.666666666666666,
+      "end": 13.833333333333334,
+      "value": {
+        "note": 60.03400597189108,
+        "clip": 2,
+        "cutoff": 1095.1045080937884,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.525,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 13.666666666666666,
+      "end": 13.833333333333334,
+      "value": {
+        "note": 67.03400597189108,
+        "clip": 2,
+        "cutoff": 1095.1045080937884,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.525,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 13.666666666666666,
+      "end": 13.833333333333334,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 13.833333333333334,
+      "end": 14,
+      "value": {
+        "note": 63.03194400966664,
+        "clip": 2,
+        "cutoff": 1059.0201691662087,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.48882285676537796,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 13.833333333333334,
+      "end": 14,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 13.833333333333334,
+      "end": 14,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.166666666666666,
+      "value": {
+        "note": 56.029823487065734,
+        "clip": 2,
+        "cutoff": 1021.9110236503184,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.4500000000000001,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.166666666666666,
+      "value": {
+        "note": 65.02982348706573,
+        "clip": 2,
+        "cutoff": 1021.9110236503184,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.4500000000000001,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 14,
+      "end": 15,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 14,
+      "end": 15,
+      "value": {
+        "note": 41.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 14.166666666666666,
+      "end": 14.333333333333334,
+      "value": {
+        "note": 62.02770296446482,
+        "clip": 2,
+        "cutoff": 984.8018781344279,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.4111771432346223,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 14.333333333333334,
+      "end": 14.5,
+      "value": {
+        "note": 60.02564100224039,
+        "clip": 2,
+        "cutoff": 948.7175392068483,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.37500000000000017,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 14.333333333333334,
+      "end": 14.5,
+      "value": {
+        "note": 65.02564100224039,
+        "clip": 2,
+        "cutoff": 948.7175392068483,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.37500000000000017,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 14.666666666666666,
+      "value": {
+        "note": 62.02369369506884,
+        "clip": 2,
+        "cutoff": 914.6396637048042,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.34393398282201787,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 15,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 14.666666666666666,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 14.666666666666666,
+      "end": 14.833333333333334,
+      "value": {
+        "note": 56.021912206226474,
+        "clip": 2,
+        "cutoff": 883.4636089633461,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233437,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 14.666666666666666,
+      "end": 14.833333333333334,
+      "value": {
+        "note": 65.02191220622647,
+        "clip": 2,
+        "cutoff": 883.4636089633461,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233437,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 14.666666666666666,
+      "end": 14.833333333333334,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 14.833333333333334,
+      "end": 15,
+      "value": {
+        "note": 62.02034030188939,
+        "clip": 2,
+        "cutoff": 855.9552830642641,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.30511112605663976,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.166666666666666,
+      "value": {
+        "note": 60.01901188543343,
+        "clip": 2,
+        "cutoff": 832.707995085002,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.166666666666666,
+      "value": {
+        "note": 65.01901188543343,
+        "clip": 2,
+        "cutoff": 832.707995085002,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 15,
+      "end": 16,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 15,
+      "end": 16,
+      "value": {
+        "note": 36.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.333333333333334,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 15.166666666666666,
+      "end": 15.333333333333334,
+      "value": {
+        "note": 62.01794853173415,
+        "clip": 2,
+        "cutoff": 814.0993053475686,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3051111260566397,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 15.333333333333334,
+      "end": 15.5,
+      "value": {
+        "note": 56.017157021466716,
+        "clip": 2,
+        "cutoff": 800.2478756674531,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323342,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 15.333333333333334,
+      "end": 15.5,
+      "value": {
+        "note": 65.01715702146672,
+        "clip": 2,
+        "cutoff": 800.2478756674531,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323342,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 15.666666666666666,
+      "value": {
+        "note": 62.01662687540586,
+        "clip": 2,
+        "cutoff": 790.9703196025362,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.34393398282201765,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 16,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 15.666666666666666,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 15.666666666666666,
+      "end": 15.833333333333334,
+      "value": {
+        "note": 60.016327888725826,
+        "clip": 2,
+        "cutoff": 785.7380527020055,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.37499999999999994,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 15.666666666666666,
+      "end": 15.833333333333334,
+      "value": {
+        "note": 65.01632788872583,
+        "clip": 2,
+        "cutoff": 785.7380527020055,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.37499999999999994,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 15.666666666666666,
+      "end": 15.833333333333334,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 15.833333333333334,
+      "end": 16,
+      "value": {
+        "note": 62.0162076653003,
+        "clip": 2,
+        "cutoff": 783.634142755265,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.41117714323462207,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 15.833333333333334,
+      "end": 16,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.333333333333332,
+      "value": {
+        "note": 59.01618915200233,
+        "clip": 2,
+        "cutoff": 783.3101600408554,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999984,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.333333333333332,
+      "value": {
+        "note": 67.01618915200234,
+        "clip": 2,
+        "cutoff": 783.3101600408554,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999984,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 16,
+      "end": 17,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 16,
+      "end": 17,
+      "value": {
+        "note": 36.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 16.333333333333332,
+      "end": 16.666666666666668,
+      "value": {
+        "note": 64.01619144082497,
+        "clip": 2,
+        "cutoff": 783.3502144369701,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5249999999999998,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 17,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 16.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 16.666666666666668,
+      "end": 17,
+      "value": {
+        "note": 62.01620511952328,
+        "clip": 2,
+        "cutoff": 783.589591657352,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676659,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 16.666666666666668,
+      "end": 17,
+      "value": {
+        "note": 67.01620511952328,
+        "clip": 2,
+        "cutoff": 783.589591657352,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676659,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.333333333333332,
+      "value": {
+        "note": 64.01623572032258,
+        "clip": 2,
+        "cutoff": 784.1251056452165,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.6,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 17,
+      "end": 18,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 17,
+      "end": 18,
+      "value": {
+        "note": 31.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.333333333333332,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 17.333333333333332,
+      "end": 17.666666666666668,
+      "value": {
+        "note": 59.01628356864791,
+        "clip": 2,
+        "cutoff": 784.9624513384001,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.579903810567666,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 17.333333333333332,
+      "end": 17.666666666666668,
+      "value": {
+        "note": 67.0162835686479,
+        "clip": 2,
+        "cutoff": 784.9624513384001,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.579903810567666,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 18,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 17.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 17.666666666666668,
+      "end": 18,
+      "value": {
+        "note": 64.01634508482404,
+        "clip": 2,
+        "cutoff": 786.0389844207043,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.525,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 17.666666666666668,
+      "end": 17.833333333333332,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.333333333333332,
+      "value": {
+        "note": 62.016414085775615,
+        "clip": 2,
+        "cutoff": 787.2465010732412,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.4500000000000002,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.333333333333332,
+      "value": {
+        "note": 67.01641408577561,
+        "clip": 2,
+        "cutoff": 787.2465010732412,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.4500000000000002,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 18,
+      "end": 19,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 18,
+      "end": 19,
+      "value": {
+        "note": 36.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 18.333333333333332,
+      "end": 18.666666666666668,
+      "value": {
+        "note": 64.01648308672719,
+        "clip": 2,
+        "cutoff": 788.4540177257782,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3750000000000002,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 19,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 18.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 18.666666666666668,
+      "end": 19,
+      "value": {
+        "note": 59.01654460290332,
+        "clip": 2,
+        "cutoff": 789.5305508080824,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323341,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 18.666666666666668,
+      "end": 19,
+      "value": {
+        "note": 67.01654460290332,
+        "clip": 2,
+        "cutoff": 789.5305508080824,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323341,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 18.666666666666668,
+      "end": 18.833333333333332,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 18.833333333333332,
+      "end": 19,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.333333333333332,
+      "value": {
+        "note": 64.01659245122865,
+        "clip": 2,
+        "cutoff": 790.3678965012659,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 19,
+      "end": 20,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 19,
+      "end": 20,
+      "value": {
+        "note": 31.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.333333333333332,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 19.333333333333332,
+      "end": 19.666666666666668,
+      "value": {
+        "note": 62.01662305202795,
+        "clip": 2,
+        "cutoff": 790.9034104891305,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323339,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 19.333333333333332,
+      "end": 19.666666666666668,
+      "value": {
+        "note": 67.01662305202795,
+        "clip": 2,
+        "cutoff": 790.9034104891305,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323339,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 19.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 19.666666666666668,
+      "end": 20,
+      "value": {
+        "note": 64.01663673072626,
+        "clip": 2,
+        "cutoff": 791.1427877095125,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3749999999999999,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 19.833333333333332,
+      "end": 20,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 19.833333333333332,
+      "end": 20,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.333333333333332,
+      "value": {
+        "note": 58.01663901954889,
+        "clip": 2,
+        "cutoff": 791.1828421056271,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.4499999999999998,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.333333333333332,
+      "value": {
+        "note": 69.01663901954889,
+        "clip": 2,
+        "cutoff": 791.1828421056271,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.4499999999999998,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 20,
+      "end": 21,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 20,
+      "end": 21,
+      "value": {
+        "note": 36.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 20.333333333333332,
+      "end": 20.666666666666668,
+      "value": {
+        "note": 64.01712971118421,
+        "clip": 2,
+        "cutoff": 799.7699457237215,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5249999999999997,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 21,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 20.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 20.666666666666668,
+      "end": 21,
+      "value": {
+        "note": 62.02006223323226,
+        "clip": 2,
+        "cutoff": 851.0890815645621,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676656,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 20.666666666666668,
+      "end": 21,
+      "value": {
+        "note": 69.02006223323227,
+        "clip": 2,
+        "cutoff": 851.0890815645621,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676656,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 20.666666666666668,
+      "end": 20.833333333333332,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.333333333333332,
+      "value": {
+        "note": 64.02662261760779,
+        "clip": 2,
+        "cutoff": 965.895808136338,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.6,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 21,
+      "end": 22,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 21,
+      "end": 22,
+      "value": {
+        "note": 31.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.333333333333332,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 21.333333333333332,
+      "end": 21.666666666666668,
+      "value": {
+        "note": 58.036880630894025,
+        "clip": 2,
+        "cutoff": 1145.4110406454138,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.579903810567666,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 21.333333333333332,
+      "end": 21.666666666666668,
+      "value": {
+        "note": 69.03688063089402,
+        "clip": 2,
+        "cutoff": 1145.4110406454138,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.579903810567666,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 22,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 21.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 21.666666666666668,
+      "end": 22,
+      "value": {
+        "note": 64.05006884067554,
+        "clip": 2,
+        "cutoff": 1376.204711821787,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5250000000000001,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 21.666666666666668,
+      "end": 21.833333333333332,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 21.833333333333332,
+      "end": 22,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.333333333333332,
+      "value": {
+        "note": 62.064861681871115,
+        "clip": 2,
+        "cutoff": 1635.0794327445328,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.45000000000000073,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.333333333333332,
+      "value": {
+        "note": 69.06486168187112,
+        "clip": 2,
+        "cutoff": 1635.0794327445328,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.45000000000000073,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 22,
+      "end": 23,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 22,
+      "end": 23,
+      "value": {
+        "note": 36.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 22.333333333333332,
+      "end": 22.666666666666668,
+      "value": {
+        "note": 64.07965452306671,
+        "clip": 2,
+        "cutoff": 1893.954153667279,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3750000000000002,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 23,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 22.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 22.666666666666668,
+      "end": 23,
+      "value": {
+        "note": 58.09284273284821,
+        "clip": 2,
+        "cutoff": 2124.747824843652,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323341,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 22.666666666666668,
+      "end": 23,
+      "value": {
+        "note": 69.09284273284821,
+        "clip": 2,
+        "cutoff": 2124.747824843652,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3200961894323341,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 22.666666666666668,
+      "end": 22.833333333333332,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 22.833333333333332,
+      "end": 23,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.333333333333332,
+      "value": {
+        "note": 64.10310074613444,
+        "clip": 2,
+        "cutoff": 2304.2630573527276,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 23,
+      "end": 24,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 23,
+      "end": 24,
+      "value": {
+        "note": 31.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.333333333333332,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 23.333333333333332,
+      "end": 23.666666666666668,
+      "value": {
+        "note": 62.10966113050997,
+        "clip": 2,
+        "cutoff": 2419.0697839245045,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233414,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 23.333333333333332,
+      "end": 23.666666666666668,
+      "value": {
+        "note": 69.10966113050998,
+        "clip": 2,
+        "cutoff": 2419.0697839245045,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233414,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 24,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 23.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 23.666666666666668,
+      "end": 24,
+      "value": {
+        "note": 64.11259365255802,
+        "clip": 2,
+        "cutoff": 2470.3889197653452,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.37500000000000033,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 23.833333333333332,
+      "end": 24,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.333333333333332,
+      "value": {
+        "note": 57.11308434419334,
+        "clip": 2,
+        "cutoff": 2478.9760233834386,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999973,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.333333333333332,
+      "value": {
+        "note": 67.11308434419334,
+        "clip": 2,
+        "cutoff": 2478.9760233834386,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999973,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 24,
+      "end": 25,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 24,
+      "end": 25,
+      "value": {
+        "note": 41.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 24.333333333333332,
+      "end": 24.666666666666668,
+      "value": {
+        "note": 64.11269274226832,
+        "clip": 2,
+        "cutoff": 2472.1229896956547,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5249999999999992,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 25,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 24.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 24.666666666666668,
+      "end": 25,
+      "value": {
+        "note": 60.11035241038469,
+        "clip": 2,
+        "cutoff": 2431.1671817321676,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676655,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 24.666666666666668,
+      "end": 25,
+      "value": {
+        "note": 67.11035241038469,
+        "clip": 2,
+        "cutoff": 2431.1671817321676,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676655,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 24.666666666666668,
+      "end": 24.833333333333332,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 24.833333333333332,
+      "end": 25,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.333333333333332,
+      "value": {
+        "note": 64.10511682256256,
+        "clip": 2,
+        "cutoff": 2339.544394844779,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.6,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 25,
+      "end": 26,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 25,
+      "end": 26,
+      "value": {
+        "note": 36.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.333333333333332,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 25.333333333333332,
+      "end": 25.666666666666668,
+      "value": {
+        "note": 57.096930300803095,
+        "clip": 2,
+        "cutoff": 2196.280264054184,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.579903810567666,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 25.333333333333332,
+      "end": 25.666666666666668,
+      "value": {
+        "note": 67.0969303008031,
+        "clip": 2,
+        "cutoff": 2196.280264054184,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.579903810567666,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 26,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 25.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 25.666666666666668,
+      "end": 26,
+      "value": {
+        "note": 64.0864053030933,
+        "clip": 2,
+        "cutoff": 2012.092804132744,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5250000000000001,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 25.666666666666668,
+      "end": 25.833333333333332,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 25.666666666666668,
+      "end": 25.833333333333332,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.333333333333332,
+      "value": {
+        "note": 60.0745997114107,
+        "clip": 2,
+        "cutoff": 1805.4949496872723,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.4499999999999997,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.333333333333332,
+      "value": {
+        "note": 67.0745997114107,
+        "clip": 2,
+        "cutoff": 1805.4949496872723,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.4499999999999997,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 26,
+      "end": 27,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 26,
+      "end": 27,
+      "value": {
+        "note": 41.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 26.333333333333332,
+      "end": 26.666666666666668,
+      "value": {
+        "note": 64.0627941197281,
+        "clip": 2,
+        "cutoff": 1598.8970952418006,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3750000000000003,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 27,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 26.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 26.666666666666668,
+      "end": 27,
+      "value": {
+        "note": 57.0522691220183,
+        "clip": 2,
+        "cutoff": 1414.7096353203606,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233414,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 26.666666666666668,
+      "end": 27,
+      "value": {
+        "note": 67.0522691220183,
+        "clip": 2,
+        "cutoff": 1414.7096353203606,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233414,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.333333333333332,
+      "value": {
+        "note": 64.04408260025885,
+        "clip": 2,
+        "cutoff": 1271.4455045297655,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 27,
+      "end": 28,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 27,
+      "end": 28,
+      "value": {
+        "note": 36.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.333333333333332,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 27.333333333333332,
+      "end": 27.666666666666668,
+      "value": {
+        "note": 60.038847012436705,
+        "clip": 2,
+        "cutoff": 1179.822717642377,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233414,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 27.333333333333332,
+      "end": 27.666666666666668,
+      "value": {
+        "note": 67.0388470124367,
+        "clip": 2,
+        "cutoff": 1179.822717642377,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233414,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 27.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 27.666666666666668,
+      "end": 28,
+      "value": {
+        "note": 64.03650668055307,
+        "clip": 2,
+        "cutoff": 1138.8669096788892,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.37500000000000033,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 27.833333333333332,
+      "end": 28,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.166666666666668,
+      "value": {
+        "note": 56.036115078628065,
+        "clip": 2,
+        "cutoff": 1132.013875991106,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999973,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.166666666666668,
+      "value": {
+        "note": 67.03611507862806,
+        "clip": 2,
+        "cutoff": 1132.013875991106,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.44999999999999973,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 28,
+      "end": 29,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 28,
+      "end": 29,
+      "value": {
+        "note": 41.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 28.166666666666668,
+      "end": 28.333333333333332,
+      "value": {
+        "note": 63.03620450431511,
+        "clip": 2,
+        "cutoff": 1133.5788255143827,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.48882285676537807,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 28.333333333333332,
+      "end": 28.5,
+      "value": {
+        "note": 60.036785225397125,
+        "clip": 2,
+        "cutoff": 1143.7414444496683,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5249999999999992,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 28.333333333333332,
+      "end": 28.5,
+      "value": {
+        "note": 67.03678522539713,
+        "clip": 2,
+        "cutoff": 1143.7414444496683,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5249999999999992,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 28.666666666666668,
+      "value": {
+        "note": 63.03822943535515,
+        "clip": 2,
+        "cutoff": 1169.0151187151514,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5560660171779817,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 29,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 28.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 28.666666666666668,
+      "end": 28.833333333333332,
+      "value": {
+        "note": 56.0407902257563,
+        "clip": 2,
+        "cutoff": 1213.8289507352004,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676655,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 28.666666666666668,
+      "end": 28.833333333333332,
+      "value": {
+        "note": 67.0407902257563,
+        "clip": 2,
+        "cutoff": 1213.8289507352004,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5799038105676655,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 28.833333333333332,
+      "end": 29,
+      "value": {
+        "note": 63.04461349644513,
+        "clip": 2,
+        "cutoff": 1280.7361877897433,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5948888739433602,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 28.833333333333332,
+      "end": 29,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.166666666666668,
+      "value": {
+        "note": 60.049749865735066,
+        "clip": 2,
+        "cutoff": 1370.6226503636572,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.6,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.166666666666668,
+      "value": {
+        "note": 67.04974986573507,
+        "clip": 2,
+        "cutoff": 1370.6226503636572,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.6,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 29,
+      "end": 30,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 29,
+      "end": 30,
+      "value": {
+        "note": 36.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.333333333333332,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 29.166666666666668,
+      "end": 29.333333333333332,
+      "value": {
+        "note": 63.05616658059978,
+        "clip": 2,
+        "cutoff": 1482.9151604961398,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5948888739433602,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 29.333333333333332,
+      "end": 29.5,
+      "value": {
+        "note": 56.06375942686458,
+        "clip": 2,
+        "cutoff": 1615.789970130095,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.579903810567666,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 29.333333333333332,
+      "end": 29.5,
+      "value": {
+        "note": 67.06375942686458,
+        "clip": 2,
+        "cutoff": 1615.789970130095,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.579903810567666,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 29.666666666666668,
+      "value": {
+        "note": 63.072364639397804,
+        "clip": 2,
+        "cutoff": 1766.3811894615264,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5560660171779823,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 30,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 29.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 29.666666666666668,
+      "end": 29.833333333333332,
+      "value": {
+        "note": 60.081770812302224,
+        "clip": 2,
+        "cutoff": 1930.9892152888995,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5250000000000001,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 29.666666666666668,
+      "end": 29.833333333333332,
+      "value": {
+        "note": 67.08177081230222,
+        "clip": 2,
+        "cutoff": 1930.9892152888995,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.5250000000000001,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 29.833333333333332,
+      "end": 30,
+      "value": {
+        "note": 63.09173080910643,
+        "clip": 2,
+        "cutoff": 2105.289159362533,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.48882285676537907,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 29.833333333333332,
+      "end": 30,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.166666666666668,
+      "value": {
+        "note": 56.10197367295623,
+        "clip": 2,
+        "cutoff": 2284.5392767339945,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.4500000000000008,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.166666666666668,
+      "value": {
+        "note": 65.10197367295623,
+        "clip": 2,
+        "cutoff": 2284.5392767339945,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.4500000000000008,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 30,
+      "end": 31,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 30,
+      "end": 31,
+      "value": {
+        "note": 41.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 30.166666666666668,
+      "end": 30.333333333333332,
+      "value": {
+        "note": 62.112216536806024,
+        "clip": 2,
+        "cutoff": 2463.7893941054554,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.4111771432346214,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 30.333333333333332,
+      "end": 30.5,
+      "value": {
+        "note": 60.12217653361023,
+        "clip": 2,
+        "cutoff": 2638.0893381790893,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.37500000000000033,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 30.333333333333332,
+      "end": 30.5,
+      "value": {
+        "note": 65.12217653361023,
+        "clip": 2,
+        "cutoff": 2638.0893381790893,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.37500000000000033,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 30.666666666666668,
+      "value": {
+        "note": 62.131582706514656,
+        "clip": 2,
+        "cutoff": 2802.6973640064625,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.343933982822018,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 31,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 30.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 30.666666666666668,
+      "end": 30.833333333333332,
+      "value": {
+        "note": 56.140187919047875,
+        "clip": 2,
+        "cutoff": 2953.2885833378937,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233414,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 30.666666666666668,
+      "end": 30.833333333333332,
+      "value": {
+        "note": 65.14018791904788,
+        "clip": 2,
+        "cutoff": 2953.2885833378937,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233414,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 30.666666666666668,
+      "end": 30.833333333333332,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 30.833333333333332,
+      "end": 31,
+      "value": {
+        "note": 62.147780765312675,
+        "clip": 2,
+        "cutoff": 3086.1633929718487,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3051111260566399,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.166666666666668,
+      "value": {
+        "note": 60.15419748017739,
+        "clip": 2,
+        "cutoff": 3198.455903104332,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.166666666666668,
+      "value": {
+        "note": 65.15419748017739,
+        "clip": 2,
+        "cutoff": 3198.455903104332,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 31,
+      "end": 32,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 31,
+      "end": 32,
+      "value": {
+        "note": 36.12,
+        "s": "sawtooth",
+        "cutoff": 180,
+        "lpattack": 0.1,
+        "lpenv": 2
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.333333333333332,
+      "value": {
+        "s": "sd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 31.166666666666668,
+      "end": 31.333333333333332,
+      "value": {
+        "note": 62.15933384946733,
+        "clip": 2,
+        "cutoff": 3288.342365678246,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.30511112605663965,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 31.333333333333332,
+      "end": 31.5,
+      "value": {
+        "note": 56.16315712015616,
+        "clip": 2,
+        "cutoff": 3355.2496027327893,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233414,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 31.333333333333332,
+      "end": 31.5,
+      "value": {
+        "note": 65.16315712015616,
+        "clip": 2,
+        "cutoff": 3355.2496027327893,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.32009618943233414,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 31.666666666666668,
+      "value": {
+        "note": 62.165717910557305,
+        "clip": 2,
+        "cutoff": 3400.0634347528376,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3439339828220179,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 32,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 31.666666666666668,
+      "value": {
+        "s": "hh",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 31.666666666666668,
+      "end": 31.833333333333332,
+      "value": {
+        "note": 60.16716212051533,
+        "clip": 2,
+        "cutoff": 3425.337109018322,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3750000000000003,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 31.666666666666668,
+      "end": 31.833333333333332,
+      "value": {
+        "note": 65.16716212051533,
+        "clip": 2,
+        "cutoff": 3425.337109018322,
+        "resonance": 12,
+        "gain": 0.5,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.3750000000000003,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 31.666666666666668,
+      "end": 31.833333333333332,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    },
+    {
+      "begin": 31.833333333333332,
+      "end": 32,
+      "value": {
+        "note": 62.167742841597345,
+        "clip": 2,
+        "cutoff": 3435.4997279536055,
+        "resonance": 12,
+        "gain": 0.8,
+        "decay": 0.16,
+        "sustain": 0.5,
+        "delay": 0.2,
+        "room": 0.5,
+        "pan": 0.4111771432346214,
+        "s": "piano"
+      }
+    },
+    {
+      "begin": 31.833333333333332,
+      "end": 32,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909",
+        "gain": 0.5
+      }
+    }
+  ]
+}

@@ -13,9 +13,9 @@
       "file": "ajkpercusyn/snare.wav"
     },
     {
-      "voice": "tom",
-      "note": 45,
-      "file": "ajkpercusyn/tom.wav"
+      "voice": "tomHi",
+      "note": 48,
+      "file": "ajkpercusyn/tomHi.wav"
     },
     {
       "voice": "cowbell",

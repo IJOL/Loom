@@ -111,6 +111,8 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
         ` : ''}
         ${numberField('VEL CHANCE', 0, 1, 0.01, Number(fx.params.velChance ?? 0), (v) => set('velChance', v))}
         ${numberField('VEL RND', 0, 1, 0.01, Number(fx.params.velRandom ?? 0.3), (v) => set('velRandom', v))}
+        ${numberField('VEL SMOOTH', 0, 1, 0.01, Number(fx.params.velSmooth ?? 0), (v) => set('velSmooth', v))}
+        ${numberField('VEL DRIFT', 0.05, 8, 0.05, Number(fx.params.velSmoothRate ?? 1), (v) => set('velSmoothRate', v))}
         ${numberField('DUR CHANCE', 0, 1, 0.01, Number(fx.params.durChance ?? 0), (v) => set('durChance', v))}
         ${numberField('DUR RND', 0, 1, 0.01, Number(fx.params.durRandom ?? 0.3), (v) => set('durRandom', v))}
         ${numberField('DROP', 0, 1, 0.01, Number(fx.params.dropChance ?? 0), (v) => set('dropChance', v))}

@@ -13,19 +13,19 @@
       "file": "mfb512/snare.wav"
     },
     {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "mfb512/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "mfb512/openHat.wav"
-    },
-    {
       "voice": "clap",
       "note": 39,
       "file": "mfb512/clap.wav"
+    },
+    {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "mfb512/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "mfb512/closedHat.wav"
     },
     {
       "voice": "tom",
@@ -33,9 +33,19 @@
       "file": "mfb512/tom.wav"
     },
     {
-      "voice": "ride",
-      "note": 51,
-      "file": "mfb512/ride.wav"
+      "voice": "openHat",
+      "note": 46,
+      "file": "mfb512/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "mfb512/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "mfb512/crash.wav"
     }
   ]
 }

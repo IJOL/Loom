@@ -1,0 +1,1421 @@
+{
+  "source": "strudel — \"Orbit\"",
+  "cycles": 32,
+  "cps": 0.5,
+  "events": [
+    {
+      "begin": 0,
+      "end": 0.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 1,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 1,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 2,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 2,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 5,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 6,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 6,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 7,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 7,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 9,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 9,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 10,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 10,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 15,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 15,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 16,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 16,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 17,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 17,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 18,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 18,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 19,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 19,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 21,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 21,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 22,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 22,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 23,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 23,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 24,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 24,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 25,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 25,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 26,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 26,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 27,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 27,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 29,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 29,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 30,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 30,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 31,
+      "value": {
+        "s": "sd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 31,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.5,
+      "value": {
+        "s": "bd",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.5,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 32,
+      "value": {
+        "s": "cp",
+        "delay": 0.5,
+        "delaytime": 0.33,
+        "delayfeedback": 0.6,
+        "speed": -1
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 32,
+      "value": {
+        "s": "hh",
+        "delay": 0.8,
+        "delaytime": 0.08,
+        "delayfeedback": 0.7,
+        "orbit": 2,
+        "speed": -1
+      }
+    }
+  ]
+}

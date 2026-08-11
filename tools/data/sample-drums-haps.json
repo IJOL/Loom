@@ -1,0 +1,231 @@
+{
+  "source": "strudel — sample-drums",
+  "cycles": 4,
+  "cps": 0.5,
+  "events": [
+    {
+      "begin": 0,
+      "end": 1,
+      "value": {
+        "color": "#F5A623",
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.25,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.75,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 1,
+      "value": {
+        "color": "#4CAF50",
+        "s": "sn"
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 1,
+      "end": 2,
+      "value": {
+        "color": "#F5A623",
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.75,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 2,
+      "value": {
+        "color": "#4CAF50",
+        "s": "sn"
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 2,
+      "end": 3,
+      "value": {
+        "color": "#F5A623",
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.75,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3,
+      "value": {
+        "color": "#4CAF50",
+        "s": "sn"
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "color": "#F5A623",
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "color": "#F5A623",
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 3.75,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 3.625,
+      "value": {
+        "color": "#4CAF50",
+        "s": "sn"
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "color": "#F5A623",
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "color": "#673AB7",
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 3.875,
+      "value": {
+        "color": "#4CAF50",
+        "s": "sn"
+      }
+    },
+    {
+      "begin": 3.875,
+      "end": 4,
+      "value": {
+        "color": "#4CAF50",
+        "s": "sn"
+      }
+    }
+  ]
+}

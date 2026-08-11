@@ -1,0 +1,13 @@
+{
+  "id": "strudel-bells-bass",
+  "name": "Bells Bass",
+  "family": "melodic",
+  "zones": [
+    {
+      "file": "strudel-bells-bass/608286_13074022-lq.mp3",
+      "rootNote": 38,
+      "loNote": 0,
+      "hiNote": 127
+    }
+  ]
+}

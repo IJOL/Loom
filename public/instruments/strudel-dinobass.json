@@ -1,0 +1,13 @@
+{
+  "id": "strudel-dinobass",
+  "name": "Dino Bass",
+  "family": "melodic",
+  "zones": [
+    {
+      "file": "strudel-dinobass/614637_2434927-hq.mp3",
+      "rootNote": 36,
+      "loNote": 0,
+      "hiNote": 127
+    }
+  ]
+}

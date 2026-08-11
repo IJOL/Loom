@@ -8,6 +8,11 @@
       "file": "bossdr55/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "bossdr55/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "bossdr55/snare.wav"
@@ -16,16 +21,6 @@
       "voice": "closedHat",
       "note": 42,
       "file": "bossdr55/closedHat.wav"
-    },
-    {
-      "voice": "clap",
-      "note": 39,
-      "file": "bossdr55/clap.wav"
-    },
-    {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "bossdr55/cowbell.wav"
     }
   ]
 }

@@ -13,6 +13,11 @@
       "file": "korgkrz/snare.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "korgkrz/tomLo.wav"
+    },
+    {
       "voice": "closedHat",
       "note": 42,
       "file": "korgkrz/closedHat.wav"
@@ -23,9 +28,14 @@
       "file": "korgkrz/openHat.wav"
     },
     {
-      "voice": "tom",
-      "note": 45,
-      "file": "korgkrz/tom.wav"
+      "voice": "tomHi",
+      "note": 48,
+      "file": "korgkrz/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "korgkrz/crash.wav"
     },
     {
       "voice": "ride",

@@ -8,19 +8,14 @@
       "file": "akaixr10/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "akaixr10/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "akaixr10/snare.wav"
-    },
-    {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "akaixr10/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "akaixr10/openHat.wav"
     },
     {
       "voice": "clap",
@@ -28,9 +23,44 @@
       "file": "akaixr10/clap.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "akaixr10/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "akaixr10/closedHat.wav"
+    },
+    {
       "voice": "tom",
       "note": 45,
       "file": "akaixr10/tom.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "akaixr10/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "akaixr10/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "akaixr10/crash.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "akaixr10/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "akaixr10/tamb.wav"
     },
     {
       "voice": "cowbell",
@@ -38,9 +68,9 @@
       "file": "akaixr10/cowbell.wav"
     },
     {
-      "voice": "ride",
-      "note": 51,
-      "file": "akaixr10/ride.wav"
+      "voice": "shaker",
+      "note": 82,
+      "file": "akaixr10/shaker.wav"
     }
   ]
 }

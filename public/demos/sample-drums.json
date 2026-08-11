@@ -1,0 +1,251 @@
+{
+  "bpm": 120,
+  "name": "Sample Drums",
+  "lanes": [
+    {
+      "id": "drums-1",
+      "engineId": "drums-machine",
+      "name": "Kit",
+      "inserts": [],
+      "clips": [
+        {
+          "id": "drums-1",
+          "name": "Kit",
+          "color": "#f4b8b8",
+          "gridResolution": "1/16",
+          "lengthBars": 4,
+          "notes": [
+            {
+              "start": 0,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 0,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 96,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 192,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 192,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 288,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 384,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 384,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 480,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 576,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 576,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 672,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 768,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 768,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 864,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 960,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 960,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 1056,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 1152,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 1152,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 1248,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 1248,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 1344,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 1344,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 1440,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 1440,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 1440,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 1488,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            }
+          ]
+        }
+      ],
+      "enginePresetName": "engine:Tidal (Dirt)",
+      "engineState": {
+        "kitMode": "sample",
+        "sampler": {
+          "keymap": [],
+          "drumkitId": "strudel-tidal-lo"
+        },
+        "params": {}
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-1",
+      "name": "Sample Drums",
+      "clipPerLane": {
+        "drums-1": 0
+      }
+    }
+  ],
+  "globalQuantize": "1/1",
+  "musicality": {
+    "key": 0,
+    "scale": "minor",
+    "style": "acid-techno",
+    "lock": false
+  },
+  "sends": [
+    {
+      "id": "A",
+      "label": "Send A (Delay)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "sample-drums-send-a",
+          "pluginId": "delay",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Send B (Reverb)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "sample-drums-send-b",
+          "pluginId": "reverb",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    }
+  ],
+  "masterInserts": [],
+  "timeSignature": {
+    "num": 4,
+    "den": 4
+  }
+}

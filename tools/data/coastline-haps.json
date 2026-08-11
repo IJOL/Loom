@@ -1,0 +1,8982 @@
+{
+  "source": "strudel — \"coastline\" @by eddyflux",
+  "cycles": 64,
+  "cps": 0.75,
+  "events": [
+    {
+      "begin": 0,
+      "end": 4,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0,
+      "end": 4,
+      "value": {
+        "note": 61,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0,
+      "end": 4,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0,
+      "end": 4,
+      "value": {
+        "note": 70,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0,
+      "end": 4,
+      "value": {
+        "note": 72,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0,
+      "end": 1,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1,
+      "end": 2,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 2,
+      "end": 3,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.5,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 4,
+      "end": 8,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 4,
+      "end": 8,
+      "value": {
+        "note": 60,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 4,
+      "end": 8,
+      "value": {
+        "note": 63,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 4,
+      "end": 8,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 4,
+      "end": 8,
+      "value": {
+        "note": 67,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 4,
+      "end": 5,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 5,
+      "end": 6,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 6,
+      "end": 7,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.5,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 7.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 7.635,
+      "end": 7.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 7.76,
+      "end": 7.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 7.895,
+      "end": 8.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8,
+      "end": 12,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8,
+      "end": 12,
+      "value": {
+        "note": 61,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8,
+      "end": 12,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8,
+      "end": 12,
+      "value": {
+        "note": 70,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8,
+      "end": 12,
+      "value": {
+        "note": 72,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8,
+      "end": 9,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8.26,
+      "end": 8.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 9,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 9,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8.76,
+      "end": 9.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8.895,
+      "end": 9.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 9,
+      "end": 10,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 9,
+      "end": 10,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 9.26,
+      "end": 9.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 10,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 10,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 9.76,
+      "end": 10.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10,
+      "end": 11,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10.26,
+      "end": 10.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10.26,
+      "end": 10.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10.76,
+      "end": 11.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10.895,
+      "end": 11.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11,
+      "end": 12,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.5,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11.135,
+      "end": 11.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11.26,
+      "end": 11.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11.395,
+      "end": 11.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 11.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11.635,
+      "end": 11.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11.76,
+      "end": 11.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11.895,
+      "end": 12.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12,
+      "end": 16,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12,
+      "end": 16,
+      "value": {
+        "note": 60,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12,
+      "end": 16,
+      "value": {
+        "note": 63,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12,
+      "end": 16,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12,
+      "end": 16,
+      "value": {
+        "note": 67,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12,
+      "end": 13,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12.26,
+      "end": 12.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 12.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12.76,
+      "end": 13.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12.895,
+      "end": 13.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 13,
+      "end": 14,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 13,
+      "end": 14,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 13.26,
+      "end": 13.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 13.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 13.76,
+      "end": 14.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14,
+      "end": 15,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14.26,
+      "end": 14.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14.26,
+      "end": 14.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 15,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 15,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 14.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14.76,
+      "end": 15.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14.895,
+      "end": 15.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15,
+      "end": 16,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.5,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15.135,
+      "end": 15.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15.26,
+      "end": 15.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15.395,
+      "end": 15.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 16,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 16,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 15.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 16,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15.635,
+      "end": 15.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15.76,
+      "end": 15.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15.895,
+      "end": 16.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 20,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 20,
+      "value": {
+        "note": 61,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 20,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 20,
+      "value": {
+        "note": 70,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 20,
+      "value": {
+        "note": 72,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 17,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.125,
+      "value": {
+        "note": 58,
+        "clip": 0.7356645345687867,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.5,
+        "cutoff": 750,
+        "resonance": 5,
+        "gain": 0.6961140990257263,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16.26,
+      "end": 16.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16.395,
+      "end": 16.52,
+      "value": {
+        "note": 56,
+        "clip": 0.47682997658848764,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.012274194959679,
+        "cutoff": 701.2274194959679,
+        "resonance": 5,
+        "gain": 0.7330235294858994,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 17,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 17,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 16.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16.76,
+      "end": 17.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16.76,
+      "end": 17.01,
+      "value": {
+        "note": 72,
+        "clip": 0.5307946875691414,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.111074417450995,
+        "cutoff": 611.1074417450995,
+        "resonance": 5,
+        "gain": 0.816346016213356,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16.895,
+      "end": 17.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 17,
+      "end": 18,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 17,
+      "end": 18,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.125,
+      "value": {
+        "note": 56,
+        "clip": 0.4323783040046692,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.5,
+        "cutoff": 750,
+        "resonance": 5,
+        "gain": 0.8302290044724941,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 17.26,
+      "end": 17.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 17.395,
+      "end": 17.52,
+      "value": {
+        "note": 70,
+        "clip": 0.741640966385603,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 6.888925582549004,
+        "cutoff": 888.8925582549005,
+        "resonance": 5,
+        "gain": 0.8295135004823578,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 18,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 18,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 17.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 17.76,
+      "end": 18.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 17.76,
+      "end": 18.01,
+      "value": {
+        "note": 72,
+        "clip": 0.5307946875691414,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.111074417450995,
+        "cutoff": 611.1074417450995,
+        "resonance": 5,
+        "gain": 0.8278982609357627,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18,
+      "end": 19,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.125,
+      "value": {
+        "note": 56,
+        "clip": 0.4323783040046692,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.5,
+        "cutoff": 750,
+        "resonance": 5,
+        "gain": 0.8276291336864233,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18.26,
+      "end": 18.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18.26,
+      "end": 18.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18.395,
+      "end": 18.52,
+      "value": {
+        "note": 56,
+        "clip": 0.47682997658848764,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.012274194959679,
+        "cutoff": 701.2274194959679,
+        "resonance": 5,
+        "gain": 0.7903532368965329,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 19,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 19,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 18.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 18.625,
+      "value": {
+        "note": 58,
+        "clip": 0.6482350371778012,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.267766952966369,
+        "cutoff": 926.776695296637,
+        "resonance": 5,
+        "gain": 0.7599058809690178,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18.635,
+      "end": 18.76,
+      "value": {
+        "note": 58,
+        "clip": 0.5366528846323491,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.578674030756363,
+        "cutoff": 957.8674030756363,
+        "resonance": 5,
+        "gain": 0.7294585250415025,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18.76,
+      "end": 19.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18.76,
+      "end": 19.01,
+      "value": {
+        "note": 72,
+        "clip": 0.5307946875691414,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.111074417450995,
+        "cutoff": 611.1074417450995,
+        "resonance": 5,
+        "gain": 0.7062034579157626,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18.895,
+      "end": 19.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19,
+      "end": 20,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.5,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.125,
+      "value": {
+        "note": 56,
+        "clip": 0.4323783040046692,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.5,
+        "cutoff": 750,
+        "resonance": 5,
+        "gain": 0.6921826282516121,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19.135,
+      "end": 19.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19.26,
+      "end": 19.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19.395,
+      "end": 19.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19.395,
+      "end": 19.52,
+      "value": {
+        "note": 56,
+        "clip": 0.47682997658848764,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.012274194959679,
+        "cutoff": 701.2274194959679,
+        "resonance": 5,
+        "gain": 0.7218172799831336,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 19.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19.635,
+      "end": 19.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19.76,
+      "end": 19.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19.895,
+      "end": 20.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19.895,
+      "end": 20.02,
+      "value": {
+        "note": 68,
+        "clip": 0.5730540499091149,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.951963201008076,
+        "cutoff": 995.1963201008076,
+        "resonance": 5,
+        "gain": 0.798135216533683,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20,
+      "end": 24,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20,
+      "end": 24,
+      "value": {
+        "note": 60,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20,
+      "end": 24,
+      "value": {
+        "note": 63,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20,
+      "end": 24,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20,
+      "end": 24,
+      "value": {
+        "note": 67,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20,
+      "end": 21,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.0625,
+      "value": {
+        "note": 58,
+        "clip": 0.46675749421119694,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 8,
+        "cutoff": 1000,
+        "resonance": 5,
+        "gain": 0.7998637402430177,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20.26,
+      "end": 20.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20.26,
+      "end": 20.51,
+      "value": {
+        "note": 56,
+        "clip": 0.6718452356755733,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.421325969243637,
+        "cutoff": 542.1325969243637,
+        "resonance": 5,
+        "gain": 0.7879621650528861,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 21,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 21,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 20.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20.76,
+      "end": 21.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20.76,
+      "end": 20.885,
+      "value": {
+        "note": 68,
+        "clip": 0.41320472881197934,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.0480367989919244,
+        "cutoff": 504.80367989919245,
+        "resonance": 5,
+        "gain": 0.6967916079360293,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20.895,
+      "end": 21.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 21,
+      "end": 22,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 21,
+      "end": 22,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.125,
+      "value": {
+        "note": 56,
+        "clip": 0.43327803909778595,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.732233047033631,
+        "cutoff": 573.2233047033632,
+        "resonance": 5,
+        "gain": 0.6848900327458978,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 21.26,
+      "end": 21.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 21.395,
+      "end": 21.4575,
+      "value": {
+        "note": 72,
+        "clip": 0.460624647885561,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.578674030756364,
+        "cutoff": 957.8674030756364,
+        "resonance": 5,
+        "gain": 0.7382981949216856,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 22,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 22,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 21.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 21.76,
+      "end": 22.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 21.76,
+      "end": 21.885,
+      "value": {
+        "note": 68,
+        "clip": 0.41320472881197934,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.0480367989919244,
+        "cutoff": 504.80367989919245,
+        "resonance": 5,
+        "gain": 0.8588663215101406,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22,
+      "end": 23,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.125,
+      "value": {
+        "note": 56,
+        "clip": 0.43327803909778595,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.732233047033631,
+        "cutoff": 573.2233047033632,
+        "resonance": 5,
+        "gain": 0.8789550868794322,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22.26,
+      "end": 22.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22.26,
+      "end": 22.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22.26,
+      "end": 22.51,
+      "value": {
+        "note": 56,
+        "clip": 0.6718452356755733,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.421325969243637,
+        "cutoff": 542.1325969243637,
+        "resonance": 5,
+        "gain": 0.854102326980501,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 23,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 23,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 22.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 22.625,
+      "value": {
+        "note": 58,
+        "clip": 0.586205031722784,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.267766952966371,
+        "cutoff": 926.7766952966372,
+        "resonance": 5,
+        "gain": 0.7589115673676133,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22.635,
+      "end": 22.76,
+      "value": {
+        "note": 58,
+        "clip": 0.6253197245299816,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 6.888925582549005,
+        "cutoff": 888.8925582549006,
+        "resonance": 5,
+        "gain": 0.7049418063370922,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22.76,
+      "end": 23.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22.76,
+      "end": 22.885,
+      "value": {
+        "note": 68,
+        "clip": 0.41320472881197934,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.0480367989919244,
+        "cutoff": 504.80367989919245,
+        "resonance": 5,
+        "gain": 0.6637208077547256,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22.895,
+      "end": 23.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23,
+      "end": 24,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.5,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.125,
+      "value": {
+        "note": 56,
+        "clip": 0.43327803909778595,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.732233047033631,
+        "cutoff": 573.2233047033632,
+        "resonance": 5,
+        "gain": 0.6388680478557944,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23.135,
+      "end": 23.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23.26,
+      "end": 23.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23.26,
+      "end": 23.51,
+      "value": {
+        "note": 56,
+        "clip": 0.6718452356755733,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.421325969243637,
+        "cutoff": 542.1325969243637,
+        "resonance": 5,
+        "gain": 0.657890198998939,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23.395,
+      "end": 23.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 24,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 24,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 23.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 24,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23.635,
+      "end": 23.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23.76,
+      "end": 23.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23.895,
+      "end": 24.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23.895,
+      "end": 24.02,
+      "value": {
+        "note": 70,
+        "clip": 0.7471056126058102,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.98772580504032,
+        "cutoff": 798.772580504032,
+        "resonance": 5,
+        "gain": 0.8196794267347058,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24,
+      "end": 28,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24,
+      "end": 28,
+      "value": {
+        "note": 61,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24,
+      "end": 28,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24,
+      "end": 28,
+      "value": {
+        "note": 70,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24,
+      "end": 28,
+      "value": {
+        "note": 72,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24,
+      "end": 25,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.0625,
+      "value": {
+        "note": 56,
+        "clip": 0.4515805408358574,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.500000000000001,
+        "cutoff": 750.0000000000001,
+        "resonance": 5,
+        "gain": 0.8226292060688138,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24.1975,
+      "end": 24.26,
+      "value": {
+        "note": 56,
+        "clip": 0.4190048158168793,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.012274194959682,
+        "cutoff": 701.2274194959682,
+        "resonance": 5,
+        "gain": 0.8227306793482313,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24.26,
+      "end": 24.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 25,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 25,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 24.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24.76,
+      "end": 25.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24.76,
+      "end": 25.01,
+      "value": {
+        "note": 67,
+        "clip": 0.7267397947609425,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.4213259692436364,
+        "cutoff": 542.1325969243636,
+        "resonance": 5,
+        "gain": 0.8244945142505458,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24.895,
+      "end": 25.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 25,
+      "end": 26,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 25,
+      "end": 26,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.25,
+      "value": {
+        "note": 56,
+        "clip": 0.6261686883866787,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3,
+        "cutoff": 500,
+        "resonance": 5,
+        "gain": 0.8247098984196782,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 25.26,
+      "end": 25.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 25.395,
+      "end": 25.52,
+      "value": {
+        "note": 67,
+        "clip": 0.5509796768426896,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.111074417450996,
+        "cutoff": 611.1074417450995,
+        "resonance": 5,
+        "gain": 0.767820175318127,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 26,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 26,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 25.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 25.76,
+      "end": 26.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 25.76,
+      "end": 26.01,
+      "value": {
+        "note": 67,
+        "clip": 0.7267397947609425,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.4213259692436364,
+        "cutoff": 542.1325969243636,
+        "resonance": 5,
+        "gain": 0.6393924770589364,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26,
+      "end": 27,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.25,
+      "value": {
+        "note": 56,
+        "clip": 0.6261686883866787,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3,
+        "cutoff": 500,
+        "resonance": 5,
+        "gain": 0.6179941691458225,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26.26,
+      "end": 26.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26.26,
+      "end": 26.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 27,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 27,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 26.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 26.625,
+      "value": {
+        "note": 56,
+        "clip": 0.7881625786423684,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.7322330470336302,
+        "cutoff": 573.223304703363,
+        "resonance": 5,
+        "gain": 0.6489648699760436,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26.635,
+      "end": 26.76,
+      "value": {
+        "note": 56,
+        "clip": 0.6819697625935077,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.4213259692436373,
+        "cutoff": 542.1325969243637,
+        "resonance": 5,
+        "gain": 0.6628888312990057,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26.76,
+      "end": 27.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26.76,
+      "end": 27.01,
+      "value": {
+        "note": 67,
+        "clip": 0.7267397947609425,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.4213259692436364,
+        "cutoff": 542.1325969243636,
+        "resonance": 5,
+        "gain": 0.6735236679000082,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26.895,
+      "end": 27.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27,
+      "end": 28,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.5,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.25,
+      "value": {
+        "note": 56,
+        "clip": 0.6261686883866787,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3,
+        "cutoff": 500,
+        "resonance": 5,
+        "gain": 0.6799355708062649,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27.135,
+      "end": 27.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27.26,
+      "end": 27.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27.395,
+      "end": 27.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 27.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27.635,
+      "end": 27.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27.76,
+      "end": 27.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27.895,
+      "end": 28.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27.895,
+      "end": 28.02,
+      "value": {
+        "note": 72,
+        "clip": 0.7583236418664456,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.0480367989919235,
+        "cutoff": 504.8036798991924,
+        "resonance": 5,
+        "gain": 0.6836742358420793,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28,
+      "end": 32,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28,
+      "end": 32,
+      "value": {
+        "note": 60,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28,
+      "end": 32,
+      "value": {
+        "note": 63,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28,
+      "end": 32,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28,
+      "end": 32,
+      "value": {
+        "note": 67,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28,
+      "end": 29,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.125,
+      "value": {
+        "note": 56,
+        "clip": 0.6557288698852062,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3,
+        "cutoff": 500,
+        "resonance": 5,
+        "gain": 0.6837352288886904,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28.26,
+      "end": 28.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28.26,
+      "end": 28.385,
+      "value": {
+        "note": 56,
+        "clip": 0.44899851977825167,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.111074417450995,
+        "cutoff": 611.1074417450994,
+        "resonance": 5,
+        "gain": 0.6903267807196244,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28.395,
+      "end": 28.52,
+      "value": {
+        "note": 56,
+        "clip": 0.44899851977825167,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.111074417450995,
+        "cutoff": 611.1074417450994,
+        "resonance": 5,
+        "gain": 0.7012595845524174,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 29,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 29,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 28.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28.76,
+      "end": 29.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28.76,
+      "end": 29.01,
+      "value": {
+        "note": 72,
+        "clip": 0.6112559780478478,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.012274194959678,
+        "cutoff": 701.2274194959678,
+        "resonance": 5,
+        "gain": 0.7408205551226275,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28.895,
+      "end": 29.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 29,
+      "end": 30,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 29,
+      "end": 30,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.125,
+      "value": {
+        "note": 56,
+        "clip": 0.47223015725612644,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.7322330470336307,
+        "cutoff": 573.223304703363,
+        "resonance": 5,
+        "gain": 0.7474121069535613,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 29.26,
+      "end": 29.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 29.395,
+      "end": 29.52,
+      "value": {
+        "note": 68,
+        "clip": 0.7572701565921307,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.421325969243636,
+        "cutoff": 542.1325969243636,
+        "resonance": 5,
+        "gain": 0.7481916066946042,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 30,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 30,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 29.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 29.76,
+      "end": 30.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 29.76,
+      "end": 30.01,
+      "value": {
+        "note": 72,
+        "clip": 0.6112559780478478,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.012274194959678,
+        "cutoff": 701.2274194959678,
+        "resonance": 5,
+        "gain": 0.7499513156908506,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30,
+      "end": 31,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.125,
+      "value": {
+        "note": 56,
+        "clip": 0.47223015725612644,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.7322330470336307,
+        "cutoff": 573.223304703363,
+        "resonance": 5,
+        "gain": 0.7502445140853524,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30.26,
+      "end": 30.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30.26,
+      "end": 30.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30.26,
+      "end": 30.385,
+      "value": {
+        "note": 56,
+        "clip": 0.44899851977825167,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.111074417450995,
+        "cutoff": 611.1074417450994,
+        "resonance": 5,
+        "gain": 0.7381077601512516,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30.395,
+      "end": 30.52,
+      "value": {
+        "note": 56,
+        "clip": 0.44899851977825167,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.111074417450995,
+        "cutoff": 611.1074417450994,
+        "resonance": 5,
+        "gain": 0.7179776370282411,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 31,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 31,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 30.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 30.5625,
+      "value": {
+        "note": 56,
+        "clip": 0.4999376863241196,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.732233047033629,
+        "cutoff": 573.2233047033628,
+        "resonance": 5,
+        "gain": 0.6916217026300728,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30.635,
+      "end": 30.76,
+      "value": {
+        "note": 56,
+        "clip": 0.6389503292739391,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.111074417450994,
+        "cutoff": 611.1074417450994,
+        "resonance": 5,
+        "gain": 0.6652657682319045,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30.76,
+      "end": 31.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30.76,
+      "end": 31.01,
+      "value": {
+        "note": 72,
+        "clip": 0.6112559780478478,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.012274194959678,
+        "cutoff": 701.2274194959678,
+        "resonance": 5,
+        "gain": 0.6451356451088941,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30.895,
+      "end": 31.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31,
+      "end": 32,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.5,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.125,
+      "value": {
+        "note": 56,
+        "clip": 0.47223015725612644,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.7322330470336307,
+        "cutoff": 573.223304703363,
+        "resonance": 5,
+        "gain": 0.6329988911747932,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.135,
+      "end": 31.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.26,
+      "end": 31.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.26,
+      "end": 31.385,
+      "value": {
+        "note": 56,
+        "clip": 0.44899851977825167,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.111074417450995,
+        "cutoff": 611.1074417450994,
+        "resonance": 5,
+        "gain": 0.649532790851299,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.395,
+      "end": 31.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.395,
+      "end": 31.52,
+      "value": {
+        "note": 56,
+        "clip": 0.44899851977825167,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.111074417450995,
+        "cutoff": 611.1074417450994,
+        "resonance": 5,
+        "gain": 0.6769560572369187,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 32,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 32,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 31.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 32,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.635,
+      "end": 31.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.76,
+      "end": 31.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.8225,
+      "end": 31.885,
+      "value": {
+        "note": 72,
+        "clip": 0.4219992607831955,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.543291419087273,
+        "cutoff": 654.3291419087274,
+        "resonance": 5,
+        "gain": 0.7849330360886956,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.895,
+      "end": 32.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31.895,
+      "end": 32.02,
+      "value": {
+        "note": 67,
+        "clip": 0.7121077224612237,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.01227419495968,
+        "cutoff": 701.227419495968,
+        "resonance": 5,
+        "gain": 0.790158676956014,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 32.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 32.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 32.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 36,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 36,
+      "value": {
+        "note": 61,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 36,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 36,
+      "value": {
+        "note": 70,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 36,
+      "value": {
+        "note": 72,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 33,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 32.125,
+      "value": {
+        "note": 58,
+        "clip": 0.5281521320343018,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.499999999999999,
+        "cutoff": 749.9999999999999,
+        "resonance": 5,
+        "gain": 0.7927226012572646,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.26,
+      "end": 32.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.5,
+      "end": 33,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.5,
+      "end": 33,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.5,
+      "end": 32.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.5,
+      "end": 33,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.76,
+      "end": 33.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.76,
+      "end": 33.01,
+      "value": {
+        "note": 70,
+        "clip": 0.741640966385603,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 6.888925582549004,
+        "cutoff": 888.8925582549005,
+        "resonance": 5,
+        "gain": 0.8041894186222635,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.895,
+      "end": 33.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33,
+      "end": 34,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33,
+      "end": 33.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33,
+      "end": 33.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33,
+      "end": 34,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33,
+      "end": 33.25,
+      "value": {
+        "note": 58,
+        "clip": 0.7356645345687867,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.5,
+        "cutoff": 750,
+        "resonance": 5,
+        "gain": 0.8055134737864137,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.26,
+      "end": 33.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.395,
+      "end": 33.4575,
+      "value": {
+        "note": 72,
+        "clip": 0.4089624710381031,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 6.888925582549004,
+        "cutoff": 888.8925582549005,
+        "resonance": 5,
+        "gain": 0.7931138758333873,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.5,
+      "end": 34,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.5,
+      "end": 34,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.5,
+      "end": 33.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.5,
+      "end": 34,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.76,
+      "end": 34.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.76,
+      "end": 34.01,
+      "value": {
+        "note": 70,
+        "clip": 0.741640966385603,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 6.888925582549004,
+        "cutoff": 888.8925582549005,
+        "resonance": 5,
+        "gain": 0.765121969077154,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34,
+      "end": 34.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34,
+      "end": 34.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34,
+      "end": 34.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34,
+      "end": 35,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34,
+      "end": 34.25,
+      "value": {
+        "note": 58,
+        "clip": 0.7356645345687867,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.5,
+        "cutoff": 750,
+        "resonance": 5,
+        "gain": 0.7604580262675882,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34.26,
+      "end": 34.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34.26,
+      "end": 34.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34.5,
+      "end": 35,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34.5,
+      "end": 35,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34.5,
+      "end": 34.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34.5,
+      "end": 35,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34.5,
+      "end": 34.625,
+      "value": {
+        "note": 58,
+        "clip": 0.7069720059633255,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.26776695296637,
+        "cutoff": 926.776695296637,
+        "resonance": 5,
+        "gain": 0.7678110418841243,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34.635,
+      "end": 34.76,
+      "value": {
+        "note": 58,
+        "clip": 0.5685507141053677,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.578674030756362,
+        "cutoff": 957.8674030756363,
+        "resonance": 5,
+        "gain": 0.7711168471228576,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34.76,
+      "end": 35.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34.76,
+      "end": 35.01,
+      "value": {
+        "note": 70,
+        "clip": 0.741640966385603,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 6.888925582549004,
+        "cutoff": 888.8925582549005,
+        "resonance": 5,
+        "gain": 0.7736417534862994,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34.895,
+      "end": 35.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35,
+      "end": 36,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35,
+      "end": 35.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35,
+      "end": 35.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35,
+      "end": 35.5,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35,
+      "end": 35.25,
+      "value": {
+        "note": 58,
+        "clip": 0.7356645345687867,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.5,
+        "cutoff": 750,
+        "resonance": 5,
+        "gain": 0.7751640575006604,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35.135,
+      "end": 35.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35.26,
+      "end": 35.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35.395,
+      "end": 35.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35.5,
+      "end": 36,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35.5,
+      "end": 36,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35.5,
+      "end": 35.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35.5,
+      "end": 36,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35.5,
+      "end": 36,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35.635,
+      "end": 35.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35.76,
+      "end": 35.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35.895,
+      "end": 36.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35.895,
+      "end": 36.02,
+      "value": {
+        "note": 70,
+        "clip": 0.5830036126077176,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.951963201008076,
+        "cutoff": 995.1963201008076,
+        "resonance": 5,
+        "gain": 0.7456399744557529,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36,
+      "end": 36.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36,
+      "end": 36.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36,
+      "end": 36.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36,
+      "end": 40,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36,
+      "end": 40,
+      "value": {
+        "note": 60,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36,
+      "end": 40,
+      "value": {
+        "note": 63,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36,
+      "end": 40,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36,
+      "end": 40,
+      "value": {
+        "note": 67,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36,
+      "end": 37,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36,
+      "end": 36.125,
+      "value": {
+        "note": 58,
+        "clip": 0.7035055115818978,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 8,
+        "cutoff": 1000,
+        "resonance": 5,
+        "gain": 0.7451583148911596,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36.26,
+      "end": 36.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36.26,
+      "end": 36.51,
+      "value": {
+        "note": 58,
+        "clip": 0.5366528846323491,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.578674030756363,
+        "cutoff": 957.8674030756363,
+        "resonance": 5,
+        "gain": 0.7498674347989436,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36.5,
+      "end": 37,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36.5,
+      "end": 37,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36.5,
+      "end": 36.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36.5,
+      "end": 37,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36.76,
+      "end": 37.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36.76,
+      "end": 37.01,
+      "value": {
+        "note": 68,
+        "clip": 0.5730540499091149,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.951963201008076,
+        "cutoff": 995.1963201008076,
+        "resonance": 5,
+        "gain": 0.7859410703189497,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36.895,
+      "end": 37.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 37,
+      "end": 38,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 37,
+      "end": 37.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 37,
+      "end": 37.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 37,
+      "end": 38,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 37,
+      "end": 37.25,
+      "value": {
+        "note": 58,
+        "clip": 0.6482350371778012,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.267766952966369,
+        "cutoff": 926.776695296637,
+        "resonance": 5,
+        "gain": 0.7906501902267337,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 37.26,
+      "end": 37.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 37.395,
+      "end": 37.4575,
+      "value": {
+        "note": 68,
+        "clip": 0.4250062942504883,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.578674030756364,
+        "cutoff": 957.8674030756365,
+        "resonance": 5,
+        "gain": 0.7889205292062684,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 37.5,
+      "end": 38,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 37.5,
+      "end": 38,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 37.5,
+      "end": 37.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 37.5,
+      "end": 38,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 37.76,
+      "end": 38.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 37.76,
+      "end": 38.01,
+      "value": {
+        "note": 68,
+        "clip": 0.5730540499091149,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.951963201008076,
+        "cutoff": 995.1963201008076,
+        "resonance": 5,
+        "gain": 0.785015845345697,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38,
+      "end": 38.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38,
+      "end": 38.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38,
+      "end": 38.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38,
+      "end": 39,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38,
+      "end": 38.25,
+      "value": {
+        "note": 58,
+        "clip": 0.6482350371778012,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.267766952966369,
+        "cutoff": 926.776695296637,
+        "resonance": 5,
+        "gain": 0.7843652565032244,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38.26,
+      "end": 38.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38.26,
+      "end": 38.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38.26,
+      "end": 38.51,
+      "value": {
+        "note": 58,
+        "clip": 0.5366528846323491,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.578674030756363,
+        "cutoff": 957.8674030756363,
+        "resonance": 5,
+        "gain": 0.7735585233443999,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38.5,
+      "end": 39,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38.5,
+      "end": 39,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38.5,
+      "end": 38.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38.5,
+      "end": 39,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38.5,
+      "end": 38.625,
+      "value": {
+        "note": 58,
+        "clip": 0.5229101710021496,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.2677669529663715,
+        "cutoff": 926.7766952966372,
+        "resonance": 5,
+        "gain": 0.7321666963398457,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38.635,
+      "end": 38.76,
+      "value": {
+        "note": 58,
+        "clip": 0.5291981592774392,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 6.888925582549007,
+        "cutoff": 888.8925582549007,
+        "resonance": 5,
+        "gain": 0.7086990087077993,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38.76,
+      "end": 39.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38.76,
+      "end": 39.01,
+      "value": {
+        "note": 68,
+        "clip": 0.5730540499091149,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.951963201008076,
+        "cutoff": 995.1963201008076,
+        "resonance": 5,
+        "gain": 0.6907748693352914,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38.895,
+      "end": 39.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39,
+      "end": 40,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39,
+      "end": 39.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39,
+      "end": 39.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39,
+      "end": 39.5,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39,
+      "end": 39.25,
+      "value": {
+        "note": 58,
+        "clip": 0.6482350371778012,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.267766952966369,
+        "cutoff": 926.776695296637,
+        "resonance": 5,
+        "gain": 0.6799681361764669,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.135,
+      "end": 39.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.26,
+      "end": 39.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.26,
+      "end": 39.51,
+      "value": {
+        "note": 58,
+        "clip": 0.5366528846323491,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.578674030756363,
+        "cutoff": 957.8674030756363,
+        "resonance": 5,
+        "gain": 0.6923855064815143,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.395,
+      "end": 39.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.5,
+      "end": 40,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.5,
+      "end": 40,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.5,
+      "end": 39.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.5,
+      "end": 40,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.5,
+      "end": 40,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.635,
+      "end": 39.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.76,
+      "end": 39.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.8225,
+      "end": 39.885,
+      "value": {
+        "note": 65,
+        "clip": 0.45332429781556133,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 6.456708580912727,
+        "cutoff": 845.6708580912727,
+        "resonance": 5,
+        "gain": 0.7940744617432955,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.895,
+      "end": 40.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 39.895,
+      "end": 40.02,
+      "value": {
+        "note": 72,
+        "clip": 0.6328231602907182,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.98772580504032,
+        "cutoff": 798.772580504032,
+        "resonance": 5,
+        "gain": 0.7979990481385357,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40,
+      "end": 40.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40,
+      "end": 40.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40,
+      "end": 40.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40,
+      "end": 44,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40,
+      "end": 44,
+      "value": {
+        "note": 61,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40,
+      "end": 44,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40,
+      "end": 44,
+      "value": {
+        "note": 70,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40,
+      "end": 44,
+      "value": {
+        "note": 72,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40,
+      "end": 41,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40,
+      "end": 40.125,
+      "value": {
+        "note": 56,
+        "clip": 0.6664849869906903,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.500000000000002,
+        "cutoff": 750.0000000000002,
+        "resonance": 5,
+        "gain": 0.7999246191233397,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40.26,
+      "end": 40.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40.5,
+      "end": 41,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40.5,
+      "end": 41,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40.5,
+      "end": 40.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40.5,
+      "end": 41,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40.76,
+      "end": 41.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40.76,
+      "end": 40.885,
+      "value": {
+        "note": 72,
+        "clip": 0.460624647885561,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.578674030756364,
+        "cutoff": 957.8674030756364,
+        "resonance": 5,
+        "gain": 0.8130129374694661,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40.895,
+      "end": 41.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41,
+      "end": 42,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41,
+      "end": 41.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41,
+      "end": 41.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41,
+      "end": 42,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41,
+      "end": 41.125,
+      "value": {
+        "note": 58,
+        "clip": 0.46675749421119694,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 8,
+        "cutoff": 1000,
+        "resonance": 5,
+        "gain": 0.8145242247730493,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41.26,
+      "end": 41.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41.395,
+      "end": 41.52,
+      "value": {
+        "note": 68,
+        "clip": 0.7588049352169037,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.111074417450992,
+        "cutoff": 611.1074417450993,
+        "resonance": 5,
+        "gain": 0.8021636830820171,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41.5,
+      "end": 42,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41.5,
+      "end": 42,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41.5,
+      "end": 41.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41.5,
+      "end": 42,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41.76,
+      "end": 42.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41.76,
+      "end": 41.885,
+      "value": {
+        "note": 72,
+        "clip": 0.460624647885561,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.578674030756364,
+        "cutoff": 957.8674030756364,
+        "resonance": 5,
+        "gain": 0.774259945252561,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42,
+      "end": 42.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42,
+      "end": 42.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42,
+      "end": 42.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42,
+      "end": 43,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42,
+      "end": 42.125,
+      "value": {
+        "note": 58,
+        "clip": 0.46675749421119694,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 8,
+        "cutoff": 1000,
+        "resonance": 5,
+        "gain": 0.7696106929332018,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42.26,
+      "end": 42.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42.26,
+      "end": 42.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42.5,
+      "end": 43,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42.5,
+      "end": 43,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42.5,
+      "end": 42.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42.5,
+      "end": 43,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42.5,
+      "end": 42.625,
+      "value": {
+        "note": 56,
+        "clip": 0.5131867103278638,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.7322330470336307,
+        "cutoff": 573.223304703363,
+        "resonance": 5,
+        "gain": 0.7759735062718391,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42.635,
+      "end": 42.76,
+      "value": {
+        "note": 56,
+        "clip": 0.5584401354193688,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.4213259692436373,
+        "cutoff": 542.1325969243637,
+        "resonance": 5,
+        "gain": 0.7788341314581431,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42.76,
+      "end": 43.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42.76,
+      "end": 42.885,
+      "value": {
+        "note": 72,
+        "clip": 0.460624647885561,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.578674030756364,
+        "cutoff": 957.8674030756364,
+        "resonance": 5,
+        "gain": 0.7810190184114617,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42.895,
+      "end": 43.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43,
+      "end": 44,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43,
+      "end": 43.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43,
+      "end": 43.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43,
+      "end": 43.5,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43,
+      "end": 43.125,
+      "value": {
+        "note": 58,
+        "clip": 0.46675749421119694,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 8,
+        "cutoff": 1000,
+        "resonance": 5,
+        "gain": 0.7823363196104764,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43.135,
+      "end": 43.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43.26,
+      "end": 43.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43.395,
+      "end": 43.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43.5,
+      "end": 44,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43.5,
+      "end": 44,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43.5,
+      "end": 43.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43.5,
+      "end": 44,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43.5,
+      "end": 44,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43.635,
+      "end": 43.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43.76,
+      "end": 43.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43.895,
+      "end": 44.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43.895,
+      "end": 43.9575,
+      "value": {
+        "note": 67,
+        "clip": 0.461921938508749,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.048036798991925,
+        "cutoff": 504.8036798991925,
+        "resonance": 5,
+        "gain": 0.6442014516055564,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44,
+      "end": 44.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44,
+      "end": 44.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44,
+      "end": 44.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44,
+      "end": 48,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44,
+      "end": 48,
+      "value": {
+        "note": 60,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44,
+      "end": 48,
+      "value": {
+        "note": 63,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44,
+      "end": 48,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44,
+      "end": 48,
+      "value": {
+        "note": 67,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44,
+      "end": 45,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44,
+      "end": 44.125,
+      "value": {
+        "note": 56,
+        "clip": 0.7719401158392429,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3,
+        "cutoff": 500,
+        "resonance": 5,
+        "gain": 0.6419479021802544,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44.26,
+      "end": 44.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44.26,
+      "end": 44.51,
+      "value": {
+        "note": 58,
+        "clip": 0.6253197245299816,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 6.888925582549005,
+        "cutoff": 888.8925582549006,
+        "resonance": 5,
+        "gain": 0.6608769694172224,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44.5,
+      "end": 45,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44.5,
+      "end": 45,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44.5,
+      "end": 44.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44.5,
+      "end": 45,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44.76,
+      "end": 45.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44.76,
+      "end": 45.01,
+      "value": {
+        "note": 70,
+        "clip": 0.7471056126058102,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.98772580504032,
+        "cutoff": 798.772580504032,
+        "resonance": 5,
+        "gain": 0.8058807674966374,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44.895,
+      "end": 45.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45,
+      "end": 46,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45,
+      "end": 45.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45,
+      "end": 45.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45,
+      "end": 46,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45,
+      "end": 45.25,
+      "value": {
+        "note": 58,
+        "clip": 0.586205031722784,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.267766952966371,
+        "cutoff": 926.7766952966372,
+        "resonance": 5,
+        "gain": 0.8248098347336054,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45.26,
+      "end": 45.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45.395,
+      "end": 45.4575,
+      "value": {
+        "note": 72,
+        "clip": 0.4073842167854309,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.4213259692436355,
+        "cutoff": 542.1325969243635,
+        "resonance": 5,
+        "gain": 0.7842786046271157,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45.5,
+      "end": 46,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45.5,
+      "end": 46,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45.5,
+      "end": 45.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45.5,
+      "end": 46,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45.76,
+      "end": 46.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45.76,
+      "end": 46.01,
+      "value": {
+        "note": 70,
+        "clip": 0.7471056126058102,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.98772580504032,
+        "cutoff": 798.772580504032,
+        "resonance": 5,
+        "gain": 0.6927799594166573,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46,
+      "end": 46.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46,
+      "end": 46.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46,
+      "end": 46.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46,
+      "end": 47,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46,
+      "end": 46.25,
+      "value": {
+        "note": 58,
+        "clip": 0.586205031722784,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.267766952966371,
+        "cutoff": 926.7766952966372,
+        "resonance": 5,
+        "gain": 0.6775346796959638,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46.26,
+      "end": 46.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46.26,
+      "end": 46.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46.26,
+      "end": 46.51,
+      "value": {
+        "note": 58,
+        "clip": 0.6253197245299816,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 6.888925582549005,
+        "cutoff": 888.8925582549006,
+        "resonance": 5,
+        "gain": 0.6841371296577563,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46.5,
+      "end": 47,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46.5,
+      "end": 47,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46.5,
+      "end": 46.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46.5,
+      "end": 47,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46.5,
+      "end": 46.5625,
+      "value": {
+        "note": 56,
+        "clip": 0.45182406380772594,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 3.7322330470336285,
+        "cutoff": 573.2233047033628,
+        "resonance": 5,
+        "gain": 0.7094257587566972,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46.635,
+      "end": 46.76,
+      "value": {
+        "note": 56,
+        "clip": 0.5488335266709328,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 4.11107441745099,
+        "cutoff": 611.107441745099,
+        "resonance": 5,
+        "gain": 0.7237635082904716,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46.76,
+      "end": 47.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46.76,
+      "end": 47.01,
+      "value": {
+        "note": 70,
+        "clip": 0.7471056126058102,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.98772580504032,
+        "cutoff": 798.772580504032,
+        "resonance": 5,
+        "gain": 0.734714387855638,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46.895,
+      "end": 47.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47,
+      "end": 48,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47,
+      "end": 47.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47,
+      "end": 47.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47,
+      "end": 47.5,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47,
+      "end": 47.25,
+      "value": {
+        "note": 58,
+        "clip": 0.586205031722784,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 7.267766952966371,
+        "cutoff": 926.7766952966372,
+        "resonance": 5,
+        "gain": 0.7413168378174305,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47.135,
+      "end": 47.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47.26,
+      "end": 47.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47.26,
+      "end": 47.51,
+      "value": {
+        "note": 58,
+        "clip": 0.6253197245299816,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 6.888925582549005,
+        "cutoff": 888.8925582549006,
+        "resonance": 5,
+        "gain": 0.7417101608731173,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47.395,
+      "end": 47.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47.5,
+      "end": 48,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47.5,
+      "end": 48,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47.5,
+      "end": 47.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47.5,
+      "end": 48,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47.5,
+      "end": 48,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47.635,
+      "end": 47.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47.76,
+      "end": 47.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47.895,
+      "end": 48.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 47.895,
+      "end": 47.9575,
+      "value": {
+        "note": 68,
+        "clip": 0.40828433334827424,
+        "room": 0.75,
+        "shape": 0.3,
+        "delay": 0.25,
+        "fmi": 5.012274194959679,
+        "cutoff": 701.227419495968,
+        "resonance": 5,
+        "gain": 0.7450554940560664,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 48.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 48.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 48.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 52,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 52,
+      "value": {
+        "note": 61,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 52,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 52,
+      "value": {
+        "note": 70,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 52,
+      "value": {
+        "note": 72,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 49,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48.26,
+      "end": 48.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48.5,
+      "end": 49,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48.5,
+      "end": 49,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48.5,
+      "end": 48.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48.5,
+      "end": 49,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48.76,
+      "end": 49.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48.895,
+      "end": 49.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 49,
+      "end": 50,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 49,
+      "end": 49.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 49,
+      "end": 49.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 49,
+      "end": 50,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 49.26,
+      "end": 49.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 49.5,
+      "end": 50,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 49.5,
+      "end": 50,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 49.5,
+      "end": 49.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 49.5,
+      "end": 50,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 49.76,
+      "end": 50.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50,
+      "end": 50.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50,
+      "end": 50.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50,
+      "end": 50.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50,
+      "end": 51,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50.26,
+      "end": 50.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50.26,
+      "end": 50.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50.5,
+      "end": 51,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50.5,
+      "end": 51,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50.5,
+      "end": 50.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50.5,
+      "end": 51,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50.76,
+      "end": 51.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50.895,
+      "end": 51.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51,
+      "end": 52,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51,
+      "end": 51.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51,
+      "end": 51.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51,
+      "end": 51.5,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51.135,
+      "end": 51.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51.26,
+      "end": 51.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51.395,
+      "end": 51.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51.5,
+      "end": 52,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51.5,
+      "end": 52,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51.5,
+      "end": 51.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51.5,
+      "end": 52,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51.5,
+      "end": 52,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51.635,
+      "end": 51.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51.76,
+      "end": 51.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 51.895,
+      "end": 52.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52,
+      "end": 52.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52,
+      "end": 52.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52,
+      "end": 52.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52,
+      "end": 56,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52,
+      "end": 56,
+      "value": {
+        "note": 60,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52,
+      "end": 56,
+      "value": {
+        "note": 63,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52,
+      "end": 56,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52,
+      "end": 56,
+      "value": {
+        "note": 67,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52,
+      "end": 53,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52.26,
+      "end": 52.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52.5,
+      "end": 53,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52.5,
+      "end": 53,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52.5,
+      "end": 52.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52.5,
+      "end": 53,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52.76,
+      "end": 53.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52.895,
+      "end": 53.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 53,
+      "end": 54,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 53,
+      "end": 53.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 53,
+      "end": 53.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 53,
+      "end": 54,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 53.26,
+      "end": 53.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 53.5,
+      "end": 54,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 53.5,
+      "end": 54,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 53.5,
+      "end": 53.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 53.5,
+      "end": 54,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 53.76,
+      "end": 54.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54,
+      "end": 54.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54,
+      "end": 54.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54,
+      "end": 54.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54,
+      "end": 55,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54.26,
+      "end": 54.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54.26,
+      "end": 54.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54.5,
+      "end": 55,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54.5,
+      "end": 55,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54.5,
+      "end": 54.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54.5,
+      "end": 55,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54.76,
+      "end": 55.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54.895,
+      "end": 55.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55,
+      "end": 56,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55,
+      "end": 55.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55,
+      "end": 55.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55,
+      "end": 55.5,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55.135,
+      "end": 55.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55.26,
+      "end": 55.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55.395,
+      "end": 55.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55.5,
+      "end": 56,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55.5,
+      "end": 56,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55.5,
+      "end": 55.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55.5,
+      "end": 56,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55.5,
+      "end": 56,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55.635,
+      "end": 55.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55.76,
+      "end": 55.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 55.895,
+      "end": 56.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56,
+      "end": 56.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56,
+      "end": 56.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56,
+      "end": 56.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56,
+      "end": 60,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56,
+      "end": 60,
+      "value": {
+        "note": 61,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56,
+      "end": 60,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56,
+      "end": 60,
+      "value": {
+        "note": 70,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56,
+      "end": 60,
+      "value": {
+        "note": 72,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56,
+      "end": 57,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56.26,
+      "end": 56.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56.5,
+      "end": 57,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56.5,
+      "end": 57,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56.5,
+      "end": 56.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56.5,
+      "end": 57,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56.76,
+      "end": 57.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56.895,
+      "end": 57.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 57,
+      "end": 58,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 57,
+      "end": 57.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 57,
+      "end": 57.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 57,
+      "end": 58,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 57.26,
+      "end": 57.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 57.5,
+      "end": 58,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 57.5,
+      "end": 58,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 57.5,
+      "end": 57.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 57.5,
+      "end": 58,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 57.76,
+      "end": 58.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58,
+      "end": 58.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58,
+      "end": 58.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58,
+      "end": 58.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58,
+      "end": 59,
+      "value": {
+        "note": 34,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58.26,
+      "end": 58.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58.26,
+      "end": 58.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58.5,
+      "end": 59,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58.5,
+      "end": 59,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58.5,
+      "end": 58.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58.5,
+      "end": 59,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58.76,
+      "end": 59.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58.895,
+      "end": 59.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59,
+      "end": 60,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59,
+      "end": 59.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59,
+      "end": 59.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59,
+      "end": 59.5,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59.135,
+      "end": 59.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59.26,
+      "end": 59.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59.395,
+      "end": 59.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59.5,
+      "end": 60,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59.5,
+      "end": 60,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59.5,
+      "end": 59.625,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59.5,
+      "end": 60,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59.5,
+      "end": 60,
+      "value": {
+        "note": 37,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59.635,
+      "end": 59.76,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59.76,
+      "end": 59.885,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59.895,
+      "end": 60.02,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60,
+      "end": 60.5,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60,
+      "end": 60.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60,
+      "end": 60.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60,
+      "end": 64,
+      "value": {
+        "note": 56,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60,
+      "end": 64,
+      "value": {
+        "note": 60,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60,
+      "end": 64,
+      "value": {
+        "note": 63,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60,
+      "end": 64,
+      "value": {
+        "note": 65,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60,
+      "end": 64,
+      "value": {
+        "note": 67,
+        "s": "gm_epiano1",
+        "n": 1,
+        "phaserrate": 4,
+        "room": 0.5,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60,
+      "end": 61,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60.26,
+      "end": 60.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60.5,
+      "end": 61,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60.5,
+      "end": 61,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60.5,
+      "end": 60.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60.5,
+      "end": 61,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60.76,
+      "end": 61.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60.895,
+      "end": 61.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 61,
+      "end": 62,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 61,
+      "end": 61.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 61,
+      "end": 61.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 61,
+      "end": 62,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 61.26,
+      "end": 61.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 61.5,
+      "end": 62,
+      "value": {
+        "s": "rim",
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 61.5,
+      "end": 62,
+      "value": {
+        "s": "sd",
+        "n": 3,
+        "room": 0.2,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 61.5,
+      "end": 61.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 61.5,
+      "end": 62,
+      "value": {
+        "s": "rd",
+        "n": 2,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 61.76,
+      "end": 62.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62,
+      "end": 62.25,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62,
+      "end": 62.25,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62,
+      "end": 62.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62,
+      "end": 63,
+      "value": {
+        "note": 41,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62.26,
+      "end": 62.51,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62.26,
+      "end": 62.51,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62.5,
+      "end": 63,
+      "value": {
+        "s": "rim",
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62.5,
+      "end": 63,
+      "value": {
+        "s": "sd",
+        "n": 2,
+        "room": 0,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62.5,
+      "end": 62.75,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62.5,
+      "end": 63,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62.76,
+      "end": 63.01,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62.895,
+      "end": 63.02,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 63,
+      "end": 64,
+      "value": {
+        "s": "bd",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 63,
+      "end": 63.125,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 63,
+      "end": 63.5,
+      "value": {
+        "s": "rd",
+        "n": 1,
+        "gain": 0.5,
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 63,
+      "end": 63.5,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 63.135,
+      "end": 63.26,
+      "value": {
+        "n": 1,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 63.26,
+      "end": 63.385,
+      "value": {
+        "n": 0,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 63.395,
+      "end": 63.52,
+      "value": {
+        "n": 3,
+        "s": "hh",
+        "bank": "crate",
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 63.5,
+      "end": 64,
+      "value": {
+        "note": 44,
+        "s": "gm_acoustic_bass",
+        "roomsize": 4
+      }
+    }
+  ]
+}

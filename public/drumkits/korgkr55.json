@@ -8,6 +8,11 @@
       "file": "korgkr55/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "korgkr55/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "korgkr55/snare.wav"
@@ -23,24 +28,19 @@
       "file": "korgkr55/openHat.wav"
     },
     {
-      "voice": "clap",
-      "note": 39,
-      "file": "korgkr55/clap.wav"
+      "voice": "tomHi",
+      "note": 48,
+      "file": "korgkr55/tomHi.wav"
     },
     {
-      "voice": "tom",
-      "note": 45,
-      "file": "korgkr55/tom.wav"
+      "voice": "crash",
+      "note": 49,
+      "file": "korgkr55/crash.wav"
     },
     {
       "voice": "cowbell",
       "note": 56,
       "file": "korgkr55/cowbell.wav"
-    },
-    {
-      "voice": "ride",
-      "note": 51,
-      "file": "korgkr55/ride.wav"
     }
   ]
 }

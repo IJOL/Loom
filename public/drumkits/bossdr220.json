@@ -13,9 +13,24 @@
       "file": "bossdr220/snare.wav"
     },
     {
+      "voice": "clap",
+      "note": 39,
+      "file": "bossdr220/clap.wav"
+    },
+    {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "bossdr220/tomLo.wav"
+    },
+    {
       "voice": "closedHat",
       "note": 42,
       "file": "bossdr220/closedHat.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "bossdr220/tom.wav"
     },
     {
       "voice": "openHat",
@@ -23,14 +38,14 @@
       "file": "bossdr220/openHat.wav"
     },
     {
-      "voice": "clap",
-      "note": 39,
-      "file": "bossdr220/clap.wav"
+      "voice": "tomHi",
+      "note": 48,
+      "file": "bossdr220/tomHi.wav"
     },
     {
-      "voice": "tom",
-      "note": 45,
-      "file": "bossdr220/tom.wav"
+      "voice": "crash",
+      "note": 49,
+      "file": "bossdr220/crash.wav"
     },
     {
       "voice": "ride",

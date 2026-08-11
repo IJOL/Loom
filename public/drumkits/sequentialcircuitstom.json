@@ -13,6 +13,11 @@
       "file": "sequentialcircuitstom/snare.wav"
     },
     {
+      "voice": "clap",
+      "note": 39,
+      "file": "sequentialcircuitstom/clap.wav"
+    },
+    {
       "voice": "closedHat",
       "note": 42,
       "file": "sequentialcircuitstom/closedHat.wav"
@@ -23,19 +28,14 @@
       "file": "sequentialcircuitstom/openHat.wav"
     },
     {
-      "voice": "clap",
-      "note": 39,
-      "file": "sequentialcircuitstom/clap.wav"
+      "voice": "tomHi",
+      "note": 48,
+      "file": "sequentialcircuitstom/tomHi.wav"
     },
     {
-      "voice": "tom",
-      "note": 45,
-      "file": "sequentialcircuitstom/tom.wav"
-    },
-    {
-      "voice": "ride",
-      "note": 51,
-      "file": "sequentialcircuitstom/ride.wav"
+      "voice": "crash",
+      "note": 49,
+      "file": "sequentialcircuitstom/crash.wav"
     }
   ]
 }

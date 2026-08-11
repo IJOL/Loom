@@ -1,0 +1,1463 @@
+{
+  "source": "strudel — \"Echo piano\"",
+  "cycles": 4,
+  "cps": 0.5,
+  "events": [
+    {
+      "begin": 0,
+      "end": 1,
+      "value": {
+        "color": "salmon",
+        "note": 50,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.4814814814814815
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.5,
+      "value": {
+        "color": "steelblue",
+        "note": 65,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5509259259259259
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.5,
+      "value": {
+        "color": "green",
+        "note": 58,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5185185185185186
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.5,
+      "value": {
+        "color": "steelblue",
+        "note": 69,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5694444444444444
+      }
+    },
+    {
+      "begin": 0.125,
+      "end": 1.125,
+      "value": {
+        "color": "salmon",
+        "note": 50,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.4814814814814815
+      }
+    },
+    {
+      "begin": 0.125,
+      "end": 0.625,
+      "value": {
+        "color": "steelblue",
+        "note": 65,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5509259259259259
+      }
+    },
+    {
+      "begin": 0.125,
+      "end": 0.625,
+      "value": {
+        "color": "green",
+        "note": 58,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5185185185185186
+      }
+    },
+    {
+      "begin": 0.125,
+      "end": 0.625,
+      "value": {
+        "color": "steelblue",
+        "note": 69,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5694444444444444
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 1.25,
+      "value": {
+        "color": "green",
+        "note": 53,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.49537037037037035
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.75,
+      "value": {
+        "color": "steelblue",
+        "note": 69,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5694444444444444
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 1.25,
+      "value": {
+        "color": "salmon",
+        "note": 50,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.4814814814814815
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.75,
+      "value": {
+        "color": "steelblue",
+        "note": 65,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5509259259259259
+      }
+    },
+    {
+      "begin": 0.375,
+      "end": 1.375,
+      "value": {
+        "color": "green",
+        "note": 53,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.49537037037037035
+      }
+    },
+    {
+      "begin": 0.375,
+      "end": 0.875,
+      "value": {
+        "color": "steelblue",
+        "note": 69,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5694444444444444
+      }
+    },
+    {
+      "begin": 0.375,
+      "end": 1.375,
+      "value": {
+        "color": "salmon",
+        "note": 50,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.4814814814814815
+      }
+    },
+    {
+      "begin": 0.375,
+      "end": 0.875,
+      "value": {
+        "color": "steelblue",
+        "note": 65,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5509259259259259
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 1.5,
+      "value": {
+        "color": "steelblue",
+        "note": 60,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 1.5,
+      "value": {
+        "color": "green",
+        "note": 53,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.49537037037037035
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 1,
+      "value": {
+        "color": "steelblue",
+        "note": 69,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5694444444444444
+      }
+    },
+    {
+      "begin": 0.625,
+      "end": 1.625,
+      "value": {
+        "color": "steelblue",
+        "note": 60,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 0.625,
+      "end": 1.625,
+      "value": {
+        "color": "green",
+        "note": 53,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.49537037037037035
+      }
+    },
+    {
+      "begin": 0.625,
+      "end": 1.125,
+      "value": {
+        "color": "steelblue",
+        "note": 69,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5694444444444444
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1.75,
+      "value": {
+        "color": "steelblue",
+        "note": 64,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1.75,
+      "value": {
+        "color": "steelblue",
+        "note": 60,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 0.875,
+      "end": 1.875,
+      "value": {
+        "color": "steelblue",
+        "note": 64,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 0.875,
+      "end": 1.875,
+      "value": {
+        "color": "steelblue",
+        "note": 60,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 1,
+      "end": 2,
+      "value": {
+        "color": "salmon",
+        "note": 53,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.49537037037037035
+      }
+    },
+    {
+      "begin": 1,
+      "end": 2,
+      "value": {
+        "color": "steelblue",
+        "note": 64,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 1.125,
+      "end": 2.125,
+      "value": {
+        "color": "salmon",
+        "note": 53,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.49537037037037035
+      }
+    },
+    {
+      "begin": 1.125,
+      "end": 2.125,
+      "value": {
+        "color": "steelblue",
+        "note": 64,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 2.25,
+      "value": {
+        "color": "green",
+        "note": 57,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5138888888888888
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 2.25,
+      "value": {
+        "color": "salmon",
+        "note": 53,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.49537037037037035
+      }
+    },
+    {
+      "begin": 1.375,
+      "end": 2.375,
+      "value": {
+        "color": "green",
+        "note": 57,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5138888888888888
+      }
+    },
+    {
+      "begin": 1.375,
+      "end": 2.375,
+      "value": {
+        "color": "salmon",
+        "note": 53,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.49537037037037035
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 2.5,
+      "value": {
+        "color": "steelblue",
+        "note": 64,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 2.5,
+      "value": {
+        "color": "green",
+        "note": 57,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5138888888888888
+      }
+    },
+    {
+      "begin": 1.625,
+      "end": 2.625,
+      "value": {
+        "color": "steelblue",
+        "note": 64,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 1.625,
+      "end": 2.625,
+      "value": {
+        "color": "green",
+        "note": 57,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5138888888888888
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2.75,
+      "value": {
+        "color": "steelblue",
+        "note": 67,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5601851851851851
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2.75,
+      "value": {
+        "color": "steelblue",
+        "note": 64,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 2.875,
+      "value": {
+        "color": "steelblue",
+        "note": 67,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5601851851851851
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 2.875,
+      "value": {
+        "color": "steelblue",
+        "note": 64,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "color": "salmon",
+        "note": 57,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5138888888888888
+      }
+    },
+    {
+      "begin": 2,
+      "end": 3,
+      "value": {
+        "color": "steelblue",
+        "note": 67,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5601851851851851
+      }
+    },
+    {
+      "begin": 2.125,
+      "end": 2.375,
+      "value": {
+        "color": "salmon",
+        "note": 57,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5138888888888888
+      }
+    },
+    {
+      "begin": 2.125,
+      "end": 3.125,
+      "value": {
+        "color": "steelblue",
+        "note": 67,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5601851851851851
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "color": "green",
+        "note": 60,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "color": "salmon",
+        "note": 57,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5138888888888888
+      }
+    },
+    {
+      "begin": 2.375,
+      "end": 2.625,
+      "value": {
+        "color": "green",
+        "note": 60,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 2.375,
+      "end": 2.625,
+      "value": {
+        "color": "salmon",
+        "note": 57,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5138888888888888
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.75,
+      "value": {
+        "color": "salmon",
+        "note": 60,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.75,
+      "value": {
+        "color": "steelblue",
+        "note": 67,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5601851851851851
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.75,
+      "value": {
+        "color": "green",
+        "note": 60,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 2.625,
+      "end": 2.875,
+      "value": {
+        "color": "salmon",
+        "note": 60,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 2.625,
+      "end": 2.875,
+      "value": {
+        "color": "steelblue",
+        "note": 67,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5601851851851851
+      }
+    },
+    {
+      "begin": 2.625,
+      "end": 2.875,
+      "value": {
+        "color": "green",
+        "note": 60,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "color": "salmon",
+        "note": 60,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "color": "green",
+        "note": 64,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "color": "steelblue",
+        "note": 70,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5740740740740741
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "color": "salmon",
+        "note": 60,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "color": "steelblue",
+        "note": 67,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5601851851851851
+      }
+    },
+    {
+      "begin": 2.875,
+      "end": 3.125,
+      "value": {
+        "color": "salmon",
+        "note": 60,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 2.875,
+      "end": 3.125,
+      "value": {
+        "color": "green",
+        "note": 64,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 2.875,
+      "end": 3.125,
+      "value": {
+        "color": "steelblue",
+        "note": 70,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5740740740740741
+      }
+    },
+    {
+      "begin": 2.875,
+      "end": 3.125,
+      "value": {
+        "color": "salmon",
+        "note": 60,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 2.875,
+      "end": 3.125,
+      "value": {
+        "color": "steelblue",
+        "note": 67,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5601851851851851
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.5,
+      "value": {
+        "color": "salmon",
+        "note": 55,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5046296296296297
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "color": "green",
+        "note": 64,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "color": "steelblue",
+        "note": 70,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5740740740740741
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "color": "salmon",
+        "note": 60,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "color": "green",
+        "note": 64,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "color": "steelblue",
+        "note": 70,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5740740740740741
+      }
+    },
+    {
+      "begin": 3.125,
+      "end": 3.625,
+      "value": {
+        "color": "salmon",
+        "note": 55,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5046296296296297
+      }
+    },
+    {
+      "begin": 3.125,
+      "end": 3.375,
+      "value": {
+        "color": "green",
+        "note": 64,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 3.125,
+      "end": 3.375,
+      "value": {
+        "color": "steelblue",
+        "note": 70,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5740740740740741
+      }
+    },
+    {
+      "begin": 3.125,
+      "end": 3.375,
+      "value": {
+        "color": "salmon",
+        "note": 60,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5277777777777778
+      }
+    },
+    {
+      "begin": 3.125,
+      "end": 3.375,
+      "value": {
+        "color": "green",
+        "note": 64,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 3.125,
+      "end": 3.375,
+      "value": {
+        "color": "steelblue",
+        "note": 70,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5740740740740741
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.75,
+      "value": {
+        "color": "green",
+        "note": 58,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5185185185185186
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "color": "steelblue",
+        "note": 70,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5740740740740741
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "color": "steelblue",
+        "note": 74,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5925925925925926
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.75,
+      "value": {
+        "color": "salmon",
+        "note": 55,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5046296296296297
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "color": "green",
+        "note": 64,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "color": "steelblue",
+        "note": 70,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5740740740740741
+      }
+    },
+    {
+      "begin": 3.375,
+      "end": 3.875,
+      "value": {
+        "color": "green",
+        "note": 58,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5185185185185186
+      }
+    },
+    {
+      "begin": 3.375,
+      "end": 3.625,
+      "value": {
+        "color": "steelblue",
+        "note": 70,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5740740740740741
+      }
+    },
+    {
+      "begin": 3.375,
+      "end": 3.625,
+      "value": {
+        "color": "steelblue",
+        "note": 74,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5925925925925926
+      }
+    },
+    {
+      "begin": 3.375,
+      "end": 3.875,
+      "value": {
+        "color": "salmon",
+        "note": 55,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5046296296296297
+      }
+    },
+    {
+      "begin": 3.375,
+      "end": 3.625,
+      "value": {
+        "color": "green",
+        "note": 64,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5462962962962963
+      }
+    },
+    {
+      "begin": 3.375,
+      "end": 3.625,
+      "value": {
+        "color": "steelblue",
+        "note": 70,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5740740740740741
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "color": "salmon",
+        "note": 55,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5046296296296297
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "color": "steelblue",
+        "note": 65,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5509259259259259
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 3.75,
+      "value": {
+        "color": "steelblue",
+        "note": 74,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5925925925925926
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "color": "green",
+        "note": 58,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5185185185185186
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 3.75,
+      "value": {
+        "color": "steelblue",
+        "note": 70,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5740740740740741
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 3.75,
+      "value": {
+        "color": "steelblue",
+        "note": 74,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5925925925925926
+      }
+    },
+    {
+      "begin": 3.625,
+      "end": 4.125,
+      "value": {
+        "color": "salmon",
+        "note": 55,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5046296296296297
+      }
+    },
+    {
+      "begin": 3.625,
+      "end": 4.125,
+      "value": {
+        "color": "steelblue",
+        "note": 65,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5509259259259259
+      }
+    },
+    {
+      "begin": 3.625,
+      "end": 3.875,
+      "value": {
+        "color": "steelblue",
+        "note": 74,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5925925925925926
+      }
+    },
+    {
+      "begin": 3.625,
+      "end": 4.125,
+      "value": {
+        "color": "green",
+        "note": 58,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5185185185185186
+      }
+    },
+    {
+      "begin": 3.625,
+      "end": 3.875,
+      "value": {
+        "color": "steelblue",
+        "note": 70,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5740740740740741
+      }
+    },
+    {
+      "begin": 3.625,
+      "end": 3.875,
+      "value": {
+        "color": "steelblue",
+        "note": 74,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5925925925925926
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4.25,
+      "value": {
+        "color": "green",
+        "note": 58,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5185185185185186
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4.25,
+      "value": {
+        "color": "steelblue",
+        "note": 69,
+        "gain": 1,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5694444444444444
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4.25,
+      "value": {
+        "color": "salmon",
+        "note": 55,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5046296296296297
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4.25,
+      "value": {
+        "color": "steelblue",
+        "note": 65,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5509259259259259
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "color": "steelblue",
+        "note": 74,
+        "gain": 0.25,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5925925925925926
+      }
+    },
+    {
+      "begin": 3.875,
+      "end": 4.375,
+      "value": {
+        "color": "green",
+        "note": 58,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5185185185185186
+      }
+    },
+    {
+      "begin": 3.875,
+      "end": 4.375,
+      "value": {
+        "color": "steelblue",
+        "note": 69,
+        "gain": 0.5,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5694444444444444
+      }
+    },
+    {
+      "begin": 3.875,
+      "end": 4.375,
+      "value": {
+        "color": "salmon",
+        "note": 55,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5046296296296297
+      }
+    },
+    {
+      "begin": 3.875,
+      "end": 4.375,
+      "value": {
+        "color": "steelblue",
+        "note": 65,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5509259259259259
+      }
+    },
+    {
+      "begin": 3.875,
+      "end": 4.125,
+      "value": {
+        "color": "steelblue",
+        "note": 74,
+        "gain": 0.125,
+        "clip": 0.5,
+        "s": "piano",
+        "release": 0.1,
+        "pan": 0.5925925925925926
+      }
+    }
+  ]
+}

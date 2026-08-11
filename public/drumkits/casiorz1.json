@@ -8,14 +8,14 @@
       "file": "casiorz1/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "casiorz1/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "casiorz1/snare.wav"
-    },
-    {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "casiorz1/closedHat.wav"
     },
     {
       "voice": "clap",
@@ -23,19 +23,39 @@
       "file": "casiorz1/clap.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "casiorz1/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "casiorz1/closedHat.wav"
+    },
+    {
       "voice": "tom",
       "note": 45,
       "file": "casiorz1/tom.wav"
     },
     {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "casiorz1/cowbell.wav"
+      "voice": "tomHi",
+      "note": 48,
+      "file": "casiorz1/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "casiorz1/crash.wav"
     },
     {
       "voice": "ride",
       "note": 51,
       "file": "casiorz1/ride.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "casiorz1/cowbell.wav"
     }
   ]
 }

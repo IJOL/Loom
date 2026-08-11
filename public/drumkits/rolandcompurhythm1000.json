@@ -8,19 +8,14 @@
       "file": "rolandcompurhythm1000/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "rolandcompurhythm1000/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "rolandcompurhythm1000/snare.wav"
-    },
-    {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "rolandcompurhythm1000/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "rolandcompurhythm1000/openHat.wav"
     },
     {
       "voice": "clap",
@@ -28,19 +23,44 @@
       "file": "rolandcompurhythm1000/clap.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "rolandcompurhythm1000/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolandcompurhythm1000/closedHat.wav"
+    },
+    {
       "voice": "tom",
       "note": 45,
       "file": "rolandcompurhythm1000/tom.wav"
     },
     {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "rolandcompurhythm1000/cowbell.wav"
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolandcompurhythm1000/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "rolandcompurhythm1000/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "rolandcompurhythm1000/crash.wav"
     },
     {
       "voice": "ride",
       "note": 51,
       "file": "rolandcompurhythm1000/ride.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "rolandcompurhythm1000/cowbell.wav"
     }
   ]
 }

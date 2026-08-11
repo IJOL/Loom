@@ -1,0 +1,900 @@
+{
+  "bpm": 120,
+  "name": "Orbit",
+  "lanes": [
+    {
+      "id": "drums-1",
+      "engineId": "drums-machine",
+      "name": "Kit",
+      "inserts": [
+        {
+          "id": "orbit-1-delay",
+          "pluginId": "delay",
+          "bypass": false,
+          "params": {
+            "time": 0.33,
+            "feedback": 0.6,
+            "wet": 0.5
+          }
+        }
+      ],
+      "clips": [
+        {
+          "id": "drums-1",
+          "name": "Kit",
+          "color": "#f4b8b8",
+          "gridResolution": "1/16",
+          "lengthBars": 32,
+          "notes": [
+            {
+              "start": 0,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 192,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 384,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 576,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 768,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 960,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 1152,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 1344,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 1536,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 1728,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 1920,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 2112,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 2304,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 2496,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 2688,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 2880,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 3072,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 3264,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 3456,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 3648,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 3840,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 4032,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 4224,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 4416,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 4608,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 4800,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 4992,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 5184,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 5376,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 5568,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 5760,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 5952,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 6144,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 6336,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 6528,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 6720,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 6912,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 7104,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 7296,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 7488,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 7680,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 7872,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 8064,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 8256,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 8448,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 8640,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 8832,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 9024,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 9216,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 9408,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 9600,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 9792,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 9984,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 10176,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 10368,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 10560,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 10752,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 10944,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 11136,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 11328,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 11520,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 11712,
+              "duration": 24,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 11904,
+              "duration": 24,
+              "midi": 36,
+              "velocity": 99
+            },
+            {
+              "start": 12096,
+              "duration": 24,
+              "midi": 39,
+              "velocity": 99
+            }
+          ]
+        }
+      ],
+      "enginePresetName": "engine:Uzu (Strudel default)",
+      "engineState": {
+        "kitMode": "sample",
+        "sampler": {
+          "keymap": [],
+          "drumkitId": "strudel-uzu"
+        },
+        "params": {}
+      }
+    },
+    {
+      "id": "drums-2",
+      "engineId": "drums-machine",
+      "name": "Hats (orbit 2)",
+      "inserts": [
+        {
+          "id": "orbit-2-delay",
+          "pluginId": "delay",
+          "bypass": false,
+          "params": {
+            "time": 0.08,
+            "feedback": 0.7,
+            "wet": 0.8
+          }
+        }
+      ],
+      "clips": [
+        {
+          "id": "drums-2",
+          "name": "Hats (orbit 2)",
+          "color": "#a8e0d8",
+          "gridResolution": "1/16",
+          "lengthBars": 32,
+          "notes": [
+            {
+              "start": 0,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 192,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 384,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 576,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 768,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 960,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 1152,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 1344,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 1536,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 1728,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 1920,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 2112,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 2304,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 2496,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 2688,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 2880,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 3072,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 3264,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 3456,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 3648,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 3840,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 4032,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 4224,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 4416,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 4608,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 4800,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 4992,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 5184,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 5376,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 5568,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 5760,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 5952,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 6144,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 6336,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 6528,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 6720,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 6912,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 7104,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 7296,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 7488,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 7680,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 7872,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 8064,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 8256,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 8448,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 8640,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 8832,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 9024,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 9216,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 9408,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 9600,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 9792,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 9984,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 10176,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 10368,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 10560,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 10752,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 10944,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 11136,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 11328,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 11520,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 11712,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 11904,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 12096,
+              "duration": 24,
+              "midi": 42,
+              "velocity": 99
+            }
+          ]
+        }
+      ],
+      "enginePresetName": "engine:Uzu (Strudel default)",
+      "engineState": {
+        "kitMode": "sample",
+        "sampler": {
+          "keymap": [],
+          "drumkitId": "strudel-uzu"
+        },
+        "params": {}
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-1",
+      "name": "Orbit",
+      "clipPerLane": {
+        "drums-1": 0,
+        "drums-2": 0
+      }
+    }
+  ],
+  "globalQuantize": "1/1",
+  "musicality": {
+    "key": 0,
+    "scale": "minor",
+    "style": "acid-techno",
+    "lock": false
+  },
+  "sends": [
+    {
+      "id": "A",
+      "label": "Send A (Delay)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "orbit-send-a",
+          "pluginId": "delay",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Send B (Reverb)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "orbit-send-b",
+          "pluginId": "reverb",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    }
+  ],
+  "masterInserts": [],
+  "timeSignature": {
+    "num": 4,
+    "den": 4
+  }
+}

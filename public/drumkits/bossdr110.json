@@ -13,6 +13,11 @@
       "file": "bossdr110/snare.wav"
     },
     {
+      "voice": "clap",
+      "note": 39,
+      "file": "bossdr110/clap.wav"
+    },
+    {
       "voice": "closedHat",
       "note": 42,
       "file": "bossdr110/closedHat.wav"
@@ -23,9 +28,9 @@
       "file": "bossdr110/openHat.wav"
     },
     {
-      "voice": "clap",
-      "note": 39,
-      "file": "bossdr110/clap.wav"
+      "voice": "crash",
+      "note": 49,
+      "file": "bossdr110/crash.wav"
     },
     {
       "voice": "ride",

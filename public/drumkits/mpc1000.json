@@ -13,6 +13,11 @@
       "file": "mpc1000/snare.wav"
     },
     {
+      "voice": "clap",
+      "note": 39,
+      "file": "mpc1000/clap.wav"
+    },
+    {
       "voice": "closedHat",
       "note": 42,
       "file": "mpc1000/closedHat.wav"
@@ -23,9 +28,9 @@
       "file": "mpc1000/openHat.wav"
     },
     {
-      "voice": "clap",
-      "note": 39,
-      "file": "mpc1000/clap.wav"
+      "voice": "shaker",
+      "note": 82,
+      "file": "mpc1000/shaker.wav"
     }
   ]
 }

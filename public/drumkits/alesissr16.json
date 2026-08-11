@@ -8,9 +8,19 @@
       "file": "alesissr16/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "alesissr16/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "alesissr16/snare.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "alesissr16/clap.wav"
     },
     {
       "voice": "closedHat",
@@ -23,9 +33,19 @@
       "file": "alesissr16/openHat.wav"
     },
     {
-      "voice": "clap",
-      "note": 39,
-      "file": "alesissr16/clap.wav"
+      "voice": "crash",
+      "note": 49,
+      "file": "alesissr16/crash.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "alesissr16/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "alesissr16/tamb.wav"
     },
     {
       "voice": "cowbell",
@@ -33,9 +53,9 @@
       "file": "alesissr16/cowbell.wav"
     },
     {
-      "voice": "ride",
-      "note": 51,
-      "file": "alesissr16/ride.wav"
+      "voice": "shaker",
+      "note": 82,
+      "file": "alesissr16/shaker.wav"
     }
   ]
 }

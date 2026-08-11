@@ -13,19 +13,19 @@
       "file": "akailinn/snare.wav"
     },
     {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "akailinn/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "akailinn/openHat.wav"
-    },
-    {
       "voice": "clap",
       "note": 39,
       "file": "akailinn/clap.wav"
+    },
+    {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "akailinn/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "akailinn/closedHat.wav"
     },
     {
       "voice": "tom",
@@ -33,14 +33,39 @@
       "file": "akailinn/tom.wav"
     },
     {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "akailinn/cowbell.wav"
+      "voice": "openHat",
+      "note": 46,
+      "file": "akailinn/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "akailinn/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "akailinn/crash.wav"
     },
     {
       "voice": "ride",
       "note": 51,
       "file": "akailinn/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "akailinn/tamb.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "akailinn/cowbell.wav"
+    },
+    {
+      "voice": "shaker",
+      "note": 82,
+      "file": "akailinn/shaker.wav"
     }
   ]
 }

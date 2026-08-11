@@ -1,0 +1,1041 @@
+{
+  "bpm": 96,
+  "name": "Giant Steps",
+  "lanes": [
+    {
+      "id": "melody-1",
+      "engineId": "subtractive",
+      "name": "Melody",
+      "inserts": [],
+      "clips": [
+        {
+          "id": "melody-1",
+          "name": "Melody",
+          "color": "#F8E71C",
+          "gridResolution": "1/16",
+          "lengthBars": 16,
+          "notes": [
+            {
+              "start": 0,
+              "duration": 192,
+              "midi": 78,
+              "velocity": 99
+            },
+            {
+              "start": 192,
+              "duration": 192,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 384,
+              "duration": 192,
+              "midi": 71,
+              "velocity": 99
+            },
+            {
+              "start": 576,
+              "duration": 192,
+              "midi": 67,
+              "velocity": 99
+            },
+            {
+              "start": 768,
+              "duration": 384,
+              "midi": 70,
+              "velocity": 99
+            },
+            {
+              "start": 1152,
+              "duration": 192,
+              "midi": 71,
+              "velocity": 99
+            },
+            {
+              "start": 1344,
+              "duration": 192,
+              "midi": 69,
+              "velocity": 99
+            },
+            {
+              "start": 1536,
+              "duration": 192,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 1728,
+              "duration": 192,
+              "midi": 70,
+              "velocity": 99
+            },
+            {
+              "start": 1920,
+              "duration": 192,
+              "midi": 67,
+              "velocity": 99
+            },
+            {
+              "start": 2112,
+              "duration": 192,
+              "midi": 63,
+              "velocity": 99
+            },
+            {
+              "start": 2304,
+              "duration": 384,
+              "midi": 66,
+              "velocity": 99
+            },
+            {
+              "start": 2688,
+              "duration": 192,
+              "midi": 67,
+              "velocity": 99
+            },
+            {
+              "start": 2880,
+              "duration": 192,
+              "midi": 65,
+              "velocity": 99
+            },
+            {
+              "start": 3072,
+              "duration": 384,
+              "midi": 70,
+              "velocity": 99
+            },
+            {
+              "start": 3456,
+              "duration": 192,
+              "midi": 71,
+              "velocity": 99
+            },
+            {
+              "start": 3648,
+              "duration": 192,
+              "midi": 69,
+              "velocity": 99
+            },
+            {
+              "start": 3840,
+              "duration": 384,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 4224,
+              "duration": 192,
+              "midi": 75,
+              "velocity": 99
+            },
+            {
+              "start": 4416,
+              "duration": 192,
+              "midi": 73,
+              "velocity": 99
+            },
+            {
+              "start": 4608,
+              "duration": 384,
+              "midi": 78,
+              "velocity": 99
+            },
+            {
+              "start": 4992,
+              "duration": 192,
+              "midi": 79,
+              "velocity": 99
+            },
+            {
+              "start": 5184,
+              "duration": 192,
+              "midi": 77,
+              "velocity": 99
+            },
+            {
+              "start": 5376,
+              "duration": 384,
+              "midi": 82,
+              "velocity": 99
+            },
+            {
+              "start": 5760,
+              "duration": 192,
+              "midi": 78,
+              "velocity": 99
+            },
+            {
+              "start": 5952,
+              "duration": 192,
+              "midi": 78,
+              "velocity": 99
+            }
+          ]
+        }
+      ],
+      "enginePresetName": "engine:LEAD Soft Sine",
+      "engineState": {
+        "params": {
+          "osc1.wave": 2,
+          "osc1.level": 0.7,
+          "osc2.level": 0,
+          "filter.cutoff": 0.62,
+          "filter.resonance": 0.08,
+          "filter.envAmount": 0.1,
+          "amp.attack": 0.01,
+          "amp.decay": 0.6,
+          "amp.sustain": 0.6,
+          "amp.release": 0.25,
+          "bus.reverbSend": 0.24
+        }
+      }
+    },
+    {
+      "id": "chords-1",
+      "engineId": "subtractive",
+      "name": "Chords",
+      "inserts": [],
+      "clips": [
+        {
+          "id": "chords-1",
+          "name": "Chords",
+          "color": "#7ED321",
+          "gridResolution": "1/16",
+          "lengthBars": 16,
+          "notes": [
+            {
+              "start": 0,
+              "duration": 192,
+              "midi": 70,
+              "velocity": 70
+            },
+            {
+              "start": 0,
+              "duration": 192,
+              "midi": 73,
+              "velocity": 70
+            },
+            {
+              "start": 0,
+              "duration": 192,
+              "midi": 75,
+              "velocity": 70
+            },
+            {
+              "start": 192,
+              "duration": 192,
+              "midi": 60,
+              "velocity": 70
+            },
+            {
+              "start": 192,
+              "duration": 192,
+              "midi": 64,
+              "velocity": 70
+            },
+            {
+              "start": 192,
+              "duration": 192,
+              "midi": 66,
+              "velocity": 70
+            },
+            {
+              "start": 192,
+              "duration": 192,
+              "midi": 71,
+              "velocity": 70
+            },
+            {
+              "start": 384,
+              "duration": 192,
+              "midi": 59,
+              "velocity": 70
+            },
+            {
+              "start": 384,
+              "duration": 192,
+              "midi": 62,
+              "velocity": 70
+            },
+            {
+              "start": 384,
+              "duration": 192,
+              "midi": 66,
+              "velocity": 70
+            },
+            {
+              "start": 384,
+              "duration": 192,
+              "midi": 69,
+              "velocity": 70
+            },
+            {
+              "start": 576,
+              "duration": 192,
+              "midi": 56,
+              "velocity": 70
+            },
+            {
+              "start": 576,
+              "duration": 192,
+              "midi": 60,
+              "velocity": 70
+            },
+            {
+              "start": 576,
+              "duration": 192,
+              "midi": 62,
+              "velocity": 70
+            },
+            {
+              "start": 768,
+              "duration": 384,
+              "midi": 62,
+              "velocity": 70
+            },
+            {
+              "start": 768,
+              "duration": 384,
+              "midi": 65,
+              "velocity": 70
+            },
+            {
+              "start": 768,
+              "duration": 384,
+              "midi": 67,
+              "velocity": 70
+            },
+            {
+              "start": 1152,
+              "duration": 192,
+              "midi": 60,
+              "velocity": 70
+            },
+            {
+              "start": 1152,
+              "duration": 192,
+              "midi": 64,
+              "velocity": 70
+            },
+            {
+              "start": 1152,
+              "duration": 192,
+              "midi": 67,
+              "velocity": 70
+            },
+            {
+              "start": 1344,
+              "duration": 192,
+              "midi": 54,
+              "velocity": 70
+            },
+            {
+              "start": 1344,
+              "duration": 192,
+              "midi": 59,
+              "velocity": 70
+            },
+            {
+              "start": 1344,
+              "duration": 192,
+              "midi": 60,
+              "velocity": 70
+            },
+            {
+              "start": 1344,
+              "duration": 192,
+              "midi": 64,
+              "velocity": 70
+            },
+            {
+              "start": 1536,
+              "duration": 192,
+              "midi": 66,
+              "velocity": 70
+            },
+            {
+              "start": 1536,
+              "duration": 192,
+              "midi": 69,
+              "velocity": 70
+            },
+            {
+              "start": 1536,
+              "duration": 192,
+              "midi": 71,
+              "velocity": 70
+            },
+            {
+              "start": 1728,
+              "duration": 192,
+              "midi": 56,
+              "velocity": 70
+            },
+            {
+              "start": 1728,
+              "duration": 192,
+              "midi": 60,
+              "velocity": 70
+            },
+            {
+              "start": 1728,
+              "duration": 192,
+              "midi": 62,
+              "velocity": 70
+            },
+            {
+              "start": 1728,
+              "duration": 192,
+              "midi": 67,
+              "velocity": 70
+            },
+            {
+              "start": 1920,
+              "duration": 192,
+              "midi": 55,
+              "velocity": 70
+            },
+            {
+              "start": 1920,
+              "duration": 192,
+              "midi": 58,
+              "velocity": 70
+            },
+            {
+              "start": 1920,
+              "duration": 192,
+              "midi": 62,
+              "velocity": 70
+            },
+            {
+              "start": 1920,
+              "duration": 192,
+              "midi": 65,
+              "velocity": 70
+            },
+            {
+              "start": 2112,
+              "duration": 192,
+              "midi": 52,
+              "velocity": 70
+            },
+            {
+              "start": 2112,
+              "duration": 192,
+              "midi": 56,
+              "velocity": 70
+            },
+            {
+              "start": 2112,
+              "duration": 192,
+              "midi": 58,
+              "velocity": 70
+            },
+            {
+              "start": 2304,
+              "duration": 384,
+              "midi": 58,
+              "velocity": 70
+            },
+            {
+              "start": 2304,
+              "duration": 384,
+              "midi": 61,
+              "velocity": 70
+            },
+            {
+              "start": 2304,
+              "duration": 384,
+              "midi": 63,
+              "velocity": 70
+            },
+            {
+              "start": 2688,
+              "duration": 192,
+              "midi": 56,
+              "velocity": 70
+            },
+            {
+              "start": 2688,
+              "duration": 192,
+              "midi": 60,
+              "velocity": 70
+            },
+            {
+              "start": 2688,
+              "duration": 192,
+              "midi": 63,
+              "velocity": 70
+            },
+            {
+              "start": 2880,
+              "duration": 192,
+              "midi": 50,
+              "velocity": 70
+            },
+            {
+              "start": 2880,
+              "duration": 192,
+              "midi": 55,
+              "velocity": 70
+            },
+            {
+              "start": 2880,
+              "duration": 192,
+              "midi": 56,
+              "velocity": 70
+            },
+            {
+              "start": 2880,
+              "duration": 192,
+              "midi": 60,
+              "velocity": 70
+            },
+            {
+              "start": 3072,
+              "duration": 384,
+              "midi": 62,
+              "velocity": 70
+            },
+            {
+              "start": 3072,
+              "duration": 384,
+              "midi": 65,
+              "velocity": 70
+            },
+            {
+              "start": 3072,
+              "duration": 384,
+              "midi": 67,
+              "velocity": 70
+            },
+            {
+              "start": 3456,
+              "duration": 192,
+              "midi": 60,
+              "velocity": 70
+            },
+            {
+              "start": 3456,
+              "duration": 192,
+              "midi": 64,
+              "velocity": 70
+            },
+            {
+              "start": 3456,
+              "duration": 192,
+              "midi": 67,
+              "velocity": 70
+            },
+            {
+              "start": 3648,
+              "duration": 192,
+              "midi": 54,
+              "velocity": 70
+            },
+            {
+              "start": 3648,
+              "duration": 192,
+              "midi": 59,
+              "velocity": 70
+            },
+            {
+              "start": 3648,
+              "duration": 192,
+              "midi": 60,
+              "velocity": 70
+            },
+            {
+              "start": 3648,
+              "duration": 192,
+              "midi": 64,
+              "velocity": 70
+            },
+            {
+              "start": 3840,
+              "duration": 384,
+              "midi": 66,
+              "velocity": 70
+            },
+            {
+              "start": 3840,
+              "duration": 384,
+              "midi": 69,
+              "velocity": 70
+            },
+            {
+              "start": 3840,
+              "duration": 384,
+              "midi": 71,
+              "velocity": 70
+            },
+            {
+              "start": 4224,
+              "duration": 192,
+              "midi": 64,
+              "velocity": 70
+            },
+            {
+              "start": 4224,
+              "duration": 192,
+              "midi": 68,
+              "velocity": 70
+            },
+            {
+              "start": 4224,
+              "duration": 192,
+              "midi": 71,
+              "velocity": 70
+            },
+            {
+              "start": 4416,
+              "duration": 192,
+              "midi": 58,
+              "velocity": 70
+            },
+            {
+              "start": 4416,
+              "duration": 192,
+              "midi": 63,
+              "velocity": 70
+            },
+            {
+              "start": 4416,
+              "duration": 192,
+              "midi": 64,
+              "velocity": 70
+            },
+            {
+              "start": 4416,
+              "duration": 192,
+              "midi": 68,
+              "velocity": 70
+            },
+            {
+              "start": 4608,
+              "duration": 384,
+              "midi": 70,
+              "velocity": 70
+            },
+            {
+              "start": 4608,
+              "duration": 384,
+              "midi": 73,
+              "velocity": 70
+            },
+            {
+              "start": 4608,
+              "duration": 384,
+              "midi": 75,
+              "velocity": 70
+            },
+            {
+              "start": 4992,
+              "duration": 192,
+              "midi": 68,
+              "velocity": 70
+            },
+            {
+              "start": 4992,
+              "duration": 192,
+              "midi": 72,
+              "velocity": 70
+            },
+            {
+              "start": 4992,
+              "duration": 192,
+              "midi": 75,
+              "velocity": 70
+            },
+            {
+              "start": 5184,
+              "duration": 192,
+              "midi": 62,
+              "velocity": 70
+            },
+            {
+              "start": 5184,
+              "duration": 192,
+              "midi": 67,
+              "velocity": 70
+            },
+            {
+              "start": 5184,
+              "duration": 192,
+              "midi": 68,
+              "velocity": 70
+            },
+            {
+              "start": 5184,
+              "duration": 192,
+              "midi": 72,
+              "velocity": 70
+            },
+            {
+              "start": 5376,
+              "duration": 384,
+              "midi": 74,
+              "velocity": 70
+            },
+            {
+              "start": 5376,
+              "duration": 384,
+              "midi": 77,
+              "velocity": 70
+            },
+            {
+              "start": 5376,
+              "duration": 384,
+              "midi": 79,
+              "velocity": 70
+            },
+            {
+              "start": 5760,
+              "duration": 192,
+              "midi": 64,
+              "velocity": 70
+            },
+            {
+              "start": 5760,
+              "duration": 192,
+              "midi": 68,
+              "velocity": 70
+            },
+            {
+              "start": 5760,
+              "duration": 192,
+              "midi": 71,
+              "velocity": 70
+            },
+            {
+              "start": 5760,
+              "duration": 192,
+              "midi": 75,
+              "velocity": 70
+            },
+            {
+              "start": 5952,
+              "duration": 192,
+              "midi": 64,
+              "velocity": 70
+            },
+            {
+              "start": 5952,
+              "duration": 192,
+              "midi": 68,
+              "velocity": 70
+            },
+            {
+              "start": 5952,
+              "duration": 192,
+              "midi": 70,
+              "velocity": 70
+            },
+            {
+              "start": 5952,
+              "duration": 192,
+              "midi": 75,
+              "velocity": 70
+            }
+          ]
+        }
+      ],
+      "enginePresetName": "engine:PAD Warm",
+      "engineState": {
+        "params": {
+          "osc1.wave": 2,
+          "osc1.level": 0.7,
+          "osc2.level": 0,
+          "filter.cutoff": 0.62,
+          "filter.resonance": 0.08,
+          "filter.envAmount": 0.1,
+          "amp.attack": 0.02,
+          "amp.decay": 0.4,
+          "amp.sustain": 0.5,
+          "amp.release": 0.25,
+          "bus.reverbSend": 0.3,
+          "bus.level": 0.75
+        }
+      }
+    },
+    {
+      "id": "bass-1",
+      "engineId": "subtractive",
+      "name": "Bass",
+      "inserts": [],
+      "clips": [
+        {
+          "id": "bass-1",
+          "name": "Bass",
+          "color": "#00B8D4",
+          "gridResolution": "1/16",
+          "lengthBars": 16,
+          "notes": [
+            {
+              "start": 0,
+              "duration": 192,
+              "midi": 47,
+              "velocity": 99
+            },
+            {
+              "start": 192,
+              "duration": 192,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 384,
+              "duration": 192,
+              "midi": 43,
+              "velocity": 99
+            },
+            {
+              "start": 576,
+              "duration": 192,
+              "midi": 46,
+              "velocity": 99
+            },
+            {
+              "start": 768,
+              "duration": 192,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 960,
+              "duration": 192,
+              "midi": 58,
+              "velocity": 99
+            },
+            {
+              "start": 1152,
+              "duration": 192,
+              "midi": 45,
+              "velocity": 99
+            },
+            {
+              "start": 1344,
+              "duration": 192,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 1536,
+              "duration": 192,
+              "midi": 43,
+              "velocity": 99
+            },
+            {
+              "start": 1728,
+              "duration": 192,
+              "midi": 46,
+              "velocity": 99
+            },
+            {
+              "start": 1920,
+              "duration": 192,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 2112,
+              "duration": 192,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 2304,
+              "duration": 192,
+              "midi": 47,
+              "velocity": 99
+            },
+            {
+              "start": 2496,
+              "duration": 192,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 2688,
+              "duration": 192,
+              "midi": 41,
+              "velocity": 99
+            },
+            {
+              "start": 2880,
+              "duration": 192,
+              "midi": 46,
+              "velocity": 99
+            },
+            {
+              "start": 3072,
+              "duration": 192,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 3264,
+              "duration": 192,
+              "midi": 46,
+              "velocity": 99
+            },
+            {
+              "start": 3456,
+              "duration": 192,
+              "midi": 45,
+              "velocity": 99
+            },
+            {
+              "start": 3648,
+              "duration": 192,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 3840,
+              "duration": 192,
+              "midi": 43,
+              "velocity": 99
+            },
+            {
+              "start": 4032,
+              "duration": 192,
+              "midi": 38,
+              "velocity": 99
+            },
+            {
+              "start": 4224,
+              "duration": 192,
+              "midi": 37,
+              "velocity": 99
+            },
+            {
+              "start": 4416,
+              "duration": 192,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 4608,
+              "duration": 192,
+              "midi": 47,
+              "velocity": 99
+            },
+            {
+              "start": 4800,
+              "duration": 192,
+              "midi": 42,
+              "velocity": 99
+            },
+            {
+              "start": 4992,
+              "duration": 192,
+              "midi": 41,
+              "velocity": 99
+            },
+            {
+              "start": 5184,
+              "duration": 192,
+              "midi": 46,
+              "velocity": 99
+            },
+            {
+              "start": 5376,
+              "duration": 192,
+              "midi": 39,
+              "velocity": 99
+            },
+            {
+              "start": 5568,
+              "duration": 192,
+              "midi": 58,
+              "velocity": 99
+            },
+            {
+              "start": 5760,
+              "duration": 192,
+              "midi": 37,
+              "velocity": 99
+            },
+            {
+              "start": 5952,
+              "duration": 192,
+              "midi": 42,
+              "velocity": 99
+            }
+          ]
+        }
+      ],
+      "enginePresetName": "engine:BASS Warm",
+      "engineState": {
+        "params": {
+          "osc1.wave": 2,
+          "osc1.level": 0.7,
+          "osc2.level": 0,
+          "filter.cutoff": 0.44,
+          "filter.resonance": 0.08,
+          "filter.envAmount": 0.1,
+          "amp.attack": 0.01,
+          "amp.decay": 0.5,
+          "amp.sustain": 0.5,
+          "amp.release": 0.25,
+          "bus.reverbSend": 0.08
+        }
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-1",
+      "name": "Giant Steps",
+      "clipPerLane": {
+        "melody-1": 0,
+        "chords-1": 0,
+        "bass-1": 0
+      }
+    }
+  ],
+  "globalQuantize": "1/1",
+  "musicality": {
+    "key": 11,
+    "scale": "minor",
+    "style": "acid-techno",
+    "lock": false
+  },
+  "sends": [
+    {
+      "id": "A",
+      "label": "Send A (Delay)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "giant-steps-send-a",
+          "pluginId": "delay",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Send B (Reverb)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "giant-steps-send-b",
+          "pluginId": "reverb",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    }
+  ],
+  "masterInserts": [],
+  "timeSignature": {
+    "num": 4,
+    "den": 4
+  }
+}

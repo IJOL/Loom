@@ -1,0 +1,77 @@
+{
+  "id": "brokencut",
+  "name": "Broken Cut",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "brokencut/kick.wav"
+    },
+    {
+      "voice": "whirl",
+      "note": 37,
+      "file": "brokencut/whirl.wav"
+    },
+    {
+      "voice": "attack",
+      "note": 38,
+      "file": "brokencut/attack.wav"
+    },
+    {
+      "voice": "brk0_05",
+      "note": 60,
+      "file": "brokencut/brk0_05.wav",
+      "begin": 0,
+      "speed": 0.5
+    },
+    {
+      "voice": "brk25_05",
+      "note": 61,
+      "file": "brokencut/brk25_05.wav",
+      "begin": 0.25,
+      "speed": 0.5
+    },
+    {
+      "voice": "brk5_05",
+      "note": 62,
+      "file": "brokencut/brk5_05.wav",
+      "begin": 0.5,
+      "speed": 0.5
+    },
+    {
+      "voice": "brk75_05",
+      "note": 63,
+      "file": "brokencut/brk75_05.wav",
+      "begin": 0.75,
+      "speed": 0.5
+    },
+    {
+      "voice": "brk0_0525",
+      "note": 64,
+      "file": "brokencut/brk0_0525.wav",
+      "begin": 0,
+      "speed": 0.525
+    },
+    {
+      "voice": "brk25_0525",
+      "note": 65,
+      "file": "brokencut/brk25_0525.wav",
+      "begin": 0.25,
+      "speed": 0.525
+    },
+    {
+      "voice": "brk5_0525",
+      "note": 66,
+      "file": "brokencut/brk5_0525.wav",
+      "begin": 0.5,
+      "speed": 0.525
+    },
+    {
+      "voice": "brk75_0525",
+      "note": 67,
+      "file": "brokencut/brk75_0525.wav",
+      "begin": 0.75,
+      "speed": 0.525
+    }
+  ]
+}

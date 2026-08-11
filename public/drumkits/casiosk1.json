@@ -18,14 +18,19 @@
       "file": "casiosk1/closedHat.wav"
     },
     {
+      "voice": "tom",
+      "note": 45,
+      "file": "casiosk1/tom.wav"
+    },
+    {
       "voice": "openHat",
       "note": 46,
       "file": "casiosk1/openHat.wav"
     },
     {
-      "voice": "tom",
-      "note": 45,
-      "file": "casiosk1/tom.wav"
+      "voice": "tomHi",
+      "note": 48,
+      "file": "casiosk1/tomHi.wav"
     }
   ]
 }

@@ -100,3 +100,44 @@ describe('RandomProcessor', () => {
     expect(out.map((e) => e.time)).toEqual([0, 0.5, 1]);
   });
 });
+
+describe('velocity smooth noise (perlin stand-in)', () => {
+  const base = { ...RANDOM_PROCESSOR_DEFAULTS, velChance: 1, velRandom: 0.3 };
+  const notes = (n: number): NoteFxEvent[] =>
+    Array.from({ length: n }, (_, i) => ({ note: 60, time: i * 0.25, gate: 0.2, accent: false, velocity: 77 }));
+
+  it('leaves existing behaviour untouched when velSmooth is 0', () => {
+    const white = new RandomProcessor({ ...base, velSmooth: 0 });
+    const legacy = new RandomProcessor({ ...base });   // field left at its default
+    const c = ctx(12345);
+    expect(white.process(notes(16), c)).toEqual(legacy.process(notes(16), c));
+  });
+
+  it('drifts instead of jumping when velSmooth is 1', () => {
+    const jitter = (p: typeof base) => {
+      const out = new RandomProcessor(p).process(notes(64), ctx(12345));
+      let sum = 0;
+      for (let i = 1; i < out.length; i++) sum += Math.abs(out[i].velocity! - out[i - 1].velocity!);
+      return sum / (out.length - 1);
+    };
+    const white = jitter({ ...base, velSmooth: 0 });
+    const smooth = jitter({ ...base, velSmooth: 1, velSmoothRate: 0.75 });
+    // Relative, never absolute: successive samples of smooth noise are much
+    // closer together than independent draws over the same interval.
+    expect(smooth).toBeLessThan(white / 3);
+  });
+
+  it('is deterministic for the same seed and time', () => {
+    const p = { ...base, velSmooth: 1, velSmoothRate: 0.75 };
+    expect(new RandomProcessor(p).process(notes(32), ctx(999)))
+      .toEqual(new RandomProcessor(p).process(notes(32), ctx(999)));
+  });
+
+  it('stays inside the same range as white noise', () => {
+    const out = new RandomProcessor({ ...base, velSmooth: 1, velSmoothRate: 0.75 }).process(notes(128), ctx(7));
+    for (const e of out) {
+      expect(e.velocity!).toBeGreaterThanOrEqual(Math.round(77 * 0.7));
+      expect(e.velocity!).toBeLessThanOrEqual(Math.round(77 * 1.3));
+    }
+  });
+});

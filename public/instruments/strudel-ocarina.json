@@ -1,0 +1,67 @@
+{
+  "id": "strudel-ocarina",
+  "name": "Ocarina",
+  "family": "melodic",
+  "zones": [
+    {
+      "file": "strudel-ocarina/StdOcarina_SusVib_A3.wav",
+      "rootNote": 57,
+      "loNote": 0,
+      "hiNote": 58
+    },
+    {
+      "file": "strudel-ocarina/StdOcarina_SusVib_C4.wav",
+      "rootNote": 60,
+      "loNote": 59,
+      "hiNote": 60
+    },
+    {
+      "file": "strudel-ocarina/StdOcarina_SusVib_Csharp4.wav",
+      "rootNote": 61,
+      "loNote": 61,
+      "hiNote": 62
+    },
+    {
+      "file": "strudel-ocarina/StdOcarina_SusVib_Dsharp4.wav",
+      "rootNote": 63,
+      "loNote": 63,
+      "hiNote": 63
+    },
+    {
+      "file": "strudel-ocarina/StdOcarina_SusVib_E4.wav",
+      "rootNote": 64,
+      "loNote": 64,
+      "hiNote": 65
+    },
+    {
+      "file": "strudel-ocarina/StdOcarina_SusVib_Fsharp4.wav",
+      "rootNote": 66,
+      "loNote": 66,
+      "hiNote": 67
+    },
+    {
+      "file": "strudel-ocarina/StdOcarina_SusVib_Gsharp4.wav",
+      "rootNote": 68,
+      "loNote": 68,
+      "hiNote": 68
+    },
+    {
+      "file": "strudel-ocarina/StdOcarina_SusVib_A4.wav",
+      "rootNote": 69,
+      "loNote": 69,
+      "hiNote": 69
+    },
+    {
+      "file": "strudel-ocarina/StdOcarina_SusVib_Asharp4.wav",
+      "rootNote": 70,
+      "loNote": 70,
+      "hiNote": 71
+    },
+    {
+      "file": "strudel-ocarina/StdOcarina_SusVib_C5.wav",
+      "rootNote": 72,
+      "loNote": 72,
+      "hiNote": 127
+    }
+  ]
+}

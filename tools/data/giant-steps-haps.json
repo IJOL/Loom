@@ -1,0 +1,1183 @@
+{
+  "source": "strudel — John Coltrane - Giant Steps",
+  "cycles": 20,
+  "cps": 0.5,
+  "events": [
+    {
+      "begin": 0,
+      "end": 0.625,
+      "value": {
+        "note": 78,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.625,
+      "value": {
+        "note": 70,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.625,
+      "value": {
+        "note": 73,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.625,
+      "value": {
+        "note": 75,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.625,
+      "value": {
+        "note": 47,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 0.625,
+      "end": 1.25,
+      "value": {
+        "note": 74,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 0.625,
+      "end": 1.25,
+      "value": {
+        "note": 60,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 0.625,
+      "end": 1.25,
+      "value": {
+        "note": 64,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 0.625,
+      "end": 1.25,
+      "value": {
+        "note": 66,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 0.625,
+      "end": 1.25,
+      "value": {
+        "note": 71,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 0.625,
+      "end": 1.25,
+      "value": {
+        "note": 38,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.875,
+      "value": {
+        "note": 71,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.875,
+      "value": {
+        "note": 59,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.875,
+      "value": {
+        "note": 62,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.875,
+      "value": {
+        "note": 66,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.875,
+      "value": {
+        "note": 69,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.875,
+      "value": {
+        "note": 43,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 2.5,
+      "value": {
+        "note": 67,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 2.5,
+      "value": {
+        "note": 56,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 2.5,
+      "value": {
+        "note": 60,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 2.5,
+      "value": {
+        "note": 62,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 2.5,
+      "value": {
+        "note": 46,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3.75,
+      "value": {
+        "note": 70,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3.75,
+      "value": {
+        "note": 62,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3.75,
+      "value": {
+        "note": 65,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3.75,
+      "value": {
+        "note": 67,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3.125,
+      "value": {
+        "note": 39,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 3.125,
+      "end": 3.75,
+      "value": {
+        "note": 58,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4.375,
+      "value": {
+        "note": 71,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4.375,
+      "value": {
+        "note": 60,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4.375,
+      "value": {
+        "note": 64,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4.375,
+      "value": {
+        "note": 67,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4.375,
+      "value": {
+        "note": 45,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 4.375,
+      "end": 5,
+      "value": {
+        "note": 69,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 4.375,
+      "end": 5,
+      "value": {
+        "note": 54,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 4.375,
+      "end": 5,
+      "value": {
+        "note": 59,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 4.375,
+      "end": 5,
+      "value": {
+        "note": 60,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 4.375,
+      "end": 5,
+      "value": {
+        "note": 64,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 4.375,
+      "end": 5,
+      "value": {
+        "note": 38,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.625,
+      "value": {
+        "note": 74,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.625,
+      "value": {
+        "note": 66,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.625,
+      "value": {
+        "note": 69,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.625,
+      "value": {
+        "note": 71,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.625,
+      "value": {
+        "note": 43,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 5.625,
+      "end": 6.25,
+      "value": {
+        "note": 70,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 5.625,
+      "end": 6.25,
+      "value": {
+        "note": 56,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 5.625,
+      "end": 6.25,
+      "value": {
+        "note": 60,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 5.625,
+      "end": 6.25,
+      "value": {
+        "note": 62,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 5.625,
+      "end": 6.25,
+      "value": {
+        "note": 67,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 5.625,
+      "end": 6.25,
+      "value": {
+        "note": 46,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.875,
+      "value": {
+        "note": 67,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.875,
+      "value": {
+        "note": 55,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.875,
+      "value": {
+        "note": 58,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.875,
+      "value": {
+        "note": 62,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.875,
+      "value": {
+        "note": 65,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.875,
+      "value": {
+        "note": 39,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 6.875,
+      "end": 7.5,
+      "value": {
+        "note": 63,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 6.875,
+      "end": 7.5,
+      "value": {
+        "note": 52,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 6.875,
+      "end": 7.5,
+      "value": {
+        "note": 56,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 6.875,
+      "end": 7.5,
+      "value": {
+        "note": 58,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 6.875,
+      "end": 7.5,
+      "value": {
+        "note": 42,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8.75,
+      "value": {
+        "note": 66,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8.75,
+      "value": {
+        "note": 58,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8.75,
+      "value": {
+        "note": 61,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8.75,
+      "value": {
+        "note": 63,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8.125,
+      "value": {
+        "note": 47,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 8.125,
+      "end": 8.75,
+      "value": {
+        "note": 42,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9.375,
+      "value": {
+        "note": 67,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9.375,
+      "value": {
+        "note": 56,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9.375,
+      "value": {
+        "note": 60,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9.375,
+      "value": {
+        "note": 63,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9.375,
+      "value": {
+        "note": 41,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 9.375,
+      "end": 10,
+      "value": {
+        "note": 65,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 9.375,
+      "end": 10,
+      "value": {
+        "note": 50,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 9.375,
+      "end": 10,
+      "value": {
+        "note": 55,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 9.375,
+      "end": 10,
+      "value": {
+        "note": 56,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 9.375,
+      "end": 10,
+      "value": {
+        "note": 60,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 9.375,
+      "end": 10,
+      "value": {
+        "note": 46,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 10,
+      "end": 11.25,
+      "value": {
+        "note": 70,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 10,
+      "end": 11.25,
+      "value": {
+        "note": 62,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 10,
+      "end": 11.25,
+      "value": {
+        "note": 65,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 10,
+      "end": 11.25,
+      "value": {
+        "note": 67,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.625,
+      "value": {
+        "note": 39,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 10.625,
+      "end": 11.25,
+      "value": {
+        "note": 46,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.875,
+      "value": {
+        "note": 71,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.875,
+      "value": {
+        "note": 60,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.875,
+      "value": {
+        "note": 64,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.875,
+      "value": {
+        "note": 67,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.875,
+      "value": {
+        "note": 45,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 11.875,
+      "end": 12.5,
+      "value": {
+        "note": 69,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 11.875,
+      "end": 12.5,
+      "value": {
+        "note": 54,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 11.875,
+      "end": 12.5,
+      "value": {
+        "note": 59,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 11.875,
+      "end": 12.5,
+      "value": {
+        "note": 60,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 11.875,
+      "end": 12.5,
+      "value": {
+        "note": 64,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 11.875,
+      "end": 12.5,
+      "value": {
+        "note": 38,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13.75,
+      "value": {
+        "note": 74,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13.75,
+      "value": {
+        "note": 66,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13.75,
+      "value": {
+        "note": 69,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13.75,
+      "value": {
+        "note": 71,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13.125,
+      "value": {
+        "note": 43,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 13.125,
+      "end": 13.75,
+      "value": {
+        "note": 38,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14.375,
+      "value": {
+        "note": 75,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14.375,
+      "value": {
+        "note": 64,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14.375,
+      "value": {
+        "note": 68,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14.375,
+      "value": {
+        "note": 71,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14.375,
+      "value": {
+        "note": 37,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 14.375,
+      "end": 15,
+      "value": {
+        "note": 73,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 14.375,
+      "end": 15,
+      "value": {
+        "note": 58,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 14.375,
+      "end": 15,
+      "value": {
+        "note": 63,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 14.375,
+      "end": 15,
+      "value": {
+        "note": 64,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 14.375,
+      "end": 15,
+      "value": {
+        "note": 68,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 14.375,
+      "end": 15,
+      "value": {
+        "note": 42,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 15,
+      "end": 16.25,
+      "value": {
+        "note": 78,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 15,
+      "end": 16.25,
+      "value": {
+        "note": 70,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 15,
+      "end": 16.25,
+      "value": {
+        "note": 73,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 15,
+      "end": 16.25,
+      "value": {
+        "note": 75,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.625,
+      "value": {
+        "note": 47,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 15.625,
+      "end": 16.25,
+      "value": {
+        "note": 42,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.875,
+      "value": {
+        "note": 79,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.875,
+      "value": {
+        "note": 68,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.875,
+      "value": {
+        "note": 72,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.875,
+      "value": {
+        "note": 75,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.875,
+      "value": {
+        "note": 41,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 16.875,
+      "end": 17.5,
+      "value": {
+        "note": 77,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 16.875,
+      "end": 17.5,
+      "value": {
+        "note": 62,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 16.875,
+      "end": 17.5,
+      "value": {
+        "note": 67,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 16.875,
+      "end": 17.5,
+      "value": {
+        "note": 68,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 16.875,
+      "end": 17.5,
+      "value": {
+        "note": 72,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 16.875,
+      "end": 17.5,
+      "value": {
+        "note": 46,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 18.75,
+      "value": {
+        "note": 82,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 18.75,
+      "value": {
+        "note": 74,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 18.75,
+      "value": {
+        "note": 77,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 18.75,
+      "value": {
+        "note": 79,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 18.125,
+      "value": {
+        "note": 39,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 18.125,
+      "end": 18.75,
+      "value": {
+        "note": 58,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 19.375,
+      "value": {
+        "note": 78,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 19.375,
+      "value": {
+        "note": 64,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 19.375,
+      "value": {
+        "note": 68,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 19.375,
+      "value": {
+        "note": 71,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 19.375,
+      "value": {
+        "note": 75,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 19.375,
+      "value": {
+        "note": 37,
+        "color": "#00B8D4"
+      }
+    },
+    {
+      "begin": 19.375,
+      "end": 20,
+      "value": {
+        "note": 78,
+        "color": "#F8E71C"
+      }
+    },
+    {
+      "begin": 19.375,
+      "end": 20,
+      "value": {
+        "note": 64,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 19.375,
+      "end": 20,
+      "value": {
+        "note": 68,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 19.375,
+      "end": 20,
+      "value": {
+        "note": 70,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 19.375,
+      "end": 20,
+      "value": {
+        "note": 75,
+        "color": "#7ED321"
+      }
+    },
+    {
+      "begin": 19.375,
+      "end": 20,
+      "value": {
+        "note": 42,
+        "color": "#00B8D4"
+      }
+    }
+  ]
+}

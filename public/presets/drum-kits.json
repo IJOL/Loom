@@ -97,6 +97,12 @@
       "drumkitId": "dirt"
     },
     {
+      "name": "GM Percussion",
+      "group": "Percussion",
+      "kind": "sample",
+      "drumkitId": "gm-percussion"
+    },
+    {
       "name": "AJKPercusyn",
       "group": "Drum Machines",
       "kind": "sample",
@@ -481,10 +487,58 @@
       "drumkitId": "yamahatg33"
     },
     {
-      "name": "GM Percussion",
-      "group": "Percussion",
+      "name": "Crate (Coastline)",
+      "group": "Samples",
       "kind": "sample",
-      "drumkitId": "gm-percussion"
+      "drumkitId": "crate"
+    },
+    {
+      "name": "Broken Cut",
+      "group": "Samples",
+      "kind": "sample",
+      "drumkitId": "brokencut"
+    },
+    {
+      "name": "Uzu (Strudel default)",
+      "group": "Strudel",
+      "kind": "sample",
+      "drumkitId": "strudel-uzu"
+    },
+    {
+      "name": "Tidal (Dirt)",
+      "group": "Strudel",
+      "kind": "sample",
+      "drumkitId": "strudel-tidal-lo"
+    },
+    {
+      "name": "Melting Submarine Drums",
+      "group": "Strudel",
+      "kind": "sample",
+      "drumkitId": "strudel-melting"
+    },
+    {
+      "name": "Bass Fuge Drums",
+      "group": "Strudel",
+      "kind": "sample",
+      "drumkitId": "strudel-bassfuge"
+    },
+    {
+      "name": "Amen Cutup",
+      "group": "Strudel",
+      "kind": "sample",
+      "drumkitId": "strudel-amencutup"
+    },
+    {
+      "name": "VCSL Percussion",
+      "group": "Strudel",
+      "kind": "sample",
+      "drumkitId": "strudel-vcsl-perc"
+    },
+    {
+      "name": "Chop Slices",
+      "group": "Strudel",
+      "kind": "sample",
+      "drumkitId": "strudel-chop"
     }
   ]
 }

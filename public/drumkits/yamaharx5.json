@@ -8,9 +8,19 @@
       "file": "yamaharx5/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "yamaharx5/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "yamaharx5/snare.wav"
+    },
+    {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "yamaharx5/tomLo.wav"
     },
     {
       "voice": "closedHat",
@@ -23,19 +33,19 @@
       "file": "yamaharx5/openHat.wav"
     },
     {
-      "voice": "clap",
-      "note": 39,
-      "file": "yamaharx5/clap.wav"
-    },
-    {
-      "voice": "tom",
-      "note": 45,
-      "file": "yamaharx5/tom.wav"
+      "voice": "tamb",
+      "note": 54,
+      "file": "yamaharx5/tamb.wav"
     },
     {
       "voice": "cowbell",
       "note": 56,
       "file": "yamaharx5/cowbell.wav"
+    },
+    {
+      "voice": "shaker",
+      "note": 82,
+      "file": "yamaharx5/shaker.wav"
     }
   ]
 }

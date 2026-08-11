@@ -13,19 +13,19 @@
       "file": "yamaharm50/snare.wav"
     },
     {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "yamaharm50/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "yamaharm50/openHat.wav"
-    },
-    {
       "voice": "clap",
       "note": 39,
       "file": "yamaharm50/clap.wav"
+    },
+    {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "yamaharm50/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "yamaharm50/closedHat.wav"
     },
     {
       "voice": "tom",
@@ -33,14 +33,39 @@
       "file": "yamaharm50/tom.wav"
     },
     {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "yamaharm50/cowbell.wav"
+      "voice": "openHat",
+      "note": 46,
+      "file": "yamaharm50/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "yamaharm50/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "yamaharm50/crash.wav"
     },
     {
       "voice": "ride",
       "note": 51,
       "file": "yamaharm50/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "yamaharm50/tamb.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "yamaharm50/cowbell.wav"
+    },
+    {
+      "voice": "shaker",
+      "note": 82,
+      "file": "yamaharm50/shaker.wav"
     }
   ]
 }

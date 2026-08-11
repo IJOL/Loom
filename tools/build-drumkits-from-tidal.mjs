@@ -26,17 +26,33 @@ const CATALOG = path.join(__dirname, 'tidal-drum-machines.json');
 const BASE = 'https://raw.githubusercontent.com/ritchse/tidal-drum-machines/main/machines/';
 const PRESET_GROUP = 'Drum Machines';
 
-// Loom's 8 drum voices -> GM note + ordered list of tidal-drum-machine voice
-// suffixes to try (first hit wins). kick+snare are required to make a kit.
+// Source voice folder -> GM note + ordered list of tidal-drum-machine suffixes
+// to try (first hit wins). kick+snare are required to make a kit.
+//
+// A sample kit is NOTE-addressed and unbounded — the drum grid labels each row
+// from its note through GM_PERCUSSION_NAMES, not from the `voice` string here
+// (gm-percussion ships 31 pads whose names are not DrumVoices at all). So every
+// folder the source offers gets the GM note that actually means it, instead of
+// being collapsed or used as a stand-in:
+//   • rim / cr / sh were FALLBACKS for clap, ride and closedHat, so kits shipped
+//     a rimshot, a crash or a shaker under another pad's label.
+//   • lt / mt / ht were collapsed onto one tom pad; GM has three.
+// A machine that has no cowbell now simply has no cowbell pad.
 const VOICES = [
   { voice: 'kick', note: 36, from: ['bd'], required: true },
+  { voice: 'rimshot', note: 37, from: ['rim'] },      // GM 37 Side Stick
   { voice: 'snare', note: 38, from: ['sd'], required: true },
-  { voice: 'closedHat', note: 42, from: ['hh', 'sh'] },
+  { voice: 'clap', note: 39, from: ['cp'] },
+  { voice: 'tomLo', note: 41, from: ['lt'] },         // GM 41 Low Floor Tom
+  { voice: 'closedHat', note: 42, from: ['hh'] },
+  { voice: 'tom', note: 45, from: ['mt'] },           // GM 45 Low Tom
   { voice: 'openHat', note: 46, from: ['oh'] },
-  { voice: 'clap', note: 39, from: ['cp', 'rim'] },
-  { voice: 'tom', note: 45, from: ['mt', 'lt', 'ht'] },
-  { voice: 'cowbell', note: 56, from: ['cb', 'rim'] },
-  { voice: 'ride', note: 51, from: ['rd', 'cr'] },
+  { voice: 'tomHi', note: 48, from: ['ht'] },         // GM 48 Hi-Mid Tom
+  { voice: 'crash', note: 49, from: ['cr'] },
+  { voice: 'ride', note: 51, from: ['rd'] },
+  { voice: 'tamb', note: 54, from: ['tb'] },          // GM 54 Tambourine
+  { voice: 'cowbell', note: 56, from: ['cb'] },
+  { voice: 'shaker', note: 82, from: ['sh'] },        // GM 82 Shaker
 ];
 
 const PROTECTED_IDS = new Set(['tr808', 'acoustic', 'dirt']); // hand-made kits, never touched

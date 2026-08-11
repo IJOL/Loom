@@ -13,19 +13,14 @@
       "file": "rolands50/snare.wav"
     },
     {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "rolands50/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "rolands50/openHat.wav"
-    },
-    {
       "voice": "clap",
       "note": 39,
       "file": "rolands50/clap.wav"
+    },
+    {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "rolands50/tomLo.wav"
     },
     {
       "voice": "tom",
@@ -33,14 +28,39 @@
       "file": "rolands50/tom.wav"
     },
     {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "rolands50/cowbell.wav"
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolands50/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "rolands50/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "rolands50/crash.wav"
     },
     {
       "voice": "ride",
       "note": 51,
       "file": "rolands50/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "rolands50/tamb.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "rolands50/cowbell.wav"
+    },
+    {
+      "voice": "shaker",
+      "note": 82,
+      "file": "rolands50/shaker.wav"
     }
   ]
 }

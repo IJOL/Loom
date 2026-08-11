@@ -1,0 +1,13 @@
+{
+  "id": "strudel-psaltery",
+  "name": "Psaltery Pluck",
+  "family": "melodic",
+  "zones": [
+    {
+      "file": "strudel-psaltery/BowedPsaltery_Asharp3_Main_Pluck_rr1.wav",
+      "rootNote": 58,
+      "loNote": 0,
+      "hiNote": 127
+    }
+  ]
+}

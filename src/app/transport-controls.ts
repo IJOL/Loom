@@ -33,7 +33,7 @@ import type { HistoryDeps } from '../save/history-wiring';
 import type { BpmBroadcaster } from './bpm-broadcast';
 import { clampBpm, formatBpm, BPM_MIN, BPM_MAX } from '../core/bpm';
 import { clampSwing, SWING_MAX } from '../core/swing';
-import { meterFromLabel, stepsPerBar } from '../core/meter';
+import { meterFromLabel, stepsPerBar, formatMeter, type TimeSignature } from '../core/meter';
 
 export interface TransportControlsDeps {
   seq: Sequencer;
@@ -61,6 +61,8 @@ export interface TransportControlsDeps {
 export interface TransportControls {
   /** Programmatic tempo set (MIDI import, demo load, stems, saves). */
   setTransportBpm(bpm: number): void;
+  /** Apply a time signature from a demo or a save (scheduler + selector). */
+  setTransportMeter(meter: TimeSignature): void;
   /** Records a track's "triggered" pulse timestamp for the track headers. */
   markTrackActive(trackId: string, audioTime: number): void;
 }
@@ -93,6 +95,18 @@ export function createTransportControls(deps: TransportControlsDeps): TransportC
     seq.setTempoMap(undefined);
     bpmBroadcast.broadcast(clamped);
     bpmInput.value = formatBpm(clamped);
+  }
+
+  /** The canonical meter setter, the sibling of setTransportBpm. A demo or a
+   *  save can carry a time signature, and it has to reach BOTH the scheduler
+   *  (seq.meter, which is what maps a bar onto ticks) and the selector, or the
+   *  UI claims 4/4 while the grid is in 3/4. Bar COUNT is preserved across the
+   *  change, exactly as the selector's own handler does. */
+  function setTransportMeter(meter: TimeSignature): void {
+    const bars = Math.max(1, Math.round(seq.length / stepsPerBar(seq.meter)));
+    seq.meter = meter;
+    seq.setLength(bars * stepsPerBar(meter));
+    meterSel.value = formatMeter(meter);
   }
 
   // Track activity timestamps for visual "triggered" pulse on track headers.
@@ -160,5 +174,5 @@ export function createTransportControls(deps: TransportControlsDeps): TransportC
     deps.refreshPerformanceView();
   });
 
-  return { setTransportBpm, markTrackActive };
+  return { setTransportBpm, setTransportMeter, markTrackActive };
 }

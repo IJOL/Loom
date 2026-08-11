@@ -8,19 +8,14 @@
       "file": "bossdr550/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "bossdr550/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "bossdr550/snare.wav"
-    },
-    {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "bossdr550/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "bossdr550/openHat.wav"
     },
     {
       "voice": "clap",
@@ -28,9 +23,44 @@
       "file": "bossdr550/clap.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "bossdr550/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "bossdr550/closedHat.wav"
+    },
+    {
       "voice": "tom",
       "note": 45,
       "file": "bossdr550/tom.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "bossdr550/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "bossdr550/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "bossdr550/crash.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "bossdr550/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "bossdr550/tamb.wav"
     },
     {
       "voice": "cowbell",
@@ -38,9 +68,9 @@
       "file": "bossdr550/cowbell.wav"
     },
     {
-      "voice": "ride",
-      "note": 51,
-      "file": "bossdr550/ride.wav"
+      "voice": "shaker",
+      "note": 82,
+      "file": "bossdr550/shaker.wav"
     }
   ]
 }

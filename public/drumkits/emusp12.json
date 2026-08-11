@@ -8,19 +8,14 @@
       "file": "emusp12/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "emusp12/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "emusp12/snare.wav"
-    },
-    {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "emusp12/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "emusp12/openHat.wav"
     },
     {
       "voice": "clap",
@@ -28,19 +23,44 @@
       "file": "emusp12/clap.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "emusp12/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "emusp12/closedHat.wav"
+    },
+    {
       "voice": "tom",
       "note": 45,
       "file": "emusp12/tom.wav"
     },
     {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "emusp12/cowbell.wav"
+      "voice": "openHat",
+      "note": 46,
+      "file": "emusp12/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "emusp12/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "emusp12/crash.wav"
     },
     {
       "voice": "ride",
       "note": 51,
       "file": "emusp12/ride.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "emusp12/cowbell.wav"
     }
   ]
 }

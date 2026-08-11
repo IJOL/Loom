@@ -997,6 +997,7 @@ sessionHost.onStateApplied(() => {
 // thunk because AutoHistory is only built further down.
 const { demos: DEMOS, newSession } = wireSessionLifecycle({
   sessionHost, presetsLoaded, workletReady, setTransportBpm,
+  setTransportMeter: transportControls.setTransportMeter,
   markClean: () => autoHistory.markClean(),
   performanceFeature, stopTransport,
   // The weave lives beside the session, so New has to wipe it explicitly — the

@@ -1,0 +1,13 @@
+{
+  "id": "strudel-handbell",
+  "name": "Hand Bell",
+  "family": "melodic",
+  "zones": [
+    {
+      "file": "strudel-handbell/339809_5121236-lq.mp3",
+      "rootNote": 71,
+      "loNote": 0,
+      "hiNote": 127
+    }
+  ]
+}

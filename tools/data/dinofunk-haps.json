@@ -1,0 +1,5043 @@
+{
+  "source": "strudel — \"Dinofunk\"",
+  "cycles": 32,
+  "cps": 1,
+  "events": [
+    {
+      "begin": 0,
+      "end": 8,
+      "value": {
+        "s": "bass",
+        "speed": 0.0625,
+        "unit": "c",
+        "clip": 1
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 0,
+      "end": 8,
+      "value": {
+        "note": 71,
+        "s": "dino",
+        "delay": 0.8,
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 1,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 1,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 1506.146745892072,
+        "gain": 0.8,
+        "decay": 0.12793132476508617,
+        "sustain": 0,
+        "delay": 0.29877258050403205,
+        "room": 1
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 1506.146745892072,
+        "gain": 0.8,
+        "decay": 0.12793132476508617,
+        "sustain": 0,
+        "delay": 0.29877258050403205,
+        "room": 1
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 1577.1173894607982,
+        "gain": 0.8,
+        "decay": 0.1347631224045472,
+        "sustain": 0,
+        "delay": 0.31074504497581595,
+        "room": 1
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 1577.1173894607982,
+        "gain": 0.8,
+        "decay": 0.1347631224045472,
+        "sustain": 0,
+        "delay": 0.31074504497581595,
+        "room": 1
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 2,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 2,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 1644.4561864156817,
+        "gain": 0.8,
+        "decay": 0.16093019638210537,
+        "sustain": 0,
+        "delay": 0.32257116931361557,
+        "room": 1
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 1644.4561864156817,
+        "gain": 0.8,
+        "decay": 0.16093019638210537,
+        "sustain": 0,
+        "delay": 0.32257116931361557,
+        "room": 1
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 1765.685424949238,
+        "gain": 0.8,
+        "decay": 0.19392906799912457,
+        "sustain": 0,
+        "delay": 0.34567085809127246,
+        "room": 1
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 1765.685424949238,
+        "gain": 0.8,
+        "decay": 0.19392906799912457,
+        "sustain": 0,
+        "delay": 0.34567085809127246,
+        "room": 1
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.75,
+      "value": {
+        "note": 64,
+        "s": "sawtooth",
+        "cutoff": 1865.1756898420363,
+        "gain": 0.8,
+        "decay": 0.13826121729798618,
+        "sustain": 0,
+        "delay": 0.3678491842064994,
+        "room": 1
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.75,
+      "value": {
+        "note": 64.1,
+        "s": "sawtooth",
+        "cutoff": 1865.1756898420363,
+        "gain": 0.8,
+        "decay": 0.13826121729798618,
+        "sustain": 0,
+        "delay": 0.3678491842064994,
+        "room": 1
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 1905.537011478684,
+        "gain": 0.8,
+        "decay": 0.09411835131231783,
+        "sustain": 0,
+        "delay": 0.3785256860483054,
+        "room": 1
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 1905.537011478684,
+        "gain": 0.8,
+        "decay": 0.09411835131231783,
+        "sustain": 0,
+        "delay": 0.3785256860483054,
+        "room": 1
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 1965.5522685857673,
+        "gain": 0.8,
+        "decay": 0.08047631652352721,
+        "sustain": 0,
+        "delay": 0.3989248261231083,
+        "room": 1
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 1965.5522685857673,
+        "gain": 0.8,
+        "decay": 0.08047631652352721,
+        "sustain": 0,
+        "delay": 0.3989248261231083,
+        "room": 1
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 3.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 3.75,
+      "value": {
+        "note": 64,
+        "s": "sawtooth",
+        "cutoff": 1984.6282243225844,
+        "gain": 0.8,
+        "decay": 0.07236761529929936,
+        "sustain": 0,
+        "delay": 0.40859832104091137,
+        "room": 1
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 3.75,
+      "value": {
+        "note": 64.1,
+        "s": "sawtooth",
+        "cutoff": 1984.6282243225844,
+        "gain": 0.8,
+        "decay": 0.07236761529929936,
+        "sustain": 0,
+        "delay": 0.40859832104091137,
+        "room": 1
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 1996.1477813377574,
+        "gain": 0.8,
+        "decay": 0.06425891407507152,
+        "sustain": 0,
+        "delay": 0.4178897387117546,
+        "room": 1
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 1996.1477813377574,
+        "gain": 0.8,
+        "decay": 0.06425891407507152,
+        "sustain": 0,
+        "delay": 0.4178897387117546,
+        "room": 1
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 5,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 4.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 1905.537011478684,
+        "gain": 0.8,
+        "decay": 0.06996696320584306,
+        "sustain": 0,
+        "delay": 0.46443215250006803,
+        "room": 1
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 1905.537011478684,
+        "gain": 0.8,
+        "decay": 0.06996696320584306,
+        "sustain": 0,
+        "delay": 0.46443215250006803,
+        "room": 1
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 6,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 6,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 5.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 6,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 6,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 6,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 6,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 6,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 1765.685424949238,
+        "gain": 0.8,
+        "decay": 0.13481325814500453,
+        "sustain": 0,
+        "delay": 0.4809698831278217,
+        "room": 1
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 1765.685424949238,
+        "gain": 0.8,
+        "decay": 0.13481325814500453,
+        "sustain": 0,
+        "delay": 0.4809698831278217,
+        "room": 1
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 1707.5146273309165,
+        "gain": 0.8,
+        "decay": 0.12883761692191914,
+        "sustain": 0,
+        "delay": 0.4853860162957552,
+        "room": 1
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 1707.5146273309165,
+        "gain": 0.8,
+        "decay": 0.12883761692191914,
+        "sustain": 0,
+        "delay": 0.4853860162957552,
+        "room": 1
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 7,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 7,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 6.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 6.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 1644.4561864156817,
+        "gain": 0.8,
+        "decay": 0.10594978355802596,
+        "sustain": 0,
+        "delay": 0.48923508393305226,
+        "room": 1
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 6.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 1644.4561864156817,
+        "gain": 0.8,
+        "decay": 0.10594978355802596,
+        "sustain": 0,
+        "delay": 0.48923508393305226,
+        "room": 1
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 7,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 7,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 1577.1173894607982,
+        "gain": 0.8,
+        "decay": 0.08306195019413282,
+        "sustain": 0,
+        "delay": 0.492507813298636,
+        "room": 1
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 7,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 1577.1173894607982,
+        "gain": 0.8,
+        "decay": 0.08306195019413282,
+        "sustain": 0,
+        "delay": 0.492507813298636,
+        "room": 1
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 7.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 7.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 8,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 8,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 8,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 8,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 8,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 8,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 1278.4137122636487,
+        "gain": 0.8,
+        "decay": 0.16564811013304281,
+        "sustain": 0,
+        "delay": 0.4996988640512931,
+        "room": 1
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 8,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 1278.4137122636487,
+        "gain": 0.8,
+        "decay": 0.16564811013304281,
+        "sustain": 0,
+        "delay": 0.4996988640512931,
+        "room": 1
+      }
+    },
+    {
+      "begin": 8,
+      "end": 16,
+      "value": {
+        "s": "bass",
+        "speed": 0.0625,
+        "unit": "c",
+        "clip": 1
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 1200.0000000000002,
+        "gain": 0.8,
+        "decay": 0.175874200463295,
+        "sustain": 0,
+        "delay": 0.5,
+        "room": 1
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 1200.0000000000002,
+        "gain": 0.8,
+        "decay": 0.175874200463295,
+        "sustain": 0,
+        "delay": 0.5,
+        "room": 1
+      }
+    },
+    {
+      "begin": 8,
+      "end": 16,
+      "value": {
+        "note": 63,
+        "s": "dino",
+        "delay": 0.8,
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 9,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 9,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 1043.9277423870972,
+        "gain": 0.8,
+        "decay": 0.15948116970248521,
+        "sustain": 0,
+        "delay": 0.49879618166804923,
+        "room": 1
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 1043.9277423870972,
+        "gain": 0.8,
+        "decay": 0.15948116970248521,
+        "sustain": 0,
+        "delay": 0.49879618166804923,
+        "room": 1
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 967.7722581964304,
+        "gain": 0.8,
+        "decay": 0.14648200859137434,
+        "sustain": 0,
+        "delay": 0.4972941274911953,
+        "room": 1
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 967.7722581964304,
+        "gain": 0.8,
+        "decay": 0.14648200859137434,
+        "sustain": 0,
+        "delay": 0.4972941274911953,
+        "room": 1
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 893.8532541079283,
+        "gain": 0.8,
+        "decay": 0.14308813894167544,
+        "sustain": 0,
+        "delay": 0.4951963201008076,
+        "room": 1
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 893.8532541079283,
+        "gain": 0.8,
+        "decay": 0.14308813894167544,
+        "sustain": 0,
+        "delay": 0.4951963201008076,
+        "room": 1
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 10,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 10,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 755.5438135843185,
+        "gain": 0.8,
+        "decay": 0.10906109963543714,
+        "sustain": 0,
+        "delay": 0.48923508393305226,
+        "room": 1
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 755.5438135843185,
+        "gain": 0.8,
+        "decay": 0.10906109963543714,
+        "sustain": 0,
+        "delay": 0.48923508393305226,
+        "room": 1
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "cutoff": 692.4853726690837,
+        "gain": 0.8,
+        "decay": 0.0820787208105685,
+        "sustain": 0,
+        "delay": 0.4853860162957552,
+        "room": 1
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "note": 67.1,
+        "s": "sawtooth",
+        "cutoff": 692.4853726690837,
+        "gain": 0.8,
+        "decay": 0.0820787208105685,
+        "sustain": 0,
+        "delay": 0.4853860162957552,
+        "room": 1
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "note": 82,
+        "s": "sawtooth",
+        "cutoff": 581.5916373098107,
+        "gain": 0.8,
+        "decay": 0.07967081776678242,
+        "sustain": 0,
+        "delay": 0.47599732328086086,
+        "room": 1
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "note": 82.1,
+        "s": "sawtooth",
+        "cutoff": 581.5916373098107,
+        "gain": 0.8,
+        "decay": 0.07967081776678242,
+        "sustain": 0,
+        "delay": 0.47599732328086086,
+        "room": 1
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 534.8243101579639,
+        "gain": 0.8,
+        "decay": 0.09743047361262144,
+        "sustain": 0,
+        "delay": 0.47048031608708873,
+        "room": 1
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 534.8243101579639,
+        "gain": 0.8,
+        "decay": 0.09743047361262144,
+        "sustain": 0,
+        "delay": 0.47048031608708873,
+        "room": 1
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 11,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.25,
+      "value": {
+        "note": 80,
+        "s": "sawtooth",
+        "cutoff": 460.8963739909708,
+        "gain": 0.8,
+        "decay": 0.11982688689604402,
+        "sustain": 0,
+        "delay": 0.45786740307563634,
+        "room": 1
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.25,
+      "value": {
+        "note": 80.1,
+        "s": "sawtooth",
+        "cutoff": 460.8963739909708,
+        "gain": 0.8,
+        "decay": 0.11982688689604402,
+        "sustain": 0,
+        "delay": 0.45786740307563634,
+        "room": 1
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 434.4477314142329,
+        "gain": 0.8,
+        "decay": 0.1146009850281189,
+        "sustain": 0,
+        "delay": 0.4508018828701612,
+        "room": 1
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 434.4477314142329,
+        "gain": 0.8,
+        "decay": 0.1146009850281189,
+        "sustain": 0,
+        "delay": 0.4508018828701612,
+        "room": 1
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 11.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 11.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 415.37177567741577,
+        "gain": 0.8,
+        "decay": 0.09458479485474527,
+        "sustain": 0,
+        "delay": 0.4432526133406843,
+        "room": 1
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 11.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 415.37177567741577,
+        "gain": 0.8,
+        "decay": 0.09458479485474527,
+        "sustain": 0,
+        "delay": 0.4432526133406843,
+        "room": 1
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 403.8522186622425,
+        "gain": 0.8,
+        "decay": 0.07456860468137166,
+        "sustain": 0,
+        "delay": 0.43523778133873975,
+        "room": 1
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 403.8522186622425,
+        "gain": 0.8,
+        "decay": 0.07456860468137166,
+        "sustain": 0,
+        "delay": 0.43523778133873975,
+        "room": 1
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 12.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 13,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 460.8963739909707,
+        "gain": 0.8,
+        "decay": 0.19556096699088815,
+        "sustain": 0,
+        "delay": 0.38889255825490054,
+        "room": 1
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 460.8963739909707,
+        "gain": 0.8,
+        "decay": 0.19556096699088815,
+        "sustain": 0,
+        "delay": 0.38889255825490054,
+        "room": 1
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 494.462988521316,
+        "gain": 0.8,
+        "decay": 0.19042010769098855,
+        "sustain": 0,
+        "delay": 0.37852568604830544,
+        "room": 1
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 494.462988521316,
+        "gain": 0.8,
+        "decay": 0.19042010769098855,
+        "sustain": 0,
+        "delay": 0.37852568604830544,
+        "room": 1
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 13.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 581.5916373098105,
+        "gain": 0.8,
+        "decay": 0.15103918550685197,
+        "sustain": 0,
+        "delay": 0.3568887733575705,
+        "room": 1
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 581.5916373098105,
+        "gain": 0.8,
+        "decay": 0.15103918550685197,
+        "sustain": 0,
+        "delay": 0.3568887733575705,
+        "room": 1
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 634.3145750507618,
+        "gain": 0.8,
+        "decay": 0.14589832620695237,
+        "sustain": 0,
+        "delay": 0.34567085809127246,
+        "room": 1
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 634.3145750507618,
+        "gain": 0.8,
+        "decay": 0.14589832620695237,
+        "sustain": 0,
+        "delay": 0.34567085809127246,
+        "room": 1
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 692.4853726690833,
+        "gain": 0.8,
+        "decay": 0.13985076805602148,
+        "sustain": 0,
+        "delay": 0.33422246334805505,
+        "room": 1
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 692.4853726690833,
+        "gain": 0.8,
+        "decay": 0.13985076805602148,
+        "sustain": 0,
+        "delay": 0.33422246334805505,
+        "room": 1
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 15,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 15,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 14.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 14.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 755.5438135843183,
+        "gain": 0.8,
+        "decay": 0.1166874792892486,
+        "sustain": 0,
+        "delay": 0.3225711693136156,
+        "room": 1
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 14.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 755.5438135843183,
+        "gain": 0.8,
+        "decay": 0.1166874792892486,
+        "sustain": 0,
+        "delay": 0.3225711693136156,
+        "room": 1
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 15,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 15,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 822.8826105392017,
+        "gain": 0.8,
+        "decay": 0.09352419052247571,
+        "sustain": 0,
+        "delay": 0.310745044975816,
+        "room": 1
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 15,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 822.8826105392017,
+        "gain": 0.8,
+        "decay": 0.09352419052247571,
+        "sustain": 0,
+        "delay": 0.310745044975816,
+        "room": 1
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 967.77225819643,
+        "gain": 0.8,
+        "decay": 0.08857187086468912,
+        "sustain": 0,
+        "delay": 0.2866826186138405,
+        "room": 1
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 967.77225819643,
+        "gain": 0.8,
+        "decay": 0.08857187086468912,
+        "sustain": 0,
+        "delay": 0.2866826186138405,
+        "room": 1
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 16,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 16,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 15.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 16,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 16,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 16,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 16,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 16,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 16,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 1121.5862877363516,
+        "gain": 0.8,
+        "decay": 0.09696181101971889,
+        "sustain": 0,
+        "delay": 0.26226691858185447,
+        "room": 1
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 16,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 1121.5862877363516,
+        "gain": 0.8,
+        "decay": 0.09696181101971889,
+        "sustain": 0,
+        "delay": 0.26226691858185447,
+        "room": 1
+      }
+    },
+    {
+      "begin": 16,
+      "end": 24,
+      "value": {
+        "s": "bass",
+        "speed": 0.0625,
+        "unit": "c",
+        "clip": 1
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 16,
+      "end": 24,
+      "value": {
+        "note": 71,
+        "s": "dino",
+        "delay": 0.8,
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 1278.413712263648,
+        "gain": 0.8,
+        "decay": 0.1049985436424322,
+        "sustain": 0,
+        "delay": 0.23773308141814556,
+        "room": 1
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 1278.413712263648,
+        "gain": 0.8,
+        "decay": 0.1049985436424322,
+        "sustain": 0,
+        "delay": 0.23773308141814556,
+        "room": 1
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 17,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 17,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 16.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 16.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 1356.0722576129026,
+        "gain": 0.8,
+        "decay": 0.1315857758745551,
+        "sustain": 0,
+        "delay": 0.22549571491760986,
+        "room": 1
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 16.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 1356.0722576129026,
+        "gain": 0.8,
+        "decay": 0.1315857758745551,
+        "sustain": 0,
+        "delay": 0.22549571491760986,
+        "room": 1
+      }
+    },
+    {
+      "begin": 16.75,
+      "end": 17,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 1506.146745892072,
+        "gain": 0.8,
+        "decay": 0.16511450223624707,
+        "sustain": 0,
+        "delay": 0.2012274194959679,
+        "room": 1
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 1506.146745892072,
+        "gain": 0.8,
+        "decay": 0.16511450223624707,
+        "sustain": 0,
+        "delay": 0.2012274194959679,
+        "room": 1
+      }
+    },
+    {
+      "begin": 17.25,
+      "end": 17.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 17.25,
+      "end": 17.5,
+      "value": {
+        "note": 82,
+        "s": "sawtooth",
+        "cutoff": 1577.117389460798,
+        "gain": 0.8,
+        "decay": 0.1649799386115774,
+        "sustain": 0,
+        "delay": 0.18925495502418405,
+        "room": 1
+      }
+    },
+    {
+      "begin": 17.25,
+      "end": 17.5,
+      "value": {
+        "note": 82.1,
+        "s": "sawtooth",
+        "cutoff": 1577.117389460798,
+        "gain": 0.8,
+        "decay": 0.1649799386115774,
+        "sustain": 0,
+        "delay": 0.18925495502418405,
+        "room": 1
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 18,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 18,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 17.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 18,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 18,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 18,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 18,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 18,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 18,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "cutoff": 1707.5146273309165,
+        "gain": 0.8,
+        "decay": 0.16394913046788134,
+        "sustain": 0,
+        "delay": 0.165777536651945,
+        "room": 1
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 18,
+      "value": {
+        "note": 67.1,
+        "s": "sawtooth",
+        "cutoff": 1707.5146273309165,
+        "gain": 0.8,
+        "decay": 0.16394913046788134,
+        "sustain": 0,
+        "delay": 0.165777536651945,
+        "room": 1
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 1765.685424949238,
+        "gain": 0.8,
+        "decay": 0.16381456684321166,
+        "sustain": 0,
+        "delay": 0.1543291419087276,
+        "room": 1
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 1765.685424949238,
+        "gain": 0.8,
+        "decay": 0.16381456684321166,
+        "sustain": 0,
+        "delay": 0.1543291419087276,
+        "room": 1
+      }
+    },
+    {
+      "begin": 18.25,
+      "end": 18.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 18.25,
+      "end": 18.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 18.25,
+      "end": 18.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 18.25,
+      "end": 18.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 18.25,
+      "end": 18.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 18.25,
+      "end": 18.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 1818.408362690189,
+        "gain": 0.8,
+        "decay": 0.15680415201113648,
+        "sustain": 0,
+        "delay": 0.14311122664242953,
+        "room": 1
+      }
+    },
+    {
+      "begin": 18.25,
+      "end": 18.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 1818.408362690189,
+        "gain": 0.8,
+        "decay": 0.15680415201113648,
+        "sustain": 0,
+        "delay": 0.14311122664242953,
+        "room": 1
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 19,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 19,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 18.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 18.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 1865.1756898420363,
+        "gain": 0.8,
+        "decay": 0.1299529404845089,
+        "sustain": 0,
+        "delay": 0.13215081579350058,
+        "room": 1
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 18.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 1865.1756898420363,
+        "gain": 0.8,
+        "decay": 0.1299529404845089,
+        "sustain": 0,
+        "delay": 0.13215081579350058,
+        "room": 1
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 19,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 19.25,
+      "end": 19.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 19.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 20,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 20,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 20,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 20,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 20,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 20,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 1996.1477813377576,
+        "gain": 0.8,
+        "decay": 0.14435853131726617,
+        "sustain": 0,
+        "delay": 0.08211026128824539,
+        "room": 1
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 20,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 1996.1477813377576,
+        "gain": 0.8,
+        "decay": 0.14435853131726617,
+        "sustain": 0,
+        "delay": 0.08211026128824539,
+        "room": 1
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 2000,
+        "gain": 0.8,
+        "decay": 0.14993187012150885,
+        "sustain": 0,
+        "delay": 0.07322330470336313,
+        "room": 1
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 2000,
+        "gain": 0.8,
+        "decay": 0.14993187012150885,
+        "sustain": 0,
+        "delay": 0.07322330470336313,
+        "room": 1
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 20.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 20.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 20.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 20.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 20.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 20.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 1996.1477813377576,
+        "gain": 0.8,
+        "decay": 0.1439810825264431,
+        "sustain": 0,
+        "delay": 0.06476221866126028,
+        "room": 1
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 20.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 1996.1477813377576,
+        "gain": 0.8,
+        "decay": 0.1439810825264431,
+        "sustain": 0,
+        "delay": 0.06476221866126028,
+        "room": 1
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 21,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 21,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 20.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 20.75,
+      "end": 21,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 20.75,
+      "end": 21,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 1965.5522685857668,
+        "gain": 0.8,
+        "decay": 0.09839580396801467,
+        "sustain": 0,
+        "delay": 0.049198117129838737,
+        "room": 1
+      }
+    },
+    {
+      "begin": 20.75,
+      "end": 21,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 1965.5522685857668,
+        "gain": 0.8,
+        "decay": 0.09839580396801467,
+        "sustain": 0,
+        "delay": 0.049198117129838737,
+        "room": 1
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 21.25,
+      "end": 21.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 22,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 22,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 21.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 21.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 1865.1756898420365,
+        "gain": 0.8,
+        "decay": 0.1409612799063325,
+        "sustain": 0,
+        "delay": 0.029519683912911265,
+        "room": 1
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 21.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 1865.1756898420365,
+        "gain": 0.8,
+        "decay": 0.1409612799063325,
+        "sustain": 0,
+        "delay": 0.029519683912911265,
+        "room": 1
+      }
+    },
+    {
+      "begin": 21.75,
+      "end": 22,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 21.75,
+      "end": 22,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 21.75,
+      "end": 22,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 21.75,
+      "end": 22,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 21.75,
+      "end": 22,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 1765.6854249492387,
+        "gain": 0.8,
+        "decay": 0.18947754343971612,
+        "sustain": 0,
+        "delay": 0.01903011687217837,
+        "room": 1
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 1765.6854249492387,
+        "gain": 0.8,
+        "decay": 0.18947754343971612,
+        "sustain": 0,
+        "delay": 0.01903011687217837,
+        "room": 1
+      }
+    },
+    {
+      "begin": 22.25,
+      "end": 22.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 22.25,
+      "end": 22.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 22.25,
+      "end": 22.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 22.25,
+      "end": 22.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 22.25,
+      "end": 22.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 22.25,
+      "end": 22.5,
+      "value": {
+        "note": 82,
+        "s": "sawtooth",
+        "cutoff": 1707.5146273309163,
+        "gain": 0.8,
+        "decay": 0.17705116349025052,
+        "sustain": 0,
+        "delay": 0.014613983704244798,
+        "room": 1
+      }
+    },
+    {
+      "begin": 22.25,
+      "end": 22.5,
+      "value": {
+        "note": 82.1,
+        "s": "sawtooth",
+        "cutoff": 1707.5146273309163,
+        "gain": 0.8,
+        "decay": 0.17705116349025052,
+        "sustain": 0,
+        "delay": 0.014613983704244798,
+        "room": 1
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 23,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 23,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 22.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 22.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 1644.4561864156817,
+        "gain": 0.8,
+        "decay": 0.12945578368380667,
+        "sustain": 0,
+        "delay": 0.010764916066947794,
+        "room": 1
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 22.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 1644.4561864156817,
+        "gain": 0.8,
+        "decay": 0.12945578368380667,
+        "sustain": 0,
+        "delay": 0.010764916066947794,
+        "room": 1
+      }
+    },
+    {
+      "begin": 22.75,
+      "end": 23,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 23.25,
+      "end": 23.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 24,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 24,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 23.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 23.75,
+      "end": 24,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 23.75,
+      "end": 24,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 23.75,
+      "end": 24,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 23.75,
+      "end": 24,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 23.75,
+      "end": 24,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 24,
+      "end": 32,
+      "value": {
+        "s": "bass",
+        "speed": 0.0625,
+        "unit": "c",
+        "clip": 1
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 1200.0000000000005,
+        "gain": 0.8,
+        "decay": 0.16131460303440692,
+        "sustain": 0,
+        "delay": 0,
+        "room": 1
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 1200.0000000000005,
+        "gain": 0.8,
+        "decay": 0.16131460303440692,
+        "sustain": 0,
+        "delay": 0,
+        "room": 1
+      }
+    },
+    {
+      "begin": 24,
+      "end": 32,
+      "value": {
+        "note": 63,
+        "s": "dino",
+        "delay": 0.8,
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 24.25,
+      "end": 24.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 24.25,
+      "end": 24.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 24.25,
+      "end": 24.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 24.25,
+      "end": 24.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 24.25,
+      "end": 24.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 25,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 25,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 24.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 25,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 967.7722581964298,
+        "gain": 0.8,
+        "decay": 0.16224725712527288,
+        "sustain": 0,
+        "delay": 0.002705872508804774,
+        "room": 1
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 25,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 967.7722581964298,
+        "gain": 0.8,
+        "decay": 0.16224725712527288,
+        "sustain": 0,
+        "delay": 0.002705872508804774,
+        "room": 1
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 893.8532541079281,
+        "gain": 0.8,
+        "decay": 0.16235494920983912,
+        "sustain": 0,
+        "delay": 0.004803679899192392,
+        "room": 1
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 893.8532541079281,
+        "gain": 0.8,
+        "decay": 0.16235494920983912,
+        "sustain": 0,
+        "delay": 0.004803679899192392,
+        "room": 1
+      }
+    },
+    {
+      "begin": 25.25,
+      "end": 25.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 25.25,
+      "end": 25.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 822.882610539202,
+        "gain": 0.8,
+        "decay": 0.15165579525328216,
+        "sustain": 0,
+        "delay": 0.0074921867013640064,
+        "room": 1
+      }
+    },
+    {
+      "begin": 25.25,
+      "end": 25.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 822.882610539202,
+        "gain": 0.8,
+        "decay": 0.15165579525328216,
+        "sustain": 0,
+        "delay": 0.0074921867013640064,
+        "room": 1
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 26,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 26,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 25.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 25.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 755.5438135843186,
+        "gain": 0.8,
+        "decay": 0.1106760168913752,
+        "sustain": 0,
+        "delay": 0.010764916066947766,
+        "room": 1
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 25.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 755.5438135843186,
+        "gain": 0.8,
+        "decay": 0.1106760168913752,
+        "sustain": 0,
+        "delay": 0.010764916066947766,
+        "room": 1
+      }
+    },
+    {
+      "begin": 25.75,
+      "end": 26,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 25.75,
+      "end": 26,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 25.75,
+      "end": 26,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 25.75,
+      "end": 26,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 25.75,
+      "end": 26,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 26.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 26.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 26.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 26.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 26.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 26.5,
+      "value": {
+        "note": 82,
+        "s": "sawtooth",
+        "cutoff": 581.5916373098103,
+        "gain": 0.8,
+        "decay": 0.06220303602603963,
+        "sustain": 0,
+        "delay": 0.024002676719139165,
+        "room": 1
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 26.5,
+      "value": {
+        "note": 82.1,
+        "s": "sawtooth",
+        "cutoff": 581.5916373098103,
+        "gain": 0.8,
+        "decay": 0.06220303602603963,
+        "sustain": 0,
+        "delay": 0.024002676719139165,
+        "room": 1
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 27,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 27,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 26.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 26.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 534.824310157964,
+        "gain": 0.8,
+        "decay": 0.07448243498802186,
+        "sustain": 0,
+        "delay": 0.029519683912911238,
+        "room": 1
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 26.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 534.824310157964,
+        "gain": 0.8,
+        "decay": 0.07448243498802186,
+        "sustain": 0,
+        "delay": 0.029519683912911238,
+        "room": 1
+      }
+    },
+    {
+      "begin": 26.75,
+      "end": 27,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 26.75,
+      "end": 27,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 494.4629885213161,
+        "gain": 0.8,
+        "decay": 0.08676183395000409,
+        "sustain": 0,
+        "delay": 0.03556784749993194,
+        "room": 1
+      }
+    },
+    {
+      "begin": 26.75,
+      "end": 27,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 494.4629885213161,
+        "gain": 0.8,
+        "decay": 0.08676183395000409,
+        "sustain": 0,
+        "delay": 0.03556784749993194,
+        "room": 1
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 27.25,
+      "end": 27.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 27.25,
+      "end": 27.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 434.4477314142332,
+        "gain": 0.8,
+        "decay": 0.09016444739372674,
+        "sustain": 0,
+        "delay": 0.04919811712983868,
+        "room": 1
+      }
+    },
+    {
+      "begin": 27.25,
+      "end": 27.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 434.4477314142332,
+        "gain": 0.8,
+        "decay": 0.09016444739372674,
+        "sustain": 0,
+        "delay": 0.04919811712983868,
+        "room": 1
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 27.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 27.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 415.37177567741554,
+        "gain": 0.8,
+        "decay": 0.09091769992373885,
+        "sustain": 0,
+        "delay": 0.05674738665931578,
+        "room": 1
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 27.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 415.37177567741554,
+        "gain": 0.8,
+        "decay": 0.09091769992373885,
+        "sustain": 0,
+        "delay": 0.05674738665931578,
+        "room": 1
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 28,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 28,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 28,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 28,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 28,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 28,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 403.8522186622425,
+        "gain": 0.8,
+        "decay": 0.09167095245375095,
+        "sustain": 0,
+        "delay": 0.06476221866126022,
+        "room": 1
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 28,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 403.8522186622425,
+        "gain": 0.8,
+        "decay": 0.09167095245375095,
+        "sustain": 0,
+        "delay": 0.06476221866126022,
+        "room": 1
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 28.25,
+      "end": 28.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 28.25,
+      "end": 28.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 28.25,
+      "end": 28.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 28.25,
+      "end": 28.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 28.25,
+      "end": 28.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 28.25,
+      "end": 28.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 403.8522186622425,
+        "gain": 0.8,
+        "decay": 0.0951633903598122,
+        "sustain": 0,
+        "delay": 0.08211026128824533,
+        "room": 1
+      }
+    },
+    {
+      "begin": 28.25,
+      "end": 28.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 403.8522186622425,
+        "gain": 0.8,
+        "decay": 0.0951633903598122,
+        "sustain": 0,
+        "delay": 0.08211026128824533,
+        "room": 1
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 29,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 29,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 28.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 28.75,
+      "value": {
+        "note": 64,
+        "s": "sawtooth",
+        "cutoff": 415.3717756774155,
+        "gain": 0.8,
+        "decay": 0.10778683396056296,
+        "sustain": 0,
+        "delay": 0.09140167895908852,
+        "room": 1
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 28.75,
+      "value": {
+        "note": 64.1,
+        "s": "sawtooth",
+        "cutoff": 415.3717756774155,
+        "gain": 0.8,
+        "decay": 0.10778683396056296,
+        "sustain": 0,
+        "delay": 0.09140167895908852,
+        "room": 1
+      }
+    },
+    {
+      "begin": 28.75,
+      "end": 29,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.25,
+      "value": {
+        "note": 80,
+        "s": "sawtooth",
+        "cutoff": 460.89637399097063,
+        "gain": 0.8,
+        "decay": 0.12370605347678067,
+        "sustain": 0,
+        "delay": 0.11110744174509946,
+        "room": 1
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.25,
+      "value": {
+        "note": 80.1,
+        "s": "sawtooth",
+        "cutoff": 460.89637399097063,
+        "gain": 0.8,
+        "decay": 0.12370605347678067,
+        "sustain": 0,
+        "delay": 0.11110744174509946,
+        "room": 1
+      }
+    },
+    {
+      "begin": 29.25,
+      "end": 29.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 29.25,
+      "end": 29.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 494.4629885213159,
+        "gain": 0.8,
+        "decay": 0.12385265267403157,
+        "sustain": 0,
+        "delay": 0.12147431395169453,
+        "room": 1
+      }
+    },
+    {
+      "begin": 29.25,
+      "end": 29.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 494.4629885213159,
+        "gain": 0.8,
+        "decay": 0.12385265267403157,
+        "sustain": 0,
+        "delay": 0.12147431395169453,
+        "room": 1
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 30,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 30,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 29.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 30,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 30,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 30,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 30,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 30,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 30,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "cutoff": 581.5916373098099,
+        "gain": 0.8,
+        "decay": 0.12497565784542532,
+        "sustain": 0,
+        "delay": 0.14311122664242937,
+        "room": 1
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 30,
+      "value": {
+        "note": 67.1,
+        "s": "sawtooth",
+        "cutoff": 581.5916373098099,
+        "gain": 0.8,
+        "decay": 0.12497565784542532,
+        "sustain": 0,
+        "delay": 0.14311122664242937,
+        "room": 1
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.25,
+      "value": {
+        "note": 68,
+        "s": "sawtooth",
+        "cutoff": 634.3145750507613,
+        "gain": 0.8,
+        "decay": 0.1251222570426762,
+        "sustain": 0,
+        "delay": 0.1543291419087274,
+        "room": 1
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.25,
+      "value": {
+        "note": 68.1,
+        "s": "sawtooth",
+        "cutoff": 634.3145750507613,
+        "gain": 0.8,
+        "decay": 0.1251222570426762,
+        "sustain": 0,
+        "delay": 0.1543291419087274,
+        "room": 1
+      }
+    },
+    {
+      "begin": 30.25,
+      "end": 30.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 30.25,
+      "end": 30.5,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 30.25,
+      "end": 30.5,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 30.25,
+      "end": 30.5,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 30.25,
+      "end": 30.5,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 30.25,
+      "end": 30.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "cutoff": 692.4853726690836,
+        "gain": 0.8,
+        "decay": 0.1190538800756258,
+        "sustain": 0,
+        "delay": 0.165777536651945,
+        "room": 1
+      }
+    },
+    {
+      "begin": 30.25,
+      "end": 30.5,
+      "value": {
+        "note": 70.1,
+        "s": "sawtooth",
+        "cutoff": 692.4853726690836,
+        "gain": 0.8,
+        "decay": 0.1190538800756258,
+        "sustain": 0,
+        "delay": 0.165777536651945,
+        "room": 1
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 31,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 31,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 30.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 30.75,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "cutoff": 755.5438135843181,
+        "gain": 0.8,
+        "decay": 0.09581085131503642,
+        "sustain": 0,
+        "delay": 0.17742883068638438,
+        "room": 1
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 30.75,
+      "value": {
+        "note": 52.1,
+        "s": "sawtooth",
+        "cutoff": 755.5438135843181,
+        "gain": 0.8,
+        "decay": 0.09581085131503642,
+        "sustain": 0,
+        "delay": 0.17742883068638438,
+        "room": 1
+      }
+    },
+    {
+      "begin": 30.75,
+      "end": 31,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.25,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.25,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.25,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.25,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.25,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 31.25,
+      "end": 31.5,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 32,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 32,
+      "value": {
+        "s": "sd"
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 31.75,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 31.75,
+      "value": {
+        "note": 64,
+        "s": "sawtooth",
+        "cutoff": 1043.9277423870976,
+        "gain": 0.8,
+        "decay": 0.10643037310801448,
+        "sustain": 0,
+        "delay": 0.22549571491760986,
+        "room": 1
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 31.75,
+      "value": {
+        "note": 64.1,
+        "s": "sawtooth",
+        "cutoff": 1043.9277423870976,
+        "gain": 0.8,
+        "decay": 0.10643037310801448,
+        "sustain": 0,
+        "delay": 0.22549571491760986,
+        "room": 1
+      }
+    },
+    {
+      "begin": 31.75,
+      "end": 32,
+      "value": {
+        "s": "hh"
+      }
+    },
+    {
+      "begin": 31.75,
+      "end": 32,
+      "value": {
+        "note": 54
+      }
+    },
+    {
+      "begin": 31.75,
+      "end": 32,
+      "value": {
+        "note": 58
+      }
+    },
+    {
+      "begin": 31.75,
+      "end": 32,
+      "value": {
+        "note": 59
+      }
+    },
+    {
+      "begin": 31.75,
+      "end": 32,
+      "value": {
+        "note": 63
+      }
+    },
+    {
+      "begin": 31.75,
+      "end": 32,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "cutoff": 1121.5862877363516,
+        "gain": 0.8,
+        "decay": 0.1380943507903794,
+        "sustain": 0,
+        "delay": 0.23773308141814548,
+        "room": 1
+      }
+    },
+    {
+      "begin": 31.75,
+      "end": 32,
+      "value": {
+        "note": 55.1,
+        "s": "sawtooth",
+        "cutoff": 1121.5862877363516,
+        "gain": 0.8,
+        "decay": 0.1380943507903794,
+        "sustain": 0,
+        "delay": 0.23773308141814548,
+        "room": 1
+      }
+    }
+  ]
+}

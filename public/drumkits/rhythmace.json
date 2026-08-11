@@ -13,6 +13,11 @@
       "file": "rhythmace/snare.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "rhythmace/tomLo.wav"
+    },
+    {
       "voice": "closedHat",
       "note": 42,
       "file": "rhythmace/closedHat.wav"
@@ -23,9 +28,9 @@
       "file": "rhythmace/openHat.wav"
     },
     {
-      "voice": "tom",
-      "note": 45,
-      "file": "rhythmace/tom.wav"
+      "voice": "tomHi",
+      "note": 48,
+      "file": "rhythmace/tomHi.wav"
     }
   ]
 }

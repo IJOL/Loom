@@ -1,0 +1,21 @@
+{
+  "id": "strudel-bassfuge",
+  "name": "Bass Fuge Drums",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "strudel-bassfuge/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "strudel-bassfuge/snare.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "strudel-bassfuge/closedHat.wav"
+    }
+  ]
+}

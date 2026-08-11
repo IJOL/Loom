@@ -1,0 +1,2727 @@
+{
+  "source": "strudel — \"Waa2\"",
+  "cycles": 16,
+  "cps": 0.5,
+  "events": [
+    {
+      "begin": 0,
+      "end": 0.5,
+      "value": {
+        "note": 62,
+        "clip": 1.15,
+        "s": "sawtooth",
+        "cutoff": 4000,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.5,
+      "value": {
+        "note": 43,
+        "clip": 1.15,
+        "s": "sawtooth",
+        "cutoff": 4000,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.75,
+      "value": {
+        "note": 74,
+        "clip": 1.197659880151613,
+        "s": "square",
+        "cutoff": 3991.5732716763446,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.75,
+      "value": {
+        "note": 55,
+        "clip": 1.197659880151613,
+        "s": "square",
+        "cutoff": 3991.5732716763446,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.75,
+      "value": {
+        "note": 50,
+        "clip": 1.2451698046878117,
+        "s": "sawtooth",
+        "cutoff": 3966.3742407056534,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 1,
+      "value": {
+        "note": 69,
+        "clip": 1.2451698046878117,
+        "s": "sawtooth",
+        "cutoff": 3966.3742407056534,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "note": 41,
+        "clip": 1.292380289809026,
+        "s": "square",
+        "cutoff": 3924.645587531366,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "note": 62,
+        "clip": 1.292380289809026,
+        "s": "square",
+        "cutoff": 3924.645587531366,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1.25,
+      "value": {
+        "note": 81,
+        "clip": 1.292380289809026,
+        "s": "square",
+        "cutoff": 3924.645587531366,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.5,
+      "value": {
+        "note": 50,
+        "clip": 1.3391427938628673,
+        "s": "sawtooth",
+        "cutoff": 3866.789181894752,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 57,
+        "clip": 1.3391427938628673,
+        "s": "sawtooth",
+        "cutoff": 3866.789181894752,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 53,
+        "clip": 1.3391427938628673,
+        "s": "sawtooth",
+        "cutoff": 3866.789181894752,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "note": 48,
+        "clip": 1.385310184711122,
+        "s": "square",
+        "cutoff": 3793.362212609621,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.75,
+      "value": {
+        "note": 62,
+        "clip": 1.385310184711122,
+        "s": "square",
+        "cutoff": 3793.362212609621,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "note": 69,
+        "clip": 1.385310184711122,
+        "s": "square",
+        "cutoff": 3793.362212609621,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 2,
+      "value": {
+        "note": 41,
+        "clip": 1.4307372026618919,
+        "s": "sawtooth",
+        "cutoff": 3705.071821529454,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 2,
+      "value": {
+        "note": 57,
+        "clip": 1.4307372026618919,
+        "s": "sawtooth",
+        "cutoff": 3705.071821529454,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.75,
+      "value": {
+        "note": 60,
+        "clip": 1.4307372026618919,
+        "s": "sawtooth",
+        "cutoff": 3705.071821529454,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2.25,
+      "value": {
+        "note": 53,
+        "clip": 1.4752809175103263,
+        "s": "square",
+        "cutoff": 3602.76829338479,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2.25,
+      "value": {
+        "note": 69,
+        "clip": 1.4752809175103263,
+        "s": "square",
+        "cutoff": 3602.76829338479,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.5,
+      "value": {
+        "note": 62,
+        "clip": 1.5188011782499244,
+        "s": "sawtooth",
+        "cutoff": 3487.436867076458,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.5,
+      "value": {
+        "note": 48,
+        "clip": 1.5188011782499244,
+        "s": "sawtooth",
+        "cutoff": 3487.436867076458,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.75,
+      "value": {
+        "note": 74,
+        "clip": 1.5611610540394538,
+        "s": "square",
+        "cutoff": 3360.1882472863795,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.75,
+      "value": {
+        "note": 60,
+        "clip": 1.5611610540394538,
+        "s": "square",
+        "cutoff": 3360.1882472863795,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.75,
+      "value": {
+        "note": 50,
+        "clip": 1.602227265038036,
+        "s": "sawtooth",
+        "cutoff": 3222.2479077843036,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3,
+      "value": {
+        "note": 69,
+        "clip": 1.602227265038036,
+        "s": "sawtooth",
+        "cutoff": 3222.2479077843036,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "note": 41,
+        "clip": 1.6418706017528348,
+        "s": "square",
+        "cutoff": 3074.9442894454965,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "note": 62,
+        "clip": 1.6418706017528348,
+        "s": "square",
+        "cutoff": 3074.9442894454965,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3.25,
+      "value": {
+        "note": 81,
+        "clip": 1.6418706017528348,
+        "s": "square",
+        "cutoff": 3074.9442894454965,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.5,
+      "value": {
+        "note": 50,
+        "clip": 1.6799663315799234,
+        "s": "sawtooth",
+        "cutoff": 2919.6960066389074,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "note": 57,
+        "clip": 1.6799663315799234,
+        "s": "sawtooth",
+        "cutoff": 2919.6960066389074,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "note": 53,
+        "clip": 1.6799663315799234,
+        "s": "sawtooth",
+        "cutoff": 2919.6960066389074,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "note": 48,
+        "clip": 1.7163945912592034,
+        "s": "square",
+        "cutoff": 2757.9981851953094,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.75,
+      "value": {
+        "note": 62,
+        "clip": 1.7163945912592034,
+        "s": "square",
+        "cutoff": 2757.9981851953094,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "note": 69,
+        "clip": 1.7163945912592034,
+        "s": "square",
+        "cutoff": 2757.9981851953094,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "note": 41,
+        "clip": 1.7510407640085655,
+        "s": "sawtooth",
+        "cutoff": 2591.4080635282253,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "note": 57,
+        "clip": 1.7510407640085655,
+        "s": "sawtooth",
+        "cutoff": 2591.4080635282253,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 3.75,
+      "value": {
+        "note": 60,
+        "clip": 1.7510407640085655,
+        "s": "sawtooth",
+        "cutoff": 2591.4080635282253,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4.25,
+      "value": {
+        "note": 53,
+        "clip": 1.7837958401506906,
+        "s": "square",
+        "cutoff": 2421.5299955767314,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4.25,
+      "value": {
+        "note": 69,
+        "clip": 1.7837958401506906,
+        "s": "square",
+        "cutoff": 2421.5299955767314,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.5,
+      "value": {
+        "note": 57,
+        "clip": 1.8145567600978254,
+        "s": "sawtooth",
+        "cutoff": 2250.0000000000005,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.5,
+      "value": {
+        "note": 48,
+        "clip": 1.8145567600978254,
+        "s": "sawtooth",
+        "cutoff": 2250.0000000000005,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.75,
+      "value": {
+        "note": 69,
+        "clip": 1.8432267386153711,
+        "s": "square",
+        "cutoff": 2078.470004423269,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.75,
+      "value": {
+        "note": 60,
+        "clip": 1.8432267386153711,
+        "s": "square",
+        "cutoff": 2078.470004423269,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 4.75,
+      "value": {
+        "note": 45,
+        "clip": 1.8697155693440415,
+        "s": "sawtooth",
+        "cutoff": 1908.5919364717752,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 5,
+      "value": {
+        "note": 64,
+        "clip": 1.8697155693440415,
+        "s": "sawtooth",
+        "cutoff": 1908.5919364717752,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 5,
+      "value": {
+        "note": 36,
+        "clip": 1.8939399086224407,
+        "s": "square",
+        "cutoff": 1742.0018148046913,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 5,
+      "value": {
+        "note": 57,
+        "clip": 1.8939399086224407,
+        "s": "square",
+        "cutoff": 1742.0018148046913,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 5.25,
+      "value": {
+        "note": 76,
+        "clip": 1.8939399086224407,
+        "s": "square",
+        "cutoff": 1742.0018148046913,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.5,
+      "value": {
+        "note": 45,
+        "clip": 1.9158235377170563,
+        "s": "sawtooth",
+        "cutoff": 1580.3039933610933,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.25,
+      "value": {
+        "note": 52,
+        "clip": 1.9158235377170563,
+        "s": "sawtooth",
+        "cutoff": 1580.3039933610933,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.25,
+      "value": {
+        "note": 48,
+        "clip": 1.9158235377170563,
+        "s": "sawtooth",
+        "cutoff": 1580.3039933610933,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.5,
+      "value": {
+        "note": 43,
+        "clip": 1.9352976026345938,
+        "s": "square",
+        "cutoff": 1425.055710554504,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.75,
+      "value": {
+        "note": 57,
+        "clip": 1.9352976026345938,
+        "s": "square",
+        "cutoff": 1425.055710554504,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.5,
+      "value": {
+        "note": 64,
+        "clip": 1.9352976026345938,
+        "s": "square",
+        "cutoff": 1425.055710554504,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 6,
+      "value": {
+        "note": 36,
+        "clip": 1.9523008307621124,
+        "s": "sawtooth",
+        "cutoff": 1277.7520922156966,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 6,
+      "value": {
+        "note": 52,
+        "clip": 1.9523008307621124,
+        "s": "sawtooth",
+        "cutoff": 1277.7520922156966,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 5.75,
+      "value": {
+        "note": 55,
+        "clip": 1.9523008307621124,
+        "s": "sawtooth",
+        "cutoff": 1277.7520922156966,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 6.25,
+      "value": {
+        "note": 48,
+        "clip": 1.9667797236533346,
+        "s": "square",
+        "cutoff": 1139.8117527136208,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 6.25,
+      "value": {
+        "note": 64,
+        "clip": 1.9667797236533346,
+        "s": "square",
+        "cutoff": 1139.8117527136208,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.5,
+      "value": {
+        "note": 57,
+        "clip": 1.97868872535455,
+        "s": "sawtooth",
+        "cutoff": 1012.563132923542,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.5,
+      "value": {
+        "note": 43,
+        "clip": 1.97868872535455,
+        "s": "sawtooth",
+        "cutoff": 1012.563132923542,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.75,
+      "value": {
+        "note": 69,
+        "clip": 1.9879903657405005,
+        "s": "square",
+        "cutoff": 897.2317066152109,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.75,
+      "value": {
+        "note": 55,
+        "clip": 1.9879903657405005,
+        "s": "square",
+        "cutoff": 897.2317066152109,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 6.75,
+      "value": {
+        "note": 45,
+        "clip": 1.9946553784092562,
+        "s": "sawtooth",
+        "cutoff": 794.9281784705458,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 7,
+      "value": {
+        "note": 64,
+        "clip": 1.9946553784092562,
+        "s": "sawtooth",
+        "cutoff": 794.9281784705458,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 7,
+      "value": {
+        "note": 36,
+        "clip": 1.9986627927651441,
+        "s": "square",
+        "cutoff": 706.6377873903789,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 7,
+      "value": {
+        "note": 57,
+        "clip": 1.9986627927651441,
+        "s": "square",
+        "cutoff": 706.6377873903789,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 7.25,
+      "value": {
+        "note": 76,
+        "clip": 1.9986627927651441,
+        "s": "square",
+        "cutoff": 706.6377873903789,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.5,
+      "value": {
+        "note": 45,
+        "clip": 2,
+        "s": "sawtooth",
+        "cutoff": 633.2108181052486,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.25,
+      "value": {
+        "note": 52,
+        "clip": 2,
+        "s": "sawtooth",
+        "cutoff": 633.2108181052486,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.25,
+      "value": {
+        "note": 48,
+        "clip": 2,
+        "s": "sawtooth",
+        "cutoff": 633.2108181052486,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 7.5,
+      "value": {
+        "note": 43,
+        "clip": 1.9986627927651441,
+        "s": "square",
+        "cutoff": 575.3544124686346,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 7.75,
+      "value": {
+        "note": 57,
+        "clip": 1.9986627927651441,
+        "s": "square",
+        "cutoff": 575.3544124686346,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 7.5,
+      "value": {
+        "note": 64,
+        "clip": 1.9986627927651441,
+        "s": "square",
+        "cutoff": 575.3544124686346,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8,
+      "value": {
+        "note": 36,
+        "clip": 1.9946553784092562,
+        "s": "sawtooth",
+        "cutoff": 533.625759294347,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8,
+      "value": {
+        "note": 52,
+        "clip": 1.9946553784092562,
+        "s": "sawtooth",
+        "cutoff": 533.625759294347,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 7.75,
+      "value": {
+        "note": 55,
+        "clip": 1.9946553784092562,
+        "s": "sawtooth",
+        "cutoff": 533.625759294347,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 8.25,
+      "value": {
+        "note": 48,
+        "clip": 1.9879903657405005,
+        "s": "square",
+        "cutoff": 508.42672832365537,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 8.25,
+      "value": {
+        "note": 64,
+        "clip": 1.9879903657405005,
+        "s": "square",
+        "cutoff": 508.42672832365537,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.5,
+      "value": {
+        "note": 64,
+        "clip": 1.97868872535455,
+        "s": "sawtooth",
+        "cutoff": 500,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.5,
+      "value": {
+        "note": 43,
+        "clip": 1.97868872535455,
+        "s": "sawtooth",
+        "cutoff": 500,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.75,
+      "value": {
+        "note": 76,
+        "clip": 1.9667797236533349,
+        "s": "square",
+        "cutoff": 508.42672832365537,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.75,
+      "value": {
+        "note": 55,
+        "clip": 1.9667797236533349,
+        "s": "square",
+        "cutoff": 508.42672832365537,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.75,
+      "value": {
+        "note": 52,
+        "clip": 1.9523008307621126,
+        "s": "sawtooth",
+        "cutoff": 533.6257592943467,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 9,
+      "value": {
+        "note": 71,
+        "clip": 1.9523008307621126,
+        "s": "sawtooth",
+        "cutoff": 533.6257592943467,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9,
+      "value": {
+        "note": 43,
+        "clip": 1.9352976026345938,
+        "s": "square",
+        "cutoff": 575.3544124686343,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9,
+      "value": {
+        "note": 64,
+        "clip": 1.9352976026345938,
+        "s": "square",
+        "cutoff": 575.3544124686343,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9.25,
+      "value": {
+        "note": 83,
+        "clip": 1.9352976026345938,
+        "s": "square",
+        "cutoff": 575.3544124686343,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.5,
+      "value": {
+        "note": 52,
+        "clip": 1.9158235377170563,
+        "s": "sawtooth",
+        "cutoff": 633.2108181052483,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "note": 59,
+        "clip": 1.9158235377170563,
+        "s": "sawtooth",
+        "cutoff": 633.2108181052483,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "note": 55,
+        "clip": 1.9158235377170563,
+        "s": "sawtooth",
+        "cutoff": 633.2108181052483,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.5,
+      "value": {
+        "note": 50,
+        "clip": 1.8939399086224407,
+        "s": "square",
+        "cutoff": 706.6377873903787,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.75,
+      "value": {
+        "note": 64,
+        "clip": 1.8939399086224407,
+        "s": "square",
+        "cutoff": 706.6377873903787,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.5,
+      "value": {
+        "note": 71,
+        "clip": 1.8939399086224407,
+        "s": "square",
+        "cutoff": 706.6377873903787,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 10,
+      "value": {
+        "note": 43,
+        "clip": 1.8697155693440415,
+        "s": "sawtooth",
+        "cutoff": 794.9281784705454,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 10,
+      "value": {
+        "note": 59,
+        "clip": 1.8697155693440415,
+        "s": "sawtooth",
+        "cutoff": 794.9281784705454,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.75,
+      "value": {
+        "note": 62,
+        "clip": 1.8697155693440415,
+        "s": "sawtooth",
+        "cutoff": 794.9281784705454,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10.25,
+      "value": {
+        "note": 55,
+        "clip": 1.8432267386153711,
+        "s": "square",
+        "cutoff": 897.2317066152104,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10.25,
+      "value": {
+        "note": 71,
+        "clip": 1.8432267386153711,
+        "s": "square",
+        "cutoff": 897.2317066152104,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.5,
+      "value": {
+        "note": 64,
+        "clip": 1.8145567600978254,
+        "s": "sawtooth",
+        "cutoff": 1012.5631329235415,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.5,
+      "value": {
+        "note": 50,
+        "clip": 1.8145567600978254,
+        "s": "sawtooth",
+        "cutoff": 1012.5631329235415,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.75,
+      "value": {
+        "note": 76,
+        "clip": 1.7837958401506908,
+        "s": "square",
+        "cutoff": 1139.8117527136196,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.75,
+      "value": {
+        "note": 62,
+        "clip": 1.7837958401506908,
+        "s": "square",
+        "cutoff": 1139.8117527136196,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.75,
+      "value": {
+        "note": 52,
+        "clip": 1.7510407640085655,
+        "s": "sawtooth",
+        "cutoff": 1277.7520922156962,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11,
+      "value": {
+        "note": 71,
+        "clip": 1.7510407640085655,
+        "s": "sawtooth",
+        "cutoff": 1277.7520922156962,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 11,
+      "value": {
+        "note": 43,
+        "clip": 1.7163945912592034,
+        "s": "square",
+        "cutoff": 1425.0557105545035,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 11,
+      "value": {
+        "note": 64,
+        "clip": 1.7163945912592034,
+        "s": "square",
+        "cutoff": 1425.0557105545035,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 11.25,
+      "value": {
+        "note": 83,
+        "clip": 1.7163945912592034,
+        "s": "square",
+        "cutoff": 1425.0557105545035,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.5,
+      "value": {
+        "note": 52,
+        "clip": 1.6799663315799236,
+        "s": "sawtooth",
+        "cutoff": 1580.303993361092,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.25,
+      "value": {
+        "note": 59,
+        "clip": 1.6799663315799236,
+        "s": "sawtooth",
+        "cutoff": 1580.303993361092,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.25,
+      "value": {
+        "note": 55,
+        "clip": 1.6799663315799236,
+        "s": "sawtooth",
+        "cutoff": 1580.303993361092,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.5,
+      "value": {
+        "note": 50,
+        "clip": 1.641870601752835,
+        "s": "square",
+        "cutoff": 1742.0018148046906,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.75,
+      "value": {
+        "note": 64,
+        "clip": 1.641870601752835,
+        "s": "square",
+        "cutoff": 1742.0018148046906,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.5,
+      "value": {
+        "note": 71,
+        "clip": 1.641870601752835,
+        "s": "square",
+        "cutoff": 1742.0018148046906,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "note": 43,
+        "clip": 1.6022272650380363,
+        "s": "sawtooth",
+        "cutoff": 1908.5919364717747,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "note": 59,
+        "clip": 1.6022272650380363,
+        "s": "sawtooth",
+        "cutoff": 1908.5919364717747,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 11.75,
+      "value": {
+        "note": 62,
+        "clip": 1.6022272650380363,
+        "s": "sawtooth",
+        "cutoff": 1908.5919364717747,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12.25,
+      "value": {
+        "note": 55,
+        "clip": 1.5611610540394538,
+        "s": "square",
+        "cutoff": 2078.470004423269,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12.25,
+      "value": {
+        "note": 71,
+        "clip": 1.5611610540394538,
+        "s": "square",
+        "cutoff": 2078.470004423269,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.5,
+      "value": {
+        "note": 57,
+        "clip": 1.5188011782499247,
+        "s": "sawtooth",
+        "cutoff": 2249.9999999999995,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.5,
+      "value": {
+        "note": 50,
+        "clip": 1.5188011782499247,
+        "s": "sawtooth",
+        "cutoff": 2249.9999999999995,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.75,
+      "value": {
+        "note": 69,
+        "clip": 1.4752809175103263,
+        "s": "square",
+        "cutoff": 2421.52999557673,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.75,
+      "value": {
+        "note": 62,
+        "clip": 1.4752809175103263,
+        "s": "square",
+        "cutoff": 2421.52999557673,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 12.75,
+      "value": {
+        "note": 45,
+        "clip": 1.430737202661892,
+        "s": "sawtooth",
+        "cutoff": 2591.4080635282244,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13,
+      "value": {
+        "note": 64,
+        "clip": 1.430737202661892,
+        "s": "sawtooth",
+        "cutoff": 2591.4080635282244,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 13,
+      "value": {
+        "note": 36,
+        "clip": 1.3853101847111222,
+        "s": "square",
+        "cutoff": 2757.9981851953085,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 13,
+      "value": {
+        "note": 57,
+        "clip": 1.3853101847111222,
+        "s": "square",
+        "cutoff": 2757.9981851953085,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 13.25,
+      "value": {
+        "note": 76,
+        "clip": 1.3853101847111222,
+        "s": "square",
+        "cutoff": 2757.9981851953085,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.5,
+      "value": {
+        "note": 45,
+        "clip": 1.3391427938628675,
+        "s": "sawtooth",
+        "cutoff": 2919.6960066389074,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.25,
+      "value": {
+        "note": 52,
+        "clip": 1.3391427938628675,
+        "s": "sawtooth",
+        "cutoff": 2919.6960066389074,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.25,
+      "value": {
+        "note": 48,
+        "clip": 1.3391427938628675,
+        "s": "sawtooth",
+        "cutoff": 2919.6960066389074,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.5,
+      "value": {
+        "note": 43,
+        "clip": 1.292380289809026,
+        "s": "square",
+        "cutoff": 3074.9442894454955,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.75,
+      "value": {
+        "note": 57,
+        "clip": 1.292380289809026,
+        "s": "square",
+        "cutoff": 3074.9442894454955,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.5,
+      "value": {
+        "note": 64,
+        "clip": 1.292380289809026,
+        "s": "square",
+        "cutoff": 3074.9442894454955,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14,
+      "value": {
+        "note": 36,
+        "clip": 1.245169804687812,
+        "s": "sawtooth",
+        "cutoff": 3222.247907784303,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14,
+      "value": {
+        "note": 52,
+        "clip": 1.245169804687812,
+        "s": "sawtooth",
+        "cutoff": 3222.247907784303,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 13.75,
+      "value": {
+        "note": 55,
+        "clip": 1.245169804687812,
+        "s": "sawtooth",
+        "cutoff": 3222.247907784303,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14.25,
+      "value": {
+        "note": 48,
+        "clip": 1.1976598801516132,
+        "s": "square",
+        "cutoff": 3360.1882472863795,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14.25,
+      "value": {
+        "note": 64,
+        "clip": 1.1976598801516132,
+        "s": "square",
+        "cutoff": 3360.1882472863795,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.5,
+      "value": {
+        "note": 57,
+        "clip": 1.1500000000000001,
+        "s": "sawtooth",
+        "cutoff": 3487.436867076458,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.5,
+      "value": {
+        "note": 43,
+        "clip": 1.1500000000000001,
+        "s": "sawtooth",
+        "cutoff": 3487.436867076458,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.75,
+      "value": {
+        "note": 69,
+        "clip": 1.102340119848387,
+        "s": "square",
+        "cutoff": 3602.7682933847886,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.75,
+      "value": {
+        "note": 55,
+        "clip": 1.102340119848387,
+        "s": "square",
+        "cutoff": 3602.7682933847886,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 14.75,
+      "value": {
+        "note": 45,
+        "clip": 1.054830195312188,
+        "s": "sawtooth",
+        "cutoff": 3705.071821529454,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 15,
+      "value": {
+        "note": 64,
+        "clip": 1.054830195312188,
+        "s": "sawtooth",
+        "cutoff": 3705.071821529454,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 15,
+      "value": {
+        "note": 36,
+        "clip": 1.007619710190974,
+        "s": "square",
+        "cutoff": 3793.362212609621,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 15,
+      "value": {
+        "note": 57,
+        "clip": 1.007619710190974,
+        "s": "square",
+        "cutoff": 3793.362212609621,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 15.25,
+      "value": {
+        "note": 76,
+        "clip": 1.007619710190974,
+        "s": "square",
+        "cutoff": 3793.362212609621,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.5,
+      "value": {
+        "note": 45,
+        "clip": 0.9608572061371328,
+        "s": "sawtooth",
+        "cutoff": 3866.7891818947514,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.25,
+      "value": {
+        "note": 52,
+        "clip": 0.9608572061371328,
+        "s": "sawtooth",
+        "cutoff": 3866.7891818947514,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.25,
+      "value": {
+        "note": 48,
+        "clip": 0.9608572061371328,
+        "s": "sawtooth",
+        "cutoff": 3866.7891818947514,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.5,
+      "value": {
+        "note": 43,
+        "clip": 0.9146898152888785,
+        "s": "square",
+        "cutoff": 3924.6455875313654,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.75,
+      "value": {
+        "note": 57,
+        "clip": 0.9146898152888785,
+        "s": "square",
+        "cutoff": 3924.6455875313654,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.5,
+      "value": {
+        "note": 64,
+        "clip": 0.9146898152888785,
+        "s": "square",
+        "cutoff": 3924.6455875313654,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 16,
+      "value": {
+        "note": 36,
+        "clip": 0.869262797338108,
+        "s": "sawtooth",
+        "cutoff": 3966.3742407056534,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 16,
+      "value": {
+        "note": 52,
+        "clip": 0.869262797338108,
+        "s": "sawtooth",
+        "cutoff": 3966.3742407056534,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 15.75,
+      "value": {
+        "note": 55,
+        "clip": 0.869262797338108,
+        "s": "sawtooth",
+        "cutoff": 3966.3742407056534,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 16.25,
+      "value": {
+        "note": 48,
+        "clip": 0.8247190824896737,
+        "s": "square",
+        "cutoff": 3991.5732716763446,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 16.25,
+      "value": {
+        "note": 64,
+        "clip": 0.8247190824896737,
+        "s": "square",
+        "cutoff": 3991.5732716763446,
+        "gain": 0.5,
+        "room": 0.5,
+        "lpattack": 0.125,
+        "lpenv": -2,
+        "vib": 8,
+        "vibmod": 0.125,
+        "fanchor": 0.25
+      }
+    }
+  ]
+}

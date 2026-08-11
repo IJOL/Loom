@@ -1,0 +1,8624 @@
+{
+  "source": "strudel — \"broken cut 1\" @by froos",
+  "cycles": 64,
+  "cps": 1.25,
+  "events": [
+    {
+      "begin": 0,
+      "end": 0.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 667.3757489025593,
+        "lpenv": 2.040976382791996,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.25,
+      "value": {
+        "note": 63,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.25,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.25,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.25,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.0625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.01,
+      "end": 0.25,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 0.0625,
+      "end": 0.125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.125,
+      "end": 0.1875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.1875,
+      "end": 0.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 667.3757489025593,
+        "lpenv": 2.040976382791996,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "note": 63,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.26,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.3125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.26,
+      "end": 0.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 0.3125,
+      "end": 0.375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.375,
+      "end": 0.4375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.4375,
+      "end": 0.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.75,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 667.3757489025593,
+        "lpenv": 2.040976382791996,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.75,
+      "value": {
+        "note": 63,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.75,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.75,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.75,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.51,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.5625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.51,
+      "end": 0.75,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 0.5625,
+      "end": 0.625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.625,
+      "end": 0.6875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.6875,
+      "end": 0.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 667.3757489025593,
+        "lpenv": 2.040976382791996,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "note": 63,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 0.76,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 0.8125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.76,
+      "end": 1,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 0.8125,
+      "end": 0.875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.875,
+      "end": 0.9375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 0.9375,
+      "end": 1,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 63,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "note": 63,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.625,
+      "value": {
+        "note": 63,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.625,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.625,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.625,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.625,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 1.625,
+      "end": 1.75,
+      "value": {
+        "note": 63,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.625,
+      "end": 1.75,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.625,
+      "end": 1.75,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.625,
+      "end": 1.75,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.625,
+      "end": 1.75,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 1.625,
+      "end": 1.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 1.8125,
+      "value": {
+        "note": 63,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 1.8125,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 1.8125,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 1.8125,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 1.8125,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 1.8125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 1.8125,
+      "end": 1.875,
+      "value": {
+        "note": 63,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.8125,
+      "end": 1.875,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.8125,
+      "end": 1.875,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.8125,
+      "end": 1.875,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.8125,
+      "end": 1.875,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 1.8125,
+      "end": 1.875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 1.9375,
+      "value": {
+        "note": 63,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 1.9375,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 1.9375,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 1.9375,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 1.9375,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 1.9375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 1.9375,
+      "end": 2,
+      "value": {
+        "note": 63,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.9375,
+      "end": 2,
+      "value": {
+        "note": 67,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.9375,
+      "end": 2,
+      "value": {
+        "note": 70,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.9375,
+      "end": 2,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.7514978051186,
+        "lpenv": 3.081952765583992,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 1.9375,
+      "end": 2,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 1.9375,
+      "end": 2,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 480,
+        "lpenv": 1,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 2,
+      "end": 6,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 480,
+        "lpenv": 1,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 2,
+      "end": 6,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 480,
+        "lpenv": 1,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 2,
+      "end": 6,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 480,
+        "lpenv": 1,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 2,
+      "end": 6,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 480,
+        "lpenv": 1,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 2.01,
+      "end": 3.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 498.2430362816024,
+        "lpenv": 1.1013502015644576,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 3.251,
+      "end": 4.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 667.0351794362068,
+        "lpenv": 2.039084330201149,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.0625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 4.01,
+      "end": 5.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 4.0625,
+      "end": 4.125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 4.125,
+      "end": 4.1875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 4.1875,
+      "end": 4.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 4.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 5,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 786.7354396704025,
+        "lpenv": 2.7040857759466803,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.0625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 5.0625,
+      "end": 5.125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 5.125,
+      "end": 5.1875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 5.1875,
+      "end": 5.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 5.251,
+      "end": 6.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 5.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 5.8125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 5.8125,
+      "end": 5.875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 5.875,
+      "end": 5.9375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 5.9375,
+      "end": 6,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.0703588724136,
+        "lpenv": 3.078168660402298,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 6,
+      "end": 10,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.0703588724136,
+        "lpenv": 3.078168660402298,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 6,
+      "end": 10,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.0703588724136,
+        "lpenv": 3.078168660402298,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 6,
+      "end": 10,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.0703588724136,
+        "lpenv": 3.078168660402298,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 6,
+      "end": 10,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 854.0703588724136,
+        "lpenv": 3.078168660402298,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 6.01,
+      "end": 7.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 7,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 7,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 869.5198488939388,
+        "lpenv": 3.1639991605218825,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 7.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 7.251,
+      "end": 8.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 7.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 8,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1012.4649426341057,
+        "lpenv": 3.958138570189476,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 8,
+      "end": 16,
+      "value": {
+        "s": "attack",
+        "delay": 0.8,
+        "delaytime": 0.1,
+        "delayfeedback": 0.8,
+        "room": 2,
+        "cut": 2
+      }
+    },
+    {
+      "begin": 8.01,
+      "end": 9.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 9,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1113.8355668830502,
+        "lpenv": 4.5213087049058345,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 9.251,
+      "end": 10.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 10,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1170.8595263957977,
+        "lpenv": 4.838108479976654,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10,
+      "end": 14,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1170.8595263957977,
+        "lpenv": 4.838108479976654,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10,
+      "end": 14,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1170.8595263957977,
+        "lpenv": 4.838108479976654,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10,
+      "end": 14,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1170.8595263957977,
+        "lpenv": 4.838108479976654,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10,
+      "end": 14,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1170.8595263957977,
+        "lpenv": 4.838108479976654,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 10.01,
+      "end": 11.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 11,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1144.7968199521194,
+        "lpenv": 4.6933156664006646,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 11.251,
+      "end": 12.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 903.6538430303335,
+        "lpenv": 3.3536324612796307,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 12.01,
+      "end": 13.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.3125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 12.3125,
+      "end": 12.375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 12.375,
+      "end": 12.4375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 12.4375,
+      "end": 12.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 12.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 13,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 732.6454266922118,
+        "lpenv": 2.4035857038456214,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 13,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 13.251,
+      "end": 14.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 13.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.25,
+      "value": {
+        "note": 37,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 636.4481596648693,
+        "lpenv": 1.8691564425826073,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14,
+      "end": 16,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 636.4481596648693,
+        "lpenv": 1.8691564425826073,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14,
+      "end": 16,
+      "value": {
+        "note": 56,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 636.4481596648693,
+        "lpenv": 1.8691564425826073,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14,
+      "end": 16,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 636.4481596648693,
+        "lpenv": 1.8691564425826073,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14,
+      "end": 16,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 636.4481596648693,
+        "lpenv": 1.8691564425826073,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 14.01,
+      "end": 15.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 15,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 15,
+      "value": {
+        "note": 37,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 631.660643156196,
+        "lpenv": 1.842559128645533,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 15.251,
+      "end": 16.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 15.5625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 15.5625,
+      "end": 15.625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 15.625,
+      "end": 15.6875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 15.6875,
+      "end": 15.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 16,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.25,
+      "value": {
+        "note": 40,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 587.3645534366369,
+        "lpenv": 1.5964697413146496,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 18,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 636.4481596648693,
+        "lpenv": 1.8691564425826073,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 18,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 636.4481596648693,
+        "lpenv": 1.8691564425826073,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 18,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 636.4481596648693,
+        "lpenv": 1.8691564425826073,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 18,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 636.4481596648693,
+        "lpenv": 1.8691564425826073,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 16,
+      "end": 24,
+      "value": {
+        "s": "whirl",
+        "delay": 0.8,
+        "delaytime": 0.1,
+        "delayfeedback": 0.8,
+        "room": 2,
+        "cut": 2
+      }
+    },
+    {
+      "begin": 16.01,
+      "end": 17.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 17,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 16.75,
+      "end": 17,
+      "value": {
+        "note": 40,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 555.9516371261194,
+        "lpenv": 1.421953539589552,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 17.251,
+      "end": 18.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 17.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 18,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 538.2809472084045,
+        "lpenv": 1.323783040046692,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18,
+      "end": 22,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 538.2809472084045,
+        "lpenv": 1.323783040046692,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18,
+      "end": 22,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 538.2809472084045,
+        "lpenv": 1.323783040046692,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18,
+      "end": 22,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 538.2809472084045,
+        "lpenv": 1.323783040046692,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18,
+      "end": 22,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 538.2809472084045,
+        "lpenv": 1.323783040046692,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 18.01,
+      "end": 19.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 19,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 19,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 538.3599297292187,
+        "lpenv": 1.324221831828993,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 19.25,
+      "end": 19.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 19.251,
+      "end": 20.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 19.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 20,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 539.0907087922096,
+        "lpenv": 1.3282817155122757,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 20.01,
+      "end": 21.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 20.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 20.75,
+      "end": 21,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 539.6089464446197,
+        "lpenv": 1.3311608135812207,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 20.75,
+      "end": 21,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 21.25,
+      "end": 21.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 21.251,
+      "end": 22.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 22,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 539.9004703760147,
+        "lpenv": 1.3327803909778595,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22,
+      "end": 26,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 539.9004703760147,
+        "lpenv": 1.3327803909778595,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22,
+      "end": 26,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 539.9004703760147,
+        "lpenv": 1.3327803909778595,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22,
+      "end": 26,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 539.9004703760147,
+        "lpenv": 1.3327803909778595,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22,
+      "end": 26,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 539.9004703760147,
+        "lpenv": 1.3327803909778595,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 22.01,
+      "end": 23.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 23,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 22.75,
+      "end": 23,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 556.8332207365071,
+        "lpenv": 1.4268512263139286,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 23.25,
+      "end": 23.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 23.251,
+      "end": 24.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 23.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 23.75,
+      "end": 23.8125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 23.8125,
+      "end": 23.875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 23.875,
+      "end": 23.9375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 23.9375,
+      "end": 24,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 713.5020547360182,
+        "lpenv": 2.2972336374223232,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 24.01,
+      "end": 25.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 24.5625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 24.5625,
+      "end": 24.625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 24.625,
+      "end": 24.6875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 24.6875,
+      "end": 24.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 824.6049760559546,
+        "lpenv": 2.914472089199748,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 25.251,
+      "end": 26.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 26,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 887.1036390960217,
+        "lpenv": 3.261686883866787,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26,
+      "end": 30,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 887.1036390960217,
+        "lpenv": 3.261686883866787,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26,
+      "end": 30,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 887.1036390960217,
+        "lpenv": 3.261686883866787,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26,
+      "end": 30,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 887.1036390960217,
+        "lpenv": 3.261686883866787,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26,
+      "end": 30,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 887.1036390960217,
+        "lpenv": 3.261686883866787,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.0625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 26.01,
+      "end": 27.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 26.0625,
+      "end": 26.125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 26.125,
+      "end": 26.1875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 26.1875,
+      "end": 26.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 26.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 27,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 26.75,
+      "end": 27,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 873.5902690695119,
+        "lpenv": 3.1866126059417326,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 27.25,
+      "end": 27.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 27.251,
+      "end": 28.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 748.5589610785246,
+        "lpenv": 2.4919942282140255,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 28.01,
+      "end": 29.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 28.25,
+      "end": 28.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 29,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 28.75,
+      "end": 29,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 659.8920372263004,
+        "lpenv": 1.9994002068127799,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 29.251,
+      "end": 30.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 29.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 30,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.25,
+      "value": {
+        "note": 37,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30,
+      "end": 32,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30,
+      "end": 32,
+      "value": {
+        "note": 56,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30,
+      "end": 32,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30,
+      "end": 32,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 30.01,
+      "end": 31.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 31,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 30.75,
+      "end": 31,
+      "value": {
+        "note": 37,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 633.1396577945964,
+        "lpenv": 1.8507758766366464,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 31.25,
+      "end": 31.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 31.251,
+      "end": 32,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 32,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 32,
+      "end": 32.25,
+      "value": {
+        "note": 40,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 847.1052226424217,
+        "lpenv": 3.039473459124565,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 32.25,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 32.25,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 32.25,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 32.25,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32,
+      "end": 32.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 32,
+      "end": 32.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 32.01,
+      "end": 32.25,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 32.25,
+      "end": 32.5,
+      "value": {
+        "note": 40,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 847.1052226424217,
+        "lpenv": 3.039473459124565,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.25,
+      "end": 32.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.25,
+      "end": 32.5,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.25,
+      "end": 32.5,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.25,
+      "end": 32.5,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.25,
+      "end": 32.26,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 32.25,
+      "end": 32.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 32.26,
+      "end": 32.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 32.5,
+      "end": 32.75,
+      "value": {
+        "note": 40,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 847.1052226424217,
+        "lpenv": 3.039473459124565,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.5,
+      "end": 32.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.5,
+      "end": 32.75,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.5,
+      "end": 32.75,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.5,
+      "end": 32.75,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.5,
+      "end": 32.51,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 32.5,
+      "end": 32.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 32.51,
+      "end": 32.75,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 32.75,
+      "end": 33,
+      "value": {
+        "note": 40,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 847.1052226424217,
+        "lpenv": 3.039473459124565,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.75,
+      "end": 33,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.75,
+      "end": 33,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.75,
+      "end": 33,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.75,
+      "end": 33,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 32.75,
+      "end": 32.76,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 32.75,
+      "end": 33,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 32.76,
+      "end": 33,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 33,
+      "end": 33.25,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33,
+      "end": 33.25,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33,
+      "end": 33.25,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33,
+      "end": 33.25,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33,
+      "end": 33.25,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 33,
+      "end": 33.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 33.25,
+      "end": 33.5,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.25,
+      "end": 33.5,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.25,
+      "end": 33.5,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.25,
+      "end": 33.5,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.25,
+      "end": 33.5,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 33.25,
+      "end": 33.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 33.5,
+      "end": 33.625,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.5,
+      "end": 33.625,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.5,
+      "end": 33.625,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.5,
+      "end": 33.625,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.5,
+      "end": 33.625,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 33.5,
+      "end": 33.625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 33.625,
+      "end": 33.75,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.625,
+      "end": 33.75,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.625,
+      "end": 33.75,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.625,
+      "end": 33.75,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.625,
+      "end": 33.75,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 33.625,
+      "end": 33.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 33.75,
+      "end": 33.8125,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.75,
+      "end": 33.8125,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.75,
+      "end": 33.8125,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.75,
+      "end": 33.8125,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.75,
+      "end": 33.8125,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 33.75,
+      "end": 33.8125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 33.8125,
+      "end": 33.875,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.8125,
+      "end": 33.875,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.8125,
+      "end": 33.875,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.8125,
+      "end": 33.875,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.8125,
+      "end": 33.875,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 33.8125,
+      "end": 33.875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 33.875,
+      "end": 33.9375,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.875,
+      "end": 33.9375,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.875,
+      "end": 33.9375,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.875,
+      "end": 33.9375,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.875,
+      "end": 33.9375,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 33.875,
+      "end": 33.9375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 33.9375,
+      "end": 34,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.9375,
+      "end": 34,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.9375,
+      "end": 34,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.9375,
+      "end": 34,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.0142830610275,
+        "lpenv": 1.722301572561264,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 33.9375,
+      "end": 34,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 33.9375,
+      "end": 34,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 34,
+      "end": 34.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1084.196162223816,
+        "lpenv": 4.356645345687866,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34,
+      "end": 38,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1084.196162223816,
+        "lpenv": 4.356645345687866,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34,
+      "end": 38,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1084.196162223816,
+        "lpenv": 4.356645345687866,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34,
+      "end": 38,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1084.196162223816,
+        "lpenv": 4.356645345687866,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34,
+      "end": 38,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1084.196162223816,
+        "lpenv": 4.356645345687866,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 34,
+      "end": 34.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 34,
+      "end": 34.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 34.01,
+      "end": 35.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 34.5,
+      "end": 35,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 34.75,
+      "end": 35,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1076.5212341807894,
+        "lpenv": 4.314006856559942,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 35,
+      "end": 35.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 35.251,
+      "end": 36.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 35.5,
+      "end": 35.5625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 35.5625,
+      "end": 35.625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 35.625,
+      "end": 35.6875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 35.6875,
+      "end": 35.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 35.75,
+      "end": 36,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 36,
+      "end": 36.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1005.509614571929,
+        "lpenv": 3.9194978587329388,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36,
+      "end": 36.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 36.01,
+      "end": 37.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 36.5,
+      "end": 36.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 36.75,
+      "end": 37,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 955.1511725972531,
+        "lpenv": 3.6397287366514064,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 36.75,
+      "end": 37,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 37,
+      "end": 37.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 37.251,
+      "end": 38.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 37.5,
+      "end": 38,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 38,
+      "end": 38.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 926.823066920042,
+        "lpenv": 3.4823503717780113,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38,
+      "end": 42,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 926.823066920042,
+        "lpenv": 3.4823503717780113,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38,
+      "end": 42,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 926.823066920042,
+        "lpenv": 3.4823503717780113,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38,
+      "end": 42,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 926.823066920042,
+        "lpenv": 3.4823503717780113,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38,
+      "end": 42,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 926.823066920042,
+        "lpenv": 3.4823503717780113,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38,
+      "end": 38.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 38.01,
+      "end": 39.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 38.5,
+      "end": 38.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 38.75,
+      "end": 39,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 910.8922069098882,
+        "lpenv": 3.393845593943823,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 38.75,
+      "end": 39,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 39,
+      "end": 39.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 39.25,
+      "end": 39.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 39.251,
+      "end": 40.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 39.5,
+      "end": 39.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 39.75,
+      "end": 40,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 40,
+      "end": 40.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 763.4932782500982,
+        "lpenv": 2.57496265694499,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 40,
+      "end": 40.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 40.01,
+      "end": 41.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 40.5,
+      "end": 41,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 40.75,
+      "end": 41,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 658.9641823510207,
+        "lpenv": 1.99424545750567,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 41,
+      "end": 41.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 41.251,
+      "end": 42.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 41.5,
+      "end": 42,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 42,
+      "end": 42.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 600.1634895801544,
+        "lpenv": 1.667574942111969,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42,
+      "end": 46,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 600.1634895801544,
+        "lpenv": 1.667574942111969,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42,
+      "end": 46,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 600.1634895801544,
+        "lpenv": 1.667574942111969,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42,
+      "end": 46,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 600.1634895801544,
+        "lpenv": 1.667574942111969,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42,
+      "end": 46,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 600.1634895801544,
+        "lpenv": 1.667574942111969,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 42,
+      "end": 42.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 42.01,
+      "end": 43.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 42.5,
+      "end": 43,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 42.75,
+      "end": 43,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 610.6490954989257,
+        "lpenv": 1.7258283083273653,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 43,
+      "end": 43.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 43.251,
+      "end": 44.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 43.5,
+      "end": 43.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 43.75,
+      "end": 44,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 44,
+      "end": 44.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 707.6662733405828,
+        "lpenv": 2.2648126296699047,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 44,
+      "end": 44.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 44.01,
+      "end": 45.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 44.25,
+      "end": 44.3125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 44.3125,
+      "end": 44.375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 44.375,
+      "end": 44.4375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 44.4375,
+      "end": 44.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 44.5,
+      "end": 45,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 44.75,
+      "end": 45,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 776.4667590610392,
+        "lpenv": 2.647037550339107,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 45,
+      "end": 45.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 45.251,
+      "end": 46.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 45.5,
+      "end": 45.5625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 45.5625,
+      "end": 45.625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 45.625,
+      "end": 45.6875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 45.6875,
+      "end": 45.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 45.75,
+      "end": 46,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 46,
+      "end": 46.25,
+      "value": {
+        "note": 37,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 815.1690571010113,
+        "lpenv": 2.8620503172278404,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46,
+      "end": 48,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 815.1690571010113,
+        "lpenv": 2.8620503172278404,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46,
+      "end": 48,
+      "value": {
+        "note": 56,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 815.1690571010113,
+        "lpenv": 2.8620503172278404,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46,
+      "end": 48,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 815.1690571010113,
+        "lpenv": 2.8620503172278404,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46,
+      "end": 48,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 815.1690571010113,
+        "lpenv": 2.8620503172278404,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46,
+      "end": 46.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 46.01,
+      "end": 47.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 46.25,
+      "end": 46.3125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 46.3125,
+      "end": 46.375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 46.375,
+      "end": 46.4375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 46.4375,
+      "end": 46.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 46.5,
+      "end": 46.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 46.75,
+      "end": 47,
+      "value": {
+        "note": 37,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 803.3511545484483,
+        "lpenv": 2.7963953030469355,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 46.75,
+      "end": 47,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 47,
+      "end": 47.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 47.251,
+      "end": 48.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 47.5,
+      "end": 48,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 48,
+      "end": 48.25,
+      "value": {
+        "note": 40,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 694.0070153027773,
+        "lpenv": 2.188927862793207,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 50,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 815.1690571010113,
+        "lpenv": 2.8620503172278404,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 50,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 815.1690571010113,
+        "lpenv": 2.8620503172278404,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 50,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 815.1690571010113,
+        "lpenv": 2.8620503172278404,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 50,
+      "value": {
+        "note": 54,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 815.1690571010113,
+        "lpenv": 2.8620503172278404,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 48,
+      "end": 48.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 48,
+      "end": 56,
+      "value": {
+        "s": "whirl",
+        "delay": 0.8,
+        "delaytime": 0.1,
+        "delayfeedback": 0.8,
+        "room": 2,
+        "cut": 2
+      }
+    },
+    {
+      "begin": 48.01,
+      "end": 49.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 48.5,
+      "end": 49,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 48.75,
+      "end": 49,
+      "value": {
+        "note": 40,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 616.4647690928776,
+        "lpenv": 1.7581376060715428,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 49,
+      "end": 49.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 49.25,
+      "end": 49.3125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 49.251,
+      "end": 50.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 49.3125,
+      "end": 49.375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 49.375,
+      "end": 49.4375,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 49.4375,
+      "end": 49.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 49.5,
+      "end": 50,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 50,
+      "end": 50.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 572.8449735045433,
+        "lpenv": 1.515805408358574,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50,
+      "end": 54,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 572.8449735045433,
+        "lpenv": 1.515805408358574,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50,
+      "end": 54,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 572.8449735045433,
+        "lpenv": 1.515805408358574,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50,
+      "end": 54,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 572.8449735045433,
+        "lpenv": 1.515805408358574,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50,
+      "end": 54,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 572.8449735045433,
+        "lpenv": 1.515805408358574,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50,
+      "end": 50.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 50.01,
+      "end": 51.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 50.5,
+      "end": 50.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 50.75,
+      "end": 51,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 602.3915567267693,
+        "lpenv": 1.679953092926496,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 50.75,
+      "end": 51,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 51,
+      "end": 51.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 51.251,
+      "end": 52.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 51.5,
+      "end": 52,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 52,
+      "end": 52.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 875.7688075304031,
+        "lpenv": 3.1987155973911285,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 52,
+      "end": 52.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 52.01,
+      "end": 53.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 52.25,
+      "end": 52.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 52.5,
+      "end": 53,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 52.75,
+      "end": 53,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1069.636409728754,
+        "lpenv": 4.275757831826411,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 53,
+      "end": 53.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 53.251,
+      "end": 54.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 53.5,
+      "end": 54,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 54,
+      "end": 54.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1178.692641556263,
+        "lpenv": 4.881625786423683,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54,
+      "end": 58,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1178.692641556263,
+        "lpenv": 4.881625786423683,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54,
+      "end": 58,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1178.692641556263,
+        "lpenv": 4.881625786423683,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54,
+      "end": 58,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1178.692641556263,
+        "lpenv": 4.881625786423683,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54,
+      "end": 58,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1178.692641556263,
+        "lpenv": 4.881625786423683,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54,
+      "end": 54.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 54.01,
+      "end": 55.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 54.5,
+      "end": 54.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 54.75,
+      "end": 55,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1167.0670550492641,
+        "lpenv": 4.817039194718134,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 54.75,
+      "end": 55,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 55,
+      "end": 55.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 55.251,
+      "end": 56.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 55.5,
+      "end": 55.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 55.75,
+      "end": 56,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 56,
+      "end": 56.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 1059.502303674817,
+        "lpenv": 4.219457242637873,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 56,
+      "end": 56.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 56.01,
+      "end": 57.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 56.5,
+      "end": 57,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 56.75,
+      "end": 57,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 983.2219242038686,
+        "lpenv": 3.7956773566881594,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 57,
+      "end": 57.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 57.251,
+      "end": 58.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 57.5,
+      "end": 58,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 58,
+      "end": 58.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 940.3119657933712,
+        "lpenv": 3.5572886988520622,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58,
+      "end": 62,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 940.3119657933712,
+        "lpenv": 3.5572886988520622,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58,
+      "end": 62,
+      "value": {
+        "note": 55,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 940.3119657933712,
+        "lpenv": 3.5572886988520622,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58,
+      "end": 62,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 940.3119657933712,
+        "lpenv": 3.5572886988520622,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58,
+      "end": 62,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 940.3119657933712,
+        "lpenv": 3.5572886988520622,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 58,
+      "end": 58.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 58.01,
+      "end": 59.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 58.5,
+      "end": 59,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 58.75,
+      "end": 59,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 926.6359621647316,
+        "lpenv": 3.481310900915176,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 59,
+      "end": 59.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 59.251,
+      "end": 60.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 59.5,
+      "end": 59.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 59.75,
+      "end": 60,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 60,
+      "end": 60.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 800.0999005883932,
+        "lpenv": 2.778332781046629,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 60,
+      "end": 60.0625,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 60.01,
+      "end": 61.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 60.0625,
+      "end": 60.125,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 60.125,
+      "end": 60.1875,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 60.1875,
+      "end": 60.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 60.25,
+      "end": 60.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 60.5,
+      "end": 61,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 60.75,
+      "end": 61,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 710.3658690356057,
+        "lpenv": 2.2798103835311423,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 61,
+      "end": 61.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 61.251,
+      "end": 62.251,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 61.5,
+      "end": 61.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 61.75,
+      "end": 62,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 62,
+      "end": 62.25,
+      "value": {
+        "note": 37,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 659.8878353834152,
+        "lpenv": 1.9993768632411957,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62,
+      "end": 64,
+      "value": {
+        "note": 52,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 659.8878353834152,
+        "lpenv": 1.9993768632411957,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62,
+      "end": 64,
+      "value": {
+        "note": 56,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 659.8878353834152,
+        "lpenv": 1.9993768632411957,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62,
+      "end": 64,
+      "value": {
+        "note": 59,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 659.8878353834152,
+        "lpenv": 1.9993768632411957,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62,
+      "end": 64,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 659.8878353834152,
+        "lpenv": 1.9993768632411957,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62,
+      "end": 62.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0,
+        "end": 0.25,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 62.01,
+      "end": 63.01,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 62.5,
+      "end": 62.75,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 62.75,
+      "end": 63,
+      "value": {
+        "note": 37,
+        "s": "sawtooth",
+        "noise": 0.3,
+        "cutoff": 662.3646177859393,
+        "lpenv": 2.013136765477441,
+        "lpattack": 0.25,
+        "lpdecay": 0.1,
+        "lpsustain": 0,
+        "vib": 4,
+        "vibmod": 0.2,
+        "room": 1,
+        "roomsize": 4
+      }
+    },
+    {
+      "begin": 62.75,
+      "end": 63,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.25,
+        "end": 0.5,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 63,
+      "end": 63.25,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.525,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 63.25,
+      "end": 63.5,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.5,
+        "end": 0.75,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    },
+    {
+      "begin": 63.251,
+      "end": 64,
+      "value": {
+        "s": "bd"
+      }
+    },
+    {
+      "begin": 63.5,
+      "end": 64,
+      "value": {
+        "s": "breaks165",
+        "n": 1,
+        "speed": 0.5,
+        "unit": "c",
+        "begin": 0.75,
+        "end": 1,
+        "release": 0.01,
+        "gain": 1.5,
+        "cut": 1
+      }
+    }
+  ]
+}

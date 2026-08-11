@@ -1,0 +1,61 @@
+{
+  "id": "strudel-amencutup",
+  "name": "Amen Cutup",
+  "samples": [
+    {
+      "voice": "slice0",
+      "note": 36,
+      "file": "strudel-amencutup/slice0.wav"
+    },
+    {
+      "voice": "slice1",
+      "note": 37,
+      "file": "strudel-amencutup/slice1.wav"
+    },
+    {
+      "voice": "slice2",
+      "note": 38,
+      "file": "strudel-amencutup/slice2.wav"
+    },
+    {
+      "voice": "slice3",
+      "note": 39,
+      "file": "strudel-amencutup/slice3.wav"
+    },
+    {
+      "voice": "slice4",
+      "note": 40,
+      "file": "strudel-amencutup/slice4.wav"
+    },
+    {
+      "voice": "slice5",
+      "note": 41,
+      "file": "strudel-amencutup/slice5.wav"
+    },
+    {
+      "voice": "slice6",
+      "note": 42,
+      "file": "strudel-amencutup/slice6.wav"
+    },
+    {
+      "voice": "slice7",
+      "note": 43,
+      "file": "strudel-amencutup/slice7.wav"
+    },
+    {
+      "voice": "breath",
+      "note": 60,
+      "file": "strudel-amencutup/breath.wav"
+    },
+    {
+      "voice": "east0",
+      "note": 62,
+      "file": "strudel-amencutup/east0.wav"
+    },
+    {
+      "voice": "east1",
+      "note": 63,
+      "file": "strudel-amencutup/east1.wav"
+    }
+  ]
+}

@@ -8,19 +8,14 @@
       "file": "sakatadpm48/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "sakatadpm48/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "sakatadpm48/snare.wav"
-    },
-    {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "sakatadpm48/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "sakatadpm48/openHat.wav"
     },
     {
       "voice": "clap",
@@ -28,19 +23,44 @@
       "file": "sakatadpm48/clap.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "sakatadpm48/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "sakatadpm48/closedHat.wav"
+    },
+    {
       "voice": "tom",
       "note": 45,
       "file": "sakatadpm48/tom.wav"
     },
     {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "sakatadpm48/cowbell.wav"
+      "voice": "openHat",
+      "note": 46,
+      "file": "sakatadpm48/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "sakatadpm48/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "sakatadpm48/crash.wav"
     },
     {
       "voice": "ride",
       "note": 51,
       "file": "sakatadpm48/ride.wav"
+    },
+    {
+      "voice": "shaker",
+      "note": 82,
+      "file": "sakatadpm48/shaker.wav"
     }
   ]
 }

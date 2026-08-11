@@ -1,0 +1,36 @@
+{
+  "id": "strudel-vcsl-perc",
+  "name": "VCSL Percussion",
+  "samples": [
+    {
+      "voice": "woodblock1",
+      "note": 76,
+      "file": "strudel-vcsl-perc/woodblock1.wav"
+    },
+    {
+      "voice": "woodblock2",
+      "note": 77,
+      "file": "strudel-vcsl-perc/woodblock2.wav"
+    },
+    {
+      "voice": "snare_rim",
+      "note": 37,
+      "file": "strudel-vcsl-perc/snare_rim.wav"
+    },
+    {
+      "voice": "gong",
+      "note": 52,
+      "file": "strudel-vcsl-perc/gong.wav"
+    },
+    {
+      "voice": "brakedrum1",
+      "note": 53,
+      "file": "strudel-vcsl-perc/brakedrum1.wav"
+    },
+    {
+      "voice": "cowbell3",
+      "note": 56,
+      "file": "strudel-vcsl-perc/cowbell3.wav"
+    }
+  ]
+}

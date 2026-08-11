@@ -1,0 +1,3182 @@
+{
+  "source": "strudel — \"Bass fuge\"",
+  "cycles": 16,
+  "cps": 1,
+  "events": [
+    {
+      "begin": 0,
+      "end": 0.125,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2100,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.25,
+      "value": {
+        "note": 57,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2100,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "note": 60,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2522.789774516997,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2522.789774516997,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 0.375,
+      "end": 0.5,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2727.5302177148174,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.75,
+      "value": {
+        "gain": 0.3,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2924.3791043233605,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.75,
+      "value": {
+        "gain": 0.3,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2924.3791043233605,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 1,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 1,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 0.875,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3284.6306235315933,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "note": 57,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3284.6306235315933,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "gain": 0.15,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3284.6306235315933,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "gain": 0.15,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3284.6306235315933,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 1,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 1,
+      "end": 2,
+      "value": {
+        "note": 43,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3585.479816689257,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 60,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3585.479816689257,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3585.479816689257,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "gain": 0.075,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3585.479816689257,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.25,
+      "value": {
+        "gain": 0.075,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3585.479816689257,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "gain": 0.3,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3811.840849014596,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "gain": 0.3,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3811.840849014596,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "gain": 0.0375,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3811.840849014596,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "gain": 0.0375,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3811.840849014596,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.75,
+      "value": {
+        "note": 57,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3952.3630331454647,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.75,
+      "value": {
+        "gain": 0.15,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3952.3630331454647,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.75,
+      "value": {
+        "gain": 0.15,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3952.3630331454647,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 2,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 2,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2,
+      "value": {
+        "note": 60,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 4000,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2,
+      "value": {
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 4000,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2,
+      "value": {
+        "gain": 0.075,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 4000,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2,
+      "value": {
+        "gain": 0.075,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 4000,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 2,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "note": 38,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3952.3630331454647,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2,
+      "end": 4,
+      "value": {
+        "note": 55,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3952.3630331454647,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "gain": 0.3,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3952.3630331454647,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "gain": 0.3,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3952.3630331454647,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3952.3630331454647,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3952.3630331454647,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 3,
+      "value": {
+        "note": 40,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3811.840849014596,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 4.25,
+      "value": {
+        "note": 59,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3811.840849014596,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 4.25,
+      "value": {
+        "note": 62,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3811.840849014596,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "gain": 0.15,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3811.840849014596,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "gain": 0.15,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3811.840849014596,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 4.5,
+      "value": {
+        "gain": 0.3,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3585.479816689257,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 4.5,
+      "value": {
+        "gain": 0.3,
+        "note": 71,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3585.479816689257,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.75,
+      "value": {
+        "gain": 0.075,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3585.479816689257,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.75,
+      "value": {
+        "gain": 0.075,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3585.479816689257,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 3,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 4.75,
+      "value": {
+        "gain": 0.15,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3284.6306235315938,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 4.75,
+      "value": {
+        "gain": 0.15,
+        "note": 71,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3284.6306235315938,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "gain": 0.0375,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3284.6306235315938,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "gain": 0.0375,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3284.6306235315938,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 3,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 3,
+      "end": 4,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2924.379104323361,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 3,
+      "end": 5,
+      "value": {
+        "gain": 0.075,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2924.379104323361,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 3,
+      "end": 5,
+      "value": {
+        "gain": 0.075,
+        "note": 71,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2924.379104323361,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 5.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2522.7897745169976,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 5.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 71,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2522.7897745169976,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.125,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 1275.6208956766397,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.5,
+      "value": {
+        "note": 50,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 1275.6208956766397,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.75,
+      "value": {
+        "note": 53,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 915.3693764684073,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.75,
+      "value": {
+        "note": 57,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 915.3693764684073,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 4.375,
+      "end": 4.5,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 756.4971157455598,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 6,
+      "value": {
+        "note": 52,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 614.5201833107435,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 5,
+      "value": {
+        "gain": 0.3,
+        "note": 62,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 614.5201833107435,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 5,
+      "value": {
+        "gain": 0.3,
+        "note": 65,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 614.5201833107435,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 5,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 4.875,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 388.1591509854038,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 6.25,
+      "value": {
+        "note": 55,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 388.1591509854038,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 6.25,
+      "value": {
+        "note": 59,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 388.1591509854038,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 5.25,
+      "value": {
+        "gain": 0.15,
+        "note": 62,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 388.1591509854038,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 5.25,
+      "value": {
+        "gain": 0.15,
+        "note": 65,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 388.1591509854038,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.5,
+      "value": {
+        "note": 43,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 247.63696685453513,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5,
+      "end": 6.5,
+      "value": {
+        "gain": 0.3,
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 247.63696685453513,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5,
+      "end": 6.5,
+      "value": {
+        "gain": 0.3,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 247.63696685453513,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.5,
+      "value": {
+        "gain": 0.075,
+        "note": 62,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 247.63696685453513,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.5,
+      "value": {
+        "gain": 0.075,
+        "note": 65,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 247.63696685453513,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 6.75,
+      "value": {
+        "gain": 0.15,
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 200,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 6.75,
+      "value": {
+        "gain": 0.15,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 200,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.75,
+      "value": {
+        "gain": 0.0375,
+        "note": 62,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 200,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.75,
+      "value": {
+        "gain": 0.0375,
+        "note": 65,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 200,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 6,
+      "value": {
+        "note": 43,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 247.63696685453513,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 7,
+      "value": {
+        "gain": 0.075,
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 247.63696685453513,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 7,
+      "value": {
+        "gain": 0.075,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 247.63696685453513,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 6,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 6,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 7.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 388.1591509854034,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 7.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 388.1591509854034,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 6,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.25,
+      "value": {
+        "note": 38,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 614.5201833107432,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 6,
+      "end": 8,
+      "value": {
+        "note": 57,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 614.5201833107432,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 7,
+      "value": {
+        "note": 40,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 915.3693764684059,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 8.25,
+      "value": {
+        "note": 60,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 915.3693764684059,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 8.25,
+      "value": {
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 915.3693764684059,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 8.5,
+      "value": {
+        "gain": 0.3,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1275.6208956766393,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 8.5,
+      "value": {
+        "gain": 0.3,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1275.6208956766393,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 7,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 7,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 8.75,
+      "value": {
+        "gain": 0.15,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1677.2102254830022,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 8.75,
+      "value": {
+        "gain": 0.15,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1677.2102254830022,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 7,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 7,
+      "end": 8,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2099.9999999999995,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 7,
+      "end": 9,
+      "value": {
+        "gain": 0.075,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2099.9999999999995,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 7,
+      "end": 9,
+      "value": {
+        "gain": 0.075,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2099.9999999999995,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 9.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2522.7897745169985,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 9.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2522.7897745169985,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 7.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 8,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.125,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3585.4798166892565,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.25,
+      "value": {
+        "note": 57,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3585.4798166892565,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.5,
+      "value": {
+        "note": 60,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3811.840849014596,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.5,
+      "value": {
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3811.840849014596,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 8.375,
+      "end": 8.5,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3893.3783275858978,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.75,
+      "value": {
+        "gain": 0.3,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3952.363033145464,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.75,
+      "value": {
+        "gain": 0.3,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3952.363033145464,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 9,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 9,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 8.875,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 4000,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9,
+      "value": {
+        "note": 57,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 4000,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9,
+      "value": {
+        "gain": 0.15,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 4000,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9,
+      "value": {
+        "gain": 0.15,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 4000,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 9,
+      "end": 10,
+      "value": {
+        "note": 43,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3952.363033145465,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "note": 60,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3952.363033145465,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3952.363033145465,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "gain": 0.075,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3952.363033145465,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.25,
+      "value": {
+        "gain": 0.075,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3952.363033145465,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.5,
+      "value": {
+        "gain": 0.3,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3811.8408490145966,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.5,
+      "value": {
+        "gain": 0.3,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3811.8408490145966,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.5,
+      "value": {
+        "gain": 0.0375,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3811.8408490145966,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.5,
+      "value": {
+        "gain": 0.0375,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3811.8408490145966,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.75,
+      "value": {
+        "note": 57,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3585.479816689257,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.75,
+      "value": {
+        "gain": 0.15,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3585.479816689257,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.75,
+      "value": {
+        "gain": 0.15,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3585.479816689257,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 10,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 10,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "note": 60,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3284.630623531594,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3284.630623531594,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "gain": 0.075,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3284.630623531594,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "gain": 0.075,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3284.630623531594,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.25,
+      "value": {
+        "note": 38,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2924.3791043233614,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10,
+      "end": 11,
+      "value": {
+        "note": 55,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2924.3791043233614,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.25,
+      "value": {
+        "gain": 0.3,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2924.3791043233614,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.25,
+      "value": {
+        "gain": 0.3,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2924.3791043233614,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2924.3791043233614,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2924.3791043233614,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 11,
+      "value": {
+        "note": 40,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2522.789774516998,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 11.25,
+      "value": {
+        "note": 59,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2522.789774516998,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 11.25,
+      "value": {
+        "note": 62,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2522.789774516998,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "gain": 0.15,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2522.789774516998,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "gain": 0.15,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2522.789774516998,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11.5,
+      "value": {
+        "gain": 0.3,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2100.000000000001,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11.5,
+      "value": {
+        "gain": 0.3,
+        "note": 71,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2100.000000000001,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.75,
+      "value": {
+        "gain": 0.075,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2100.000000000001,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.75,
+      "value": {
+        "gain": 0.075,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2100.000000000001,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 11.75,
+      "value": {
+        "gain": 0.15,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1677.2102254830033,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 11.75,
+      "value": {
+        "gain": 0.15,
+        "note": 71,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1677.2102254830033,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 11,
+      "value": {
+        "gain": 0.0375,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1677.2102254830033,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 11,
+      "value": {
+        "gain": 0.0375,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1677.2102254830033,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 11,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 11,
+      "end": 12,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 1275.6208956766402,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 11,
+      "end": 12,
+      "value": {
+        "note": 55,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 1275.6208956766402,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 11,
+      "end": 12,
+      "value": {
+        "gain": 0.075,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1275.6208956766402,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 11,
+      "end": 12,
+      "value": {
+        "gain": 0.075,
+        "note": 71,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1275.6208956766402,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 12.25,
+      "value": {
+        "note": 59,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 915.3693764684068,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 12.25,
+      "value": {
+        "note": 62,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 915.3693764684068,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 12.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 915.3693764684068,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 12.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 71,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 915.3693764684068,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12.5,
+      "value": {
+        "gain": 0.3,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 614.5201833107437,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12.5,
+      "value": {
+        "gain": 0.3,
+        "note": 71,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 614.5201833107437,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12.75,
+      "value": {
+        "gain": 0.15,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 388.15915098540404,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12.75,
+      "value": {
+        "gain": 0.15,
+        "note": 71,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 388.15915098540404,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.125,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 247.63696685453533,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.5,
+      "value": {
+        "note": 50,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 247.63696685453533,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12,
+      "end": 13,
+      "value": {
+        "gain": 0.075,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 247.63696685453533,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12,
+      "end": 13,
+      "value": {
+        "gain": 0.075,
+        "note": 71,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 247.63696685453533,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.75,
+      "value": {
+        "note": 53,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 200,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.75,
+      "value": {
+        "note": 57,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 200,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 13.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 200,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 13.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 71,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 200,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 12.375,
+      "end": 12.5,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 211.94680120283886,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 14,
+      "value": {
+        "note": 52,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 247.6369668545349,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13,
+      "value": {
+        "gain": 0.3,
+        "note": 62,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 247.6369668545349,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13,
+      "value": {
+        "gain": 0.3,
+        "note": 65,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 247.6369668545349,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 12.875,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 388.1591509854032,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 14.25,
+      "value": {
+        "note": 55,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 388.1591509854032,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 14.25,
+      "value": {
+        "note": 59,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 388.1591509854032,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 13.25,
+      "value": {
+        "gain": 0.15,
+        "note": 62,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 388.1591509854032,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 13.25,
+      "value": {
+        "gain": 0.15,
+        "note": 65,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 388.1591509854032,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 13,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.5,
+      "value": {
+        "note": 43,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 614.5201833107428,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13,
+      "end": 14.5,
+      "value": {
+        "gain": 0.3,
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 614.5201833107428,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13,
+      "end": 14.5,
+      "value": {
+        "gain": 0.3,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 614.5201833107428,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.5,
+      "value": {
+        "gain": 0.075,
+        "note": 62,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 614.5201833107428,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.5,
+      "value": {
+        "gain": 0.075,
+        "note": 65,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 614.5201833107428,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 14.75,
+      "value": {
+        "gain": 0.15,
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 915.3693764684056,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 14.75,
+      "value": {
+        "gain": 0.15,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 915.3693764684056,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.75,
+      "value": {
+        "gain": 0.0375,
+        "note": 62,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 915.3693764684056,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.75,
+      "value": {
+        "gain": 0.0375,
+        "note": 65,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 915.3693764684056,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14,
+      "value": {
+        "note": 43,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 1275.6208956766388,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 15,
+      "value": {
+        "gain": 0.075,
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1275.6208956766388,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 15,
+      "value": {
+        "gain": 0.075,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1275.6208956766388,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 15.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1677.2102254830018,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 15.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 67,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 1677.2102254830018,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.25,
+      "value": {
+        "note": 38,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2099.999999999999,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 14,
+      "end": 16,
+      "value": {
+        "note": 57,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2099.999999999999,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 15,
+      "value": {
+        "note": 40,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2522.789774516996,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 16.25,
+      "value": {
+        "note": 60,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2522.789774516996,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 16.25,
+      "value": {
+        "note": 64,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 2522.789774516996,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 16.5,
+      "value": {
+        "gain": 0.3,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2924.3791043233628,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 16.5,
+      "value": {
+        "gain": 0.3,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 2924.3791043233628,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 15,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 15,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 16.75,
+      "value": {
+        "gain": 0.15,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3284.630623531593,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 16.75,
+      "value": {
+        "gain": 0.15,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3284.630623531593,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 15,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 15,
+      "end": 16,
+      "value": {
+        "note": 45,
+        "s": "flbass",
+        "n": 0,
+        "gain": 0.3,
+        "cutoff": 3585.479816689256,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 15,
+      "end": 17,
+      "value": {
+        "gain": 0.075,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3585.479816689256,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 15,
+      "end": 17,
+      "value": {
+        "gain": 0.075,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3585.479816689256,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.5,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 17.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 69,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3811.8408490145944,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 17.25,
+      "value": {
+        "gain": 0.0375,
+        "note": 72,
+        "s": "flbass",
+        "n": 0,
+        "cutoff": 3811.8408490145944,
+        "resonance": 10,
+        "clip": 1
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.5,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 16,
+      "value": {
+        "s": "bd",
+        "n": 1
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 16,
+      "value": {
+        "s": "sd",
+        "n": 0
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 16,
+      "value": {
+        "s": "hh",
+        "n": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,852 @@
+{
+  "bpm": 120,
+  "name": "Barry Harris",
+  "lanes": [
+    {
+      "id": "piano-1",
+      "engineId": "sampler",
+      "name": "Piano",
+      "inserts": [],
+      "clips": [
+        {
+          "id": "piano-1",
+          "name": "Piano",
+          "color": "#f4e0c8",
+          "gridResolution": "1/16",
+          "lengthBars": 64,
+          "notes": [
+            {
+              "start": 0,
+              "duration": 768,
+              "midi": 48,
+              "velocity": 99
+            },
+            {
+              "start": 0,
+              "duration": 768,
+              "midi": 52,
+              "velocity": 99
+            },
+            {
+              "start": 0,
+              "duration": 384,
+              "midi": 59,
+              "velocity": 99
+            },
+            {
+              "start": 384,
+              "duration": 384,
+              "midi": 59,
+              "velocity": 99
+            },
+            {
+              "start": 768,
+              "duration": 768,
+              "midi": 50,
+              "velocity": 99
+            },
+            {
+              "start": 768,
+              "duration": 768,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 768,
+              "duration": 384,
+              "midi": 60,
+              "velocity": 99
+            },
+            {
+              "start": 1152,
+              "duration": 384,
+              "midi": 60,
+              "velocity": 99
+            },
+            {
+              "start": 1536,
+              "duration": 768,
+              "midi": 52,
+              "velocity": 99
+            },
+            {
+              "start": 1536,
+              "duration": 768,
+              "midi": 55,
+              "velocity": 99
+            },
+            {
+              "start": 1536,
+              "duration": 384,
+              "midi": 62,
+              "velocity": 99
+            },
+            {
+              "start": 1920,
+              "duration": 384,
+              "midi": 62,
+              "velocity": 99
+            },
+            {
+              "start": 2304,
+              "duration": 768,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 2304,
+              "duration": 768,
+              "midi": 57,
+              "velocity": 99
+            },
+            {
+              "start": 2304,
+              "duration": 384,
+              "midi": 64,
+              "velocity": 99
+            },
+            {
+              "start": 2688,
+              "duration": 384,
+              "midi": 64,
+              "velocity": 99
+            },
+            {
+              "start": 3072,
+              "duration": 768,
+              "midi": 55,
+              "velocity": 99
+            },
+            {
+              "start": 3072,
+              "duration": 768,
+              "midi": 58,
+              "velocity": 99
+            },
+            {
+              "start": 3072,
+              "duration": 384,
+              "midi": 65,
+              "velocity": 99
+            },
+            {
+              "start": 3456,
+              "duration": 384,
+              "midi": 65,
+              "velocity": 99
+            },
+            {
+              "start": 3840,
+              "duration": 768,
+              "midi": 57,
+              "velocity": 99
+            },
+            {
+              "start": 3840,
+              "duration": 768,
+              "midi": 59,
+              "velocity": 99
+            },
+            {
+              "start": 3840,
+              "duration": 384,
+              "midi": 67,
+              "velocity": 99
+            },
+            {
+              "start": 4224,
+              "duration": 384,
+              "midi": 67,
+              "velocity": 99
+            },
+            {
+              "start": 4608,
+              "duration": 768,
+              "midi": 59,
+              "velocity": 99
+            },
+            {
+              "start": 4608,
+              "duration": 768,
+              "midi": 62,
+              "velocity": 99
+            },
+            {
+              "start": 4608,
+              "duration": 384,
+              "midi": 70,
+              "velocity": 99
+            },
+            {
+              "start": 4992,
+              "duration": 384,
+              "midi": 71,
+              "velocity": 99
+            },
+            {
+              "start": 5376,
+              "duration": 768,
+              "midi": 60,
+              "velocity": 99
+            },
+            {
+              "start": 5376,
+              "duration": 768,
+              "midi": 64,
+              "velocity": 99
+            },
+            {
+              "start": 5376,
+              "duration": 384,
+              "midi": 71,
+              "velocity": 99
+            },
+            {
+              "start": 5760,
+              "duration": 384,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 6144,
+              "duration": 768,
+              "midi": 49,
+              "velocity": 99
+            },
+            {
+              "start": 6144,
+              "duration": 768,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 6144,
+              "duration": 384,
+              "midi": 60,
+              "velocity": 99
+            },
+            {
+              "start": 6528,
+              "duration": 384,
+              "midi": 60,
+              "velocity": 99
+            },
+            {
+              "start": 6912,
+              "duration": 768,
+              "midi": 51,
+              "velocity": 99
+            },
+            {
+              "start": 6912,
+              "duration": 768,
+              "midi": 54,
+              "velocity": 99
+            },
+            {
+              "start": 6912,
+              "duration": 384,
+              "midi": 61,
+              "velocity": 99
+            },
+            {
+              "start": 7296,
+              "duration": 384,
+              "midi": 61,
+              "velocity": 99
+            },
+            {
+              "start": 7680,
+              "duration": 768,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 7680,
+              "duration": 768,
+              "midi": 56,
+              "velocity": 99
+            },
+            {
+              "start": 7680,
+              "duration": 384,
+              "midi": 63,
+              "velocity": 99
+            },
+            {
+              "start": 8064,
+              "duration": 384,
+              "midi": 63,
+              "velocity": 99
+            },
+            {
+              "start": 8448,
+              "duration": 768,
+              "midi": 54,
+              "velocity": 99
+            },
+            {
+              "start": 8448,
+              "duration": 768,
+              "midi": 58,
+              "velocity": 99
+            },
+            {
+              "start": 8448,
+              "duration": 384,
+              "midi": 65,
+              "velocity": 99
+            },
+            {
+              "start": 8832,
+              "duration": 384,
+              "midi": 65,
+              "velocity": 99
+            },
+            {
+              "start": 9216,
+              "duration": 768,
+              "midi": 56,
+              "velocity": 99
+            },
+            {
+              "start": 9216,
+              "duration": 768,
+              "midi": 59,
+              "velocity": 99
+            },
+            {
+              "start": 9216,
+              "duration": 384,
+              "midi": 66,
+              "velocity": 99
+            },
+            {
+              "start": 9600,
+              "duration": 384,
+              "midi": 66,
+              "velocity": 99
+            },
+            {
+              "start": 9984,
+              "duration": 768,
+              "midi": 58,
+              "velocity": 99
+            },
+            {
+              "start": 9984,
+              "duration": 768,
+              "midi": 60,
+              "velocity": 99
+            },
+            {
+              "start": 9984,
+              "duration": 384,
+              "midi": 68,
+              "velocity": 99
+            },
+            {
+              "start": 10368,
+              "duration": 384,
+              "midi": 68,
+              "velocity": 99
+            },
+            {
+              "start": 10752,
+              "duration": 768,
+              "midi": 60,
+              "velocity": 99
+            },
+            {
+              "start": 10752,
+              "duration": 768,
+              "midi": 63,
+              "velocity": 99
+            },
+            {
+              "start": 10752,
+              "duration": 384,
+              "midi": 71,
+              "velocity": 99
+            },
+            {
+              "start": 11136,
+              "duration": 384,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 11520,
+              "duration": 768,
+              "midi": 61,
+              "velocity": 99
+            },
+            {
+              "start": 11520,
+              "duration": 768,
+              "midi": 65,
+              "velocity": 99
+            },
+            {
+              "start": 11520,
+              "duration": 384,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 11904,
+              "duration": 384,
+              "midi": 73,
+              "velocity": 99
+            },
+            {
+              "start": 12288,
+              "duration": 768,
+              "midi": 50,
+              "velocity": 99
+            },
+            {
+              "start": 12288,
+              "duration": 768,
+              "midi": 54,
+              "velocity": 99
+            },
+            {
+              "start": 12288,
+              "duration": 384,
+              "midi": 61,
+              "velocity": 99
+            },
+            {
+              "start": 12672,
+              "duration": 384,
+              "midi": 61,
+              "velocity": 99
+            },
+            {
+              "start": 13056,
+              "duration": 768,
+              "midi": 52,
+              "velocity": 99
+            },
+            {
+              "start": 13056,
+              "duration": 768,
+              "midi": 55,
+              "velocity": 99
+            },
+            {
+              "start": 13056,
+              "duration": 384,
+              "midi": 62,
+              "velocity": 99
+            },
+            {
+              "start": 13440,
+              "duration": 384,
+              "midi": 62,
+              "velocity": 99
+            },
+            {
+              "start": 13824,
+              "duration": 768,
+              "midi": 54,
+              "velocity": 99
+            },
+            {
+              "start": 13824,
+              "duration": 768,
+              "midi": 57,
+              "velocity": 99
+            },
+            {
+              "start": 13824,
+              "duration": 384,
+              "midi": 64,
+              "velocity": 99
+            },
+            {
+              "start": 14208,
+              "duration": 384,
+              "midi": 64,
+              "velocity": 99
+            },
+            {
+              "start": 14592,
+              "duration": 768,
+              "midi": 55,
+              "velocity": 99
+            },
+            {
+              "start": 14592,
+              "duration": 768,
+              "midi": 59,
+              "velocity": 99
+            },
+            {
+              "start": 14592,
+              "duration": 384,
+              "midi": 66,
+              "velocity": 99
+            },
+            {
+              "start": 14976,
+              "duration": 384,
+              "midi": 66,
+              "velocity": 99
+            },
+            {
+              "start": 15360,
+              "duration": 768,
+              "midi": 57,
+              "velocity": 99
+            },
+            {
+              "start": 15360,
+              "duration": 768,
+              "midi": 60,
+              "velocity": 99
+            },
+            {
+              "start": 15360,
+              "duration": 384,
+              "midi": 67,
+              "velocity": 99
+            },
+            {
+              "start": 15744,
+              "duration": 384,
+              "midi": 67,
+              "velocity": 99
+            },
+            {
+              "start": 16128,
+              "duration": 768,
+              "midi": 59,
+              "velocity": 99
+            },
+            {
+              "start": 16128,
+              "duration": 768,
+              "midi": 61,
+              "velocity": 99
+            },
+            {
+              "start": 16128,
+              "duration": 384,
+              "midi": 69,
+              "velocity": 99
+            },
+            {
+              "start": 16512,
+              "duration": 384,
+              "midi": 69,
+              "velocity": 99
+            },
+            {
+              "start": 16896,
+              "duration": 768,
+              "midi": 61,
+              "velocity": 99
+            },
+            {
+              "start": 16896,
+              "duration": 768,
+              "midi": 64,
+              "velocity": 99
+            },
+            {
+              "start": 16896,
+              "duration": 384,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 17280,
+              "duration": 384,
+              "midi": 73,
+              "velocity": 99
+            },
+            {
+              "start": 17664,
+              "duration": 768,
+              "midi": 62,
+              "velocity": 99
+            },
+            {
+              "start": 17664,
+              "duration": 768,
+              "midi": 66,
+              "velocity": 99
+            },
+            {
+              "start": 17664,
+              "duration": 384,
+              "midi": 73,
+              "velocity": 99
+            },
+            {
+              "start": 18048,
+              "duration": 384,
+              "midi": 74,
+              "velocity": 99
+            },
+            {
+              "start": 18432,
+              "duration": 768,
+              "midi": 49,
+              "velocity": 99
+            },
+            {
+              "start": 18432,
+              "duration": 768,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 18432,
+              "duration": 384,
+              "midi": 60,
+              "velocity": 99
+            },
+            {
+              "start": 18816,
+              "duration": 384,
+              "midi": 60,
+              "velocity": 99
+            },
+            {
+              "start": 19200,
+              "duration": 768,
+              "midi": 51,
+              "velocity": 99
+            },
+            {
+              "start": 19200,
+              "duration": 768,
+              "midi": 54,
+              "velocity": 99
+            },
+            {
+              "start": 19200,
+              "duration": 384,
+              "midi": 61,
+              "velocity": 99
+            },
+            {
+              "start": 19584,
+              "duration": 384,
+              "midi": 61,
+              "velocity": 99
+            },
+            {
+              "start": 19968,
+              "duration": 768,
+              "midi": 53,
+              "velocity": 99
+            },
+            {
+              "start": 19968,
+              "duration": 768,
+              "midi": 56,
+              "velocity": 99
+            },
+            {
+              "start": 19968,
+              "duration": 384,
+              "midi": 63,
+              "velocity": 99
+            },
+            {
+              "start": 20352,
+              "duration": 384,
+              "midi": 63,
+              "velocity": 99
+            },
+            {
+              "start": 20736,
+              "duration": 768,
+              "midi": 54,
+              "velocity": 99
+            },
+            {
+              "start": 20736,
+              "duration": 768,
+              "midi": 58,
+              "velocity": 99
+            },
+            {
+              "start": 20736,
+              "duration": 384,
+              "midi": 65,
+              "velocity": 99
+            },
+            {
+              "start": 21120,
+              "duration": 384,
+              "midi": 65,
+              "velocity": 99
+            },
+            {
+              "start": 21504,
+              "duration": 768,
+              "midi": 56,
+              "velocity": 99
+            },
+            {
+              "start": 21504,
+              "duration": 768,
+              "midi": 59,
+              "velocity": 99
+            },
+            {
+              "start": 21504,
+              "duration": 384,
+              "midi": 66,
+              "velocity": 99
+            },
+            {
+              "start": 21888,
+              "duration": 384,
+              "midi": 66,
+              "velocity": 99
+            },
+            {
+              "start": 22272,
+              "duration": 768,
+              "midi": 58,
+              "velocity": 99
+            },
+            {
+              "start": 22272,
+              "duration": 768,
+              "midi": 60,
+              "velocity": 99
+            },
+            {
+              "start": 22272,
+              "duration": 384,
+              "midi": 68,
+              "velocity": 99
+            },
+            {
+              "start": 22656,
+              "duration": 384,
+              "midi": 68,
+              "velocity": 99
+            },
+            {
+              "start": 23040,
+              "duration": 768,
+              "midi": 60,
+              "velocity": 99
+            },
+            {
+              "start": 23040,
+              "duration": 768,
+              "midi": 63,
+              "velocity": 99
+            },
+            {
+              "start": 23040,
+              "duration": 384,
+              "midi": 71,
+              "velocity": 99
+            },
+            {
+              "start": 23424,
+              "duration": 384,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 23808,
+              "duration": 768,
+              "midi": 61,
+              "velocity": 99
+            },
+            {
+              "start": 23808,
+              "duration": 768,
+              "midi": 65,
+              "velocity": 99
+            },
+            {
+              "start": 23808,
+              "duration": 384,
+              "midi": 72,
+              "velocity": 99
+            },
+            {
+              "start": 24192,
+              "duration": 384,
+              "midi": 73,
+              "velocity": 99
+            }
+          ]
+        }
+      ],
+      "engineState": {
+        "sampler": {
+          "keymap": [],
+          "instrumentId": "strudel-piano"
+        },
+        "params": {
+          "poly.voices": 16,
+          "bus.reverbSend": 0.22
+        }
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-1",
+      "name": "Barry Harris",
+      "clipPerLane": {
+        "piano-1": 0
+      }
+    }
+  ],
+  "globalQuantize": "1/1",
+  "musicality": {
+    "key": 0,
+    "scale": "minor",
+    "style": "acid-techno",
+    "lock": false
+  },
+  "sends": [
+    {
+      "id": "A",
+      "label": "Send A (Delay)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "barry-harris-send-a",
+          "pluginId": "delay",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "label": "Send B (Reverb)",
+      "returnLevel": 1,
+      "muted": false,
+      "inserts": [
+        {
+          "id": "barry-harris-send-b",
+          "pluginId": "reverb",
+          "params": {},
+          "bypass": false
+        }
+      ]
+    }
+  ],
+  "masterInserts": [],
+  "timeSignature": {
+    "num": 4,
+    "den": 4
+  }
+}

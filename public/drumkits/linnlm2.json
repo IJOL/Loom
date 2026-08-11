@@ -8,19 +8,14 @@
       "file": "linnlm2/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "linnlm2/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "linnlm2/snare.wav"
-    },
-    {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "linnlm2/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "linnlm2/openHat.wav"
     },
     {
       "voice": "clap",
@@ -28,9 +23,44 @@
       "file": "linnlm2/clap.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "linnlm2/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "linnlm2/closedHat.wav"
+    },
+    {
       "voice": "tom",
       "note": 45,
       "file": "linnlm2/tom.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "linnlm2/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "linnlm2/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "linnlm2/crash.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "linnlm2/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "linnlm2/tamb.wav"
     },
     {
       "voice": "cowbell",
@@ -38,9 +68,9 @@
       "file": "linnlm2/cowbell.wav"
     },
     {
-      "voice": "ride",
-      "note": 51,
-      "file": "linnlm2/ride.wav"
+      "voice": "shaker",
+      "note": 82,
+      "file": "linnlm2/shaker.wav"
     }
   ]
 }

@@ -34,12 +34,41 @@ const selectEl = (): HTMLSelectElement | null =>
 // list) bails if the user has since switched lanes.
 let popGen = 0;
 
+/** What a SAMPLER lane is playing, in the dropdown's vocabulary.
+ *
+ *  `pagePresetName` only remembers what someone PICKED, so a lane that arrived
+ *  from a session or demo came up "(custom — no preset)" while holding a
+ *  perfectly nameable instrument. The lane itself already says which one — that
+ *  is the single source of truth, and copying it into a second `enginePresetName`
+ *  string would only give the load path a redundant async instrument fetch to
+ *  race with. So the selection is DERIVED from the lane when nobody has picked
+ *  anything.
+ *
+ *  The three sampler sub-ids are mutually exclusive (see session-types); this
+ *  reads them in the load path's own precedence. An `instrumentId` may be either
+ *  family, so `family` disambiguates once the index has loaded — before that it
+ *  guesses melodic, which the async fill corrects. */
+function samplerSelectionFor(laneId: string, family?: (id: string) => string | undefined): string | undefined {
+  const picked = pagePresetName.get(laneId);
+  if (picked) return picked;
+  const s = presetControlsDeps()?.getSessionState()?.lanes
+    .find((l) => l.id === laneId)?.engineState?.sampler;
+  if (!s) return undefined;
+  if (s.drumkitId) return `sampler:drumkit:${s.drumkitId}`;
+  if (s.instrumentId) return `sampler:${family?.(s.instrumentId) ?? 'melodic'}:${s.instrumentId}`;
+  if (s.presetName) return `sampler:preset:${s.presetName}`;
+  return undefined;
+}
+
 /** Point the dropdown at whatever the active lane has selected. */
 export function refreshInstrumentPresetSelect(): void {
   const sel = selectEl();
   if (!sel) return;
-  const laneId = presetControlsDeps()?.getActiveEngineLaneId();
-  sel.value = (laneId && pagePresetName.get(laneId)) || '__custom__';
+  const deps = presetControlsDeps();
+  const laneId = deps?.getActiveEngineLaneId();
+  if (!laneId) { sel.value = '__custom__'; return; }
+  const fromLane = deps?.getLaneEngineId(laneId) === 'sampler' ? samplerSelectionFor(laneId) : undefined;
+  sel.value = fromLane ?? pagePresetName.get(laneId) ?? '__custom__';
 }
 
 /** Populate the dropdown for an explicit lane.
@@ -61,9 +90,16 @@ export function populateInstrumentPresetSelectForLane(laneId: string): void {
 
   // The sampler's "presets" are bundled instrument refs, not param bags: normal
   // presets (presets/sampler.json — melodic multi-zone instruments) plus the
-  // drumkits and loops. Normal presets are cached at boot so they fill
-  // synchronously; the other two load from their own indexes, and that fill
-  // bails if the user switched lanes while it was in flight.
+  // drumkits, the bundled melodic instruments, and the loops. Normal presets are
+  // cached at boot so they fill synchronously; the rest load from their own
+  // indexes, and that fill bails if the user switched lanes while it was in
+  // flight.
+  //
+  // `Instrument` used to be missing. Every family in instruments/index.json was
+  // offered EXCEPT `melodic`, so a bundled melodic instrument could be loaded by
+  // a session but never picked — and the fourteen this branch adds made that
+  // visible. The engine already understood the ref (`loadFamilyRef('melodic:…')`);
+  // only the dropdown did not offer it.
   if (engineId === 'sampler') {
     const presetItems: [string, string][] =
       getCachedPresets('sampler').map((p) => [`sampler:preset:${p.name}`, p.name]);
@@ -72,15 +108,18 @@ export function populateInstrumentPresetSelectForLane(laneId: string): void {
       if (gen !== popGen) return;
       const s = selectEl();
       if (!s) return;
+      const byFamily = (family: string, kind: string): [string, string][] =>
+        instruments.filter((i) => i.family === family)
+          .map((i) => [`sampler:${kind}:${i.id}`, i.name] as [string, string]);
       renderInto(s, html`${customOption()}${presetGroup('Presets', presetItems)}${presetGroup(
         'Drumkit', kits.map((k) => [`sampler:drumkit:${k.id}`, k.name] as [string, string]),
-      )}${presetGroup(
-        'Loop',
-        instruments.filter((i) => i.family === 'loop').map((i) => [`sampler:loop:${i.id}`, i.name] as [string, string]),
+      )}${presetGroup('Instrument', byFamily('melodic', 'melodic'))}${presetGroup(
+        'Loop', byFamily('loop', 'loop'),
       )}`);
-      s.value = pagePresetName.get(laneId) ?? '__custom__';
+      const familyOf = (id: string) => instruments.find((i) => i.id === id)?.family;
+      s.value = samplerSelectionFor(laneId, familyOf) ?? '__custom__';
     });
-    sel.value = pagePresetName.get(laneId) ?? '__custom__';
+    sel.value = samplerSelectionFor(laneId) ?? '__custom__';
     return;
   }
 

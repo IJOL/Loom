@@ -1,0 +1,31 @@
+{
+  "id": "gm-acoustic-bass",
+  "name": "GM Acoustic Bass",
+  "family": "melodic",
+  "zones": [
+    {
+      "file": "gm-acoustic-bass/34.wav",
+      "rootNote": 34,
+      "loNote": 34,
+      "hiNote": 34
+    },
+    {
+      "file": "gm-acoustic-bass/37.wav",
+      "rootNote": 37,
+      "loNote": 37,
+      "hiNote": 37
+    },
+    {
+      "file": "gm-acoustic-bass/41.wav",
+      "rootNote": 41,
+      "loNote": 41,
+      "hiNote": 41
+    },
+    {
+      "file": "gm-acoustic-bass/44.wav",
+      "rootNote": 44,
+      "loNote": 44,
+      "hiNote": 44
+    }
+  ]
+}

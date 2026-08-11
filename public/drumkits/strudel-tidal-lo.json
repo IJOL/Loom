@@ -1,0 +1,26 @@
+{
+  "id": "strudel-tidal-lo",
+  "name": "Tidal (Dirt)",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "strudel-tidal-lo/kick.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "strudel-tidal-lo/snare.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "strudel-tidal-lo/clap.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "strudel-tidal-lo/closedHat.wav"
+    }
+  ]
+}

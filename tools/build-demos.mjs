@@ -16,9 +16,19 @@
 //   next note's start. Envelope length = lengthBars * 16 * 16 ; values 0..1 map
 //   onto the target knob's [min,max] (paramId = `<laneId>.<localParamId>`).
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { buildCoastline, CRATE_VARIANT } from './coastline-map.mjs';
+import { buildBrokenCut } from './broken-cut-map.mjs';
+import { buildTune } from './tune-map.mjs';
+import { TUNE_SPECS } from './tune-specs.mjs';
+
+// The coastline demos are not hand-authored like the three below: their notes
+// come from a committed extraction of Strudel's own pattern engine
+// (tools/strudel-extract.mjs), and coastline-map.mjs turns it into lanes.
+const DATA = join(dirname(fileURLToPath(import.meta.url)), 'data');
+const hapsOf = (name) => JSON.parse(readFileSync(join(DATA, `${name}-haps.json`), 'utf8'));
 
 const TPQ = 96;
 const BAR = TPQ * 4;          // 384
@@ -388,4 +398,9 @@ function neonDrive() {
 writeDemo('acid-rain.json', acidRain());
 writeDemo('cordillera.json', cordillera());
 writeDemo('neon-drive.json', neonDrive());
+writeDemo('coastline.json', buildCoastline(hapsOf('coastline'), CRATE_VARIANT));
+writeDemo('broken-cut.json', buildBrokenCut(hapsOf('broken-cut')));
+for (const [name, spec] of Object.entries(TUNE_SPECS)) {
+  writeDemo(`${name}.json`, buildTune(hapsOf(name), spec));
+}
 console.log('done.');

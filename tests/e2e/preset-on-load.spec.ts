@@ -35,8 +35,15 @@ async function loadDemo(page: Page, label: string, firstLaneId: string): Promise
 interface LaneExp { id: string; engine: string; preset: string }
 
 // Demo lane inventory (parsed from public/demos/*.json). Covers subtractive,
-// tb303, drums-machine, karplus and wavetable. fm + sampler have no demo lane —
-// covered separately by a fixture.
+// tb303, drums-machine, karplus, wavetable and sampler. fm has no demo lane —
+// covered separately by a fixture below.
+//
+// The SAMPLER entries are the ones that regressed. A sampler lane records what
+// it plays in `engineState.sampler`, not in `enginePresetName`, so nothing ever
+// set `pagePresetName` for it and nineteen demo lanes came up "(custom — no
+// preset)" while holding a named instrument. Worse, the dropdown had no group
+// for `family: 'melodic'` at all, so the instrument could not be picked back
+// even by hand.
 const DEMOS: { label: string; boot?: boolean; lanes: LaneExp[] }[] = [
   { label: 'Minimal Techno', boot: true, lanes: [
     { id: 'tb-303-1',      engine: 'tb303',          preset: 'BASS Acid Classic' },
@@ -54,6 +61,23 @@ const DEMOS: { label: string; boot?: boolean; lanes: LaneExp[] }[] = [
     { id: 'pad-1',       engine: 'subtractive',    preset: 'PAD Warm' },
     { id: 'bass-1',      engine: 'subtractive',    preset: 'BASS Punchy' },
     { id: 'drums-1',     engine: 'drums-machine',  preset: 'KIT Electronic' },
+  ] },
+  // One melodic instrument on its own…
+  { label: 'Echo Piano', lanes: [
+    { id: 'piano-1', engine: 'sampler', preset: 'Piano' },
+  ] },
+  // …and a mixed one, so a sampler lane is checked next to a drums-machine lane
+  // that reads its kit from the OTHER dropdown.
+  { label: 'Arpoon', lanes: [
+    { id: 'drums-1', engine: 'drums-machine', preset: 'Roland TR 909' },
+    { id: 'piano-1', engine: 'sampler',       preset: 'Piano' },
+    { id: 'bass-1',  engine: 'subtractive',   preset: 'BASS Warm' },
+  ] },
+  // Two different single-sample instruments on one demo: the selection has to
+  // come from each LANE, not from whatever was picked last.
+  { label: 'Random Bells', lanes: [
+    { id: 'bell-1', engine: 'sampler', preset: 'Bells' },
+    { id: 'bass-1', engine: 'sampler', preset: 'Bells Bass' },
   ] },
 ];
 

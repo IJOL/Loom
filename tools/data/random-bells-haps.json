@@ -1,0 +1,951 @@
+{
+  "source": "strudel — \"Random bells\"",
+  "cycles": 32,
+  "cps": 0.5,
+  "events": [
+    {
+      "begin": 0,
+      "end": 2.25,
+      "value": {
+        "gain": 0.6,
+        "note": 50,
+        "velocity": 0.5,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 0,
+      "end": 1.5,
+      "value": {
+        "note": 41,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 0.375,
+      "end": 2.625,
+      "value": {
+        "gain": 0.6,
+        "note": 77,
+        "velocity": 0.9213038925081491,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 3,
+      "value": {
+        "gain": 0.6,
+        "note": 72,
+        "velocity": 0.8426077850162983,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 2.25,
+      "value": {
+        "note": 41,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 4.5,
+      "value": {
+        "gain": 0.6,
+        "note": 62,
+        "velocity": 0.7006962578743696,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 3,
+      "value": {
+        "note": 41,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 2.625,
+      "end": 4.875,
+      "value": {
+        "gain": 0.6,
+        "note": 60,
+        "velocity": 0.6507943943142891,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 3,
+      "end": 5.25,
+      "value": {
+        "gain": 0.6,
+        "note": 60,
+        "velocity": 0.6302403081208467,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 3,
+      "end": 4.5,
+      "value": {
+        "note": 38,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 6,
+      "value": {
+        "gain": 0.6,
+        "note": 57,
+        "velocity": 0.597913240082562,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 5.25,
+      "value": {
+        "note": 38,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 4.875,
+      "end": 6.375,
+      "value": {
+        "gain": 0.6,
+        "note": 74,
+        "velocity": 0.8758113365620375,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 6.75,
+      "value": {
+        "gain": 0.6,
+        "note": 62,
+        "velocity": 0.6988155404105783,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 6,
+      "value": {
+        "note": 38,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 6,
+      "end": 8.25,
+      "value": {
+        "gain": 0.6,
+        "note": 67,
+        "velocity": 0.7597710825502872,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 6,
+      "end": 7.5,
+      "value": {
+        "note": 38,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 6.375,
+      "end": 8.625,
+      "value": {
+        "gain": 0.6,
+        "note": 67,
+        "velocity": 0.7743164440616965,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 9,
+      "value": {
+        "gain": 0.6,
+        "note": 72,
+        "velocity": 0.8362447572872043,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8.25,
+      "value": {
+        "note": 38,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 10.5,
+      "value": {
+        "gain": 0.6,
+        "note": 57,
+        "velocity": 0.5914018759503961,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 9,
+      "value": {
+        "note": 38,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 8.625,
+      "end": 10.875,
+      "value": {
+        "gain": 0.6,
+        "note": 67,
+        "velocity": 0.754063542932272,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 9,
+      "end": 11.25,
+      "value": {
+        "gain": 0.6,
+        "note": 69,
+        "velocity": 0.8042040374130011,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 9,
+      "end": 10.5,
+      "value": {
+        "note": 45,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 12,
+      "value": {
+        "gain": 0.6,
+        "note": 57,
+        "velocity": 0.6023689480498433,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11.25,
+      "value": {
+        "note": 45,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 10.875,
+      "end": 12.375,
+      "value": {
+        "gain": 0.6,
+        "note": 65,
+        "velocity": 0.7347871446982026,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 12.75,
+      "value": {
+        "gain": 0.6,
+        "note": 69,
+        "velocity": 0.7972785895690322,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 12,
+      "value": {
+        "note": 45,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 12,
+      "end": 14.25,
+      "value": {
+        "gain": 0.6,
+        "note": 79,
+        "velocity": 0.9797635599970818,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 12,
+      "end": 13.5,
+      "value": {
+        "note": 45,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 12.375,
+      "end": 14.625,
+      "value": {
+        "gain": 0.6,
+        "note": 60,
+        "velocity": 0.6662392104044557,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 15,
+      "value": {
+        "gain": 0.6,
+        "note": 77,
+        "velocity": 0.9516951469704509,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14.25,
+      "value": {
+        "note": 45,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 16.5,
+      "value": {
+        "gain": 0.6,
+        "note": 77,
+        "velocity": 0.9182533202692866,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 15,
+      "value": {
+        "note": 45,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 14.625,
+      "end": 16.875,
+      "value": {
+        "gain": 0.6,
+        "note": 55,
+        "velocity": 0.5711571052670479,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 15,
+      "end": 17.25,
+      "value": {
+        "gain": 0.6,
+        "note": 65,
+        "velocity": 0.7293080370873213,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 15,
+      "end": 16.5,
+      "value": {
+        "note": 43,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 18,
+      "value": {
+        "gain": 0.6,
+        "note": 69,
+        "velocity": 0.8166163852438331,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 17.25,
+      "value": {
+        "note": 43,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 16.875,
+      "end": 18.375,
+      "value": {
+        "gain": 0.6,
+        "note": 77,
+        "velocity": 0.9456470254808664,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 17.25,
+      "end": 18.75,
+      "value": {
+        "gain": 0.6,
+        "note": 53,
+        "velocity": 0.5081270858645439,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 17.25,
+      "end": 18,
+      "value": {
+        "note": 43,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 18,
+      "end": 20.25,
+      "value": {
+        "gain": 0.6,
+        "note": 57,
+        "velocity": 0.6086445553228259,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 18,
+      "end": 19.5,
+      "value": {
+        "note": 43,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 18.375,
+      "end": 20.625,
+      "value": {
+        "gain": 0.6,
+        "note": 53,
+        "velocity": 0.5062594395130873,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 21,
+      "value": {
+        "gain": 0.6,
+        "note": 62,
+        "velocity": 0.6716219391673803,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20.25,
+      "value": {
+        "note": 43,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 22.5,
+      "value": {
+        "gain": 0.6,
+        "note": 62,
+        "velocity": 0.7043459005653858,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 21,
+      "value": {
+        "note": 43,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 20.625,
+      "end": 22.875,
+      "value": {
+        "gain": 0.6,
+        "note": 74,
+        "velocity": 0.8878388572484255,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 21,
+      "end": 23.25,
+      "value": {
+        "gain": 0.6,
+        "note": 62,
+        "velocity": 0.7049744073301554,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 21,
+      "end": 22.5,
+      "value": {
+        "note": 41,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 24,
+      "value": {
+        "gain": 0.6,
+        "note": 74,
+        "velocity": 0.9060836611315608,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 23.25,
+      "value": {
+        "note": 41,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 22.875,
+      "end": 24.375,
+      "value": {
+        "gain": 0.6,
+        "note": 55,
+        "velocity": 0.5504462849348783,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 23.25,
+      "end": 24.75,
+      "value": {
+        "gain": 0.6,
+        "note": 72,
+        "velocity": 0.8680832693353295,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 23.25,
+      "end": 24,
+      "value": {
+        "note": 41,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 24,
+      "end": 26.25,
+      "value": {
+        "gain": 0.6,
+        "note": 53,
+        "velocity": 0.5404728800058365,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 24,
+      "end": 25.5,
+      "value": {
+        "note": 41,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 24.375,
+      "end": 26.625,
+      "value": {
+        "gain": 0.6,
+        "note": 62,
+        "velocity": 0.6848618602380157,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 27,
+      "value": {
+        "gain": 0.6,
+        "note": 62,
+        "velocity": 0.6677580904215574,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 26.25,
+      "value": {
+        "note": 41,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 28.5,
+      "value": {
+        "gain": 0.6,
+        "note": 79,
+        "velocity": 0.9635256184265018,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 27,
+      "value": {
+        "note": 41,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 26.625,
+      "end": 28.875,
+      "value": {
+        "gain": 0.6,
+        "note": 55,
+        "velocity": 0.5678075794130564,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 27,
+      "end": 29.25,
+      "value": {
+        "gain": 0.6,
+        "note": 60,
+        "velocity": 0.6547997761517763,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 27,
+      "end": 28.5,
+      "value": {
+        "note": 38,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 30,
+      "value": {
+        "gain": 0.6,
+        "note": 60,
+        "velocity": 0.6634933594614267,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 29.25,
+      "value": {
+        "note": 38,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 28.875,
+      "end": 30.375,
+      "value": {
+        "gain": 0.6,
+        "note": 57,
+        "velocity": 0.5847934372723103,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 29.25,
+      "end": 30.75,
+      "value": {
+        "gain": 0.6,
+        "note": 72,
+        "velocity": 0.8581435224041343,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 29.25,
+      "end": 30,
+      "value": {
+        "note": 38,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 30,
+      "end": 32.25,
+      "value": {
+        "gain": 0.6,
+        "note": 53,
+        "velocity": 0.5415975488722324,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 30,
+      "end": 31.5,
+      "value": {
+        "note": 38,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    },
+    {
+      "begin": 30.375,
+      "end": 32.625,
+      "value": {
+        "gain": 0.6,
+        "note": 77,
+        "velocity": 0.9428857248276472,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 30.75,
+      "end": 33,
+      "value": {
+        "gain": 0.6,
+        "note": 74,
+        "velocity": 0.8929800465703011,
+        "s": "bell",
+        "delay": 0.2,
+        "delaytime": 0.3333333333333333,
+        "delayfeedback": 0.8
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 32.25,
+      "value": {
+        "note": 38,
+        "s": "bass",
+        "clip": 1,
+        "gain": 0.8
+      }
+    }
+  ]
+}

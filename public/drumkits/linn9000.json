@@ -8,9 +8,19 @@
       "file": "linn9000/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "linn9000/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "linn9000/snare.wav"
+    },
+    {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "linn9000/tomLo.wav"
     },
     {
       "voice": "closedHat",
@@ -18,29 +28,39 @@
       "file": "linn9000/closedHat.wav"
     },
     {
-      "voice": "openHat",
-      "note": 46,
-      "file": "linn9000/openHat.wav"
-    },
-    {
-      "voice": "clap",
-      "note": 39,
-      "file": "linn9000/clap.wav"
-    },
-    {
       "voice": "tom",
       "note": 45,
       "file": "linn9000/tom.wav"
     },
     {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "linn9000/cowbell.wav"
+      "voice": "openHat",
+      "note": 46,
+      "file": "linn9000/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "linn9000/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "linn9000/crash.wav"
     },
     {
       "voice": "ride",
       "note": 51,
       "file": "linn9000/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "linn9000/tamb.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "linn9000/cowbell.wav"
     }
   ]
 }

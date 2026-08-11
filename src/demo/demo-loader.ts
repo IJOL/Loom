@@ -9,6 +9,11 @@ export interface DemoSession extends SessionState {
    *  transport range and reflected in the BPM input via bpm-broadcast. Absent ⇒
    *  keep the current transport BPM. */
   bpm?: number;
+  /** Time signature for the demo, on the same footing as `bpm`: the live session
+   *  model carries no meter (only the save path sets `seq.meter`), so a demo
+   *  that is not in 4/4 declares it here and the loader pushes it through the
+   *  transport. Absent ⇒ keep the current meter. */
+  timeSignature?: import('../core/meter').TimeSignature;
 }
 
 /** Fetch a demo from a URL (typically `/demos/*.json` served by Vite from

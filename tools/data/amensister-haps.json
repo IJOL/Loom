@@ -1,0 +1,9065 @@
+{
+  "source": "strudel — \"Amensister\"",
+  "cycles": 32,
+  "cps": 0.5,
+  "events": [
+    {
+      "begin": 0,
+      "end": 0.125,
+      "value": {
+        "n": 0,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.0625,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.9375,
+        "end": 1
+      }
+    },
+    {
+      "begin": 0.0625,
+      "end": 0.125,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.875,
+        "end": 0.9375
+      }
+    },
+    {
+      "begin": 0.125,
+      "end": 0.25,
+      "value": {
+        "n": 0,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 0.125,
+      "end": 0.25,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 300.0522648640107
+      }
+    },
+    {
+      "begin": 0.125,
+      "end": 0.25,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 300.0522648640107
+      }
+    },
+    {
+      "begin": 0.125,
+      "end": 0.1875,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.8125,
+        "end": 0.875
+      }
+    },
+    {
+      "begin": 0.1875,
+      "end": 0.25,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.75,
+        "end": 0.8125
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.5,
+      "value": {
+        "n": 1,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.375,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 300.4082736884894
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.375,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 300.4082736884894
+      }
+    },
+    {
+      "begin": 0.25,
+      "end": 0.3125,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.6875,
+        "end": 0.75
+      }
+    },
+    {
+      "begin": 0.3125,
+      "end": 0.375,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.625,
+        "end": 0.6875
+      }
+    },
+    {
+      "begin": 0.375,
+      "end": 0.5,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 301.345119350921
+      }
+    },
+    {
+      "begin": 0.375,
+      "end": 0.5,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 301.345119350921
+      }
+    },
+    {
+      "begin": 0.375,
+      "end": 0.4375,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.5625,
+        "end": 0.625
+      }
+    },
+    {
+      "begin": 0.4375,
+      "end": 0.5,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.5,
+        "end": 0.5625
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.625,
+      "value": {
+        "n": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 0.5,
+      "end": 0.5625,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.4375,
+        "end": 0.5
+      }
+    },
+    {
+      "begin": 0.5625,
+      "end": 0.625,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.375,
+        "end": 0.4375
+      }
+    },
+    {
+      "begin": 0.625,
+      "end": 0.75,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 0.625,
+      "end": 0.6875,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.3125,
+        "end": 0.375
+      }
+    },
+    {
+      "begin": 0.6875,
+      "end": 0.75,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.25,
+        "end": 0.3125
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 0.875,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 0.875,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 309.9939679933326
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 0.875,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 309.9939679933326
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 0.8125,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.1875,
+        "end": 0.25
+      }
+    },
+    {
+      "begin": 0.8125,
+      "end": 0.875,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.125,
+        "end": 0.1875
+      }
+    },
+    {
+      "begin": 0.875,
+      "end": 1,
+      "value": {
+        "n": 3,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 0.875,
+      "end": 1,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 315.47482330436543
+      }
+    },
+    {
+      "begin": 0.875,
+      "end": 1,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 315.47482330436543
+      }
+    },
+    {
+      "begin": 0.875,
+      "end": 0.9375,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.0625,
+        "end": 0.125
+      }
+    },
+    {
+      "begin": 0.9375,
+      "end": 1,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0,
+        "end": 0.0625
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.125,
+      "value": {
+        "n": 4,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 322.5175104637401
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 322.5175104637401
+      }
+    },
+    {
+      "begin": 1.125,
+      "end": 1.25,
+      "value": {
+        "n": 4,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 1.125,
+      "end": 1.25,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 331.24391898333477
+      }
+    },
+    {
+      "begin": 1.125,
+      "end": 1.25,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 331.24391898333477
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.375,
+      "value": {
+        "n": 5,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 341.7533633400302
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 341.7533633400302
+      }
+    },
+    {
+      "begin": 1.375,
+      "end": 1.5,
+      "value": {
+        "n": 5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 1.375,
+      "end": 1.5,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 354.123523602168
+      }
+    },
+    {
+      "begin": 1.375,
+      "end": 1.5,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 354.123523602168
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.625,
+      "value": {
+        "n": 6,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.625,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 368.4113860560089
+      }
+    },
+    {
+      "begin": 1.5,
+      "end": 1.625,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 368.4113860560089
+      }
+    },
+    {
+      "begin": 1.625,
+      "end": 1.75,
+      "value": {
+        "n": 6,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 1.875,
+      "value": {
+        "n": 7,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 1.875,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 402.8703375321875
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 1.875,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 402.8703375321875
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 2,
+      "value": {
+        "n": 7,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 2,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 423.060395854766
+      }
+    },
+    {
+      "begin": 1.875,
+      "end": 2,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 423.060395854766
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.25,
+      "value": {
+        "n": 0,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.125,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 445.2079762224457
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.125,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 445.2079762224457
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.5,
+      "value": {
+        "n": 0,
+        "s": "east",
+        "delay": 0.5,
+        "speed": 1.4595271199941635
+      }
+    },
+    {
+      "begin": 2.125,
+      "end": 2.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 469.28070540795613
+      }
+    },
+    {
+      "begin": 2.125,
+      "end": 2.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 469.28070540795613
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.5,
+      "value": {
+        "n": 1,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.375,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 495.23116016069514
+      }
+    },
+    {
+      "begin": 2.25,
+      "end": 2.375,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 495.23116016069514
+      }
+    },
+    {
+      "begin": 2.375,
+      "end": 2.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 522.9978078331873
+      }
+    },
+    {
+      "begin": 2.375,
+      "end": 2.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 522.9978078331873
+      }
+    },
+    {
+      "begin": 2.5,
+      "end": 2.75,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 2.875,
+      "value": {
+        "n": 3,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 2.875,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 616.3876940969503
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 2.875,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 616.3876940969503
+      }
+    },
+    {
+      "begin": 2.875,
+      "end": 3,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.25,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.125,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 686.0511584829055
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.125,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 686.0511584829055
+      }
+    },
+    {
+      "begin": 3.125,
+      "end": 3.25,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 722.7511707857605
+      }
+    },
+    {
+      "begin": 3.125,
+      "end": 3.25,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 722.7511707857605
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.375,
+      "value": {
+        "n": 5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.375,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 760.5205969860772
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.375,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 760.5205969860772
+      }
+    },
+    {
+      "begin": 3.375,
+      "end": 3.5,
+      "value": {
+        "n": 5,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 3.375,
+      "end": 3.5,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 799.2188918138895
+      }
+    },
+    {
+      "begin": 3.375,
+      "end": 3.5,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 799.2188918138895
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 3.625,
+      "value": {
+        "n": 6,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "note": 58.2,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 3.5,
+      "end": 4,
+      "value": {
+        "note": 62.2,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 3.625,
+      "end": 3.75,
+      "value": {
+        "n": 6,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 3.625,
+      "end": 3.75,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 878.812628104848
+      }
+    },
+    {
+      "begin": 3.625,
+      "end": 3.75,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 878.812628104848
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 4,
+      "value": {
+        "n": 7,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 3.875,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 919.4025227401478
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 3.875,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 919.4025227401478
+      }
+    },
+    {
+      "begin": 3.875,
+      "end": 4,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 960.3120736001672
+      }
+    },
+    {
+      "begin": 3.875,
+      "end": 4,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 960.3120736001672
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.25,
+      "value": {
+        "n": 0,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.125,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1001.3819228857756
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.125,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1001.3819228857756
+      }
+    },
+    {
+      "begin": 4.125,
+      "end": 4.25,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1042.451772171384
+      }
+    },
+    {
+      "begin": 4.125,
+      "end": 4.25,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1042.451772171384
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.5,
+      "value": {
+        "n": 1,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.375,
+      "value": {
+        "note": 45,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1083.3613230314033
+      }
+    },
+    {
+      "begin": 4.25,
+      "end": 4.375,
+      "value": {
+        "note": 45,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1083.3613230314033
+      }
+    },
+    {
+      "begin": 4.375,
+      "end": 4.5,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1123.951217666703
+      }
+    },
+    {
+      "begin": 4.375,
+      "end": 4.5,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1123.951217666703
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 4.625,
+      "value": {
+        "n": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 4.625,
+      "end": 4.75,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 4.625,
+      "end": 4.75,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1203.5449539576616
+      }
+    },
+    {
+      "begin": 4.625,
+      "end": 4.75,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1203.5449539576616
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 5,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 4.875,
+      "value": {
+        "note": 22,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1242.243248785474
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 4.875,
+      "value": {
+        "note": 22,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1242.243248785474
+      }
+    },
+    {
+      "begin": 4.875,
+      "end": 5,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1280.0126749857907
+      }
+    },
+    {
+      "begin": 4.875,
+      "end": 5,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1280.0126749857907
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.125,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.125,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1316.7126872886456
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.125,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1316.7126872886456
+      }
+    },
+    {
+      "begin": 5.125,
+      "end": 5.25,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 5.125,
+      "end": 5.25,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1352.20932480928
+      }
+    },
+    {
+      "begin": 5.125,
+      "end": 5.25,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1352.20932480928
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.375,
+      "value": {
+        "n": 5,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1386.3761516746008
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1386.3761516746008
+      }
+    },
+    {
+      "begin": 5.375,
+      "end": 5.5,
+      "value": {
+        "n": 5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 5.375,
+      "end": 5.5,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1419.0951976496394
+      }
+    },
+    {
+      "begin": 5.375,
+      "end": 5.5,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1419.0951976496394
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 5.75,
+      "value": {
+        "n": 6,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 5.875,
+      "value": {
+        "n": 7,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 5.875,
+      "end": 6,
+      "value": {
+        "n": 7,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 5.875,
+      "end": 6,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1533.4831403635949
+      }
+    },
+    {
+      "begin": 5.875,
+      "end": 6,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1533.4831403635949
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.125,
+      "value": {
+        "n": 0,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.125,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1557.5558695491054
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.125,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1557.5558695491054
+      }
+    },
+    {
+      "begin": 6.125,
+      "end": 6.25,
+      "value": {
+        "n": 0,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 6.125,
+      "end": 6.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1579.703449916785
+      }
+    },
+    {
+      "begin": 6.125,
+      "end": 6.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1579.703449916785
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.375,
+      "value": {
+        "n": 1,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.375,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1599.8935082393637
+      }
+    },
+    {
+      "begin": 6.25,
+      "end": 6.375,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1599.8935082393637
+      }
+    },
+    {
+      "begin": 6.375,
+      "end": 6.5,
+      "value": {
+        "n": 1,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 6.375,
+      "end": 6.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1618.1096619393602
+      }
+    },
+    {
+      "begin": 6.375,
+      "end": 6.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1618.1096619393602
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 6.75,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 6.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1634.3524597155422
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 6.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1634.3524597155422
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 7,
+      "value": {
+        "n": 1,
+        "s": "east",
+        "delay": 0.5,
+        "speed": 1.4852032233029604
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 6.875,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 6.875,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1661.0104824315208
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 6.875,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1661.0104824315208
+      }
+    },
+    {
+      "begin": 6.875,
+      "end": 7,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 6.875,
+      "end": 7,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1671.5199267882165
+      }
+    },
+    {
+      "begin": 6.875,
+      "end": 7,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1671.5199267882165
+      }
+    },
+    {
+      "begin": 7.125,
+      "end": 7.25,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 7.125,
+      "end": 7.25,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1680.246335307811
+      }
+    },
+    {
+      "begin": 7.125,
+      "end": 7.25,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1680.246335307811
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 7.375,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 7.375,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1680.246335307811
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 7.375,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1680.246335307811
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 7.625,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 7.625,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1680.246335307811
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 7.625,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1680.246335307811
+      }
+    },
+    {
+      "begin": 7.625,
+      "end": 7.75,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 7.625,
+      "end": 7.75,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1680.246335307811
+      }
+    },
+    {
+      "begin": 7.625,
+      "end": 7.75,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1680.246335307811
+      }
+    },
+    {
+      "begin": 7.875,
+      "end": 8,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 7.875,
+      "end": 8,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1680.246335307811
+      }
+    },
+    {
+      "begin": 7.875,
+      "end": 8,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1680.246335307811
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.125,
+      "value": {
+        "n": 0,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.125,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1702.7638457715511
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.125,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1702.7638457715511
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.0625,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.9375,
+        "end": 1
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.5,
+      "value": {
+        "n": 0,
+        "s": "east",
+        "delay": 0.5,
+        "speed": 1.3391613364219666
+      }
+    },
+    {
+      "begin": 8.0625,
+      "end": 8.125,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.875,
+        "end": 0.9375
+      }
+    },
+    {
+      "begin": 8.125,
+      "end": 8.25,
+      "value": {
+        "n": 0,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 8.125,
+      "end": 8.25,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1702.8081073452577
+      }
+    },
+    {
+      "begin": 8.125,
+      "end": 8.25,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1702.8081073452577
+      }
+    },
+    {
+      "begin": 8.125,
+      "end": 8.1875,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.8125,
+        "end": 0.875
+      }
+    },
+    {
+      "begin": 8.1875,
+      "end": 8.25,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.75,
+        "end": 0.8125
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.375,
+      "value": {
+        "n": 1,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.375,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1703.1096007313618
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.375,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1703.1096007313618
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.3125,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.6875,
+        "end": 0.75
+      }
+    },
+    {
+      "begin": 8.3125,
+      "end": 8.375,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.625,
+        "end": 0.6875
+      }
+    },
+    {
+      "begin": 8.375,
+      "end": 8.5,
+      "value": {
+        "n": 1,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 8.375,
+      "end": 8.5,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1703.9029877251728
+      }
+    },
+    {
+      "begin": 8.375,
+      "end": 8.5,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1703.9029877251728
+      }
+    },
+    {
+      "begin": 8.375,
+      "end": 8.4375,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.5625,
+        "end": 0.625
+      }
+    },
+    {
+      "begin": 8.4375,
+      "end": 8.5,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.5,
+        "end": 0.5625
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.625,
+      "value": {
+        "n": 2,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.625,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1705.3990324568488
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.625,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1705.3990324568488
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.5625,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.4375,
+        "end": 0.5
+      }
+    },
+    {
+      "begin": 8.5625,
+      "end": 8.625,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.375,
+        "end": 0.4375
+      }
+    },
+    {
+      "begin": 8.625,
+      "end": 8.75,
+      "value": {
+        "n": 2,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 8.625,
+      "end": 8.75,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1707.7853979802344
+      }
+    },
+    {
+      "begin": 8.625,
+      "end": 8.75,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1707.7853979802344
+      }
+    },
+    {
+      "begin": 8.625,
+      "end": 8.6875,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.3125,
+        "end": 0.375
+      }
+    },
+    {
+      "begin": 8.6875,
+      "end": 8.75,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.25,
+        "end": 0.3125
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 9,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 8.875,
+      "value": {
+        "note": 22,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1711.227442861699
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 8.875,
+      "value": {
+        "note": 22,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1711.227442861699
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 8.8125,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.1875,
+        "end": 0.25
+      }
+    },
+    {
+      "begin": 8.8125,
+      "end": 8.875,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.125,
+        "end": 0.1875
+      }
+    },
+    {
+      "begin": 8.875,
+      "end": 9,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1715.869017768976
+      }
+    },
+    {
+      "begin": 8.875,
+      "end": 9,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1715.869017768976
+      }
+    },
+    {
+      "begin": 8.875,
+      "end": 8.9375,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.0625,
+        "end": 0.125
+      }
+    },
+    {
+      "begin": 8.9375,
+      "end": 9,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0,
+        "end": 0.0625
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.125,
+      "value": {
+        "n": 4,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1721.8332620599995
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1721.8332620599995
+      }
+    },
+    {
+      "begin": 9.125,
+      "end": 9.25,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 9.125,
+      "end": 9.25,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1729.223400371745
+      }
+    },
+    {
+      "begin": 9.125,
+      "end": 9.25,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1729.223400371745
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.5,
+      "value": {
+        "n": 5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1738.1235392090655
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1738.1235392090655
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.625,
+      "value": {
+        "n": 6,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.625,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1760.6994333522707
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.625,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1760.6994333522707
+      }
+    },
+    {
+      "begin": 9.625,
+      "end": 9.75,
+      "value": {
+        "n": 6,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 10,
+      "value": {
+        "n": 7,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 9.875,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1789.881704261874
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 9.875,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1789.881704261874
+      }
+    },
+    {
+      "begin": 9.875,
+      "end": 10,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1806.980069894313
+      }
+    },
+    {
+      "begin": 9.875,
+      "end": 10,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1806.980069894313
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.125,
+      "value": {
+        "n": 0,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.125,
+      "value": {
+        "note": 43,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1825.7362032818492
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.125,
+      "value": {
+        "note": 45,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1825.7362032818492
+      }
+    },
+    {
+      "begin": 10.125,
+      "end": 10.25,
+      "value": {
+        "n": 0,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 10.125,
+      "end": 10.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1846.122688491961
+      }
+    },
+    {
+      "begin": 10.125,
+      "end": 10.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1846.122688491961
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.5,
+      "value": {
+        "n": 1,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.375,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1868.0993641707132
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.375,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1868.0993641707132
+      }
+    },
+    {
+      "begin": 10.375,
+      "end": 10.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1891.614120131594
+      }
+    },
+    {
+      "begin": 10.375,
+      "end": 10.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1891.614120131594
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.75,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1916.6036939443543
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1916.6036939443543
+      }
+    },
+    {
+      "begin": 10.625,
+      "end": 10.75,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1942.9944675238464
+      }
+    },
+    {
+      "begin": 10.625,
+      "end": 10.75,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1942.9944675238464
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 11,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 10.875,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1970.7032637188613
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 10.875,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1970.7032637188613
+      }
+    },
+    {
+      "begin": 10.875,
+      "end": 11,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1999.6381429009682
+      }
+    },
+    {
+      "begin": 10.875,
+      "end": 11,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1999.6381429009682
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.125,
+      "value": {
+        "n": 4,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.125,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2029.6991995533517
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.125,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2029.6991995533517
+      }
+    },
+    {
+      "begin": 11.125,
+      "end": 11.25,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 11.125,
+      "end": 11.25,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2060.7793588596514
+      }
+    },
+    {
+      "begin": 11.125,
+      "end": 11.25,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2060.7793588596514
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.375,
+      "value": {
+        "n": 5,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.375,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2092.7651732928
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.375,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2092.7651732928
+      }
+    },
+    {
+      "begin": 11.375,
+      "end": 11.5,
+      "value": {
+        "n": 5,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 11.375,
+      "end": 11.5,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2125.5376192038602
+      }
+    },
+    {
+      "begin": 11.375,
+      "end": 11.5,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2125.5376192038602
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 11.625,
+      "value": {
+        "n": 6,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 11.625,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2158.972893410866
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 11.625,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2158.972893410866
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "note": 58.2,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "note": 62.2,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "n": 1,
+        "s": "east",
+        "delay": 0.5,
+        "speed": 1.4346324261277914
+      }
+    },
+    {
+      "begin": 11.625,
+      "end": 11.75,
+      "value": {
+        "n": 6,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 12,
+      "value": {
+        "n": 7,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 11.875,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2227.317595852726
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 11.875,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2227.317595852726
+      }
+    },
+    {
+      "begin": 11.875,
+      "end": 12,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2261.96268935804
+      }
+    },
+    {
+      "begin": 11.875,
+      "end": 12,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2261.96268935804
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.25,
+      "value": {
+        "n": 0,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.125,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2296.7435348778963
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.125,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2296.7435348778963
+      }
+    },
+    {
+      "begin": 12.125,
+      "end": 12.25,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2331.524380397753
+      }
+    },
+    {
+      "begin": 12.125,
+      "end": 12.25,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2331.524380397753
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.375,
+      "value": {
+        "n": 1,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 12.375,
+      "end": 12.5,
+      "value": {
+        "n": 1,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 12.375,
+      "end": 12.5,
+      "value": {
+        "note": 43,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2400.543859968134
+      }
+    },
+    {
+      "begin": 12.375,
+      "end": 12.5,
+      "value": {
+        "note": 43,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2400.543859968134
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 12.75,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 12.625,
+      "end": 12.75,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2467.9494505519324
+      }
+    },
+    {
+      "begin": 12.625,
+      "end": 12.75,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2467.9494505519324
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 13,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 12.875,
+      "value": {
+        "note": 22,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2500.721896462993
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 12.875,
+      "value": {
+        "note": 22,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2500.721896462993
+      }
+    },
+    {
+      "begin": 12.875,
+      "end": 13,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2532.707710896141
+      }
+    },
+    {
+      "begin": 12.875,
+      "end": 13,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2532.707710896141
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.25,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2563.787870202441
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2563.787870202441
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.5,
+      "value": {
+        "n": 0,
+        "s": "east",
+        "delay": 0.5,
+        "speed": 1.4704064466059208
+      }
+    },
+    {
+      "begin": 13.125,
+      "end": 13.25,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2593.8489268548246
+      }
+    },
+    {
+      "begin": 13.125,
+      "end": 13.25,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2593.8489268548246
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.375,
+      "value": {
+        "n": 5,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2622.7838060369313
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2622.7838060369313
+      }
+    },
+    {
+      "begin": 13.375,
+      "end": 13.5,
+      "value": {
+        "n": 5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 13.375,
+      "end": 13.5,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2650.492602231946
+      }
+    },
+    {
+      "begin": 13.375,
+      "end": 13.5,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2650.492602231946
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 13.75,
+      "value": {
+        "n": 6,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 14,
+      "value": {
+        "n": 7,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 13.875,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2725.3877055850794
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 13.875,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2725.3877055850794
+      }
+    },
+    {
+      "begin": 13.875,
+      "end": 14,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2747.3643812638315
+      }
+    },
+    {
+      "begin": 13.875,
+      "end": 14,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2747.3643812638315
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.125,
+      "value": {
+        "n": 0,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.125,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2767.7508664739435
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.125,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2767.7508664739435
+      }
+    },
+    {
+      "begin": 14.125,
+      "end": 14.25,
+      "value": {
+        "n": 0,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 14.125,
+      "end": 14.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2786.5069998614795
+      }
+    },
+    {
+      "begin": 14.125,
+      "end": 14.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2786.5069998614795
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.5,
+      "value": {
+        "n": 1,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.375,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2803.6053654939187
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.375,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2803.6053654939187
+      }
+    },
+    {
+      "begin": 14.375,
+      "end": 14.5,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2819.032089448992
+      }
+    },
+    {
+      "begin": 14.375,
+      "end": 14.5,
+      "value": {
+        "note": 50,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2819.032089448992
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 14.625,
+      "value": {
+        "n": 2,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 14.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2832.787636403522
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 14.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2832.787636403522
+      }
+    },
+    {
+      "begin": 14.625,
+      "end": 14.75,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 14.625,
+      "end": 14.75,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2844.8876062222607
+      }
+    },
+    {
+      "begin": 14.625,
+      "end": 14.75,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2844.8876062222607
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 14.875,
+      "value": {
+        "n": 3,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 14.875,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2855.363530546727
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 14.875,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2855.363530546727
+      }
+    },
+    {
+      "begin": 14.875,
+      "end": 15,
+      "value": {
+        "n": 3,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 14.875,
+      "end": 15,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2864.2636693840477
+      }
+    },
+    {
+      "begin": 14.875,
+      "end": 15,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2864.2636693840477
+      }
+    },
+    {
+      "begin": 15.125,
+      "end": 15.25,
+      "value": {
+        "n": 4,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 15.125,
+      "end": 15.25,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2871.653807695793
+      }
+    },
+    {
+      "begin": 15.125,
+      "end": 15.25,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2871.653807695793
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.375,
+      "value": {
+        "n": 4,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.375,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2871.653807695793
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.375,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2871.653807695793
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 15.625,
+      "value": {
+        "n": 4,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 15.625,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2871.653807695793
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 15.625,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2871.653807695793
+      }
+    },
+    {
+      "begin": 15.625,
+      "end": 15.75,
+      "value": {
+        "n": 4,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 15.625,
+      "end": 15.75,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2871.653807695793
+      }
+    },
+    {
+      "begin": 15.625,
+      "end": 15.75,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2871.653807695793
+      }
+    },
+    {
+      "begin": 15.875,
+      "end": 16,
+      "value": {
+        "n": 4,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 15.875,
+      "end": 16,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2871.653807695793
+      }
+    },
+    {
+      "begin": 15.875,
+      "end": 16,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2871.653807695793
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.25,
+      "value": {
+        "n": 0,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.125,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2890.7232239842415
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.125,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2890.7232239842415
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.0625,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.9375,
+        "end": 1
+      }
+    },
+    {
+      "begin": 16.0625,
+      "end": 16.125,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.875,
+        "end": 0.9375
+      }
+    },
+    {
+      "begin": 16.125,
+      "end": 16.25,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2890.6485563802858
+      }
+    },
+    {
+      "begin": 16.125,
+      "end": 16.25,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2890.6485563802858
+      }
+    },
+    {
+      "begin": 16.125,
+      "end": 16.1875,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.8125,
+        "end": 0.875
+      }
+    },
+    {
+      "begin": 16.1875,
+      "end": 16.25,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.75,
+        "end": 0.8125
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.375,
+      "value": {
+        "n": 1,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.375,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2890.139948419389
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.375,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2890.139948419389
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.3125,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.6875,
+        "end": 0.75
+      }
+    },
+    {
+      "begin": 16.3125,
+      "end": 16.375,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.625,
+        "end": 0.6875
+      }
+    },
+    {
+      "begin": 16.375,
+      "end": 16.5,
+      "value": {
+        "n": 1,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 16.375,
+      "end": 16.5,
+      "value": {
+        "note": 43,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2888.801534511414
+      }
+    },
+    {
+      "begin": 16.375,
+      "end": 16.5,
+      "value": {
+        "note": 43,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2888.801534511414
+      }
+    },
+    {
+      "begin": 16.375,
+      "end": 16.4375,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.5625,
+        "end": 0.625
+      }
+    },
+    {
+      "begin": 16.4375,
+      "end": 16.5,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.5,
+        "end": 0.5625
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 16.625,
+      "value": {
+        "n": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 16.625,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2886.27776352519
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 16.625,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2886.27776352519
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 16.5625,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.4375,
+        "end": 0.5
+      }
+    },
+    {
+      "begin": 16.5625,
+      "end": 16.625,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.375,
+        "end": 0.4375
+      }
+    },
+    {
+      "begin": 16.625,
+      "end": 16.75,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 16.625,
+      "end": 16.6875,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.3125,
+        "end": 0.375
+      }
+    },
+    {
+      "begin": 16.6875,
+      "end": 16.75,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.25,
+        "end": 0.3125
+      }
+    },
+    {
+      "begin": 16.75,
+      "end": 16.875,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 16.75,
+      "end": 16.8125,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.1875,
+        "end": 0.25
+      }
+    },
+    {
+      "begin": 16.8125,
+      "end": 16.875,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.125,
+        "end": 0.1875
+      }
+    },
+    {
+      "begin": 16.875,
+      "end": 17,
+      "value": {
+        "n": 3,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 16.875,
+      "end": 17,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2868.6152935485497
+      }
+    },
+    {
+      "begin": 16.875,
+      "end": 17,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2868.6152935485497
+      }
+    },
+    {
+      "begin": 16.875,
+      "end": 16.9375,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.0625,
+        "end": 0.125
+      }
+    },
+    {
+      "begin": 16.9375,
+      "end": 17,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0,
+        "end": 0.0625
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.25,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2858.5538385815084
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2858.5538385815084
+      }
+    },
+    {
+      "begin": 17.125,
+      "end": 17.25,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2846.0869542294135
+      }
+    },
+    {
+      "begin": 17.125,
+      "end": 17.25,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2846.0869542294135
+      }
+    },
+    {
+      "begin": 17.25,
+      "end": 17.5,
+      "value": {
+        "n": 5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 17.25,
+      "end": 17.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2831.0727559936217
+      }
+    },
+    {
+      "begin": 17.25,
+      "end": 17.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2831.0727559936217
+      }
+    },
+    {
+      "begin": 17.375,
+      "end": 17.5,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2813.4002671273643
+      }
+    },
+    {
+      "begin": 17.375,
+      "end": 17.5,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2813.4002671273643
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 17.75,
+      "value": {
+        "n": 6,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 18,
+      "value": {
+        "n": 7,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 17.875,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2743.7586854349606
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 17.875,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2743.7586854349606
+      }
+    },
+    {
+      "begin": 17.875,
+      "end": 18,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2714.914388081193
+      }
+    },
+    {
+      "begin": 17.875,
+      "end": 18,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2714.914388081193
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.25,
+      "value": {
+        "n": 0,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.125,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2683.2734991057805
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.125,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2683.2734991057805
+      }
+    },
+    {
+      "begin": 18.125,
+      "end": 18.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2648.882268151927
+      }
+    },
+    {
+      "begin": 18.125,
+      "end": 18.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2648.882268151927
+      }
+    },
+    {
+      "begin": 18.25,
+      "end": 18.5,
+      "value": {
+        "n": 1,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 18.25,
+      "end": 18.375,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2611.808445907619
+      }
+    },
+    {
+      "begin": 18.25,
+      "end": 18.375,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2611.808445907619
+      }
+    },
+    {
+      "begin": 18.375,
+      "end": 18.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2572.139940290327
+      }
+    },
+    {
+      "begin": 18.375,
+      "end": 18.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2572.139940290327
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 18.625,
+      "value": {
+        "n": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 18.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2529.9834726317067
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 18.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2529.9834726317067
+      }
+    },
+    {
+      "begin": 18.625,
+      "end": 18.75,
+      "value": {
+        "n": 2,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 18.875,
+      "value": {
+        "n": 3,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 18.875,
+      "end": 19,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 18.875,
+      "end": 19,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2389.9074918159235
+      }
+    },
+    {
+      "begin": 18.875,
+      "end": 19,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2389.9074918159235
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.25,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.125,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2339.1956240567765
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.125,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2339.1956240567765
+      }
+    },
+    {
+      "begin": 19.125,
+      "end": 19.25,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2286.764568591887
+      }
+    },
+    {
+      "begin": 19.125,
+      "end": 19.25,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2286.764568591887
+      }
+    },
+    {
+      "begin": 19.25,
+      "end": 19.375,
+      "value": {
+        "n": 5,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 19.25,
+      "end": 19.375,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2232.8057071167423
+      }
+    },
+    {
+      "begin": 19.25,
+      "end": 19.375,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2232.8057071167423
+      }
+    },
+    {
+      "begin": 19.375,
+      "end": 19.5,
+      "value": {
+        "n": 5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 19.375,
+      "end": 19.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2177.519828033922
+      }
+    },
+    {
+      "begin": 19.375,
+      "end": 19.5,
+      "value": {
+        "note": 51,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2177.519828033922
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 19.625,
+      "value": {
+        "n": 6,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20,
+      "value": {
+        "note": 58.2,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20,
+      "value": {
+        "note": 62.2,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 19.625,
+      "end": 19.75,
+      "value": {
+        "n": 6,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 19.875,
+      "value": {
+        "n": 7,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 19.875,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2005.8208496503028
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 19.875,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 2005.8208496503028
+      }
+    },
+    {
+      "begin": 19.875,
+      "end": 20,
+      "value": {
+        "n": 7,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 19.875,
+      "end": 20,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1947.3758847689548
+      }
+    },
+    {
+      "begin": 19.875,
+      "end": 20,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1947.3758847689548
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.125,
+      "value": {
+        "n": 0,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.125,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1888.7019113637507
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.125,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1888.7019113637507
+      }
+    },
+    {
+      "begin": 20.125,
+      "end": 20.25,
+      "value": {
+        "n": 0,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 20.125,
+      "end": 20.25,
+      "value": {
+        "note": 43,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1830.0279379585465
+      }
+    },
+    {
+      "begin": 20.125,
+      "end": 20.25,
+      "value": {
+        "note": 43,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1830.0279379585465
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 20.375,
+      "value": {
+        "n": 1,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 20.375,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1771.5829730771986
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 20.375,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1771.5829730771986
+      }
+    },
+    {
+      "begin": 20.375,
+      "end": 20.5,
+      "value": {
+        "n": 1,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 20.375,
+      "end": 20.5,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1713.5946814282647
+      }
+    },
+    {
+      "begin": 20.375,
+      "end": 20.5,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1713.5946814282647
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 20.625,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 20.625,
+      "end": 20.75,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 20.625,
+      "end": 20.75,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1599.8839946935796
+      }
+    },
+    {
+      "begin": 20.625,
+      "end": 20.75,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1599.8839946935796
+      }
+    },
+    {
+      "begin": 20.75,
+      "end": 21,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 20.75,
+      "end": 20.875,
+      "value": {
+        "note": 22,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1544.598115610759
+      }
+    },
+    {
+      "begin": 20.75,
+      "end": 20.875,
+      "value": {
+        "note": 22,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1544.598115610759
+      }
+    },
+    {
+      "begin": 20.875,
+      "end": 21,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1490.639254135614
+      }
+    },
+    {
+      "begin": 20.875,
+      "end": 21,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1490.639254135614
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.25,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1438.2081986707249
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1438.2081986707249
+      }
+    },
+    {
+      "begin": 21.125,
+      "end": 21.25,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1387.4963309115778
+      }
+    },
+    {
+      "begin": 21.125,
+      "end": 21.25,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1387.4963309115778
+      }
+    },
+    {
+      "begin": 21.25,
+      "end": 21.5,
+      "value": {
+        "n": 5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 21.25,
+      "end": 21.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1338.6842820312684
+      }
+    },
+    {
+      "begin": 21.25,
+      "end": 21.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1338.6842820312684
+      }
+    },
+    {
+      "begin": 21.375,
+      "end": 21.5,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1291.9405888652018
+      }
+    },
+    {
+      "begin": 21.375,
+      "end": 21.5,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1291.9405888652018
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 21.625,
+      "value": {
+        "n": 6,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 21.625,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1247.4203500957944
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 21.625,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1247.4203500957944
+      }
+    },
+    {
+      "begin": 21.625,
+      "end": 21.75,
+      "value": {
+        "n": 6,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 21.75,
+      "end": 22,
+      "value": {
+        "n": 7,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 21.75,
+      "end": 21.875,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1165.5953768198826
+      }
+    },
+    {
+      "begin": 21.75,
+      "end": 21.875,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1165.5953768198826
+      }
+    },
+    {
+      "begin": 21.875,
+      "end": 22,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1128.5215545755746
+      }
+    },
+    {
+      "begin": 21.875,
+      "end": 22,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1128.5215545755746
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.125,
+      "value": {
+        "n": 0,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.125,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1094.130323621721
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.125,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1094.130323621721
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.5,
+      "value": {
+        "n": 0,
+        "s": "east",
+        "delay": 0.5,
+        "speed": 1.4298502895981073
+      }
+    },
+    {
+      "begin": 22.125,
+      "end": 22.25,
+      "value": {
+        "n": 0,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 22.125,
+      "end": 22.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1062.4894346463082
+      }
+    },
+    {
+      "begin": 22.125,
+      "end": 22.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1062.4894346463082
+      }
+    },
+    {
+      "begin": 22.25,
+      "end": 22.375,
+      "value": {
+        "n": 1,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 22.25,
+      "end": 22.375,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1033.645137292541
+      }
+    },
+    {
+      "begin": 22.25,
+      "end": 22.375,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1033.645137292541
+      }
+    },
+    {
+      "begin": 22.375,
+      "end": 22.5,
+      "value": {
+        "n": 1,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 22.375,
+      "end": 22.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1007.6208363435416
+      }
+    },
+    {
+      "begin": 22.375,
+      "end": 22.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 1007.6208363435416
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 22.75,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 22.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 984.4157479070528
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 22.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 984.4157479070528
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 23,
+      "value": {
+        "n": 1,
+        "s": "east",
+        "delay": 0.5,
+        "speed": 1.3746830578893423
+      }
+    },
+    {
+      "begin": 22.625,
+      "end": 22.75,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 964.0035556001372
+      }
+    },
+    {
+      "begin": 22.625,
+      "end": 22.75,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 964.0035556001372
+      }
+    },
+    {
+      "begin": 22.75,
+      "end": 23,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 22.875,
+      "end": 23,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 931.3168684980878
+      }
+    },
+    {
+      "begin": 22.875,
+      "end": 23,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 931.3168684980878
+      }
+    },
+    {
+      "begin": 23.125,
+      "end": 23.25,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 23.125,
+      "end": 23.25,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 918.849984145993
+      }
+    },
+    {
+      "begin": 23.125,
+      "end": 23.25,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 918.849984145993
+      }
+    },
+    {
+      "begin": 23.25,
+      "end": 23.375,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 23.25,
+      "end": 23.375,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 918.849984145993
+      }
+    },
+    {
+      "begin": 23.25,
+      "end": 23.375,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 918.849984145993
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 23.625,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 23.625,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 918.849984145993
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 23.625,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 918.849984145993
+      }
+    },
+    {
+      "begin": 23.625,
+      "end": 23.75,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 23.625,
+      "end": 23.75,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 918.849984145993
+      }
+    },
+    {
+      "begin": 23.625,
+      "end": 23.75,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 918.849984145993
+      }
+    },
+    {
+      "begin": 23.875,
+      "end": 24,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 23.875,
+      "end": 24,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 918.849984145993
+      }
+    },
+    {
+      "begin": 23.875,
+      "end": 24,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 918.849984145993
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.125,
+      "value": {
+        "n": 0,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.125,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 886.6805987432599
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.125,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 886.6805987432599
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.0625,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.9375,
+        "end": 1
+      }
+    },
+    {
+      "begin": 24.0625,
+      "end": 24.125,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.875,
+        "end": 0.9375
+      }
+    },
+    {
+      "begin": 24.125,
+      "end": 24.25,
+      "value": {
+        "n": 0,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 24.125,
+      "end": 24.25,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 886.6668828850326
+      }
+    },
+    {
+      "begin": 24.125,
+      "end": 24.25,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 886.6668828850326
+      }
+    },
+    {
+      "begin": 24.125,
+      "end": 24.1875,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.8125,
+        "end": 0.875
+      }
+    },
+    {
+      "begin": 24.1875,
+      "end": 24.25,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.75,
+        "end": 0.8125
+      }
+    },
+    {
+      "begin": 24.25,
+      "end": 24.5,
+      "value": {
+        "n": 1,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 24.25,
+      "end": 24.375,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 886.5734555575792
+      }
+    },
+    {
+      "begin": 24.25,
+      "end": 24.375,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 886.5734555575792
+      }
+    },
+    {
+      "begin": 24.25,
+      "end": 24.3125,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.6875,
+        "end": 0.75
+      }
+    },
+    {
+      "begin": 24.3125,
+      "end": 24.375,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.625,
+        "end": 0.6875
+      }
+    },
+    {
+      "begin": 24.375,
+      "end": 24.5,
+      "value": {
+        "note": 43,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 886.327599330264
+      }
+    },
+    {
+      "begin": 24.375,
+      "end": 24.5,
+      "value": {
+        "note": 43,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 886.327599330264
+      }
+    },
+    {
+      "begin": 24.375,
+      "end": 24.4375,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.5625,
+        "end": 0.625
+      }
+    },
+    {
+      "begin": 24.4375,
+      "end": 24.5,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.5,
+        "end": 0.5625
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 24.625,
+      "value": {
+        "n": 2,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 24.5625,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.4375,
+        "end": 0.5
+      }
+    },
+    {
+      "begin": 24.5625,
+      "end": 24.625,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.375,
+        "end": 0.4375
+      }
+    },
+    {
+      "begin": 24.625,
+      "end": 24.75,
+      "value": {
+        "n": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 24.625,
+      "end": 24.75,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 885.1245108682076
+      }
+    },
+    {
+      "begin": 24.625,
+      "end": 24.75,
+      "value": {
+        "note": 24,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 885.1245108682076
+      }
+    },
+    {
+      "begin": 24.625,
+      "end": 24.6875,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.3125,
+        "end": 0.375
+      }
+    },
+    {
+      "begin": 24.6875,
+      "end": 24.75,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.25,
+        "end": 0.3125
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 24.875,
+      "value": {
+        "n": 3,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 24.875,
+      "value": {
+        "note": 22,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 884.057883641636
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 24.875,
+      "value": {
+        "note": 22,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 884.057883641636
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 24.8125,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.1875,
+        "end": 0.25
+      }
+    },
+    {
+      "begin": 24.8125,
+      "end": 24.875,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.125,
+        "end": 0.1875
+      }
+    },
+    {
+      "begin": 24.875,
+      "end": 25,
+      "value": {
+        "n": 3,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 24.875,
+      "end": 24.9375,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0.0625,
+        "end": 0.125
+      }
+    },
+    {
+      "begin": 24.9375,
+      "end": 25,
+      "value": {
+        "s": "breath",
+        "room": 1,
+        "shape": 0.6,
+        "begin": 0,
+        "end": 0.0625
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.125,
+      "value": {
+        "n": 4,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 880.7713327956776
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 880.7713327956776
+      }
+    },
+    {
+      "begin": 25.125,
+      "end": 25.25,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 25.125,
+      "end": 25.25,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 878.4812630833721
+      }
+    },
+    {
+      "begin": 25.125,
+      "end": 25.25,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 878.4812630833721
+      }
+    },
+    {
+      "begin": 25.25,
+      "end": 25.5,
+      "value": {
+        "n": 5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 25.25,
+      "end": 25.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 875.7232716186835
+      }
+    },
+    {
+      "begin": 25.25,
+      "end": 25.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 875.7232716186835
+      }
+    },
+    {
+      "begin": 25.375,
+      "end": 25.5,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 872.4769728361917
+      }
+    },
+    {
+      "begin": 25.375,
+      "end": 25.5,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 872.4769728361917
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 25.625,
+      "value": {
+        "n": 6,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 25.625,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 868.7274118357348
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 25.625,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 868.7274118357348
+      }
+    },
+    {
+      "begin": 25.625,
+      "end": 25.75,
+      "value": {
+        "n": 6,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 25.625,
+      "end": 25.75,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 864.4648175339881
+      }
+    },
+    {
+      "begin": 25.625,
+      "end": 25.75,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 864.4648175339881
+      }
+    },
+    {
+      "begin": 25.75,
+      "end": 25.875,
+      "value": {
+        "n": 7,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 25.75,
+      "end": 25.875,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 859.6843558160441
+      }
+    },
+    {
+      "begin": 25.75,
+      "end": 25.875,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 859.6843558160441
+      }
+    },
+    {
+      "begin": 25.875,
+      "end": 26,
+      "value": {
+        "n": 7,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 25.875,
+      "end": 26,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 854.3858826869903
+      }
+    },
+    {
+      "begin": 25.875,
+      "end": 26,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 854.3858826869903
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.25,
+      "value": {
+        "n": 0,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.125,
+      "value": {
+        "note": 45,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 848.5736974234896
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.125,
+      "value": {
+        "note": 45,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 848.5736974234896
+      }
+    },
+    {
+      "begin": 26.125,
+      "end": 26.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 842.256295725359
+      }
+    },
+    {
+      "begin": 26.125,
+      "end": 26.25,
+      "value": {
+        "note": 48,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 842.256295725359
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 26.5,
+      "value": {
+        "n": 1,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 26.375,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 835.4461228671483
+      }
+    },
+    {
+      "begin": 26.25,
+      "end": 26.375,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 835.4461228671483
+      }
+    },
+    {
+      "begin": 26.375,
+      "end": 26.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 828.1593268497205
+      }
+    },
+    {
+      "begin": 26.375,
+      "end": 26.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 828.1593268497205
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 26.75,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 26.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 820.4155115518294
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 26.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 820.4155115518294
+      }
+    },
+    {
+      "begin": 26.75,
+      "end": 26.875,
+      "value": {
+        "n": 3,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 26.75,
+      "end": 26.875,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 803.6510369286075
+      }
+    },
+    {
+      "begin": 26.75,
+      "end": 26.875,
+      "value": {
+        "note": 27,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 803.6510369286075
+      }
+    },
+    {
+      "begin": 26.875,
+      "end": 27,
+      "value": {
+        "n": 3,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 26.875,
+      "end": 27,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 794.6846431144554
+      }
+    },
+    {
+      "begin": 26.875,
+      "end": 27,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 794.6846431144554
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.125,
+      "value": {
+        "n": 4,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.125,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 785.3692673453565
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.125,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 785.3692673453565
+      }
+    },
+    {
+      "begin": 27.125,
+      "end": 27.25,
+      "value": {
+        "n": 4,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 27.125,
+      "end": 27.25,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 775.7380901632104
+      }
+    },
+    {
+      "begin": 27.125,
+      "end": 27.25,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 775.7380901632104
+      }
+    },
+    {
+      "begin": 27.25,
+      "end": 27.375,
+      "value": {
+        "n": 5,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 27.25,
+      "end": 27.375,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 765.8262668972834
+      }
+    },
+    {
+      "begin": 27.25,
+      "end": 27.375,
+      "value": {
+        "note": 41,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 765.8262668972834
+      }
+    },
+    {
+      "begin": 27.375,
+      "end": 27.5,
+      "value": {
+        "n": 5,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 27.375,
+      "end": 27.5,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 755.6706808157876
+      }
+    },
+    {
+      "begin": 27.375,
+      "end": 27.5,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 755.6706808157876
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 27.75,
+      "value": {
+        "n": 6,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 27.625,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 745.3096962774605
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 27.625,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 745.3096962774605
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "note": 58,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "note": 62,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "note": 58.2,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "note": 62.2,
+        "s": "sawtooth",
+        "cutoff": 1000,
+        "decay": 0.05,
+        "sustain": 0,
+        "delay": 0.8,
+        "delaytime": 0.125,
+        "room": 0.8
+      }
+    },
+    {
+      "begin": 27.625,
+      "end": 27.75,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 734.7829118831432
+      }
+    },
+    {
+      "begin": 27.625,
+      "end": 27.75,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 734.7829118831432
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 27.875,
+      "value": {
+        "n": 7,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 27.875,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 724.1309136273604
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 27.875,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 724.1309136273604
+      }
+    },
+    {
+      "begin": 27.875,
+      "end": 28,
+      "value": {
+        "n": 7,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 27.875,
+      "end": 28,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 713.3950280498993
+      }
+    },
+    {
+      "begin": 27.875,
+      "end": 28,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 713.3950280498993
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.25,
+      "value": {
+        "n": 0,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.125,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 702.6170753873885
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.125,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 702.6170753873885
+      }
+    },
+    {
+      "begin": 28.125,
+      "end": 28.25,
+      "value": {
+        "note": 43,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 691.8391227248776
+      }
+    },
+    {
+      "begin": 28.125,
+      "end": 28.25,
+      "value": {
+        "note": 43,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 691.8391227248776
+      }
+    },
+    {
+      "begin": 28.25,
+      "end": 28.375,
+      "value": {
+        "n": 1,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 28.25,
+      "end": 28.375,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 681.1032371474165
+      }
+    },
+    {
+      "begin": 28.25,
+      "end": 28.375,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 681.1032371474165
+      }
+    },
+    {
+      "begin": 28.375,
+      "end": 28.5,
+      "value": {
+        "n": 1,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 28.375,
+      "end": 28.5,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 670.4512388916337
+      }
+    },
+    {
+      "begin": 28.375,
+      "end": 28.5,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 670.4512388916337
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 28.75,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 28.75,
+      "end": 28.875,
+      "value": {
+        "n": 3,
+        "speed": -2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 28.75,
+      "end": 28.875,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 639.4078838774935
+      }
+    },
+    {
+      "begin": 28.75,
+      "end": 28.875,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 639.4078838774935
+      }
+    },
+    {
+      "begin": 28.875,
+      "end": 29,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 28.875,
+      "end": 29,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 629.4960606115666
+      }
+    },
+    {
+      "begin": 28.875,
+      "end": 29,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 629.4960606115666
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.25,
+      "value": {
+        "n": 4,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 619.8648834294204
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.125,
+      "value": {
+        "note": 29,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 619.8648834294204
+      }
+    },
+    {
+      "begin": 29.125,
+      "end": 29.25,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 610.5495076603215
+      }
+    },
+    {
+      "begin": 29.125,
+      "end": 29.25,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 610.5495076603215
+      }
+    },
+    {
+      "begin": 29.25,
+      "end": 29.5,
+      "value": {
+        "n": 5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 29.25,
+      "end": 29.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 601.5831138461695
+      }
+    },
+    {
+      "begin": 29.25,
+      "end": 29.375,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 601.5831138461695
+      }
+    },
+    {
+      "begin": 29.375,
+      "end": 29.5,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 592.9966608930769
+      }
+    },
+    {
+      "begin": 29.375,
+      "end": 29.5,
+      "value": {
+        "note": 34,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 592.9966608930769
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 29.75,
+      "value": {
+        "n": 6,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 29.625,
+      "end": 29.75,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 577.0748239250565
+      }
+    },
+    {
+      "begin": 29.625,
+      "end": 29.75,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 577.0748239250565
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 29.875,
+      "value": {
+        "n": 7,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 29.875,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 569.7880279076285
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 29.875,
+      "value": {
+        "note": 26,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 569.7880279076285
+      }
+    },
+    {
+      "begin": 29.875,
+      "end": 30,
+      "value": {
+        "n": 7,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 29.875,
+      "end": 30,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 562.9778550494179
+      }
+    },
+    {
+      "begin": 29.875,
+      "end": 30,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 562.9778550494179
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.125,
+      "value": {
+        "n": 0,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.125,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 556.6604533512873
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.125,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 556.6604533512873
+      }
+    },
+    {
+      "begin": 30.125,
+      "end": 30.25,
+      "value": {
+        "n": 0,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 30.125,
+      "end": 30.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 550.8482680877867
+      }
+    },
+    {
+      "begin": 30.125,
+      "end": 30.25,
+      "value": {
+        "note": 36,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 550.8482680877867
+      }
+    },
+    {
+      "begin": 30.25,
+      "end": 30.375,
+      "value": {
+        "n": 1,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 30.25,
+      "end": 30.375,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 545.5497949587328
+      }
+    },
+    {
+      "begin": 30.25,
+      "end": 30.375,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 545.5497949587328
+      }
+    },
+    {
+      "begin": 30.375,
+      "end": 30.5,
+      "value": {
+        "n": 1,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 30.375,
+      "end": 30.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 540.7693332407888
+      }
+    },
+    {
+      "begin": 30.375,
+      "end": 30.5,
+      "value": {
+        "note": 38,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 540.7693332407888
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 30.75,
+      "value": {
+        "n": 2,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 30.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 536.5067389390422
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 30.625,
+      "value": {
+        "note": 33,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 536.5067389390422
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 31,
+      "value": {
+        "n": 1,
+        "s": "east",
+        "delay": 0.5,
+        "speed": 1.3052482958883047
+      }
+    },
+    {
+      "begin": 30.75,
+      "end": 31,
+      "value": {
+        "n": 3,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 30.75,
+      "end": 30.875,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 529.5108791560933
+      }
+    },
+    {
+      "begin": 30.75,
+      "end": 30.875,
+      "value": {
+        "note": 39,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 529.5108791560933
+      }
+    },
+    {
+      "begin": 30.875,
+      "end": 31,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 526.7528876914048
+      }
+    },
+    {
+      "begin": 30.875,
+      "end": 31,
+      "value": {
+        "note": 31,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 526.7528876914048
+      }
+    },
+    {
+      "begin": 31.125,
+      "end": 31.25,
+      "value": {
+        "n": 4,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 31.125,
+      "end": 31.25,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 524.4628179790993
+      }
+    },
+    {
+      "begin": 31.125,
+      "end": 31.25,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 524.4628179790993
+      }
+    },
+    {
+      "begin": 31.25,
+      "end": 31.375,
+      "value": {
+        "n": 4,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 31.25,
+      "end": 31.375,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 524.4628179790993
+      }
+    },
+    {
+      "begin": 31.25,
+      "end": 31.375,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 524.4628179790993
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 31.625,
+      "value": {
+        "n": 4,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 31.625,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 524.4628179790993
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 31.625,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 524.4628179790993
+      }
+    },
+    {
+      "begin": 31.625,
+      "end": 31.75,
+      "value": {
+        "n": 4,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 31.625,
+      "end": 31.75,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 524.4628179790993
+      }
+    },
+    {
+      "begin": 31.625,
+      "end": 31.75,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 524.4628179790993
+      }
+    },
+    {
+      "begin": 31.875,
+      "end": 32,
+      "value": {
+        "n": 4,
+        "speed": 2,
+        "delay": 0.5,
+        "s": "amencutup",
+        "room": 0.5
+      }
+    },
+    {
+      "begin": 31.875,
+      "end": 32,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 524.4628179790993
+      }
+    },
+    {
+      "begin": 31.875,
+      "end": 32,
+      "value": {
+        "note": 46,
+        "s": "sawtooth",
+        "gain": 0.4,
+        "decay": 0.1,
+        "sustain": 0,
+        "lpattack": 0.1,
+        "lpenv": -4,
+        "resonance": 10,
+        "cutoff": 524.4628179790993
+      }
+    }
+  ]
+}

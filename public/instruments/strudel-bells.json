@@ -1,0 +1,13 @@
+{
+  "id": "strudel-bells",
+  "name": "Bells",
+  "family": "melodic",
+  "zones": [
+    {
+      "file": "strudel-bells/411089_5121236-lq.mp3",
+      "rootNote": 84,
+      "loNote": 0,
+      "hiNote": 127
+    }
+  ]
+}

@@ -8,19 +8,14 @@
       "file": "yamahatg33/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "yamahatg33/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "yamahatg33/snare.wav"
-    },
-    {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "yamahatg33/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "yamahatg33/openHat.wav"
     },
     {
       "voice": "clap",
@@ -28,9 +23,39 @@
       "file": "yamahatg33/clap.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "yamahatg33/tomLo.wav"
+    },
+    {
       "voice": "tom",
       "note": 45,
       "file": "yamahatg33/tom.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "yamahatg33/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "yamahatg33/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "yamahatg33/crash.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "yamahatg33/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "yamahatg33/tamb.wav"
     },
     {
       "voice": "cowbell",
@@ -38,9 +63,9 @@
       "file": "yamahatg33/cowbell.wav"
     },
     {
-      "voice": "ride",
-      "note": 51,
-      "file": "yamahatg33/ride.wav"
+      "voice": "shaker",
+      "note": 82,
+      "file": "yamahatg33/shaker.wav"
     }
   ]
 }

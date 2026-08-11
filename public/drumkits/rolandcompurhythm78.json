@@ -23,6 +23,11 @@
       "file": "rolandcompurhythm78/openHat.wav"
     },
     {
+      "voice": "tamb",
+      "note": 54,
+      "file": "rolandcompurhythm78/tamb.wav"
+    },
+    {
       "voice": "cowbell",
       "note": 56,
       "file": "rolandcompurhythm78/cowbell.wav"

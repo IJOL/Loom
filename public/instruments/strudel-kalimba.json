@@ -1,0 +1,13 @@
+{
+  "id": "strudel-kalimba",
+  "name": "Kalimba",
+  "family": "melodic",
+  "zones": [
+    {
+      "file": "strudel-kalimba/536549_11935698-lq.mp3",
+      "rootNote": 72,
+      "loNote": 0,
+      "hiNote": 127
+    }
+  ]
+}

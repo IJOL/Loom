@@ -13,19 +13,19 @@
       "file": "rolandjd990/snare.wav"
     },
     {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "rolandjd990/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "rolandjd990/openHat.wav"
-    },
-    {
       "voice": "clap",
       "note": 39,
       "file": "rolandjd990/clap.wav"
+    },
+    {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "rolandjd990/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolandjd990/closedHat.wav"
     },
     {
       "voice": "tom",
@@ -33,14 +33,34 @@
       "file": "rolandjd990/tom.wav"
     },
     {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "rolandjd990/cowbell.wav"
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolandjd990/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "rolandjd990/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "rolandjd990/crash.wav"
     },
     {
       "voice": "ride",
       "note": 51,
       "file": "rolandjd990/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "rolandjd990/tamb.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "rolandjd990/cowbell.wav"
     }
   ]
 }

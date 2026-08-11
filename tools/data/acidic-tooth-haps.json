@@ -1,0 +1,7047 @@
+{
+  "source": "strudel — \"acidic tooth\" @by eddyflux",
+  "cycles": 32,
+  "cps": 1,
+  "events": [
+    {
+      "begin": 0,
+      "end": 0.125,
+      "value": {
+        "note": 43,
+        "clip": 0.15,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 600,
+        "resonance": 14,
+        "lpenv": 2,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 0,
+      "end": 0.125,
+      "value": {
+        "note": 55,
+        "clip": 0.15,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 600,
+        "resonance": 14,
+        "lpenv": 2,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 0.375,
+      "end": 0.5,
+      "value": {
+        "note": 31,
+        "clip": 0.34302557924145277,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 629.3460948910723,
+        "resonance": 12.82842712474619,
+        "lpenv": 3.1111404660392044,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 0.375,
+      "end": 0.5,
+      "value": {
+        "note": 43,
+        "clip": 0.34302557924145277,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 629.3460948910723,
+        "resonance": 12.82842712474619,
+        "lpenv": 3.1111404660392044,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 0.875,
+      "value": {
+        "note": 43,
+        "clip": 0.7787779347745528,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 658.0569354508925,
+        "resonance": 10,
+        "lpenv": 3.8477590650225735,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 0.75,
+      "end": 0.875,
+      "value": {
+        "note": 55,
+        "clip": 0.7787779347745528,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 658.0569354508925,
+        "resonance": 10,
+        "lpenv": 3.8477590650225735,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.125,
+      "value": {
+        "note": 31,
+        "clip": 0.8513819228857756,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 676.536686473018,
+        "resonance": 8,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 1,
+      "end": 1.125,
+      "value": {
+        "note": 43,
+        "clip": 0.8513819228857756,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 676.536686473018,
+        "resonance": 8,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.375,
+      "value": {
+        "note": 31,
+        "clip": 0.9128681016409247,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 694.2793473651996,
+        "resonance": 6.5358983848622465,
+        "lpenv": 3.8477590650225735,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 1.25,
+      "end": 1.375,
+      "value": {
+        "note": 43,
+        "clip": 0.9128681016409247,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 694.2793473651996,
+        "resonance": 6.5358983848622465,
+        "lpenv": 3.8477590650225735,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 1.375,
+      "end": 1.5,
+      "value": {
+        "note": 43,
+        "clip": 1.014849599776676,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 702.8205488386443,
+        "resonance": 6.136296694843727,
+        "lpenv": 3.6629392246050907,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 1.375,
+      "end": 1.5,
+      "value": {
+        "note": 55,
+        "clip": 1.014849599776676,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 702.8205488386443,
+        "resonance": 6.136296694843727,
+        "lpenv": 3.6629392246050907,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 1.625,
+      "end": 1.75,
+      "value": {
+        "note": 31,
+        "clip": 1.2818939351012204,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 719.1398608984866,
+        "resonance": 6.136296694843726,
+        "lpenv": 3.1111404660392044,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 1.625,
+      "end": 1.75,
+      "value": {
+        "note": 43,
+        "clip": 1.2818939351012204,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 719.1398608984866,
+        "resonance": 6.136296694843726,
+        "lpenv": 3.1111404660392044,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 1.875,
+      "value": {
+        "note": 43,
+        "clip": 1.3838754332369718,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 726.8786568327291,
+        "resonance": 6.535898384862246,
+        "lpenv": 2.7653668647301797,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 1.75,
+      "end": 1.875,
+      "value": {
+        "note": 55,
+        "clip": 1.3838754332369718,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 726.8786568327291,
+        "resonance": 6.535898384862246,
+        "lpenv": 2.7653668647301797,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.125,
+      "value": {
+        "note": 31,
+        "clip": 1.4453616119921207,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 741.4213562373095,
+        "resonance": 7.999999999999998,
+        "lpenv": 2.0000000000000004,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 2,
+      "end": 2.125,
+      "value": {
+        "note": 43,
+        "clip": 1.4453616119921207,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 741.4213562373095,
+        "resonance": 7.999999999999998,
+        "lpenv": 2.0000000000000004,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 2.375,
+      "end": 2.5,
+      "value": {
+        "note": 31,
+        "clip": 1.1695978120283883,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 760.6415062961289,
+        "resonance": 11.035276180410085,
+        "lpenv": 0.8888595339607961,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 2.375,
+      "end": 2.5,
+      "value": {
+        "note": 43,
+        "clip": 1.1695978120283883,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 760.6415062961289,
+        "resonance": 11.035276180410085,
+        "lpenv": 0.8888595339607961,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 2.875,
+      "value": {
+        "note": 31,
+        "clip": 0.5470651618108605,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 776.384252869671,
+        "resonance": 13.464101615137755,
+        "lpenv": 0.15224093497742697,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 2.75,
+      "end": 2.875,
+      "value": {
+        "note": 43,
+        "clip": 0.5470651618108605,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 776.384252869671,
+        "resonance": 13.464101615137755,
+        "lpenv": 0.15224093497742697,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.125,
+      "value": {
+        "note": 43,
+        "clip": 0.44334029937163,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 784.7759065022574,
+        "resonance": 14,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 3,
+      "end": 3.125,
+      "value": {
+        "note": 55,
+        "clip": 0.44334029937163,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 784.7759065022574,
+        "resonance": 14,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.375,
+      "value": {
+        "note": 31,
+        "clip": 0.4242868487117448,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 791.3880671464418,
+        "resonance": 13.464101615137757,
+        "lpenv": 0.15224093497742675,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 3.25,
+      "end": 3.375,
+      "value": {
+        "note": 43,
+        "clip": 0.4242868487117448,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 791.3880671464418,
+        "resonance": 13.464101615137757,
+        "lpenv": 0.15224093497742675,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 3.375,
+      "end": 3.5,
+      "value": {
+        "note": 31,
+        "clip": 0.39268463367267825,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 794.0062506389088,
+        "resonance": 12.828427124746193,
+        "lpenv": 0.3370607753949091,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 3.375,
+      "end": 3.5,
+      "value": {
+        "note": 43,
+        "clip": 0.39268463367267825,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 794.0062506389088,
+        "resonance": 12.828427124746193,
+        "lpenv": 0.3370607753949091,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 3.625,
+      "end": 3.75,
+      "value": {
+        "note": 31,
+        "clip": 0.30993244171471024,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 797.8353019929561,
+        "resonance": 11.035276180410083,
+        "lpenv": 0.8888595339607956,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 3.625,
+      "end": 3.75,
+      "value": {
+        "note": 43,
+        "clip": 0.30993244171471024,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 797.8353019929561,
+        "resonance": 11.035276180410083,
+        "lpenv": 0.8888595339607956,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 3.875,
+      "value": {
+        "note": 31,
+        "clip": 0.27833022667564367,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 799.0369453344393,
+        "resonance": 10.000000000000002,
+        "lpenv": 1.2346331352698192,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 3.75,
+      "end": 3.875,
+      "value": {
+        "note": 43,
+        "clip": 0.27833022667564367,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 799.0369453344393,
+        "resonance": 10.000000000000002,
+        "lpenv": 1.2346331352698192,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.125,
+      "value": {
+        "note": 43,
+        "clip": 0.2592767760157585,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 800,
+        "resonance": 8.000000000000004,
+        "lpenv": 1.9999999999999996,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.125,
+      "value": {
+        "note": 55,
+        "clip": 0.2592767760157585,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 800,
+        "resonance": 8.000000000000004,
+        "lpenv": 1.9999999999999996,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 4,
+      "end": 4.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 4.375,
+      "end": 4.5,
+      "value": {
+        "note": 31,
+        "clip": 0.2601124728040986,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 797.8353019929561,
+        "resonance": 6.136296694843727,
+        "lpenv": 3.1111404660392035,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 4.375,
+      "end": 4.5,
+      "value": {
+        "note": 43,
+        "clip": 0.2601124728040986,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 797.8353019929561,
+        "resonance": 6.136296694843727,
+        "lpenv": 3.1111404660392035,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 4.5,
+      "end": 5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 4.875,
+      "value": {
+        "note": 31,
+        "clip": 0.26199904579334543,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 791.3880671464418,
+        "resonance": 6.535898384862243,
+        "lpenv": 3.847759065022573,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 4.75,
+      "end": 4.875,
+      "value": {
+        "note": 43,
+        "clip": 0.26199904579334543,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 791.3880671464418,
+        "resonance": 6.535898384862243,
+        "lpenv": 3.847759065022573,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.125,
+      "value": {
+        "note": 43,
+        "clip": 0.26231338195502757,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 784.7759065022574,
+        "resonance": 8,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.125,
+      "value": {
+        "note": 55,
+        "clip": 0.26231338195502757,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 784.7759065022574,
+        "resonance": 8,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 5,
+      "end": 5.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.375,
+      "value": {
+        "note": 31,
+        "clip": 0.32970266885258753,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 776.384252869671,
+        "resonance": 9.999999999999998,
+        "lpenv": 3.8477590650225735,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 5.25,
+      "end": 5.375,
+      "value": {
+        "note": 43,
+        "clip": 0.32970266885258753,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 776.384252869671,
+        "resonance": 9.999999999999998,
+        "lpenv": 3.8477590650225735,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 5.375,
+      "end": 5.5,
+      "value": {
+        "note": 31,
+        "clip": 0.4414751122740711,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 771.5457220000544,
+        "resonance": 11.03527618041008,
+        "lpenv": 3.662939224605091,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 5.375,
+      "end": 5.5,
+      "value": {
+        "note": 43,
+        "clip": 0.4414751122740711,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 771.5457220000544,
+        "resonance": 11.03527618041008,
+        "lpenv": 3.662939224605091,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 5.5,
+      "end": 6,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 5.625,
+      "end": 5.75,
+      "value": {
+        "note": 43,
+        "clip": 0.7341575929859971,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 760.6415062961289,
+        "resonance": 12.828427124746192,
+        "lpenv": 3.1111404660392044,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 5.625,
+      "end": 5.75,
+      "value": {
+        "note": 55,
+        "clip": 0.7341575929859971,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 760.6415062961289,
+        "resonance": 12.828427124746192,
+        "lpenv": 3.1111404660392044,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 5.875,
+      "value": {
+        "note": 43,
+        "clip": 0.8459300364074808,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 754.6020906725474,
+        "resonance": 13.464101615137752,
+        "lpenv": 2.765366864730181,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 5.75,
+      "end": 5.875,
+      "value": {
+        "note": 55,
+        "clip": 0.8459300364074808,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 754.6020906725474,
+        "resonance": 13.464101615137752,
+        "lpenv": 2.765366864730181,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.125,
+      "value": {
+        "note": 31,
+        "clip": 0.9133193233050406,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 741.4213562373095,
+        "resonance": 14,
+        "lpenv": 2.000000000000001,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.125,
+      "value": {
+        "note": 43,
+        "clip": 0.9133193233050406,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 741.4213562373095,
+        "resonance": 14,
+        "lpenv": 2.000000000000001,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 6,
+      "end": 6.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 6.375,
+      "end": 6.5,
+      "value": {
+        "note": 31,
+        "clip": 0.7703373088745992,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 719.1398608984866,
+        "resonance": 12.828427124746195,
+        "lpenv": 0.8888595339607965,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 6.375,
+      "end": 6.5,
+      "value": {
+        "note": 43,
+        "clip": 0.7703373088745992,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 719.1398608984866,
+        "resonance": 12.828427124746195,
+        "lpenv": 0.8888595339607965,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 6.5,
+      "end": 7,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 6.875,
+      "value": {
+        "note": 31,
+        "clip": 0.44755755174719525,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 694.2793473651996,
+        "resonance": 10.000000000000004,
+        "lpenv": 0.1522409349774272,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 6.75,
+      "end": 6.875,
+      "value": {
+        "note": 43,
+        "clip": 0.44755755174719525,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 694.2793473651996,
+        "resonance": 10.000000000000004,
+        "lpenv": 0.1522409349774272,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.125,
+      "value": {
+        "note": 43,
+        "clip": 0.3937767807394266,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 676.536686473018,
+        "resonance": 8.000000000000004,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.125,
+      "value": {
+        "note": 55,
+        "clip": 0.3937767807394266,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 676.536686473018,
+        "resonance": 8.000000000000004,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 7,
+      "end": 7.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 7.375,
+      "value": {
+        "note": 43,
+        "clip": 0.48581159371169635,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 658.0569354508925,
+        "resonance": 6.535898384862249,
+        "lpenv": 0.15224093497742652,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 7.25,
+      "end": 7.375,
+      "value": {
+        "note": 55,
+        "clip": 0.48581159371169635,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 658.0569354508925,
+        "resonance": 6.535898384862249,
+        "lpenv": 0.15224093497742652,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 7.375,
+      "end": 7.5,
+      "value": {
+        "note": 43,
+        "clip": 0.6384613159351602,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 648.5960359806528,
+        "resonance": 6.136296694843727,
+        "lpenv": 0.33706077539490886,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 7.375,
+      "end": 7.5,
+      "value": {
+        "note": 55,
+        "clip": 0.6384613159351602,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 648.5960359806528,
+        "resonance": 6.136296694843727,
+        "lpenv": 0.33706077539490886,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 7.5,
+      "end": 8,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 7.625,
+      "end": 7.75,
+      "value": {
+        "note": 31,
+        "clip": 1.0381832689739212,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 629.3460948910724,
+        "resonance": 6.136296694843725,
+        "lpenv": 0.8888595339607952,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 7.625,
+      "end": 7.75,
+      "value": {
+        "note": 43,
+        "clip": 1.0381832689739212,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 629.3460948910724,
+        "resonance": 6.136296694843725,
+        "lpenv": 0.8888595339607952,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 7.875,
+      "value": {
+        "note": 31,
+        "clip": 1.1908329911973852,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 619.6034280659121,
+        "resonance": 6.5358983848622465,
+        "lpenv": 1.2346331352698188,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 7.75,
+      "end": 7.875,
+      "value": {
+        "note": 43,
+        "clip": 1.1908329911973852,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 619.6034280659121,
+        "resonance": 6.5358983848622465,
+        "lpenv": 1.2346331352698188,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.125,
+      "value": {
+        "note": 29,
+        "clip": 1.2828678041696548,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 600,
+        "resonance": 8,
+        "lpenv": 1.9999999999999991,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.125,
+      "value": {
+        "note": 41,
+        "clip": 1.2828678041696548,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 600,
+        "resonance": 8,
+        "lpenv": 1.9999999999999991,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 8,
+      "end": 8.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.499999999999999,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 8.125,
+      "end": 8.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.8535533905932722,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 8.25,
+      "end": 8.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 8.375,
+      "end": 8.5,
+      "value": {
+        "note": 29,
+        "clip": 1.20166106817058,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 570.6539051089277,
+        "resonance": 11.035276180410072,
+        "lpenv": 3.1111404660392035,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 8.375,
+      "end": 8.5,
+      "value": {
+        "note": 41,
+        "clip": 1.20166106817058,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 570.6539051089277,
+        "resonance": 11.035276180410072,
+        "lpenv": 3.1111404660392035,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 8.375,
+      "end": 8.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932748,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 9,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 8.5,
+      "end": 8.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.4999999999999993,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 8.625,
+      "end": 8.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.14644660940672666,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 8.875,
+      "value": {
+        "note": 29,
+        "clip": 1.018338077322369,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 541.9430645491076,
+        "resonance": 13.46410161513775,
+        "lpenv": 3.847759065022573,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 8.875,
+      "value": {
+        "note": 41,
+        "clip": 1.018338077322369,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 541.9430645491076,
+        "resonance": 13.46410161513775,
+        "lpenv": 3.847759065022573,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 8.75,
+      "end": 8.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 8.875,
+      "end": 9,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.14644660940672644,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.125,
+      "value": {
+        "note": 29,
+        "clip": 0.9877932504750789,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 523.4633135269821,
+        "resonance": 14,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.125,
+      "value": {
+        "note": 41,
+        "clip": 0.9877932504750789,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 523.4633135269821,
+        "resonance": 14,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 9,
+      "end": 9.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.4999999999999989,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 9.125,
+      "end": 9.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.853553390593272,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.375,
+      "value": {
+        "note": 29,
+        "clip": 0.9243913061427521,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 505.72065263480044,
+        "resonance": 13.464101615137753,
+        "lpenv": 3.847759065022574,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.375,
+      "value": {
+        "note": 41,
+        "clip": 0.9243913061427521,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 505.72065263480044,
+        "resonance": 13.464101615137753,
+        "lpenv": 3.847759065022574,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 9.25,
+      "end": 9.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 9.375,
+      "end": 9.5,
+      "value": {
+        "note": 41,
+        "clip": 0.8192323029547596,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 497.1794511613557,
+        "resonance": 12.828427124746195,
+        "lpenv": 3.6629392246050916,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 9.375,
+      "end": 9.5,
+      "value": {
+        "note": 53,
+        "clip": 0.8192323029547596,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 497.1794511613557,
+        "resonance": 12.828427124746195,
+        "lpenv": 3.6629392246050916,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 9.375,
+      "end": 9.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932748,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 10,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 9.5,
+      "end": 9.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.5000000000000029,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 9.625,
+      "end": 9.75,
+      "value": {
+        "note": 29,
+        "clip": 0.5438674904831089,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 480.86013910151337,
+        "resonance": 11.03527618041008,
+        "lpenv": 3.1111404660392052,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 9.625,
+      "end": 9.75,
+      "value": {
+        "note": 41,
+        "clip": 0.5438674904831089,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 480.86013910151337,
+        "resonance": 11.03527618041008,
+        "lpenv": 3.1111404660392052,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 9.625,
+      "end": 9.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.14644660940672677,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 9.875,
+      "value": {
+        "note": 29,
+        "clip": 0.43870848729511636,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 473.12134316727094,
+        "resonance": 10.000000000000004,
+        "lpenv": 2.7653668647301815,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 9.875,
+      "value": {
+        "note": 41,
+        "clip": 0.43870848729511636,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 473.12134316727094,
+        "resonance": 10.000000000000004,
+        "lpenv": 2.7653668647301815,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 9.75,
+      "end": 9.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 9.875,
+      "end": 10,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.14644660940672632,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.125,
+      "value": {
+        "note": 41,
+        "clip": 0.37530654296278954,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 458.5786437626905,
+        "resonance": 8.000000000000005,
+        "lpenv": 2.0000000000000013,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.125,
+      "value": {
+        "note": 53,
+        "clip": 0.37530654296278954,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 458.5786437626905,
+        "resonance": 8.000000000000005,
+        "lpenv": 2.0000000000000013,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 10,
+      "end": 10.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.4999999999999988,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 10.125,
+      "end": 10.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.853553390593272,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 10.25,
+      "end": 10.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 10.375,
+      "end": 10.5,
+      "value": {
+        "note": 29,
+        "clip": 0.486252447193084,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 439.358493703871,
+        "resonance": 6.136296694843727,
+        "lpenv": 0.8888595339607941,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 10.375,
+      "end": 10.5,
+      "value": {
+        "note": 41,
+        "clip": 0.486252447193084,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 439.358493703871,
+        "resonance": 6.136296694843727,
+        "lpenv": 0.8888595339607941,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 10.375,
+      "end": 10.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932724,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 11,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 10.5,
+      "end": 10.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.4999999999999995,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 10.625,
+      "end": 10.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.14644660940672682,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 10.875,
+      "value": {
+        "note": 41,
+        "clip": 0.736711165126144,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 423.615747130329,
+        "resonance": 6.5358983848622465,
+        "lpenv": 0.1522409349774274,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 10.875,
+      "value": {
+        "note": 53,
+        "clip": 0.736711165126144,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 423.615747130329,
+        "resonance": 6.5358983848622465,
+        "lpenv": 0.1522409349774274,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 10.75,
+      "end": 10.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 10.875,
+      "end": 11,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.14644660940672372,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.125,
+      "value": {
+        "note": 29,
+        "clip": 0.7784419820643962,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 415.2240934977427,
+        "resonance": 7.999999999999998,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.125,
+      "value": {
+        "note": 41,
+        "clip": 0.7784419820643962,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 415.2240934977427,
+        "resonance": 7.999999999999998,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 11,
+      "end": 11.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.4999999999999951,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 11.125,
+      "end": 11.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.8535533905932744,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.375,
+      "value": {
+        "note": 29,
+        "clip": 0.73140886525307,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 408.61193285355824,
+        "resonance": 9.999999999999996,
+        "lpenv": 0.1522409349774263,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.375,
+      "value": {
+        "note": 41,
+        "clip": 0.73140886525307,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 408.61193285355824,
+        "resonance": 9.999999999999996,
+        "lpenv": 0.1522409349774263,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 11.25,
+      "end": 11.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 11.375,
+      "end": 11.5,
+      "value": {
+        "note": 29,
+        "clip": 0.6533993383720201,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 405.9937493610912,
+        "resonance": 11.035276180410085,
+        "lpenv": 0.3370607753949084,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 11.375,
+      "end": 11.5,
+      "value": {
+        "note": 41,
+        "clip": 0.6533993383720201,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 405.9937493610912,
+        "resonance": 11.035276180410085,
+        "lpenv": 0.3370607753949084,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 11.375,
+      "end": 11.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932751,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 12,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 11.5,
+      "end": 11.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.5000000000000032,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 11.625,
+      "end": 11.75,
+      "value": {
+        "note": 29,
+        "clip": 0.4491269690133948,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 402.1646980070438,
+        "resonance": 12.82842712474619,
+        "lpenv": 0.8888595339607919,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 11.625,
+      "end": 11.75,
+      "value": {
+        "note": 41,
+        "clip": 0.4491269690133948,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 402.1646980070438,
+        "resonance": 12.82842712474619,
+        "lpenv": 0.8888595339607919,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 11.625,
+      "end": 11.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.14644660940672943,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 11.875,
+      "value": {
+        "note": 29,
+        "clip": 0.3711174421323449,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 400.9630546655606,
+        "resonance": 13.464101615137757,
+        "lpenv": 1.2346331352698217,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 11.875,
+      "value": {
+        "note": 41,
+        "clip": 0.3711174421323449,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 400.9630546655606,
+        "resonance": 13.464101615137757,
+        "lpenv": 1.2346331352698217,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 11.75,
+      "end": 11.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 11.875,
+      "end": 12,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.14644660940672616,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.125,
+      "value": {
+        "note": 41,
+        "clip": 0.3240843253210187,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 400,
+        "resonance": 14,
+        "lpenv": 1.9999999999999984,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.125,
+      "value": {
+        "note": 53,
+        "clip": 0.3240843253210187,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 400,
+        "resonance": 14,
+        "lpenv": 1.9999999999999984,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 12,
+      "end": 12.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.49999999999999856,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 12.125,
+      "end": 12.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.8535533905932717,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 12.25,
+      "end": 12.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 12.375,
+      "end": 12.5,
+      "value": {
+        "note": 41,
+        "clip": 0.6367102639553422,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 402.1646980070438,
+        "resonance": 12.828427124746195,
+        "lpenv": 3.1111404660392057,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 12.375,
+      "end": 12.5,
+      "value": {
+        "note": 53,
+        "clip": 0.6367102639553422,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 402.1646980070438,
+        "resonance": 12.828427124746195,
+        "lpenv": 3.1111404660392057,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 12.375,
+      "end": 12.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932726,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 13,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 12.5,
+      "end": 12.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.4999999999999998,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 12.625,
+      "end": 12.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.146446609406727,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 12.875,
+      "value": {
+        "note": 29,
+        "clip": 1.3424586403933063,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 408.6119328535582,
+        "resonance": 10.000000000000004,
+        "lpenv": 3.8477590650225726,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 12.875,
+      "value": {
+        "note": 41,
+        "clip": 1.3424586403933063,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 408.6119328535582,
+        "resonance": 10.000000000000004,
+        "lpenv": 3.8477590650225726,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 12.75,
+      "end": 12.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 12.875,
+      "end": 13,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.14644660940672355,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.125,
+      "value": {
+        "note": 29,
+        "clip": 1.4600487029179932,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 415.2240934977427,
+        "resonance": 8.000000000000007,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.125,
+      "value": {
+        "note": 41,
+        "clip": 1.4600487029179932,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 415.2240934977427,
+        "resonance": 8.000000000000007,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 13,
+      "end": 13.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.500000000000002,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 13.125,
+      "end": 13.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.8535533905932742,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.375,
+      "value": {
+        "note": 29,
+        "clip": 1.4137809692188967,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 423.615747130329,
+        "resonance": 6.535898384862243,
+        "lpenv": 3.847759065022574,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.375,
+      "value": {
+        "note": 41,
+        "clip": 1.4137809692188967,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 423.615747130329,
+        "resonance": 6.535898384862243,
+        "lpenv": 3.847759065022574,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 13.25,
+      "end": 13.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 13.375,
+      "end": 13.5,
+      "value": {
+        "note": 41,
+        "clip": 1.337040913266327,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 428.45427799994553,
+        "resonance": 6.136296694843732,
+        "lpenv": 3.6629392246050916,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 13.375,
+      "end": 13.5,
+      "value": {
+        "note": 53,
+        "clip": 1.337040913266327,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 428.45427799994553,
+        "resonance": 6.136296694843732,
+        "lpenv": 3.6629392246050916,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 13.375,
+      "end": 13.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932753,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 14,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 13.5,
+      "end": 13.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.5000000000000034,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 13.625,
+      "end": 13.75,
+      "value": {
+        "note": 41,
+        "clip": 1.1360927255142372,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 439.358493703871,
+        "resonance": 6.136296694843729,
+        "lpenv": 3.1111404660392084,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 13.625,
+      "end": 13.75,
+      "value": {
+        "note": 53,
+        "clip": 1.1360927255142372,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 439.358493703871,
+        "resonance": 6.136296694843729,
+        "lpenv": 3.1111404660392084,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 13.625,
+      "end": 13.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.1464466094067296,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 13.875,
+      "value": {
+        "note": 29,
+        "clip": 1.0593526695616675,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 445.3979093274526,
+        "resonance": 6.5358983848622385,
+        "lpenv": 2.765366864730179,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 13.875,
+      "value": {
+        "note": 41,
+        "clip": 1.0593526695616675,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 445.3979093274526,
+        "resonance": 6.5358983848622385,
+        "lpenv": 2.765366864730179,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 13.75,
+      "end": 13.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 13.875,
+      "end": 14,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.146446609406726,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.125,
+      "value": {
+        "note": 29,
+        "clip": 1.013084935862571,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 458.5786437626905,
+        "resonance": 7.999999999999998,
+        "lpenv": 2.0000000000000018,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.125,
+      "value": {
+        "note": 41,
+        "clip": 1.013084935862571,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 458.5786437626905,
+        "resonance": 7.999999999999998,
+        "lpenv": 2.0000000000000018,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 14,
+      "end": 14.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.4999999999999983,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 14.125,
+      "end": 14.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.8535533905932716,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 14.25,
+      "end": 14.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 14.375,
+      "end": 14.5,
+      "value": {
+        "note": 41,
+        "clip": 0.8683821308372616,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 480.86013910151337,
+        "resonance": 11.035276180410083,
+        "lpenv": 0.8888595339607945,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 14.375,
+      "end": 14.5,
+      "value": {
+        "note": 53,
+        "clip": 0.8683821308372616,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 480.86013910151337,
+        "resonance": 11.035276180410083,
+        "lpenv": 0.8888595339607945,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 14.375,
+      "end": 14.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932728,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 15,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 14.5,
+      "end": 14.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.5,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 14.625,
+      "end": 14.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.14644660940672716,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 14.875,
+      "value": {
+        "note": 29,
+        "clip": 0.5417177147022813,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 505.72065263480044,
+        "resonance": 13.46410161513775,
+        "lpenv": 0.1522409349774274,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 14.875,
+      "value": {
+        "note": 41,
+        "clip": 0.5417177147022813,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 505.72065263480044,
+        "resonance": 13.46410161513775,
+        "lpenv": 0.1522409349774274,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 14.75,
+      "end": 14.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 14.875,
+      "end": 15,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.14644660940672338,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.125,
+      "value": {
+        "note": 41,
+        "clip": 0.48728969134390354,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 523.4633135269819,
+        "resonance": 14,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.125,
+      "value": {
+        "note": 53,
+        "clip": 0.48728969134390354,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 523.4633135269819,
+        "resonance": 14,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 15,
+      "end": 15.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.4999999999999946,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 15.125,
+      "end": 15.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.8535533905932741,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.375,
+      "value": {
+        "note": 29,
+        "clip": 0.49714683778220203,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 541.9430645491075,
+        "resonance": 13.464101615137762,
+        "lpenv": 0.15224093497742608,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.375,
+      "value": {
+        "note": 41,
+        "clip": 0.49714683778220203,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 541.9430645491075,
+        "resonance": 13.464101615137762,
+        "lpenv": 0.15224093497742608,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 15.25,
+      "end": 15.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 15.375,
+      "end": 15.5,
+      "value": {
+        "note": 29,
+        "clip": 0.5134959845575168,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 551.4039640193472,
+        "resonance": 12.828427124746197,
+        "lpenv": 0.3370607753949082,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 15.375,
+      "end": 15.5,
+      "value": {
+        "note": 41,
+        "clip": 0.5134959845575168,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 551.4039640193472,
+        "resonance": 12.828427124746197,
+        "lpenv": 0.3370607753949082,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 15.375,
+      "end": 15.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932754,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 16,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 15.5,
+      "end": 15.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.5000000000000037,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 15.625,
+      "end": 15.75,
+      "value": {
+        "note": 29,
+        "clip": 0.5563071524021552,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 570.6539051089276,
+        "resonance": 11.035276180410108,
+        "lpenv": 0.8888595339607914,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 15.625,
+      "end": 15.75,
+      "value": {
+        "note": 41,
+        "clip": 0.5563071524021552,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 570.6539051089276,
+        "resonance": 11.035276180410108,
+        "lpenv": 0.8888595339607914,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 15.625,
+      "end": 15.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.14644660940672977,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 15.875,
+      "value": {
+        "note": 29,
+        "clip": 0.57265629917747,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 580.3965719340879,
+        "resonance": 10.00000000000002,
+        "lpenv": 1.2346331352698212,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 15.875,
+      "value": {
+        "note": 41,
+        "clip": 0.57265629917747,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 580.3965719340879,
+        "resonance": 10.00000000000002,
+        "lpenv": 1.2346331352698212,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 15.75,
+      "end": 15.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 15.875,
+      "end": 16,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.14644660940672583,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.125,
+      "value": {
+        "note": 31,
+        "clip": 0.5825134456157685,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 600,
+        "resonance": 8.000000000000007,
+        "lpenv": 1.999999999999998,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.125,
+      "value": {
+        "note": 43,
+        "clip": 0.5825134456157685,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 600,
+        "resonance": 8.000000000000007,
+        "lpenv": 1.999999999999998,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 16,
+      "end": 16.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.49999999999999806,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 16.125,
+      "end": 16.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.8535533905932715,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 16.25,
+      "end": 16.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 16.375,
+      "end": 16.5,
+      "value": {
+        "note": 43,
+        "clip": 0.7486058826865475,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 629.3460948910724,
+        "resonance": 6.136296694843732,
+        "lpenv": 3.1111404660392052,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 16.375,
+      "end": 16.5,
+      "value": {
+        "note": 55,
+        "clip": 0.7486058826865475,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 629.3460948910724,
+        "resonance": 6.136296694843732,
+        "lpenv": 3.1111404660392052,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 16.375,
+      "end": 16.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.853553390593273,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 17,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 16.5,
+      "end": 16.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.5000000000000002,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 16.625,
+      "end": 16.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.14644660940672732,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 16.75,
+      "end": 16.875,
+      "value": {
+        "note": 43,
+        "clip": 1.1235570729601023,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 658.0569354508924,
+        "resonance": 6.535898384862245,
+        "lpenv": 3.847759065022572,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 16.75,
+      "end": 16.875,
+      "value": {
+        "note": 55,
+        "clip": 1.1235570729601023,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 658.0569354508924,
+        "resonance": 6.535898384862245,
+        "lpenv": 3.847759065022572,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 16.75,
+      "end": 16.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 16.875,
+      "end": 17,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.14644660940672322,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.125,
+      "value": {
+        "note": 31,
+        "clip": 1.1860305201262236,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 676.536686473018,
+        "resonance": 8.000000000000009,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.125,
+      "value": {
+        "note": 43,
+        "clip": 1.1860305201262236,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 676.536686473018,
+        "resonance": 8.000000000000009,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 17,
+      "end": 17.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.5000000000000014,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 17.125,
+      "end": 17.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.8535533905932738,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 17.25,
+      "end": 17.375,
+      "value": {
+        "note": 31,
+        "clip": 1.1848194475041964,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 694.2793473651996,
+        "resonance": 9.999999999999995,
+        "lpenv": 3.847759065022574,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 17.25,
+      "end": 17.375,
+      "value": {
+        "note": 43,
+        "clip": 1.1848194475041964,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 694.2793473651996,
+        "resonance": 9.999999999999995,
+        "lpenv": 3.847759065022574,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 17.25,
+      "end": 17.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 17.375,
+      "end": 17.5,
+      "value": {
+        "note": 31,
+        "clip": 1.1828107521706102,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 702.8205488386443,
+        "resonance": 11.035276180410083,
+        "lpenv": 3.6629392246050916,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 17.375,
+      "end": 17.5,
+      "value": {
+        "note": 43,
+        "clip": 1.1828107521706102,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 702.8205488386443,
+        "resonance": 11.035276180410083,
+        "lpenv": 3.6629392246050916,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 17.375,
+      "end": 17.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932755,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 18,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 17.5,
+      "end": 17.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.5000000000000039,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 17.625,
+      "end": 17.75,
+      "value": {
+        "note": 31,
+        "clip": 1.1775508695445183,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 719.1398608984866,
+        "resonance": 12.828427124746177,
+        "lpenv": 3.111140466039209,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 17.625,
+      "end": 17.75,
+      "value": {
+        "note": 43,
+        "clip": 1.1775508695445183,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 719.1398608984866,
+        "resonance": 12.828427124746177,
+        "lpenv": 3.111140466039209,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 17.625,
+      "end": 17.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.14644660940672993,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 17.875,
+      "value": {
+        "note": 31,
+        "clip": 1.175542174210932,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 726.8786568327291,
+        "resonance": 13.46410161513775,
+        "lpenv": 2.7653668647301792,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 17.875,
+      "value": {
+        "note": 43,
+        "clip": 1.175542174210932,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 726.8786568327291,
+        "resonance": 13.46410161513775,
+        "lpenv": 2.7653668647301792,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 17.75,
+      "end": 17.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 17.875,
+      "end": 18,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.1464466094067256,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.125,
+      "value": {
+        "note": 31,
+        "clip": 1.1743311015889049,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 741.4213562373095,
+        "resonance": 14,
+        "lpenv": 2.000000000000002,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.125,
+      "value": {
+        "note": 43,
+        "clip": 1.1743311015889049,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 741.4213562373095,
+        "resonance": 14,
+        "lpenv": 2.000000000000002,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 18,
+      "end": 18.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.4999999999999978,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 18.125,
+      "end": 18.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.8535533905932713,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 18.25,
+      "end": 18.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 18.375,
+      "end": 18.5,
+      "value": {
+        "note": 31,
+        "clip": 1.0065895660343984,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 760.6415062961289,
+        "resonance": 12.828427124746197,
+        "lpenv": 0.8888595339607948,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 18.375,
+      "end": 18.5,
+      "value": {
+        "note": 43,
+        "clip": 1.0065895660343984,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 760.6415062961289,
+        "resonance": 12.828427124746197,
+        "lpenv": 0.8888595339607948,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 18.375,
+      "end": 18.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932732,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 19,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 18.5,
+      "end": 18.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.5000000000000004,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 18.625,
+      "end": 18.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.14644660940672755,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 18.875,
+      "value": {
+        "note": 43,
+        "clip": 0.6279155606209316,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 776.384252869671,
+        "resonance": 9.999999999999993,
+        "lpenv": 0.15224093497742763,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 18.875,
+      "value": {
+        "note": 55,
+        "clip": 0.6279155606209316,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 776.384252869671,
+        "resonance": 9.999999999999993,
+        "lpenv": 0.15224093497742763,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 18.75,
+      "end": 18.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 18.875,
+      "end": 19,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.14644660940672305,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.125,
+      "value": {
+        "note": 31,
+        "clip": 0.5648218271322548,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 784.7759065022574,
+        "resonance": 8.000000000000007,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.125,
+      "value": {
+        "note": 43,
+        "clip": 0.5648218271322548,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 784.7759065022574,
+        "resonance": 8.000000000000007,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 19,
+      "end": 19.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.4999999999999941,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 19.125,
+      "end": 19.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.8535533905932737,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 19.25,
+      "end": 19.375,
+      "value": {
+        "note": 31,
+        "clip": 0.6149818763704389,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 791.3880671464417,
+        "resonance": 6.535898384862244,
+        "lpenv": 0.15224093497742586,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 19.25,
+      "end": 19.375,
+      "value": {
+        "note": 43,
+        "clip": 0.6149818763704389,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 791.3880671464417,
+        "resonance": 6.535898384862244,
+        "lpenv": 0.15224093497742586,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 19.25,
+      "end": 19.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 19.375,
+      "end": 19.5,
+      "value": {
+        "note": 43,
+        "clip": 0.6981777599241014,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 794.0062506389088,
+        "resonance": 6.1362966948437325,
+        "lpenv": 0.337060775394908,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 19.375,
+      "end": 19.5,
+      "value": {
+        "note": 55,
+        "clip": 0.6981777599241014,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 794.0062506389088,
+        "resonance": 6.1362966948437325,
+        "lpenv": 0.337060775394908,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 19.375,
+      "end": 19.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932757,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 20,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 19.5,
+      "end": 19.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.5000000000000042,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 19.625,
+      "end": 19.75,
+      "value": {
+        "note": 31,
+        "clip": 0.9160308983017331,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 797.8353019929561,
+        "resonance": 6.136296694843725,
+        "lpenv": 0.888859533960791,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 19.625,
+      "end": 19.75,
+      "value": {
+        "note": 43,
+        "clip": 0.9160308983017331,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 797.8353019929561,
+        "resonance": 6.136296694843725,
+        "lpenv": 0.888859533960791,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 19.625,
+      "end": 19.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.14644660940673015,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 19.875,
+      "value": {
+        "note": 31,
+        "clip": 0.9992267818553956,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 799.0369453344395,
+        "resonance": 6.535898384862245,
+        "lpenv": 1.2346331352698208,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 19.875,
+      "value": {
+        "note": 43,
+        "clip": 0.9992267818553956,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 799.0369453344395,
+        "resonance": 6.535898384862245,
+        "lpenv": 1.2346331352698208,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 19.75,
+      "end": 19.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 19.875,
+      "end": 20,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.14644660940672544,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.125,
+      "value": {
+        "note": 31,
+        "clip": 1.0493868310935797,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 800,
+        "resonance": 8.000000000000009,
+        "lpenv": 1.9999999999999976,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.125,
+      "value": {
+        "note": 43,
+        "clip": 1.0493868310935797,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 800,
+        "resonance": 8.000000000000009,
+        "lpenv": 1.9999999999999976,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 20,
+      "end": 20.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.49999999999999756,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 20.125,
+      "end": 20.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.8535533905932711,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 20.25,
+      "end": 20.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 20.375,
+      "end": 20.5,
+      "value": {
+        "note": 31,
+        "clip": 0.9069995012614073,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 797.8353019929561,
+        "resonance": 11.035276180410083,
+        "lpenv": 3.111140466039199,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 20.375,
+      "end": 20.5,
+      "value": {
+        "note": 43,
+        "clip": 0.9069995012614073,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 797.8353019929561,
+        "resonance": 11.035276180410083,
+        "lpenv": 3.111140466039199,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 20.375,
+      "end": 20.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932784,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 20.5,
+      "end": 20.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.5000000000000079,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 20.625,
+      "end": 20.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.14644660940673276,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 20.75,
+      "end": 20.875,
+      "value": {
+        "note": 31,
+        "clip": 0.585562235712132,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 791.3880671464417,
+        "resonance": 13.464101615137748,
+        "lpenv": 3.847759065022575,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 20.75,
+      "end": 20.875,
+      "value": {
+        "note": 43,
+        "clip": 0.585562235712132,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 791.3880671464417,
+        "resonance": 13.464101615137748,
+        "lpenv": 3.847759065022575,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 20.75,
+      "end": 20.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 20.875,
+      "end": 21,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.14644660940672788,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.125,
+      "value": {
+        "note": 31,
+        "clip": 0.53200514735654,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 784.7759065022574,
+        "resonance": 14,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.125,
+      "value": {
+        "note": 43,
+        "clip": 0.53200514735654,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 784.7759065022574,
+        "resonance": 14,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 21,
+      "end": 21.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.500000000000001,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 21.125,
+      "end": 21.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.8535533905932735,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 21.25,
+      "end": 21.375,
+      "value": {
+        "note": 31,
+        "clip": 0.6224045915183524,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 776.3842528696711,
+        "resonance": 13.464101615137762,
+        "lpenv": 3.847759065022574,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 21.25,
+      "end": 21.375,
+      "value": {
+        "note": 43,
+        "clip": 0.6224045915183524,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 776.3842528696711,
+        "resonance": 13.464101615137762,
+        "lpenv": 3.847759065022574,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 21.25,
+      "end": 21.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 21.375,
+      "end": 21.5,
+      "value": {
+        "note": 43,
+        "clip": 0.772341877147585,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 771.5457220000544,
+        "resonance": 12.828427124746199,
+        "lpenv": 3.6629392246050925,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 21.375,
+      "end": 21.5,
+      "value": {
+        "note": 55,
+        "clip": 0.772341877147585,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 771.5457220000544,
+        "resonance": 12.828427124746199,
+        "lpenv": 3.6629392246050925,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 21.375,
+      "end": 21.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.853553390593276,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 21.5,
+      "end": 21.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.5000000000000044,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 21.625,
+      "end": 21.75,
+      "value": {
+        "note": 43,
+        "clip": 1.1649611611664,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 760.6415062961291,
+        "resonance": 11.03527618041011,
+        "lpenv": 3.1111404660392092,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 21.625,
+      "end": 21.75,
+      "value": {
+        "note": 55,
+        "clip": 1.1649611611664,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 760.6415062961291,
+        "resonance": 11.03527618041011,
+        "lpenv": 3.1111404660392092,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 21.625,
+      "end": 21.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.14644660940673032,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 21.75,
+      "end": 21.875,
+      "value": {
+        "note": 43,
+        "clip": 1.3148984467956324,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 754.6020906725475,
+        "resonance": 10.000000000000021,
+        "lpenv": 2.7653668647301863,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 21.75,
+      "end": 21.875,
+      "value": {
+        "note": 55,
+        "clip": 1.3148984467956324,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 754.6020906725475,
+        "resonance": 10.000000000000021,
+        "lpenv": 2.7653668647301863,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 21.75,
+      "end": 21.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 21.875,
+      "end": 22,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.14644660940672027,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.125,
+      "value": {
+        "note": 31,
+        "clip": 1.405297890957445,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 741.4213562373097,
+        "resonance": 8.000000000000009,
+        "lpenv": 2.0000000000000098,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.125,
+      "value": {
+        "note": 43,
+        "clip": 1.405297890957445,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 741.4213562373097,
+        "resonance": 8.000000000000009,
+        "lpenv": 2.0000000000000098,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 22,
+      "end": 22.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.4999999999999902,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 22.125,
+      "end": 22.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.853553390593276,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 22.25,
+      "end": 22.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 22.375,
+      "end": 22.5,
+      "value": {
+        "note": 31,
+        "clip": 1.1079659777916049,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 719.1398608984866,
+        "resonance": 6.1362966948437325,
+        "lpenv": 0.8888595339607952,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 22.375,
+      "end": 22.5,
+      "value": {
+        "note": 43,
+        "clip": 1.1079659777916049,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 719.1398608984866,
+        "resonance": 6.1362966948437325,
+        "lpenv": 0.8888595339607952,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 22.375,
+      "end": 22.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932735,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 22.5,
+      "end": 22.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.500000000000001,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 22.625,
+      "end": 22.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.14644660940672788,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 22.75,
+      "end": 22.875,
+      "value": {
+        "note": 43,
+        "clip": 0.43674363489626555,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 694.2793473651996,
+        "resonance": 6.535898384862244,
+        "lpenv": 0.15224093497742786,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 22.75,
+      "end": 22.875,
+      "value": {
+        "note": 55,
+        "clip": 0.43674363489626555,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 694.2793473651996,
+        "resonance": 6.535898384862244,
+        "lpenv": 0.15224093497742786,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 22.75,
+      "end": 22.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 22.875,
+      "end": 23,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.14644660940672272,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.125,
+      "value": {
+        "note": 43,
+        "clip": 0.32490621535107495,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 676.5366864730181,
+        "resonance": 8.000000000000007,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.125,
+      "value": {
+        "note": 55,
+        "clip": 0.32490621535107495,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 676.5366864730181,
+        "resonance": 8.000000000000007,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 23,
+      "end": 23.125,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.4999999999999936,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 23.125,
+      "end": 23.25,
+      "value": {
+        "s": "hh",
+        "gain": 0.03125,
+        "clip": 0.8535533905932683,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 23.25,
+      "end": 23.375,
+      "value": {
+        "note": 31,
+        "clip": 0.41050589549522554,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 658.0569354508928,
+        "resonance": 9.999999999999993,
+        "lpenv": 0.15224093497742297,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 23.25,
+      "end": 23.375,
+      "value": {
+        "note": 43,
+        "clip": 0.41050589549522554,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 658.0569354508928,
+        "resonance": 9.999999999999993,
+        "lpenv": 0.15224093497742297,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 23.25,
+      "end": 23.375,
+      "value": {
+        "s": "hh",
+        "gain": 0.125,
+        "clip": 1,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 23.375,
+      "end": 23.5,
+      "value": {
+        "note": 31,
+        "clip": 0.5524822517720509,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 648.5960359806527,
+        "resonance": 11.035276180410055,
+        "lpenv": 0.33706077539491175,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 23.375,
+      "end": 23.5,
+      "value": {
+        "note": 43,
+        "clip": 0.5524822517720509,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 648.5960359806527,
+        "resonance": 11.035276180410055,
+        "lpenv": 0.33706077539491175,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 23.375,
+      "end": 23.5,
+      "value": {
+        "s": "hh",
+        "gain": 0.28125,
+        "clip": 0.8535533905932711,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 23.5,
+      "end": 23.625,
+      "value": {
+        "s": "hh",
+        "gain": 0,
+        "clip": 0.49999999999999756,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 23.625,
+      "end": 23.75,
+      "value": {
+        "note": 31,
+        "clip": 0.9242553908886862,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 629.3460948910723,
+        "resonance": 12.828427124746177,
+        "lpenv": 0.8888595339607965,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 23.625,
+      "end": 23.75,
+      "value": {
+        "note": 43,
+        "clip": 0.9242553908886862,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 629.3460948910723,
+        "resonance": 12.828427124746177,
+        "lpenv": 0.8888595339607965,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 23.625,
+      "end": 23.75,
+      "value": {
+        "s": "hh",
+        "gain": 0.15625,
+        "clip": 0.1464466094067255,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 23.75,
+      "end": 23.875,
+      "value": {
+        "note": 43,
+        "clip": 1.0662317471655116,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 619.6034280659121,
+        "resonance": 13.464101615137748,
+        "lpenv": 1.2346331352698203,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 23.75,
+      "end": 23.875,
+      "value": {
+        "note": 55,
+        "clip": 1.0662317471655116,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 619.6034280659121,
+        "resonance": 13.464101615137748,
+        "lpenv": 1.2346331352698203,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 23.75,
+      "end": 23.875,
+      "value": {
+        "s": "hh",
+        "gain": 0.375,
+        "clip": 0,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 23.875,
+      "end": 24,
+      "value": {
+        "s": "hh",
+        "gain": 0.65625,
+        "clip": 0.1464466094067251,
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.125,
+      "value": {
+        "note": 29,
+        "clip": 1.1518314273096621,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 600.0000000000001,
+        "resonance": 14,
+        "lpenv": 1.9999999999999971,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.125,
+      "value": {
+        "note": 41,
+        "clip": 1.1518314273096621,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 600.0000000000001,
+        "resonance": 14,
+        "lpenv": 1.9999999999999971,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 24,
+      "end": 24.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 24.375,
+      "end": 24.5,
+      "value": {
+        "note": 41,
+        "clip": 1.1544082271232128,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 570.6539051089278,
+        "resonance": 12.828427124746199,
+        "lpenv": 3.1111404660391986,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 24.375,
+      "end": 24.5,
+      "value": {
+        "note": 53,
+        "clip": 1.1544082271232128,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 570.6539051089278,
+        "resonance": 12.828427124746199,
+        "lpenv": 3.1111404660391986,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 24.5,
+      "end": 25,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 24.875,
+      "value": {
+        "note": 29,
+        "clip": 1.1602253141274559,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 541.9430645491075,
+        "resonance": 9.999999999999995,
+        "lpenv": 3.847759065022575,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 24.75,
+      "end": 24.875,
+      "value": {
+        "note": 41,
+        "clip": 1.1602253141274559,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 541.9430645491075,
+        "resonance": 9.999999999999995,
+        "lpenv": 3.847759065022575,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.125,
+      "value": {
+        "note": 29,
+        "clip": 1.161194542888552,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 523.463313526982,
+        "resonance": 7.999999999999985,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.125,
+      "value": {
+        "note": 41,
+        "clip": 1.161194542888552,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 523.463313526982,
+        "resonance": 7.999999999999985,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 25,
+      "end": 25.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 25.25,
+      "end": 25.375,
+      "value": {
+        "note": 29,
+        "clip": 1.0649021572795392,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 505.7206526348005,
+        "resonance": 6.535898384862259,
+        "lpenv": 3.8477590650225744,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 25.25,
+      "end": 25.375,
+      "value": {
+        "note": 41,
+        "clip": 1.0649021572795392,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 505.7206526348005,
+        "resonance": 6.535898384862259,
+        "lpenv": 3.8477590650225744,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 25.375,
+      "end": 25.5,
+      "value": {
+        "note": 29,
+        "clip": 0.9051907889315715,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 497.1794511613557,
+        "resonance": 6.136296694843725,
+        "lpenv": 3.6629392246050925,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 25.375,
+      "end": 25.5,
+      "value": {
+        "note": 41,
+        "clip": 0.9051907889315715,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 497.1794511613557,
+        "resonance": 6.136296694843725,
+        "lpenv": 3.6629392246050925,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 25.5,
+      "end": 26,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 25.625,
+      "end": 25.75,
+      "value": {
+        "note": 29,
+        "clip": 0.4869775151131819,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 480.8601391015135,
+        "resonance": 6.1362966948437245,
+        "lpenv": 3.1111404660392097,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 25.625,
+      "end": 25.75,
+      "value": {
+        "note": 41,
+        "clip": 0.4869775151131819,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 480.8601391015135,
+        "resonance": 6.1362966948437245,
+        "lpenv": 3.1111404660392097,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 25.75,
+      "end": 25.875,
+      "value": {
+        "note": 41,
+        "clip": 0.32726614676521426,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 473.12134316727105,
+        "resonance": 6.535898384862243,
+        "lpenv": 2.7653668647301863,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 25.75,
+      "end": 25.875,
+      "value": {
+        "note": 53,
+        "clip": 0.32726614676521426,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 473.12134316727105,
+        "resonance": 6.535898384862243,
+        "lpenv": 2.7653668647301863,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.125,
+      "value": {
+        "note": 41,
+        "clip": 0.23097376115620136,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 458.57864376269043,
+        "resonance": 7.999999999999982,
+        "lpenv": 1.999999999999996,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.125,
+      "value": {
+        "note": 53,
+        "clip": 0.23097376115620136,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 458.57864376269043,
+        "resonance": 7.999999999999982,
+        "lpenv": 1.999999999999996,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 26,
+      "end": 26.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 26.375,
+      "end": 26.5,
+      "value": {
+        "note": 29,
+        "clip": 0.30768408893886773,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 439.35849370387103,
+        "resonance": 11.035276180410053,
+        "lpenv": 0.8888595339607956,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 26.375,
+      "end": 26.5,
+      "value": {
+        "note": 41,
+        "clip": 0.30768408893886773,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 439.35849370387103,
+        "resonance": 11.035276180410053,
+        "lpenv": 0.8888595339607956,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 26.5,
+      "end": 27,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 26.75,
+      "end": 26.875,
+      "value": {
+        "note": 29,
+        "clip": 0.4808565055500367,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 423.61574713032905,
+        "resonance": 13.464101615137748,
+        "lpenv": 0.15224093497742808,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 26.75,
+      "end": 26.875,
+      "value": {
+        "note": 41,
+        "clip": 0.4808565055500367,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 423.61574713032905,
+        "resonance": 13.464101615137748,
+        "lpenv": 0.15224093497742808,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.125,
+      "value": {
+        "note": 29,
+        "clip": 0.509710068628192,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 415.22409349774273,
+        "resonance": 14,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.125,
+      "value": {
+        "note": 41,
+        "clip": 0.509710068628192,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 415.22409349774273,
+        "resonance": 14,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 27,
+      "end": 27.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 27.25,
+      "end": 27.375,
+      "value": {
+        "note": 29,
+        "clip": 0.5114800265435406,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 408.6119328535583,
+        "resonance": 13.46410161513775,
+        "lpenv": 0.15224093497742275,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 27.25,
+      "end": 27.375,
+      "value": {
+        "note": 41,
+        "clip": 0.5114800265435406,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 408.6119328535583,
+        "resonance": 13.46410161513775,
+        "lpenv": 0.15224093497742275,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 27.375,
+      "end": 27.5,
+      "value": {
+        "note": 29,
+        "clip": 0.5144156937698824,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 405.9937493610912,
+        "resonance": 12.828427124746199,
+        "lpenv": 0.3370607753949113,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 27.375,
+      "end": 27.5,
+      "value": {
+        "note": 41,
+        "clip": 0.5144156937698824,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 405.9937493610912,
+        "resonance": 12.828427124746199,
+        "lpenv": 0.3370607753949113,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 27.5,
+      "end": 28,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 27.625,
+      "end": 27.75,
+      "value": {
+        "note": 29,
+        "clip": 0.5221029048574167,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 402.1646980070438,
+        "resonance": 11.035276180410083,
+        "lpenv": 0.8888595339607961,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 27.625,
+      "end": 27.75,
+      "value": {
+        "note": 41,
+        "clip": 0.5221029048574167,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 402.1646980070438,
+        "resonance": 11.035276180410083,
+        "lpenv": 0.8888595339607961,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 27.875,
+      "value": {
+        "note": 29,
+        "clip": 0.5250385720837585,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 400.9630546655606,
+        "resonance": 10.000000000000023,
+        "lpenv": 1.2346331352698199,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 27.75,
+      "end": 27.875,
+      "value": {
+        "note": 41,
+        "clip": 0.5250385720837585,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 400.9630546655606,
+        "resonance": 10.000000000000023,
+        "lpenv": 1.2346331352698199,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.125,
+      "value": {
+        "note": 29,
+        "clip": 0.5268085299991071,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 400,
+        "resonance": 7.999999999999986,
+        "lpenv": 1.9999999999999967,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.125,
+      "value": {
+        "note": 41,
+        "clip": 0.5268085299991071,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 400,
+        "resonance": 7.999999999999986,
+        "lpenv": 1.9999999999999967,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 28,
+      "end": 28.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 28.375,
+      "end": 28.5,
+      "value": {
+        "note": 29,
+        "clip": 0.6056681304858785,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 402.1646980070438,
+        "resonance": 6.136296694843725,
+        "lpenv": 3.111140466039198,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 28.375,
+      "end": 28.5,
+      "value": {
+        "note": 41,
+        "clip": 0.6056681304858785,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 402.1646980070438,
+        "resonance": 6.136296694843725,
+        "lpenv": 3.111140466039198,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 28.5,
+      "end": 29,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 28.75,
+      "end": 28.875,
+      "value": {
+        "note": 41,
+        "clip": 0.7836924980518234,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 408.61193285355824,
+        "resonance": 6.535898384862243,
+        "lpenv": 3.847759065022575,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 28.75,
+      "end": 28.875,
+      "value": {
+        "note": 53,
+        "clip": 0.7836924980518234,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 408.61193285355824,
+        "resonance": 6.535898384862243,
+        "lpenv": 3.847759065022575,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.125,
+      "value": {
+        "note": 29,
+        "clip": 0.8133544812910259,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 415.2240934977427,
+        "resonance": 7.999999999999981,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.125,
+      "value": {
+        "note": 41,
+        "clip": 0.8133544812910259,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 415.2240934977427,
+        "resonance": 7.999999999999981,
+        "lpenv": 4,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 29,
+      "end": 29.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 29.25,
+      "end": 29.375,
+      "value": {
+        "note": 29,
+        "clip": 0.8146738740662841,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 423.61574713032894,
+        "resonance": 9.99999999999999,
+        "lpenv": 3.847759065022575,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 29.25,
+      "end": 29.375,
+      "value": {
+        "note": 41,
+        "clip": 0.8146738740662841,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 423.61574713032894,
+        "resonance": 9.99999999999999,
+        "lpenv": 3.847759065022575,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 29.375,
+      "end": 29.5,
+      "value": {
+        "note": 29,
+        "clip": 0.8168622301257188,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 428.45427799994553,
+        "resonance": 11.035276180410051,
+        "lpenv": 3.6629392246050925,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 29.375,
+      "end": 29.5,
+      "value": {
+        "note": 41,
+        "clip": 0.8168622301257188,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 428.45427799994553,
+        "resonance": 11.035276180410051,
+        "lpenv": 3.6629392246050925,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 29.5,
+      "end": 30,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 29.625,
+      "end": 29.75,
+      "value": {
+        "note": 29,
+        "clip": 0.8225925645493931,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 439.3584937038709,
+        "resonance": 12.828427124746176,
+        "lpenv": 3.11114046603921,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 29.625,
+      "end": 29.75,
+      "value": {
+        "note": 41,
+        "clip": 0.8225925645493931,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 439.3584937038709,
+        "resonance": 12.828427124746176,
+        "lpenv": 3.11114046603921,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 29.875,
+      "value": {
+        "note": 29,
+        "clip": 0.8247809206088278,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 445.3979093274525,
+        "resonance": 13.464101615137746,
+        "lpenv": 2.7653668647301872,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 29.75,
+      "end": 29.875,
+      "value": {
+        "note": 41,
+        "clip": 0.8247809206088278,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 445.3979093274525,
+        "resonance": 13.464101615137746,
+        "lpenv": 2.7653668647301872,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.125,
+      "value": {
+        "note": 29,
+        "clip": 0.826100313384086,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 458.5786437626903,
+        "resonance": 14,
+        "lpenv": 2.0000000000000107,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.125,
+      "value": {
+        "note": 41,
+        "clip": 0.826100313384086,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 458.5786437626903,
+        "resonance": 14,
+        "lpenv": 2.0000000000000107,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 30,
+      "end": 30.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 30.375,
+      "end": 30.5,
+      "value": {
+        "note": 29,
+        "clip": 0.6808993666270852,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 480.8601391015133,
+        "resonance": 12.82842712474618,
+        "lpenv": 0.8888595339607961,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 30.375,
+      "end": 30.5,
+      "value": {
+        "note": 41,
+        "clip": 0.6808993666270852,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 480.8601391015133,
+        "resonance": 12.82842712474618,
+        "lpenv": 0.8888595339607961,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 30.5,
+      "end": 31,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 30.75,
+      "end": 30.875,
+      "value": {
+        "note": 41,
+        "clip": 0.35311040299002344,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 505.7206526348004,
+        "resonance": 9.999999999999996,
+        "lpenv": 0.1522409349774283,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 30.75,
+      "end": 30.875,
+      "value": {
+        "note": 53,
+        "clip": 0.35311040299002344,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 505.7206526348004,
+        "resonance": 9.999999999999996,
+        "lpenv": 0.1522409349774283,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.125,
+      "value": {
+        "note": 41,
+        "clip": 0.2984950102865696,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 523.4633135269819,
+        "resonance": 7.999999999999986,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.125,
+      "value": {
+        "note": 53,
+        "clip": 0.2984950102865696,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 523.4633135269819,
+        "resonance": 7.999999999999986,
+        "lpenv": 0,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 0.2
+      }
+    },
+    {
+      "begin": 31,
+      "end": 31.5,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 31.25,
+      "end": 31.375,
+      "value": {
+        "note": 29,
+        "clip": 0.37289755883084585,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 541.9430645491072,
+        "resonance": 6.535898384862261,
+        "lpenv": 0.15224093497742275,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 31.25,
+      "end": 31.375,
+      "value": {
+        "note": 41,
+        "clip": 0.37289755883084585,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 541.9430645491072,
+        "resonance": 6.535898384862261,
+        "lpenv": 0.15224093497742275,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 31.375,
+      "end": 31.5,
+      "value": {
+        "note": 29,
+        "clip": 0.4963022575661341,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 551.4039640193473,
+        "resonance": 6.136296694843725,
+        "lpenv": 0.3370607753949111,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 31.375,
+      "end": 31.5,
+      "value": {
+        "note": 41,
+        "clip": 0.4963022575661341,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 551.4039640193473,
+        "resonance": 6.136296694843725,
+        "lpenv": 0.3370607753949111,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 31.5,
+      "end": 32,
+      "value": {
+        "s": "bd",
+        "bank": "RolandTR909"
+      }
+    },
+    {
+      "begin": 31.625,
+      "end": 31.75,
+      "value": {
+        "note": 29,
+        "clip": 0.8194444583781263,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 570.6539051089277,
+        "resonance": 6.1362966948437165,
+        "lpenv": 0.8888595339607956,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 31.625,
+      "end": 31.75,
+      "value": {
+        "note": 41,
+        "clip": 0.8194444583781263,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 570.6539051089277,
+        "resonance": 6.1362966948437165,
+        "lpenv": 0.8888595339607956,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 31.75,
+      "end": 31.875,
+      "value": {
+        "note": 29,
+        "clip": 0.9428491571134147,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 580.3965719340879,
+        "resonance": 6.535898384862243,
+        "lpenv": 1.2346331352698194,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "gain": 1
+      }
+    },
+    {
+      "begin": 31.75,
+      "end": 31.875,
+      "value": {
+        "note": 41,
+        "clip": 0.9428491571134147,
+        "release": 0.1,
+        "s": "sawtooth",
+        "cutoff": 580.3965719340879,
+        "resonance": 6.535898384862243,
+        "lpenv": 1.2346331352698194,
+        "lpdecay": 0.2,
+        "lpattack": 0.02,
+        "ftype": "24db",
+        "room": 0.2,
+        "shape": 0.3,
+        "postgain": 0.5,
+        "delay": 0.5,
+        "bandf": 1000,
+        "gain": 1
+      }
+    }
+  ]
+}

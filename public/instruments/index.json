@@ -1,3 +1,77 @@
 [
-  { "id": "amen-175", "name": "Amen Break (loop)", "family": "loop" }
+  {
+    "id": "amen-175",
+    "name": "Amen Break (loop)",
+    "family": "loop"
+  },
+  {
+    "id": "gm-acoustic-bass",
+    "name": "GM Acoustic Bass",
+    "family": "melodic"
+  },
+  {
+    "id": "gm-epiano1",
+    "name": "GM Electric Piano",
+    "family": "melodic"
+  },
+  {
+    "id": "strudel-piano",
+    "name": "Piano",
+    "family": "melodic"
+  },
+  {
+    "id": "strudel-clavisynth",
+    "name": "Clavisynth",
+    "family": "melodic"
+  },
+  {
+    "id": "strudel-psaltery",
+    "name": "Psaltery Pluck",
+    "family": "melodic"
+  },
+  {
+    "id": "strudel-ocarina",
+    "name": "Ocarina",
+    "family": "melodic"
+  },
+  {
+    "id": "strudel-flbass",
+    "name": "Fingered Bass",
+    "family": "melodic"
+  },
+  {
+    "id": "strudel-kalimba",
+    "name": "Kalimba",
+    "family": "melodic"
+  },
+  {
+    "id": "strudel-handbell",
+    "name": "Hand Bell",
+    "family": "melodic"
+  },
+  {
+    "id": "strudel-dino",
+    "name": "Dino",
+    "family": "melodic"
+  },
+  {
+    "id": "strudel-bells",
+    "name": "Bells",
+    "family": "melodic"
+  },
+  {
+    "id": "strudel-bells-bass",
+    "name": "Bells Bass",
+    "family": "melodic"
+  },
+  {
+    "id": "strudel-rhodes",
+    "name": "Rhodes",
+    "family": "melodic"
+  },
+  {
+    "id": "strudel-dinobass",
+    "name": "Dino Bass",
+    "family": "melodic"
+  }
 ]

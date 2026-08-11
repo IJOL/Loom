@@ -8,19 +8,14 @@
       "file": "oberheimdmx/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "oberheimdmx/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "oberheimdmx/snare.wav"
-    },
-    {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "oberheimdmx/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "oberheimdmx/openHat.wav"
     },
     {
       "voice": "clap",
@@ -28,19 +23,49 @@
       "file": "oberheimdmx/clap.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "oberheimdmx/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "oberheimdmx/closedHat.wav"
+    },
+    {
       "voice": "tom",
       "note": 45,
       "file": "oberheimdmx/tom.wav"
     },
     {
-      "voice": "cowbell",
-      "note": 56,
-      "file": "oberheimdmx/cowbell.wav"
+      "voice": "openHat",
+      "note": 46,
+      "file": "oberheimdmx/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "oberheimdmx/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "oberheimdmx/crash.wav"
     },
     {
       "voice": "ride",
       "note": 51,
       "file": "oberheimdmx/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "oberheimdmx/tamb.wav"
+    },
+    {
+      "voice": "shaker",
+      "note": 82,
+      "file": "oberheimdmx/shaker.wav"
     }
   ]
 }

@@ -8,19 +8,14 @@
       "file": "rolandtr707/kick.wav"
     },
     {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "rolandtr707/rimshot.wav"
+    },
+    {
       "voice": "snare",
       "note": 38,
       "file": "rolandtr707/snare.wav"
-    },
-    {
-      "voice": "closedHat",
-      "note": 42,
-      "file": "rolandtr707/closedHat.wav"
-    },
-    {
-      "voice": "openHat",
-      "note": 46,
-      "file": "rolandtr707/openHat.wav"
     },
     {
       "voice": "clap",
@@ -28,19 +23,44 @@
       "file": "rolandtr707/clap.wav"
     },
     {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "rolandtr707/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "rolandtr707/closedHat.wav"
+    },
+    {
       "voice": "tom",
       "note": 45,
       "file": "rolandtr707/tom.wav"
     },
     {
+      "voice": "openHat",
+      "note": 46,
+      "file": "rolandtr707/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "rolandtr707/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "rolandtr707/crash.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "rolandtr707/tamb.wav"
+    },
+    {
       "voice": "cowbell",
       "note": 56,
       "file": "rolandtr707/cowbell.wav"
-    },
-    {
-      "voice": "ride",
-      "note": 51,
-      "file": "rolandtr707/ride.wav"
     }
   ]
 }

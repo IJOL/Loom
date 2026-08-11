@@ -1,0 +1,97 @@
+{
+  "id": "strudel-rhodes",
+  "name": "Rhodes",
+  "family": "melodic",
+  "zones": [
+    {
+      "file": "strudel-rhodes/52.wav",
+      "rootNote": 52,
+      "loNote": 52,
+      "hiNote": 52
+    },
+    {
+      "file": "strudel-rhodes/53.wav",
+      "rootNote": 53,
+      "loNote": 53,
+      "hiNote": 53
+    },
+    {
+      "file": "strudel-rhodes/55.wav",
+      "rootNote": 55,
+      "loNote": 55,
+      "hiNote": 55
+    },
+    {
+      "file": "strudel-rhodes/57.wav",
+      "rootNote": 57,
+      "loNote": 57,
+      "hiNote": 57
+    },
+    {
+      "file": "strudel-rhodes/59.wav",
+      "rootNote": 59,
+      "loNote": 59,
+      "hiNote": 59
+    },
+    {
+      "file": "strudel-rhodes/60.wav",
+      "rootNote": 60,
+      "loNote": 60,
+      "hiNote": 60
+    },
+    {
+      "file": "strudel-rhodes/61.wav",
+      "rootNote": 61,
+      "loNote": 61,
+      "hiNote": 61
+    },
+    {
+      "file": "strudel-rhodes/63.wav",
+      "rootNote": 63,
+      "loNote": 63,
+      "hiNote": 63
+    },
+    {
+      "file": "strudel-rhodes/64.wav",
+      "rootNote": 64,
+      "loNote": 64,
+      "hiNote": 64
+    },
+    {
+      "file": "strudel-rhodes/65.wav",
+      "rootNote": 65,
+      "loNote": 65,
+      "hiNote": 65
+    },
+    {
+      "file": "strudel-rhodes/67.wav",
+      "rootNote": 67,
+      "loNote": 67,
+      "hiNote": 67
+    },
+    {
+      "file": "strudel-rhodes/68.wav",
+      "rootNote": 68,
+      "loNote": 68,
+      "hiNote": 68
+    },
+    {
+      "file": "strudel-rhodes/69.wav",
+      "rootNote": 69,
+      "loNote": 69,
+      "hiNote": 69
+    },
+    {
+      "file": "strudel-rhodes/72.wav",
+      "rootNote": 72,
+      "loNote": 72,
+      "hiNote": 72
+    },
+    {
+      "file": "strudel-rhodes/73.wav",
+      "rootNote": 73,
+      "loNote": 73,
+      "hiNote": 73
+    }
+  ]
+}

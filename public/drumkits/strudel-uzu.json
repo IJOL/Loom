@@ -1,0 +1,81 @@
+{
+  "id": "strudel-uzu",
+  "name": "Uzu (Strudel default)",
+  "samples": [
+    {
+      "voice": "kick",
+      "note": 36,
+      "file": "strudel-uzu/kick.wav"
+    },
+    {
+      "voice": "rimshot",
+      "note": 37,
+      "file": "strudel-uzu/rimshot.wav"
+    },
+    {
+      "voice": "snare",
+      "note": 38,
+      "file": "strudel-uzu/snare.wav"
+    },
+    {
+      "voice": "clap",
+      "note": 39,
+      "file": "strudel-uzu/clap.wav"
+    },
+    {
+      "voice": "tomLo",
+      "note": 41,
+      "file": "strudel-uzu/tomLo.wav"
+    },
+    {
+      "voice": "closedHat",
+      "note": 42,
+      "file": "strudel-uzu/closedHat.wav"
+    },
+    {
+      "voice": "tom",
+      "note": 45,
+      "file": "strudel-uzu/tom.wav"
+    },
+    {
+      "voice": "openHat",
+      "note": 46,
+      "file": "strudel-uzu/openHat.wav"
+    },
+    {
+      "voice": "tomHi",
+      "note": 48,
+      "file": "strudel-uzu/tomHi.wav"
+    },
+    {
+      "voice": "crash",
+      "note": 49,
+      "file": "strudel-uzu/crash.wav"
+    },
+    {
+      "voice": "ride",
+      "note": 51,
+      "file": "strudel-uzu/ride.wav"
+    },
+    {
+      "voice": "tamb",
+      "note": 54,
+      "file": "strudel-uzu/tamb.wav"
+    },
+    {
+      "voice": "cowbell",
+      "note": 56,
+      "file": "strudel-uzu/cowbell.wav"
+    },
+    {
+      "voice": "shaker",
+      "note": 82,
+      "file": "strudel-uzu/shaker.wav"
+    },
+    {
+      "voice": "misc2",
+      "note": 76,
+      "file": "strudel-uzu/misc2.wav"
+    }
+  ]
+}
