@@ -37,3 +37,26 @@ describe('loop ids', () => {
     expect(parseLoopId('something-else')).toBeNull();
   });
 });
+
+describe('the chord source', () => {
+  // Chordal material is GENERATED, so it is a new SOURCE rather than a new
+  // PatternKind. That matters more than it looks: PATTERN_KINDS above is a
+  // hand-maintained array and `PatternKind[]` accepts a subset, so adding a
+  // kind to the union typechecks SILENTLY and then every id of it fails to
+  // parse — the loop shows in the dropdown and plays nothing.
+
+  it('round-trips a shape', () => {
+    const id = formatLoopId({ source: 'chord', shape: 'sustained' });
+    expect(parseLoopId(id)).toEqual({ source: 'chord', shape: 'sustained' });
+  });
+
+  it('refuses a shape that does not exist', () => {
+    expect(parseLoopId('chord:nope')).toBeNull();
+    expect(parseLoopId('chord:')).toBeNull();
+  });
+
+  it('does not swallow a clip whose id starts with chord', () => {
+    const id = formatLoopId({ source: 'clip', clipId: 'chordal-1' });
+    expect(parseLoopId(id)).toEqual({ source: 'clip', clipId: 'chordal-1' });
+  });
+});

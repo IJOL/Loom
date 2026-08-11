@@ -20,6 +20,7 @@ import { isHarmonic } from '../plugins/capabilities';
 import { formatLoopId, parseLoopId } from '../weave/loop-ids';
 import { scaleForDarkness, styleForLane } from '../weave/style-mix';
 import { patternNotes, patternsFor, type PatternKind } from '../patterns/pattern-library';
+import { CHORD_SHAPES, renderChordShape } from '../core/harmony-shapes';
 
 export interface WeaveLoopContext {
   lane: SessionLane | undefined;
@@ -164,6 +165,16 @@ const ROLE_BASE: Record<LaneRole, number> = {
   bass: 36, pad: 48, comp: 52, melody: 60, arp: 60,
 };
 
+/** The role's base BEFORE the key is added.
+ *
+ *  Two conventions meet here and neither is wrong. A library pattern is placed
+ *  by `rootFor`, which hands `patternNotes` an absolute root already moved to
+ *  the nearest tonic. A generated chord is placed by `scaleDegreeToMidi`, which
+ *  adds the key ITSELF — so it needs the raw base, or the key lands twice. */
+export function roleOctaveBase(role: LaneRole | undefined): number {
+  return role ? ROLE_BASE[role] : 48;
+}
+
 export function rootFor(
   role: LaneRole | undefined, kind: PatternKind | undefined, key: number,
 ): number {
@@ -210,6 +221,19 @@ export function weaveLoopChoices(c: WeaveLoopContext): PanelChoice[] {
       });
     }
   }
+
+  // A chordal lane reads no shelf, so this is its whole list. Offered by SHAPE
+  // — the rhythm — because the notes are decided per bar by the progression
+  // rather than by the choice.
+  if (sourcesFor(c.lane?.role, c.harmonic).length === 0 && c.harmonic && c.lane?.role) {
+    for (const s of CHORD_SHAPES) {
+      out.push({
+        id: formatLoopId({ source: 'chord', shape: s.id }),
+        name: s.label,
+        group: 'Chords',
+      });
+    }
+  }
   return out;
 }
 
@@ -223,6 +247,25 @@ export function weaveLoopNotes(id: string, c: WeaveLoopContext): NoteEvent[] | u
 
   if (parsed.source === 'clip') {
     return c.lane?.clips.find((cl) => cl?.id === parsed.clipId)?.notes;
+  }
+
+  if (parsed.source === 'chord') {
+    // One bar on the TONIC, exactly like a library pattern: applyProgression
+    // moves it per bar downstream. Pre-applying a chord here would move it
+    // twice.
+    //
+    // barTicks is required — a shape is a rhythm and there is nothing to place
+    // it against without one. Absent means unresolvable, which the caller
+    // already substitutes for.
+    if (!c.barTicks) return undefined;
+    return renderChordShape(parsed.shape, {
+      key: c.key,
+      scale: c.scale,
+      // The RAW base for this role, not rootFor's — the triad adds the key
+      // itself, so a base that already carried it would apply it twice.
+      octaveBase: roleOctaveBase(c.lane?.role),
+      barTicks: c.barTicks,
+    });
   }
 
   const notes = patternNotes(

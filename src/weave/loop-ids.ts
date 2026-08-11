@@ -11,17 +11,29 @@
 
 import type { StyleId } from '../core/musicality';
 import type { PatternKind } from '../patterns/pattern-library';
+import { isChordShape, type ChordShapeId } from '../core/harmony-shapes';
 
 export type LoopId =
   | { source: 'clip'; clipId: string }
-  | { source: 'pattern'; style: StyleId; kind: PatternKind; index: number };
+  | { source: 'pattern'; style: StyleId; kind: PatternKind; index: number }
+  /** A generated chord part, named by its RHYTHM. There are no pad loops in the
+   *  library and there never will be — a chord written as fixed semitones
+   *  cannot stay diatonic across the scales a session may be in — so a chordal
+   *  lane picks a shape and the notes come from the diatonic triad.
+   *
+   *  A new SOURCE rather than a new PatternKind, deliberately: `PATTERN_KINDS`
+   *  below is hand-maintained and `PatternKind[]` accepts a subset, so adding a
+   *  kind to that union typechecks SILENTLY and then every id of it fails to
+   *  parse — the loop lists and plays nothing, which is the failure this
+   *  module's header is about. */
+  | { source: 'chord'; shape: ChordShapeId };
 
 const PATTERN_KINDS: PatternKind[] = ['drums', 'bass', 'synth'];
 
 export function formatLoopId(l: LoopId): string {
-  return l.source === 'clip'
-    ? `clip:${l.clipId}`
-    : `lib:${l.style}:${l.kind}:${l.index}`;
+  if (l.source === 'clip') return `clip:${l.clipId}`;
+  if (l.source === 'chord') return `chord:${l.shape}`;
+  return `lib:${l.style}:${l.kind}:${l.index}`;
 }
 
 /** Read an id back. Returns null for anything malformed rather than a guess —
@@ -31,6 +43,11 @@ export function parseLoopId(id: string): LoopId | null {
   if (id.startsWith('clip:')) {
     const clipId = id.slice(5);
     return clipId ? { source: 'clip', clipId } : null;
+  }
+  if (id.startsWith('chord:')) {
+    const shape = id.slice(6);
+    // VALIDATED, never cast — the whole reason this is a source and not a kind.
+    return isChordShape(shape) ? { source: 'chord', shape } : null;
   }
   if (!id.startsWith('lib:')) return null;
 
