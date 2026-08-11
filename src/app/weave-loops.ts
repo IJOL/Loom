@@ -364,9 +364,16 @@ export function rehookOnArrival(
     return { ...sel, a: sel.b, b: clipIds[(atClip + 1) % clipIds.length] };
   }
 
-  // Not on a clip, or the only usable one — the library it is, so a lane with a
+  // Not on a clip, or the only usable one — the shelf it is, so a lane with a
   // single clip still has somewhere to go.
-  const pool = weaveLoopChoices(c).map((ch) => ch.id).filter((id) => id.startsWith('lib:'));
+  //
+  // "Not one of this lane's CLIPS", not "starts with lib:". A chordal lane
+  // reads no pattern shelf at all — its material is generated and its ids start
+  // `chord:` — so the narrower test gave it an empty pool and it returned null
+  // on every arrival: a pad lane travelled its leg and then wove the same two
+  // loops for ever, which is exactly what EVOLVE is for. Reported as "los pads
+  // no siguen evolve, no cambian".
+  const pool = weaveLoopChoices(c).map((ch) => ch.id).filter((id) => !id.startsWith('clip:'));
   if (pool.length === 0) return null;
 
   // A hash rather than a counter: nothing stores how many laps a lane has run,

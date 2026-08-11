@@ -6,7 +6,9 @@
 // library". The role is that missing sentence.
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { sourcesFor, rootFor } from './weave-loops';
+import {
+  sourcesFor, rootFor, weaveLoopChoices, rehookOnArrival, type WeaveLoopContext,
+} from './weave-loops';
 
 describe('sourcesFor', () => {
   it('offers a drum lane percussion, whatever its role says', () => {
@@ -96,5 +98,43 @@ describe('one answer, not four', () => {
     for (const p of ['../patterns/pattern-picker-ui.ts', '../session/session-inspector.ts']) {
       expect(src(p)).not.toMatch(/engineId === '/);
     }
+  });
+});
+
+describe('a chordal lane evolves', () => {
+  // Reported as "los pads no siguen evolve, no cambian". A pad lane travelled
+  // its leg and then wove the same two loops for ever.
+  const padLane = (): WeaveLoopContext => ({
+    lane: { id: 'l1', engineId: 'subtractive', role: 'pad', clips: [], inserts: [] } as never,
+    style: 'acid-techno', harmonic: true, key: 0, scale: 'minor',
+    lock: false, darkened: false, barTicks: 1920,
+  });
+
+  it('has somewhere to go on arrival', () => {
+    // The bug in one line: the pool was filtered to ids starting `lib:`, and a
+    // pad's ids start `chord:`, so the re-hook returned null every lap.
+    const c = padLane();
+    const first = weaveLoopChoices(c)[0].id;
+    const second = weaveLoopChoices(c)[1].id;
+    const next = rehookOnArrival(
+      { kind: 'ab', a: first, b: second, x: 1 }, c, 7, 'l1',
+    );
+    expect(next).not.toBeNull();
+    expect(next!.kind).toBe('ab');
+  });
+
+  it('hands the loop it arrived at over to the near end', () => {
+    const c = padLane();
+    const [first, second] = weaveLoopChoices(c).map((ch) => ch.id);
+    const next = rehookOnArrival({ kind: 'ab', a: first, b: second, x: 1 }, c, 7, 'l1');
+    expect((next as { a: string }).a).toBe(second);
+  });
+
+  it('never draws the loop it just came from — a fade to itself is silence', () => {
+    const c = padLane();
+    const [first, second] = weaveLoopChoices(c).map((ch) => ch.id);
+    const next = rehookOnArrival({ kind: 'ab', a: first, b: second, x: 1 }, c, 7, 'l1') as
+      { a: string; b: string };
+    expect(next.b).not.toBe(next.a);
   });
 });
