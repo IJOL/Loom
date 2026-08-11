@@ -29,9 +29,16 @@ test('the panel is hidden until its tab is chosen', async ({ page }) => {
   await openWeave(page);
 });
 
+// A LANE row, and only a lane row. The column headings are drawn on the same
+// grid — same `.weave-lane` class, so a label cannot drift out of line with the
+// column it names — which means counting that class counts one row too many.
+// `.weave-lane-wrap` is the per-lane element: the top line and the setup line
+// under it, one wrapper each, and the headings have none.
+const LANE_ROW = `${PANEL} .weave-lane-wrap`;
+
 test('the panel draws one row per lane', async ({ page }) => {
   await openWeave(page);
-  const before = await page.locator(`${PANEL} .weave-lane`).count();
+  const before = await page.locator(LANE_ROW).count();
 
   await page.locator('#mode-toggle .mode-btn[data-mode="session"]').click();
   await addLane(page, 'subtractive');
@@ -39,12 +46,12 @@ test('the panel draws one row per lane', async ({ page }) => {
 
   // Entering a panel refreshes it: a lane added while it was hidden has to
   // appear, or the panel is only ever right at boot.
-  await expect(page.locator(`${PANEL} .weave-lane`)).toHaveCount(before + 1);
+  await expect(page.locator(LANE_ROW)).toHaveCount(before + 1);
 });
 
 test('every lane row carries a loop ring', async ({ page }) => {
   await openWeave(page);
-  const rows = await page.locator(`${PANEL} .weave-lane`).count();
+  const rows = await page.locator(LANE_ROW).count();
 
   // The ring is built by the HOST and handed over through Loom.controls, so a
   // ring per row is the only proof in a real browser that the catalogue reached
