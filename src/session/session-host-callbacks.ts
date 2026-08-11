@@ -2,7 +2,7 @@
 // interaction handlers. Extracted from session-host.ts (the body was already
 // written in terms of `self`, so it lifts out verbatim with `self` as a param).
 
-import { convertLaneToLayers } from '../engines/layers-rack-ui';
+import { convertLaneToLayers, contrastPresetName, recallLayerPreset } from '../engines/layers-rack-ui';
 import { pagePresetName } from '../instrument-presets/preset-select-state';
 import { snapshotEngineParams } from '../instrument-presets/user-preset-store';
 import { commitParamForLane } from '../engines/engine-param-commit';
@@ -186,7 +186,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       };
       if (hd) withUndo(hd, run); else run();
     },
-    onConvertToLayered(laneId: string) {
+    onConvertToLayered(laneId: string, opts?: { contrast?: boolean }) {
       // Undoable, because it swaps the lane's instrument and rewrites its
       // params — the two things a user most wants back if they meant something
       // else. The conversion itself lives with the rack, which owns the one
@@ -216,6 +216,11 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       // save, not kept in step.
       const mods = engine?.modulators?.serialize();
       const run = () => {
+        // What the SLOTS will hold, read before the conversion: it puts the
+        // lane's engine into both slots and then the lane itself becomes LAYERS,
+        // so afterwards `lane.engineId` names the rack rather than the
+        // instrument inside it.
+        const slotEngineId = lane.engineId;
         if (!convertLaneToLayers(lane, presetName, patch, mods)) return;
         // Tell the NEW engine what the rack says, through the door every param
         // write goes through.
@@ -237,6 +242,20 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         // written here, and only because they must also reach the mirror.
         commitParamForLane(built, self.state, laneId, 'l0.gain', 1);
         commitParamForLane(built, self.state, laneId, 'l1.gain', 0);
+
+        // A morph needs two DIFFERENT sounds. The conversion copies the lane's
+        // patch into both slots on purpose — that is what makes converting
+        // inaudible — so on its own it leaves a fader that moves and changes
+        // nothing, which is indistinguishable from a broken one.
+        //
+        // Only when the caller asks. From the lane menu you are building a rack
+        // by hand and the second slot is yours to fill; from the sound fader the
+        // whole point of the press was to have something to fade to.
+        if (!opts?.contrast) return;
+        const other = contrastPresetName(slotEngineId, presetName);
+        // Fewer than two presets: leave the slot as it is rather than empty it.
+        // Two identical instruments is a poor morph; a silent one is a bug.
+        if (other) recallLayerPreset(built, self.state, laneId, 1, slotEngineId, other);
       };
       if (hd) withUndo(hd, run); else run();
     },

@@ -674,6 +674,26 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     },
 
     setLaneSound(laneId, value) {
+      // Turning it ON is also what BUILDS the thing it moves.
+      //
+      // The fader writes `l0.gain` and `l1.gain`, which only exist on a lane
+      // that is a rack of two instruments. On an ordinary lane those
+      // destinations are absent, every write was skipped, and the control did
+      // nothing with nothing on screen saying why — while the four steps that
+      // would have made it work (swap to LAYERS, fill both slots, recall two
+      // presets) lived on another page entirely.
+      //
+      // Asked of the CATALOGUE rather than of the lane's engine id: "can this
+      // fader land" is exactly the question, it is the same one the applier
+      // asks before each write, and it needs no core comparison against the name
+      // of an engine.
+      const canLand = (deps.destinations?.() ?? []).some((d) => d.id === `${laneId}.l0.gain`);
+      if (value !== null && !canLand) {
+        // With a CONTRASTING second slot, or the press would end with a fader
+        // between two copies of the same sound.
+        deps.sessionHost.callbacks.onConvertToLayered?.(laneId, { contrast: true });
+      }
+
       const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
       const sound = value === null ? undefined : Math.min(1, Math.max(0, value));
       deps.weave.lanes[laneId] = { ...cur, sound };

@@ -35,6 +35,10 @@ function harness(
   const weave = defaultWeaveState();
   const changed: string[] = [];
   const stops: number[] = [];
+  // What the destination catalogue offers. Empty is the ordinary lane: no
+  // `l0.gain`, so a sound fader has nothing to write until the lane is a rack.
+  const destIds: string[] = [];
+  const converted: { laneId: string; contrast?: boolean }[] = [];
 
   // A fixture with no callbacks stands in for a host that refuses — the panel
   // has to tell the difference rather than report a lane id that names nothing.
@@ -42,6 +46,9 @@ function harness(
     onAddLane: (engineId: string) => {
       added.push(engineId);
       state.lanes.push(lane(`new${state.lanes.length + 1}`) as never);
+    },
+    onConvertToLayered: (laneId: string, o?: { contrast?: boolean }) => {
+      converted.push({ laneId, contrast: o?.contrast });
     },
   };
 
@@ -59,9 +66,10 @@ function harness(
     onWeaveChanged: (id) => changed.push(id),
     setMusicality: (m) => { written.push(m); state.musicality = m; },
     stopTransport: () => { stops.push(1); },
+    destinations: () => destIds.map((id) => ({ id })) as never,
   });
 
-  return { ctx, state, weave, written, added, changed, stops };
+  return { ctx, state, weave, written, added, changed, stops, destIds, converted };
 }
 
 /** Run `fn` with a two-pattern library installed for the default style, then put
@@ -206,6 +214,40 @@ describe('createPanelContext — reshuffle', () => {
       h.ctx.reseed('all');
       expect(h.weave.lanes.lane1!.weave).toEqual(weave);
     }, 3);
+  });
+});
+
+describe('createPanelContext — the sound fader', () => {
+  it('builds the rack it needs, with a CONTRASTING second slot', () => {
+    // Reported as a control that did nothing: the fader writes `l0.gain` and
+    // `l1.gain`, an ordinary lane has neither, so every write was skipped in
+    // silence — while the four steps that would have made it work lived on
+    // another page. Turning it on is now what builds the thing it moves, and
+    // `contrast` is what stops it being a fader between two copies of one sound.
+    const h = harness(['lane1']);
+    h.ctx.setLaneSound('lane1', 0);
+    expect(h.converted).toEqual([{ laneId: 'lane1', contrast: true }]);
+    expect(h.ctx.laneSound('lane1')).toBe(0);
+  });
+
+  it('leaves a lane that already has the gains alone', () => {
+    // A rack the user built by hand, or one converted a moment ago. Converting
+    // again would rewrite their two slots with a fresh pair.
+    const h = harness(['lane1']);
+    h.destIds.push('lane1.l0.gain', 'lane1.l1.gain');
+    h.ctx.setLaneSound('lane1', 0.5);
+    expect(h.converted).toEqual([]);
+    expect(h.ctx.laneSound('lane1')).toBe(0.5);
+  });
+
+  it('never converts on the way OFF', () => {
+    // Turning the fader off means "go back to routing each note by the loop it
+    // came from". Swapping the lane's instrument on that press would be the
+    // opposite of leaving it alone.
+    const h = harness(['lane1']);
+    h.ctx.setLaneSound('lane1', null);
+    expect(h.converted).toEqual([]);
+    expect(h.ctx.laneSound('lane1')).toBeNull();
   });
 });
 

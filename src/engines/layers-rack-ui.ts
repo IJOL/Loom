@@ -197,18 +197,43 @@ function slotChoices() {
     .filter((e) => e.id !== LAYERS_ENGINE_ID && allowed.has(e.id));
 }
 
+/** A preset for this slot that is NOT the one it is already on.
+ *
+ *  What makes a two-slot rack a MORPH rather than one sound played twice: with
+ *  both slots identical the fader moves and nothing changes, which reads exactly
+ *  like a broken control. The first that differs, so the answer is stable —
+ *  a random one would make the same lane convert differently twice.
+ *
+ *  Undefined when the engine ships fewer than two presets. The caller then
+ *  leaves the slot as it is: two identical instruments is a poor morph, and a
+ *  slot silently emptied is worse. */
+export function contrastPresetName(engineId: string, current: string | undefined): string | undefined {
+  return getCachedPresets(engineId).find((p) => p.name !== current)?.name;
+}
+
 /** Recall a preset INTO one layer.
  *
  *  The preset is that engine's own, written under this layer's prefix — which is
  *  what makes "303 · Acid Line on layer 1, Wave · Glass Pad on layer 2" mean
  *  what it looks like. Through commitParamForLane, so the values mirror into the
  *  lane's engineState and survive a reload; writing setBaseValue alone is how
- *  four earlier builders threw the user's edits away. */
-function applyLayerPreset(
-  engine: SynthEngine, ctx: EngineUIContext, i: number, engineId: string, presetName: string,
+ *  four earlier builders threw the user's edits away.
+ *
+ *  It records WHICH preset in the stored rack too, straight rather than through
+ *  `setRack`: that door rebuilds the engine, and rebuilding here would throw away
+ *  the params written a line earlier. The label and the sound are two different
+ *  things and this owns both, so a caller cannot write one and forget the other.
+ *
+ *  The session and the lane id rather than an `EngineUIContext`: the panel's
+ *  sound fader reaches this from the host, where no UI context exists, and the
+ *  two fields are all it ever used. */
+export function recallLayerPreset(
+  engine: SynthEngine, sessionState: EngineUIContext['sessionState'], laneId: string,
+  i: number, engineId: string, presetName: string,
 ): void {
   const preset = getCachedPresets(engineId).find((p) => p.name === presetName);
   if (!preset) return;
+  const ctx = { sessionState, laneId } as EngineUIContext;
   const pre = layerPrefix(i);
   for (const [id, value] of Object.entries(preset.params as Record<string, number>)) {
     if (typeof value === 'number') commitParamForLane(engine, ctx.sessionState, ctx.laneId, `${pre}${id}`, value);
@@ -229,7 +254,15 @@ function applyLayerPreset(
   const lane = ctx.sessionState?.lanes.find((l) => l.id === ctx.laneId);
   // Straight into engineState, because nothing else mirrors a modulator set on
   // its way past — `commitParamForLane` covers params and only params.
-  if (lane) lane.engineState = { ...lane.engineState, modulators: mods };
+  //
+  // And the LABEL beside them: without it the slot's dropdown falls back to
+  // "— pick —" on the next repaint and reads as empty while playing the sound it
+  // just recalled.
+  if (lane) lane.engineState = {
+    ...lane.engineState,
+    modulators: mods,
+    layers: laneLayers(lane).map((l, k) => (k === i ? { ...l, presetName } : l)),
+  };
 }
 
 export function buildLayersRack(host: HTMLElement, ctx: EngineUIContext, engine: SynthEngine): void {
@@ -284,23 +317,10 @@ export function buildLayersRack(host: HTMLElement, ctx: EngineUIContext, engine:
           @change=${(e: Event) => {
             const name = (e.target as HTMLSelectElement).value;
             if (!name) return;
-            applyLayerPreset(engine, ctx, open, layer.engineId, name);
-            // Remember WHICH one, or the dropdown falls back to "— pick —" on
-            // the next repaint and the slot reads as empty while playing the
-            // sound it just recalled.
-            //
-            // Written STRAIGHT to the stored rack, never through setRack: that
-            // door swaps the lane's engine, which rebuilds it — and rebuilding
-            // it here would throw away the preset's params one line after they
-            // were written. Reported as changing a layer's preset leaving the
-            // sound exactly as it was.
-            //
-            // Rebuilding to store a LABEL is wrong on its own terms anyway. The
-            // sound is the params; this is the name of where they came from.
-            if (lane) lane.engineState = {
-              ...lane.engineState,
-              layers: rack.map((l, k) => (k === open ? { ...l, presetName: name } : l)),
-            };
+            // Sound AND label together, which is that door's whole job — the two
+            // used to be written here in two steps, and the label's step carried
+            // the reason they must not go through `setRack`.
+            recallLayerPreset(engine, ctx.sessionState, ctx.laneId, open, layer.engineId, name);
             deps?.repaint(ctx.laneId);
           }}
         >

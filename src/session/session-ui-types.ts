@@ -32,9 +32,14 @@ export interface SessionUICallbacks {
   /** Turn a lane into a RACK holding its own instrument twice, over the whole
    *  keyboard, carrying its current sound into both slots.
    *
+   *  `contrast` puts a DIFFERENT preset on the second slot, which is what the
+   *  WEAVE sound fader needs: two identical slots make a fader that moves and
+   *  changes nothing. The menu's plain conversion deliberately leaves them the
+   *  same — there it is a rack you are about to fill by hand.
+   *
    *  Optional because the grid must still render in a fixture with no engine
    *  registry: absent, the menu entry is simply not offered. */
-  onConvertToLayered?: (laneId: string) => void;
+  onConvertToLayered?: (laneId: string, opts?: { contrast?: boolean }) => void;
   /** Append a clone of the scene at sceneIdx. */
   onDuplicateScene: (sceneIdx: number) => void;
   /** Append a new scene capturing the currently-playing clip on each lane. */
