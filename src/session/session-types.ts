@@ -99,10 +99,31 @@ export interface SessionClip {
   tempoMap?: import('../core/tempo-map').TempoPoint[];
 }
 
+/** What part a lane plays.
+ *
+ *  The ONE vocabulary. The tree already held three answers to "what part is
+ *  this" — `PatternKind`, `GenKind`, and two hardcoded engineId maps — and the
+ *  arranger spec proposed a fourth; they are retired into this one, because a
+ *  question with four answers has none.
+ *
+ *  Percussion is deliberately NOT here: whether a lane is a drum lane is
+ *  already answered by `isHarmonic` at the capability door, and a second answer
+ *  is the fault this vocabulary exists to reduce. */
+export type LaneRole = 'bass' | 'melody' | 'comp' | 'pad' | 'arp';
+
 export interface SessionLane {
   id: string;
   engineId: string;
   name?: string;
+  /** What part this lane plays, if the user has said so.
+   *
+   *  Absent means today's behaviour exactly — every melodic shelf offered —
+   *  which is what lets this ship without migrating a single saved session.
+   *
+   *  On the LANE rather than inside WEAVE's own state because more than one
+   *  feature wants it: the arranger needs to know which lane is the bass, and a
+   *  MIDI import could fill it in from the track it came from. */
+  role?: LaneRole;
   clips: (SessionClip | null)[];
   launchQuantize?: LaunchQuantize;
   engineState?: {

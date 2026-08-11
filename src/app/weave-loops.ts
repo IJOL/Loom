@@ -15,6 +15,7 @@ import { abAdvance } from '../weave/topology-ab';
 import type { NoteEvent } from '../core/notes';
 import type { ScaleId, StyleId } from '../core/musicality';
 import type { SessionLane } from '../session/session';
+import type { LaneRole } from '../session/session-types';
 import { isHarmonic } from '../plugins/capabilities';
 import { formatLoopId, parseLoopId } from '../weave/loop-ids';
 import { scaleForDarkness, styleForLane } from '../weave/style-mix';
@@ -116,11 +117,30 @@ export function weaveLoopContext(
   };
 }
 
-/** Which library shelves a lane reads. A drum lane has one; a melodic lane gets
- *  both bass and lead patterns, because nothing in the session says which of the
- *  two a given lane is meant to be and guessing would hide half the library. */
-function kindsFor(harmonic: boolean): PatternKind[] {
-  return harmonic ? ['bass', 'synth'] : ['drums'];
+/** Which library shelves a lane reads — the ONE answer to "what may this lane
+ *  play", asked by the panel that LISTS and by the scheduler that RESOLVES.
+ *
+ *  A drum lane reads percussion whatever its role says: a role left behind by an
+ *  engine swap must not hand it melodic material.
+ *
+ *  An UNMARKED melodic lane gets both shelves, which is what it always got. The
+ *  comment this replaces called that a guess that would otherwise hide half the
+ *  library, and it was right — until there was somewhere to record the answer.
+ *
+ *  The chordal roles read NO shelf: there are no pad loops in the library and
+ *  there never will be, because a chord written as fixed semitones cannot stay
+ *  diatonic across the eight scales a session may be in. Their material is
+ *  GENERATED. An empty list here is the answer, not a gap. */
+export function sourcesFor(role: LaneRole | undefined, harmonic: boolean): PatternKind[] {
+  if (!harmonic) return ['drums'];
+  switch (role) {
+    case 'bass':   return ['bass'];
+    case 'melody': return ['synth'];
+    case 'comp':
+    case 'pad':
+    case 'arp':    return [];
+    default:       return ['bass', 'synth'];
+  }
 }
 
 /** Where a melodic pattern's root sits. Bass an octave under the lead, both
@@ -166,7 +186,7 @@ export function weaveLoopChoices(c: WeaveLoopContext): PanelChoice[] {
     });
   }
 
-  for (const kind of kindsFor(c.harmonic)) {
+  for (const kind of sourcesFor(c.lane?.role, c.harmonic)) {
     for (const p of patternsFor(c.style, kind)) {
       out.push({
         id: formatLoopId({ source: 'pattern', style: c.style, kind, index: p.index }),
