@@ -10,15 +10,14 @@
 
 import { html } from 'lit-html';
 import { renderInto } from '../core/lit-fill';
-import { customOption, presetGroup, byName } from './poly-preset-templates';
+import { customOption, presetGroup } from './poly-preset-templates';
+import { presetGroupsFor } from './preset-catalogue';
 import { alertDialog, confirmDialog, promptDialog } from '../core/dialog';
 import { applyEnginePresetToLane, applyUserPresetToLane } from './poly-preset-apply';
 import {
   snapshotEngineParams, loadUserPresets, saveUserPreset, deleteUserPreset,
 } from './user-preset-store';
-import { getFactoryPolyPresets } from './poly-preset-store';
-import { getCachedPresets } from '../presets/preset-loader';
-import { listInstruments } from '../samples/instrument-loader';
+import { getInstrumentIndex } from '../samples/instrument-loader';
 import { withUndo } from '../save/history-wiring';
 import {
   pagePresetName, presetControlsDeps, setPresetControlsDeps, type PresetControlsDeps,
@@ -106,43 +105,35 @@ export function populateInstrumentPresetSelectForLane(laneId: string): void {
   // session already holding one still loads and plays — only the picker stops
   // offering it, and `picker`'s off-shelf label keeps it visible rather than
   // reading as nothing chosen.
+  // WHAT to offer is not this file's question any more — `presetGroupsFor` is
+  // the one catalogue, and WEAVE reads the same one, so the two cannot drift.
+  // What is left here is drawing it and remembering which one is selected.
+  //
+  // The refill is what the async shelves need: two of them live behind an index
+  // that loads once, so the first render shows what is known and this puts the
+  // rest in when it arrives. It bails if the user switched lanes meanwhile.
+  const draw = () => {
+    const s = selectEl();
+    if (!s) return;
+    const groups = presetGroupsFor(engineId, () => { if (gen === popGen) draw(); });
+    renderInto(s, html`${customOption()}${groups.map(([label, items]) =>
+      presetGroup(label, items.map((c) => [c.id, c.name] as [string, string])))}`);
+    s.value = currentSelectionFor(laneId, engineId) ?? '__custom__';
+  };
+  draw();
+}
+
+/** Which option this lane's dropdown should be showing.
+ *
+ *  A sampler lane DERIVES it from the lane when nobody has picked anything this
+ *  session; every other engine remembers only what was picked. Both readings
+ *  were already here — this only gives them one name. */
+function currentSelectionFor(laneId: string, engineId: string): string | undefined {
   if (engineId === 'sampler') {
-    const inline: [string, string][] =
-      getCachedPresets('sampler').map((p) => [`sampler:preset:${p.name}`, p.name]);
-    // The inline ones alone, until the index resolves. Sorted here too, so the
-    // list does not visibly re-order under the pointer a moment later.
-    renderInto(sel, html`${customOption()}${presetGroup('Melodic', byName(inline))}`);
-    void listInstruments().then((instruments) => {
-      if (gen !== popGen) return;
-      const s = selectEl();
-      if (!s) return;
-      const byFamily = (family: string, kind: string): [string, string][] =>
-        instruments.filter((i) => i.family === family)
-          .map((i) => [`sampler:${kind}:${i.id}`, i.name] as [string, string]);
-      renderInto(s, html`${customOption()}${presetGroup(
-        'Melodic', byName([...inline, ...byFamily('melodic', 'melodic')]),
-      )}${presetGroup('Loops', byName(byFamily('loop', 'loop')))}`);
-      const familyOf = (id: string) => instruments.find((i) => i.id === id)?.family;
-      s.value = samplerSelectionFor(laneId, familyOf) ?? '__custom__';
-    });
-    sel.value = samplerSelectionFor(laneId) ?? '__custom__';
-    return;
+    const familyOf = (id: string) => getInstrumentIndex().find((i) => i.id === id)?.family;
+    return samplerSelectionFor(laneId, familyOf);
   }
-
-  // Every melodic engine gets the same two groups. Subtractive is the only one
-  // whose factory list does not come off the engine instance: its presets are
-  // stored flat and expanded through the nested shape its old user presets
-  // share. Both are `engine:<name>` and both apply the same way.
-  const factory: [string, string][] = engineId === 'subtractive'
-    ? getFactoryPolyPresets().map((p) => [`engine:${p.name}`, p.name])
-    : (deps.getLaneEngineInstance(laneId)?.presets ?? []).map((p) => [`engine:${p.name}`, p.name]);
-
-  // The User group is per ENGINE, not global: a preset saved on an FM lane is
-  // FM's vocabulary and means nothing to subtractive.
-  const user: [string, string][] = Object.keys(loadUserPresets(engineId)).sort()
-    .map((name) => [`user:${name}`, name]);
-
-  renderInto(sel, html`${customOption()}${presetGroup('Factory', factory)}${presetGroup('User', user)}`);
+  return pagePresetName.get(laneId);
 }
 
 export function populateInstrumentPresetSelect(): void {

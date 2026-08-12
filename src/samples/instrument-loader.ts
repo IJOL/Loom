@@ -171,6 +171,40 @@ export async function listInstruments(fetchFn: typeof fetch = fetch): Promise<In
   }
 }
 
+// The index, cached — the same shape `drum-kits-loader` has had all along:
+// one in-flight promise, a synchronous read that is empty until it resolves.
+//
+// `listInstruments` above re-fetches every call, and the preset dropdown called
+// it on every lane switch. That was invisible in the browser and wrong anyway:
+// a list nobody can change during a session has no business being asked for
+// twice, and it made the catalogue below impossible to answer synchronously —
+// which is what every caller actually needs, since a dropdown has to render now
+// and fill in later.
+let indexCache: InstrumentIndexEntry[] | null = null;
+let indexInflight: Promise<InstrumentIndexEntry[]> | null = null;
+
+/** Load the index once. Repeat calls share the first one's promise. */
+export function loadInstrumentIndex(fetchFn: typeof fetch = fetch): Promise<InstrumentIndexEntry[]> {
+  if (indexCache) return Promise.resolve(indexCache);
+  indexInflight ??= listInstruments(fetchFn).then((list) => {
+    indexCache = list;
+    indexInflight = null;
+    return list;
+  });
+  return indexInflight;
+}
+
+/** Synchronous cache read — empty until `loadInstrumentIndex` resolves. */
+export function getInstrumentIndex(): InstrumentIndexEntry[] {
+  return indexCache ?? [];
+}
+
+/** Tests only: forget the cached index. */
+export function __resetInstrumentIndexCache(): void {
+  indexCache = null;
+  indexInflight = null;
+}
+
 /** Read one instrument manifest by id. Throws if the manifest is missing
  *  (mirror of fetchDrumkitManifest). */
 export async function fetchInstrumentManifest(id: string, fetchFn: typeof fetch = fetch): Promise<InstrumentManifest> {
