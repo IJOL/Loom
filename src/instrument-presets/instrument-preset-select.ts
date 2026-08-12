@@ -10,7 +10,7 @@
 
 import { html } from 'lit-html';
 import { renderInto } from '../core/lit-fill';
-import { customOption, presetGroup } from './poly-preset-templates';
+import { customOption, presetGroup, byName } from './poly-preset-templates';
 import { alertDialog, confirmDialog, promptDialog } from '../core/dialog';
 import { applyEnginePresetToLane, applyUserPresetToLane } from './poly-preset-apply';
 import {
@@ -18,7 +18,6 @@ import {
 } from './user-preset-store';
 import { getFactoryPolyPresets } from './poly-preset-store';
 import { getCachedPresets } from '../presets/preset-loader';
-import { listDrumkits } from '../samples/drumkit-loader';
 import { listInstruments } from '../samples/instrument-loader';
 import { withUndo } from '../save/history-wiring';
 import {
@@ -88,34 +87,41 @@ export function populateInstrumentPresetSelectForLane(laneId: string): void {
   }
   const engineId = deps.getLaneEngineId(laneId);
 
-  // The sampler's "presets" are bundled instrument refs, not param bags: normal
-  // presets (presets/sampler.json — melodic multi-zone instruments) plus the
-  // drumkits, the bundled melodic instruments, and the loops. Normal presets are
-  // cached at boot so they fill synchronously; the rest load from their own
-  // indexes, and that fill bails if the user switched lanes while it was in
-  // flight.
+  // TWO groups, and the reason is what the sampler can BE rather than where a
+  // file happens to live.
   //
-  // `Instrument` used to be missing. Every family in instruments/index.json was
-  // offered EXCEPT `melodic`, so a bundled melodic instrument could be loaded by
-  // a session but never picked — and the fourteen this branch adds made that
-  // visible. The engine already understood the ref (`loadFamilyRef('melodic:…')`);
-  // only the dropdown did not offer it.
+  // `presets/sampler.json` and the `melodic` family of `instruments/index.json`
+  // are the same idea twice — a pitched multi-zone instrument — differing only
+  // in whether the zones travel inline or are fetched by id. Offering them as
+  // "Presets" and "Instrument" showed the user our storage layout and asked
+  // them to care. Merged and sorted, they are one shelf: **Melodic**.
+  //
+  // **Loops** stays its own group because it is genuinely other material: a
+  // chopped amen is not an instrument you play up the keyboard.
+  //
+  // **Drumkits are GONE from here.** They are the drum machine's shelf and the
+  // Drums page already serves all of them; a sampler lane could still be put on
+  // one, which meant the same kit appeared in two engines' pickers and the
+  // longest list in this dropdown was the one that belonged to another page. A
+  // session already holding one still loads and plays — only the picker stops
+  // offering it, and `picker`'s off-shelf label keeps it visible rather than
+  // reading as nothing chosen.
   if (engineId === 'sampler') {
-    const presetItems: [string, string][] =
+    const inline: [string, string][] =
       getCachedPresets('sampler').map((p) => [`sampler:preset:${p.name}`, p.name]);
-    renderInto(sel, html`${customOption()}${presetGroup('Presets', presetItems)}`);
-    void Promise.all([listDrumkits(), listInstruments()]).then(([kits, instruments]) => {
+    // The inline ones alone, until the index resolves. Sorted here too, so the
+    // list does not visibly re-order under the pointer a moment later.
+    renderInto(sel, html`${customOption()}${presetGroup('Melodic', byName(inline))}`);
+    void listInstruments().then((instruments) => {
       if (gen !== popGen) return;
       const s = selectEl();
       if (!s) return;
       const byFamily = (family: string, kind: string): [string, string][] =>
         instruments.filter((i) => i.family === family)
           .map((i) => [`sampler:${kind}:${i.id}`, i.name] as [string, string]);
-      renderInto(s, html`${customOption()}${presetGroup('Presets', presetItems)}${presetGroup(
-        'Drumkit', kits.map((k) => [`sampler:drumkit:${k.id}`, k.name] as [string, string]),
-      )}${presetGroup('Instrument', byFamily('melodic', 'melodic'))}${presetGroup(
-        'Loop', byFamily('loop', 'loop'),
-      )}`);
+      renderInto(s, html`${customOption()}${presetGroup(
+        'Melodic', byName([...inline, ...byFamily('melodic', 'melodic')]),
+      )}${presetGroup('Loops', byName(byFamily('loop', 'loop')))}`);
       const familyOf = (id: string) => instruments.find((i) => i.id === id)?.family;
       s.value = samplerSelectionFor(laneId, familyOf) ?? '__custom__';
     });
