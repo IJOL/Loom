@@ -419,6 +419,39 @@ describe('converting carries the lane s envelopes into BOTH slots', () => {
   });
 });
 
+describe('a rack built for the sound control', () => {
+  // Four corners of a cloud, all holding the lane's own instrument: what the
+  // WEAVE sound control asks for now that it duplicates rather than dealing a
+  // stranger into every slot after the first.
+  const spreadOfOwn = (n: number, id: string) => Array.from({ length: n - 1 }, () => id);
+
+  it('holds the lane s own instrument in every slot', () => {
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright', undefined, [], spreadOfOwn(4, SLOT_ENGINE));
+    const rack = h.lane.engineState?.layers as { engineId: string }[];
+    expect(rack.map((l) => l.engineId)).toEqual(Array(4).fill(SLOT_ENGINE));
+  });
+
+  it('records the lane s preset on every slot that holds its engine', () => {
+    // Without it a duplicated slot plays that very sound while its dropdown
+    // reads "— pick —", which is the label/sound split this file already fixed
+    // once for recallLayerPreset.
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright', undefined, [], spreadOfOwn(2, SLOT_ENGINE));
+    const rack = h.lane.engineState?.layers as { presetName?: string }[];
+    expect(rack.map((l) => l.presetName)).toEqual(['Bright', 'Bright']);
+  });
+
+  it('leaves every slot after the first SILENT', () => {
+    // Converting has to be inaudible: slot 1 at unity doubles the lane the
+    // moment you press the button, and then masks every change you make to it.
+    const h = harness();
+    convertLaneToLayers(h.lane, 'Bright', undefined, [], spreadOfOwn(4, SLOT_ENGINE));
+    const params = h.lane.engineState?.params ?? {};
+    expect([0, 1, 2, 3].map((i) => params[`l${i}.gain`])).toEqual([1, 0, 0, 0]);
+  });
+});
+
 describe('the registry still knows LAYERS', () => {
   it('is registered, so the conversion has somewhere to go', () => {
     expect(getEngine(LAYERS_ENGINE_ID)).toBeDefined();
