@@ -29,24 +29,24 @@ export interface SessionUICallbacks {
   onAddLane: (engineId: string) => void;
   /** Full-clone a lane (instrument + clips); the new lane appears to the right. */
   onDuplicateLane: (laneId: string) => void;
-  /** Turn a lane into a RACK holding its own instrument twice, over the whole
-   *  keyboard, carrying its current sound into both slots.
+  /** Turn a lane into a RACK holding its own instrument in every slot, over the
+   *  whole keyboard, carrying its current sound — patch, envelopes and preset
+   *  name — into all of them.
    *
-   *  `contrast` fills the slots after the first with OTHER instruments, each on
-   *  its own preset, which is what the WEAVE sound control needs: identical
-   *  slots make a control that moves and changes nothing. The menu's plain
-   *  conversion deliberately leaves them the same — there it is a rack you are
-   *  about to fill by hand.
-   *
-   *  `slots` is how many the rack should hold, because the sound control has
-   *  the shape of the lane's LOOP control: two ends for a lane on A→B, four
+   *  `slots` is how many the rack should hold, because the WEAVE sound control
+   *  has the shape of the lane's LOOP control: two ends for a lane on A→B, four
    *  corners for one on a cloud. Absent ⇒ two.
+   *
+   *  Every slot holds the same instrument on purpose. A `contrast` flag used to
+   *  deal a DIFFERENT engine and preset into the slots after the first, so the
+   *  sound control had somewhere to cross to the moment it appeared; per user
+   *  direction it does not, because a button that silently replaces half of what
+   *  a lane plays is a surprise, and what it dealt could be an engine the rack
+   *  cannot sound at all.
    *
    *  Optional because the grid must still render in a fixture with no engine
    *  registry: absent, the menu entry is simply not offered. */
-  onConvertToLayered?: (
-    laneId: string, opts?: { contrast?: boolean; slots?: number },
-  ) => void;
+  onConvertToLayered?: (laneId: string, opts?: { slots?: number }) => void;
   /** Append a clone of the scene at sceneIdx. */
   onDuplicateScene: (sceneIdx: number) => void;
   /** Append a new scene capturing the currently-playing clip on each lane. */

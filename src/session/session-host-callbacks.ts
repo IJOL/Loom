@@ -2,9 +2,7 @@
 // interaction handlers. Extracted from session-host.ts (the body was already
 // written in terms of `self`, so it lifts out verbatim with `self` as a param).
 
-import {
-  convertLaneToLayers, contrastPresetName, recallLayerPreset, slotChoices,
-} from '../engines/layers-rack-ui';
+import { convertLaneToLayers } from '../engines/layers-rack-ui';
 import { laneLayers } from '../engines/layers-engine';
 import { pagePresetName } from '../instrument-presets/preset-select-state';
 import { snapshotEngineParams } from '../instrument-presets/user-preset-store';
@@ -189,7 +187,7 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
       };
       if (hd) withUndo(hd, run); else run();
     },
-    onConvertToLayered(laneId: string, opts?: { contrast?: boolean; slots?: number }) {
+    onConvertToLayered(laneId: string, opts?: { slots?: number }) {
       // Undoable, because it swaps the lane's instrument and rewrites its
       // params — the two things a user most wants back if they meant something
       // else. The conversion itself lives with the rack, which owns the one
@@ -224,23 +222,21 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         // so afterwards `lane.engineId` names the rack rather than the
         // instrument inside it.
         const slotEngineId = lane.engineId;
-        // Whether this lane's sound is one the USER built, read BEFORE the
-        // conversion — `engineState.params` is a mirror of EDITS, and the
-        // conversion fills it with the carried patch, so afterwards every lane
-        // looks edited. Empty here means factory defaults and nothing to lose.
-        const hadEdits = Object.keys(lane.engineState?.params ?? {}).length > 0;
-        // A morph wants DIFFERENT instruments, one per end of its control — two
-        // for a lane on A→B, four for one on a cloud. From the rack's own list,
-        // so a slot still cannot hold a rack, the Sampler or the drum machine —
-        // and never the lane's own engine, which is already in slot 0 carrying
-        // its patch.
+        // The lane's OWN instrument, once per end of the control — two for a
+        // lane on A→B, four for one on a cloud.
         //
-        // Fewer engines than asked for is a small install, not an error: the
-        // rack is built as deep as the list allows and the control's spare ends
-        // simply have no destination to write.
-        const spread = opts?.contrast
-          ? slotChoices().map((e) => e.id).filter((id) => id !== slotEngineId)
-            .slice(0, Math.max(1, (opts.slots ?? 2) - 1))
+        // It used to deal DIFFERENT instruments here, on the reasoning that a
+        // morph between two identical slots is a control that moves and changes
+        // nothing. That reasoning was right about the control and wrong about
+        // the user: dealing a stranger into slot 2 means pressing one button
+        // silently replaces half of what your lane plays, and the dice landed on
+        // an instrument the rack cannot even sound (see slotChoices). Per user
+        // direction: duplicate, and let the second instrument be a choice made
+        // on purpose. The control does nothing until you make it — which is the
+        // honest reading of "convert", and inaudible either way since every slot
+        // after the first arrives silent.
+        const spread = opts?.slots !== undefined
+          ? Array.from({ length: Math.max(1, opts.slots - 1) }, () => slotEngineId)
           : undefined;
         if (!convertLaneToLayers(lane, presetName, patch, mods, spread)) return;
         // Tell the NEW engine what the rack says, through the door every param
@@ -269,36 +265,16 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
           if (l.engineId) commitParamForLane(built, self.state, laneId, `l${i}.gain`, i === 0 ? 1 : 0);
         });
 
-        // Only when the caller asks. From the lane menu you are building a rack
-        // by hand and the other slots are yours to fill; from the sound pad the
-        // whole point of the press was to have somewhere to cross to.
-        if (!opts?.contrast) return;
-
-        // Every slot INITIALISED, which is what was missing. A slot with no
-        // preset shows "— pick —" while playing whatever the rebuild left in it,
-        // and two slots that happen to hold the same sound make a pad that moves
-        // and changes nothing — reported as exactly that.
-        for (let i = 1; i < rack.length; i++) {
-          const held = rack[i].engineId;
-          if (!held) continue;
-          // A different engine's first preset can never collide with slot 0's,
-          // which is the contrast this is for. Only when a slot happens to hold
-          // the lane's own engine does it have to avoid one by name.
-          const name = contrastPresetName(held, held === slotEngineId ? presetName : undefined);
-          // An engine that ships no presets keeps its factory defaults rather
-          // than being emptied: a poor corner is better than a silent one.
-          if (name) recallLayerPreset(built, self.state, laneId, i, held, name);
-        }
-
-        // And slot 0 — but ONLY when there is nothing to lose. A lane with no
-        // recorded preset and no edits of its own is on factory defaults, and
-        // leaving it there gives the pad a corner whose dropdown reads
-        // "— pick —" for ever. A lane whose knobs were turned by hand keeps
-        // them: overwriting an unnamed sound the user built is the one thing
-        // this must not do.
-        if (presetName || hadEdits) return;
-        const first = contrastPresetName(slotEngineId, undefined);
-        if (first) recallLayerPreset(built, self.state, laneId, 0, slotEngineId, first);
+        // Nothing else to write, whichever door called. Every slot holds the
+        // lane's own instrument carrying the lane's own patch, its own
+        // envelopes and its own preset NAME — so the second dropdown reads what
+        // it is playing rather than "— pick —", and the sound is the sound you
+        // had before you pressed anything.
+        //
+        // A block here used to recall a DIFFERENT preset into every slot after
+        // the first, so that the pad had somewhere to cross to. It went with the
+        // dice above: a press that quietly swaps half your lane's sound is the
+        // surprise this whole path was reported for.
       };
       if (hd) withUndo(hd, run); else run();
     },

@@ -22,8 +22,9 @@ import type { MusicalityState, LaneRole } from '../session/session-types';
 import { isHarmonic, usesKitPresets } from '../plugins/capabilities';
 import { laneLayers } from '../engines/layers-engine';
 import {
-  slotChoices, setLayerEngine, recallLayerPreset, contrastPresetName, fillEmptyLayerSlots,
+  slotChoices, setLayerEngine, recallLayerPreset, fillEmptyLayerSlots,
 } from '../engines/layers-rack-ui';
+import { layerPrefix } from '../audio-dsp/layers/layer-spec';
 import { commitParamForLane } from '../engines/engine-param-commit';
 import { dbfsOf } from '../core/level-meter';
 import { roleMembers } from './panel-context-role';
@@ -309,7 +310,7 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
   const ensureSoundRack = (laneId: string): void => {
     const want = soundEnds(laneId);
     if (!isRack(laneId)) {
-      deps.sessionHost.callbacks.onConvertToLayered?.(laneId, { contrast: true, slots: want });
+      deps.sessionHost.callbacks.onConvertToLayered?.(laneId, { slots: want });
       return;
     }
     const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
@@ -324,18 +325,27 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     const resources = deps.sessionHost.deps?.laneResources;
     if (!resources?.get(laneId)?.engine) return;
 
-    // Instruments it does not already hold, so growing a rack widens the morph
-    // instead of putting the same sound in two corners.
-    const used = new Set(held);
-    const add = slotChoices().map((e) => e.id)
-      .filter((id) => !used.has(id))
-      .slice(0, want - held.length);
+    // A COPY of what slot 0 holds, for the same reason converting duplicates:
+    // a new corner is somewhere to put an instrument, not a stranger dealt into
+    // your lane. It dealt instruments the rack did not already hold, which read
+    // as the lane changing by itself.
+    const base = laneLayers(lane)[0];
+    if (!base?.engineId) return;
+    const add = Array.from({ length: want - held.length }, () => base.engineId);
     const grown = fillEmptyLayerSlots(lane, add);
     // Re-read AFTER the fill: it wrote the rack, which rebuilds the lane, so the
     // engine to write to is the one that exists now and not the one checked
     // above.
     const engine = resources.get(laneId)?.engine;
     if (!engine) return;
+    // Slot 0's own params, so the new corner really is the same sound rather
+    // than that engine's factory defaults — the lane may be on a patch no preset
+    // names. Read off the LIVE engine, which is the only place a lane's current
+    // values all exist.
+    const from = layerPrefix(0);
+    const copy = engine.params
+      .filter((p) => p.id.startsWith(from) && p.id !== `${from}gain`)
+      .map((p) => [p.id.slice(from.length), engine.getBaseValue(p.id)] as const);
     for (const i of grown) {
       const id = laneLayers(lane)[i]?.engineId;
       if (!id) continue;
@@ -344,8 +354,17 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // default, and `l1.gain` defaults to 1 — a new corner at full level for
       // even one tick is four instruments at once.
       commitParamForLane(engine, deps.sessionHost.state, laneId, `l${i}.gain`, 0);
-      const name = contrastPresetName(id, undefined);
-      if (name) recallLayerPreset(engine, deps.sessionHost.state, laneId, i, id, name);
+      // The preset FIRST — it carries the envelopes, which are not params, and
+      // the label, without which the new corner's dropdown reads "— pick —"
+      // while playing the sound copied into it. Then slot 0's own values on top,
+      // because a lane whose knobs were turned is on a sound no preset names.
+      if (base.presetName) {
+        recallLayerPreset(engine, deps.sessionHost.state, laneId, i, id, base.presetName);
+      }
+      const pre = layerPrefix(i);
+      for (const [id2, v] of copy) {
+        commitParamForLane(engine, deps.sessionHost.state, laneId, `${pre}${id2}`, v);
+      }
     }
   };
 

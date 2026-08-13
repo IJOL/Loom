@@ -38,7 +38,7 @@ function harness(
   // What the destination catalogue offers. Empty is the ordinary lane: no
   // `l0.gain`, so a sound fader has nothing to write until the lane is a rack.
   const destIds: string[] = [];
-  const converted: { laneId: string; contrast?: boolean }[] = [];
+  const converted: { laneId: string; slots?: number }[] = [];
   // `refresh` REMOUNTS the panel, so counting it is counting how often every
   // control in the row is destroyed and rebuilt.
   const refreshes: number[] = [];
@@ -50,8 +50,8 @@ function harness(
       added.push(engineId);
       state.lanes.push(lane(`new${state.lanes.length + 1}`) as never);
     },
-    onConvertToLayered: (laneId: string, o?: { contrast?: boolean }) => {
-      converted.push({ laneId, contrast: o?.contrast });
+    onConvertToLayered: (laneId: string, o?: { slots?: number }) => {
+      converted.push({ laneId, slots: o?.slots });
     },
   };
 
@@ -221,15 +221,19 @@ describe('createPanelContext — reshuffle', () => {
 });
 
 describe('createPanelContext — the sound fader', () => {
-  it('builds the rack it needs, with a CONTRASTING second slot', () => {
+  it('builds the rack it needs, one slot per end of the control', () => {
     // Reported as a control that did nothing: the fader writes `l0.gain` and
     // `l1.gain`, an ordinary lane has neither, so every write was skipped in
     // silence — while the four steps that would have made it work lived on
-    // another page. Turning it on is now what builds the thing it moves, and
-    // `contrast` is what stops it being a fader between two copies of one sound.
+    // another page. Turning it on is now what builds the thing it moves.
+    //
+    // `slots` and no `contrast`: what the far end HOLDS is the lane's own
+    // instrument duplicated, not another engine dealt for you. It asked for a
+    // contrasting one until a rack came up with a Sampler in slot 2 — an engine
+    // with no renderer in the worklet, so the far end of the fader was silence.
     const h = harness(['lane1']);
     h.ctx.setLaneSound('lane1', 0);
-    expect(h.converted).toEqual([{ laneId: 'lane1', contrast: true }]);
+    expect(h.converted).toEqual([{ laneId: 'lane1', slots: 2 }]);
     expect(h.ctx.laneSound('lane1')).toEqual({ x: 0, y: 0 });
   });
 
