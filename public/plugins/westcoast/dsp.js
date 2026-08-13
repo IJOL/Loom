@@ -485,10 +485,8 @@ var WestcoastRenderer = class {
   contourGateTriggered = false;
   done = false;
   noteOff(t) {
-    if (t < this.holdEnd) {
-      this.holdEnd = t;
-      this.contour.noteOff(t);
-    }
+    if (!(t >= this.holdEnd)) this.holdEnd = t;
+    this.contour.noteOff(t);
   }
   setModEnvelopes(mods, index) {
     this.modEnv.setModEnvelopes(mods, index);

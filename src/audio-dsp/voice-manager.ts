@@ -183,6 +183,20 @@ export class VoiceManager {
   }
 
   spawn(note: NoteSpec): void {
+    // A note whose times are not numbers is refused OUTRIGHT, and this is the
+    // one place that can refuse it: past here it becomes a voice, and a voice
+    // built on NaN cannot be killed. Every comparison against NaN is false, so
+    // a renderer that gates on `t >= holdEnd` never reaches its gate-off AND a
+    // `noteOff` guarded by `t < holdEnd` returns having done nothing — leaving
+    // a sustaining contour at full level for the life of the page, deaf to the
+    // transport, silenced only by the lane's mute. Measured at 1.17 peak thirty
+    // seconds after a stop (`test/west-lane-repro.dsp.test.ts`); reported twice
+    // as "el sonido está lockeado en ruido".
+    //
+    // Silence is the right answer, not a repaired guess: a note with no start
+    // and no length is not a note anybody asked for.
+    if (!Number.isFinite(note.beginSec) || !Number.isFinite(note.durationSec)
+        || !Number.isFinite(note.midi)) return;
     // same-midi RETRIGGER: release the previous voice of this pitch, but leave
     // it in the render loop — it fades over its release and self-frees via
     // `done`. Splicing it out here (the old behaviour) discarded whatever

@@ -263,10 +263,17 @@ export class WestcoastRenderer implements VoiceRenderer {
   }
 
   noteOff(t: number): void {
-    if (t < this.holdEnd) {
-      this.holdEnd = t;
-      this.contour.noteOff(t);
-    }
+    // The contour is told ALWAYS. A stop has to be able to end a voice, and
+    // wrapping this call in the guard below meant it could not: the guard is
+    // there so a late note-off cannot EXTEND a gate that has already passed,
+    // which is a statement about `holdEnd` alone.
+    //
+    // `!(t >= holdEnd)` rather than `t < holdEnd` so a holdEnd that is not a
+    // number is repaired instead of frozen — with NaN both comparisons are
+    // false, and the version that only ever tightened the hold left the voice
+    // sustaining at full level for ever.
+    if (!(t >= this.holdEnd)) this.holdEnd = t;
+    this.contour.noteOff(t);
   }
 
   setModEnvelopes(mods: ModEnvSpec[], index: ParamIndex): void { this.modEnv.setModEnvelopes(mods, index); }
