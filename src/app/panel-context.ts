@@ -44,6 +44,7 @@ import { TICKS_PER_QUARTER } from '../core/notes';
 import { listEngines } from '../engines/registry';
 import { getCachedPresets } from '../presets/preset-loader';
 import { pagePresetName, presetControlsDeps } from '../instrument-presets/preset-select-state';
+import { presetsFor, applyPresetToLane } from '../instrument-presets/preset-catalogue';
 import { getDrumKits, loadDrumKits } from '../presets/drum-kits-loader';
 import { macroNeutral } from '../weave/weave-catalog';
 import { clipRowForLane } from '../weave/weave-transport';
@@ -419,26 +420,19 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     },
 
     presets(engineId) {
-      // A KIT lane reads the unified Synth/Samples catalogue — the same list the
-      // Session page's kit picker shows. Asking the engine-preset cache here
-      // returned the SYNTH kits alone, so the panel offered a drum lane a third
-      // of what it can actually play and no way to reach the rest.
-      if (usesKitPresets(engineId)) {
-        const kits = getDrumKits();
-        // Loaded lazily and cached; the panel can open before it has resolved.
-        // Refresh when it does rather than leave a dropdown that is empty for
-        // no reason the user can see.
-        if (kits.length === 0) void loadDrumKits().then(() => deps.refresh());
-        return kits.map((k) => ({ id: `engine:${k.name}`, name: k.name, group: k.group }));
-      }
-      // The same preset cache the lane's own dropdown reads, in the same
-      // vocabulary: `engine:<name>` is what recordPagePresetForLane stores
-      // verbatim, so offering bare names here would guarantee the current
-      // selection never matched an option.
-      return getCachedPresets(engineId).map((p) => ({
-        id: `engine:${p.name}`,
-        name: p.name,
-      }));
+      // The ONE catalogue, the same one the instrument page's dropdown reads.
+      //
+      // This used to derive its own list, and it was shorter: a sampler lane was
+      // offered the inline presets alone, with no bundled instruments and no
+      // loops. That was not a filter someone chose — it was the limit of what
+      // this file could APPLY, since the ids for the rest were understood by one
+      // module and it was not this one. Two lists for one question is a promise
+      // to keep them in step, and this one had already been broken.
+      //
+      // `onReady` is the shelves that load once: the panel can open before they
+      // resolve, and a dropdown that is empty for no visible reason is worse
+      // than one that fills in a moment later.
+      return presetsFor(engineId, () => deps.refresh());
     },
 
     setEngine(laneId, engineId) {
@@ -454,22 +448,20 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     },
 
     setPreset(laneId, presetId) {
-      const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
-      // A KIT is applied by a different door, because applying one REBUILDS the
-      // lane's editor instead of pushing param values — and the params road
-      // would simply not find a sample kit's name, so choosing one from here
-      // used to be a dropdown that changed and nothing else.
-      if (lane && usesKitPresets(lane.engineId)) {
-        const name = presetId.startsWith('engine:') ? presetId.slice('engine:'.length) : presetId;
-        // Recorded BEFORE applying, for the reason the drums page records it
-        // there: the apply re-populates the pickers synchronously and reads
-        // this, so setting it after makes them snap back to "(custom)".
-        pagePresetName.set(laneId, `engine:${name}`);
-        presetControlsDeps()?.applyDrumKitPreset?.(laneId, name);
-        deps.refresh();
-        return;
-      }
-      deps.applyLanePreset?.(laneId, presetId);
+      // Recorded BEFORE applying, and that order is not cosmetic: applying a kit
+      // re-populates the pickers synchronously and reads this, so setting it
+      // afterwards makes them snap back to "(custom)".
+      //
+      // Recorded HERE rather than inside the door, because remembering what
+      // someone picked is the third question — it already has three answers and
+      // no owner, and giving the catalogue a fourth would make it the problem it
+      // was written to fix.
+      pagePresetName.set(laneId, presetId);
+      // One door for every kind. It knows that `engine:<name>` is a drum kit on
+      // a kit engine and a factory preset everywhere else, which is exactly the
+      // distinction this function used to carry itself — and the reason a lane
+      // it did not recognise got a dropdown that changed and did nothing.
+      applyPresetToLane(laneId, presetId);
       deps.refresh();
     },
 

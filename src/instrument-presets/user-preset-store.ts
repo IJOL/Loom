@@ -40,8 +40,19 @@ export function snapshotEngineParams(engine: SnapshotSource): UserPresetParams {
 
 type PresetsByEngine = Record<string, Record<string, UserPresetParams>>;
 
+/** The store, or nothing at all.
+ *
+ *  `localStorage` is not a given any more. This used to be read only from a
+ *  dropdown — there was always a browser — and it is now also read by the preset
+ *  catalogue, which answers "what can this lane play" from anywhere, including a
+ *  headless test and an offline render. Absent storage is the same case the
+ *  `catch` below already covers: there is nothing saved, which is a legitimate
+ *  answer and not a failure. */
+const store = (): Storage | null =>
+  (typeof localStorage === 'undefined' ? null : localStorage);
+
 function readAll(): PresetsByEngine {
-  const raw = localStorage.getItem(USER_PRESETS_KEY);
+  const raw = store()?.getItem(USER_PRESETS_KEY);
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw) as unknown;
@@ -50,7 +61,9 @@ function readAll(): PresetsByEngine {
 }
 
 function writeAll(all: PresetsByEngine): void {
-  localStorage.setItem(USER_PRESETS_KEY, JSON.stringify(all));
+  // Nowhere to write is not an error either — it is a session that cannot
+  // persist, and saying so by throwing would take the sound down with it.
+  store()?.setItem(USER_PRESETS_KEY, JSON.stringify(all));
 }
 
 /** Every user preset available to `engineId`. */
