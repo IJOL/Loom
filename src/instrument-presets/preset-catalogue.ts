@@ -14,6 +14,18 @@
 // It answers by ENGINE, not by lane: what a lane may play is a property of the
 // instrument in it. Which one it is currently ON is a different question with a
 // different owner, and deliberately not here.
+//
+// AND IT ANSWERS FOR A LANE, NEVER FOR A RACK SLOT. The two sound like one
+// question and are not: a lane may be a Sampler, and a slot may not — the
+// Sampler runs in a processor of its own, so `LayersRenderer` skips a slot
+// holding one and that end of the control is silence while its dropdown names
+// an instrument. `slotChoices` (engines/layers-rack-ui.ts) is the narrower
+// answer, filtered by `isWorkletHosted`, and it exists because that exact
+// failure shipped.
+//
+// So do NOT route the slot picker through here on the grounds that it looks
+// like one more duplicated list. It is the one list that must stay separate,
+// and the reason is not taste — it is which thread can build the thing.
 
 import { getCachedPresets } from '../presets/preset-loader';
 import { getDrumKits, loadDrumKits } from '../presets/drum-kits-loader';
