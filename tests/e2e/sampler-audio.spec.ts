@@ -1,11 +1,14 @@
 // tests/e2e/sampler-audio.spec.ts
-// The Sampler's instruments (Melodic / Drumkit / Loop) ARE its presets: they
-// load from the unified PRESET dropdown (`#instrument-preset-select`), and selecting
-// one switches the clip editor:
-//   • Melodic / Loop  → piano-roll (`.pr-frame`)
-//   • Drumkit         → drum-grid (canvas, no `.pr-frame`)
-// (There is no separate family picker in the body — one selector = PRESET.)
-// The editor it reroutes lives in the clip inspector (`#insp-roll-host`).
+// The Sampler's instruments ARE its presets: they load from the unified PRESET
+// dropdown (`#instrument-preset-select`), which offers two shelves — Melodic
+// (zones inline OR fetched by id, one idea) and Loops. Picking either keeps the
+// clip on the piano-roll (`.pr-frame`), in the clip inspector
+// (`#insp-roll-host`). There is no separate family picker — one selector.
+//
+// DRUMKITS are not offered here: they are the drum machine's shelf and the
+// Drums page serves all of them. A lane already on one still loads, plays and
+// routes to the drum grid — clip-editor-router.test.ts covers that rule; there
+// is simply no way to put a lane on one from this dropdown.
 //
 // Front D · Task 17 — multi-sample import (one zone per file, full-range
 // stacked) and loop import (a note clip + launchable scene + a piano-roll with
@@ -55,23 +58,42 @@ async function addAndOpenSamplerLane(page: Page): Promise<string> {
 }
 
 test.describe('sampler instruments via the PRESET dropdown', () => {
-  test('the PRESET dropdown offers melodic / drumkit / loop instruments', async ({ page }) => {
+  test('the PRESET dropdown offers two shelves — Melodic and Loops', async ({ page }) => {
     await page.goto('/');
     await addAndOpenSamplerLane(page);
 
     const sel = page.locator('#instrument-preset-select');
     await expect(sel).toBeVisible();
 
-    // The Sampler's instruments populate the shared preset selector as namespaced
-    // `sampler:<family>:<id>` options (grouped Presets / Drumkit / Loop); the
-    // lists are fetched async, so retry until they fill in. Melodic instruments
-    // are normal JSON presets (presets/sampler.json) → `sampler:preset:<name>`.
-    await expect(sel.locator('option[value^="sampler:preset:"]')).not.toHaveCount(0);
-    await expect(sel.locator('option[value^="sampler:drumkit:"]')).not.toHaveCount(0);
-    await expect(sel.locator('option[value^="sampler:loop:"]')).not.toHaveCount(0);
+    // TWO shelves, not four. A preset carrying its zones inline and an
+    // instrument fetched by id are the same idea — a pitched multi-zone
+    // instrument — differing only in how they travel, so offering them as
+    // separate groups showed the user our storage layout. They share Melodic.
+    // The lists are fetched async, so these retry until they fill in.
+    await expect(sel.locator('optgroup[label="Melodic"]')).toHaveCount(1);
+    await expect(sel.locator('optgroup[label="Loops"]')).toHaveCount(1);
+    await expect(sel.locator('optgroup')).toHaveCount(2);
+
+    // Both kinds of melodic instrument land on that one shelf.
+    await expect(sel.locator('optgroup[label="Melodic"] option[value^="sampler:preset:"]')).not.toHaveCount(0);
+    await expect(sel.locator('optgroup[label="Melodic"] option[value^="sampler:melodic:"]')).not.toHaveCount(0);
+    // A chopped amen is not an instrument you play up the keyboard.
+    await expect(sel.locator('optgroup[label="Loops"] option[value^="sampler:loop:"]')).not.toHaveCount(0);
+
+    // And drumkits are the drum machine's shelf. They used to be offered here
+    // too, which put the longest list in this dropdown under another page's
+    // name. A session already on one still loads, plays, and shows its name —
+    // only the picker stops offering it.
+    await expect(sel.locator('option[value^="sampler:drumkit:"]')).toHaveCount(0);
   });
 
-  test('picking a drumkit → drum-grid; back to melodic → piano-roll', async ({ page }) => {
+  test('picking a melodic instrument keeps the clip on the piano roll', async ({ page }) => {
+    // This was "picking a drumkit → drum-grid; back to melodic → piano-roll",
+    // and its first half is no longer reachable from this dropdown by design.
+    // The ROUTING rule it exercised did not go anywhere — a sampler lane on a
+    // drumkitId still edits on the drum grid, and clip-editor-router.test.ts
+    // covers that directly, including the way back. What is left here is the
+    // half a user can still drive: the melodic path through the real picker.
     await page.goto('/');
     const laneId = await addAndOpenSamplerLane(page);
 
@@ -88,14 +110,14 @@ test.describe('sampler instruments via the PRESET dropdown', () => {
     const sel = page.locator('#instrument-preset-select');
     await expect(sel).toBeVisible();
 
-    // A drumkit: loading it sets drumkitId → the clip reroutes to the canvas
-    // drum-grid (no `.pr-frame`). The load + reroute are async.
-    await sel.selectOption({ value: 'sampler:drumkit:tr808' });
-    await expect(roll.locator('.pr-frame')).toHaveCount(0, { timeout: 10_000 });
-    await expect(roll.locator('canvas')).not.toHaveCount(0);
-
-    // Back to a melodic instrument: drumkitId cleared (mutual exclusion) → piano-roll.
+    // An inline preset, then one fetched by id: two ways to travel, one shelf,
+    // and neither may move a pitched instrument off the piano roll.
     await sel.selectOption({ value: 'sampler:preset:Sweep Pad' });
+    await expect(roll.locator('.pr-frame')).toBeVisible({ timeout: 10_000 });
+
+    const byId = sel.locator('option[value^="sampler:melodic:"]').first();
+    await expect(byId).toHaveCount(1);
+    await sel.selectOption({ value: (await byId.getAttribute('value'))! });
     await expect(roll.locator('.pr-frame')).toBeVisible({ timeout: 10_000 });
   });
 
