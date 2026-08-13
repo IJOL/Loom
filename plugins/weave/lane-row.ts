@@ -440,6 +440,21 @@ function noteStrip(
   return { el: cv, draw };
 }
 
+/** Which instrument of a rack lane's the row is showing, per lane.
+ *
+ *  MODULE state, deliberately, and the same technique the host's own layer strip
+ *  uses (`selectedLayer` in layers-rack-ui). It is a VIEW preference: it must
+ *  not be saved with the session, and it must survive the panel being remounted.
+ *
+ *  Held as a local of `buildLaneRow` it did not. Both writers a slot has —
+ *  `setLaneSlotEngine` and `setLaneSlotPreset` — end in `refresh()`, and refresh
+ *  remounts the whole panel (`root.replaceChildren()`), so the row was rebuilt
+ *  from scratch and came back on instrument 1. Choosing a preset for instrument
+ *  2 therefore landed on instrument 2 correctly and then showed you instrument
+ *  1's dropdown, which reads exactly as "it did not take". Reported as "no lo
+ *  pone y salta a layer 1", for the preset AND for the engine. */
+const openSlot = new Map<string, number>();
+
 export function buildLaneRow(
   lane: { id: string; name: string; engineId: string; presetId?: string },
   ctx: PanelContext,
@@ -468,7 +483,12 @@ export function buildLaneRow(
   //
   // Rebuilt rather than repainted, because `picker` builds a select from a list:
   // both the list and the current value change when the slot does.
-  let slot = 0;
+  //
+  // WHICH slot is open is module state, not a local of this build — see
+  // `openSlot`. A local is what made choosing a preset for instrument 2 look
+  // like it did nothing.
+  const slotOf = () => openSlot.get(lane.id) ?? 0;
+  const setSlot = (i: number) => { openSlot.set(lane.id, i); };
   const engineHost = el('div', 'weave-pick-host');
   const presetHost = el('div', 'weave-pick-host');
   const slots = el('div', 'weave-slotpick');
@@ -476,7 +496,8 @@ export function buildLaneRow(
   const paintPickers = () => {
     const rack = ctx.laneSlots(lane.id);
     const inRack = rack.length > 1;
-    if (slot >= rack.length) slot = 0;
+    if (slotOf() >= rack.length) setSlot(0);
+    const slot = slotOf();
 
     // The slot buttons only exist for a lane that has slots. One instrument
     // needs no "which one".
@@ -487,7 +508,7 @@ export function buildLaneRow(
         const b = el('button', `weave-slot-btn${i === slot ? ' on' : ''}`, String(i + 1)) as HTMLButtonElement;
         b.type = 'button';
         b.title = `Instrument ${i + 1} of this lane's rack — the ${i === 0 ? 'near' : 'far'} end of its sound fader`;
-        b.addEventListener('click', () => { slot = i; paintPickers(); });
+        b.addEventListener('click', () => { setSlot(i); paintPickers(); });
         slots.appendChild(b);
       });
     }

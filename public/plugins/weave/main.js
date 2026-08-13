@@ -413,20 +413,25 @@ function noteStrip(laneId, ctx) {
   };
   return { el: cv, draw };
 }
+var openSlot = /* @__PURE__ */ new Map();
 function buildLaneRow(lane, ctx, engines) {
   const row = el("div", "weave-lane");
   const meter = Loom.controls.levelMeter();
   meter.el.classList.add("weave-vu");
   const ring = Loom.controls.loopRing({ label: `Loop position for ${lane.name}` });
   const name = el("span", "weave-lane-name", lane.name);
-  let slot = 0;
+  const slotOf = () => openSlot.get(lane.id) ?? 0;
+  const setSlot = (i) => {
+    openSlot.set(lane.id, i);
+  };
   const engineHost = el("div", "weave-pick-host");
   const presetHost = el("div", "weave-pick-host");
   const slots = el("div", "weave-slotpick");
   const paintPickers = () => {
     const rack = ctx.laneSlots(lane.id);
     const inRack = rack.length > 1;
-    if (slot >= rack.length) slot = 0;
+    if (slotOf() >= rack.length) setSlot(0);
+    const slot = slotOf();
     slots.replaceChildren();
     slots.classList.toggle("off", !inRack);
     if (inRack) {
@@ -435,7 +440,7 @@ function buildLaneRow(lane, ctx, engines) {
         b.type = "button";
         b.title = `Instrument ${i + 1} of this lane's rack \u2014 the ${i === 0 ? "near" : "far"} end of its sound fader`;
         b.addEventListener("click", () => {
-          slot = i;
+          setSlot(i);
           paintPickers();
         });
         slots.appendChild(b);
