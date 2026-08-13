@@ -55,37 +55,37 @@ describe('snapshotEngineParams', () => {
 
 describe('user presets are filed under their engine', () => {
   it('a preset saved on fm is not offered on subtractive', () => {
-    saveUserPreset('fm', 'Bells', { 'op1.ratio': 3 });
+    saveUserPreset('fm', 'Bells', { params: { 'op1.ratio': 3 } });
 
     expect(Object.keys(loadUserPresets('fm'))).toEqual(['Bells']);
     expect(loadUserPresets('subtractive')).toEqual({});
   });
 
   it('two engines may hold a preset of the same name', () => {
-    saveUserPreset('fm', 'Lead', { 'op1.ratio': 3 });
-    saveUserPreset('wavetable', 'Lead', { morph: 0.75 });
+    saveUserPreset('fm', 'Lead', { params: { 'op1.ratio': 3 } });
+    saveUserPreset('wavetable', 'Lead', { params: { morph: 0.75 } });
 
-    expect(loadUserPresets('fm').Lead).toEqual({ 'op1.ratio': 3 });
-    expect(loadUserPresets('wavetable').Lead).toEqual({ morph: 0.75 });
+    expect(loadUserPresets('fm').Lead.params).toEqual({ 'op1.ratio': 3 });
+    expect(loadUserPresets('wavetable').Lead.params).toEqual({ morph: 0.75 });
   });
 
   it('deleting one engine\'s preset leaves the other\'s alone', () => {
-    saveUserPreset('fm', 'Lead', { 'op1.ratio': 3 });
-    saveUserPreset('wavetable', 'Lead', { morph: 0.75 });
+    saveUserPreset('fm', 'Lead', { params: { 'op1.ratio': 3 } });
+    saveUserPreset('wavetable', 'Lead', { params: { morph: 0.75 } });
 
     deleteUserPreset('fm', 'Lead');
 
     expect(loadUserPresets('fm')).toEqual({});
-    expect(loadUserPresets('wavetable').Lead).toEqual({ morph: 0.75 });
+    expect(loadUserPresets('wavetable').Lead.params).toEqual({ morph: 0.75 });
   });
 });
 
 describe('storage', () => {
   it('writes under one key, keyed by engine', () => {
-    saveUserPreset('fm', 'Bells', { 'op1.ratio': 3 });
+    saveUserPreset('fm', 'Bells', { params: { 'op1.ratio': 3 } });
 
     expect(JSON.parse(localStorage.getItem(USER_PRESETS_KEY)!)).toEqual({
-      fm: { Bells: { 'op1.ratio': 3 } },
+      fm: { Bells: { params: { 'op1.ratio': 3 } } },
     });
   });
 

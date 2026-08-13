@@ -21,6 +21,7 @@ import { getInstrumentIndex, loadInstrumentIndex } from '../samples/instrument-l
 import { getFactoryPolyPresets } from './poly-preset-store';
 import { loadUserPresets } from './user-preset-store';
 import { usesKitPresets } from '../plugins/capabilities';
+import { setLaneRack } from '../engines/layers-rack-ui';
 import { presetControlsDeps } from './preset-select-state';
 import { applyEnginePresetToLane, applyUserPresetToLane } from './poly-preset-apply';
 
@@ -155,7 +156,19 @@ export function applyPresetToLane(laneId: string, id: string): boolean {
     // the same name on two engines is two different sounds.
     const saved = loadUserPresets(deps.getLaneEngineId(laneId))[id.slice('user:'.length)];
     if (!saved) return false;
-    applyUserPresetToLane(deps, laneId, saved);
+
+    // The RACK first, when the preset carries one. It is the instrument the
+    // params are written in: restoring the knobs onto a differently-built rack
+    // puts slot 0's cutoff on whatever engine is in slot 0 now.
+    //
+    // Writing a rack REBUILDS the lane, so the params go on afterwards — the
+    // rebuilt engine takes each of them from its spec default until something
+    // says otherwise.
+    if (saved.layers?.length) {
+      const lane = deps.getSessionState()?.lanes.find((l) => l.id === laneId);
+      setLaneRack(lane, saved.layers);
+    }
+    applyUserPresetToLane(deps, laneId, saved.params);
     return true;
   }
 

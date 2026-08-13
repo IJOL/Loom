@@ -11,13 +11,13 @@
 import { html } from 'lit-html';
 import { renderInto } from '../core/lit-fill';
 import { customOption, presetGroup } from './poly-preset-templates';
-import { presetGroupsFor } from './preset-catalogue';
+import { presetGroupsFor, applyPresetToLane } from './preset-catalogue';
 import { alertDialog, confirmDialog, promptDialog } from '../core/dialog';
-import { applyEnginePresetToLane, applyUserPresetToLane } from './poly-preset-apply';
 import {
-  snapshotEngineParams, loadUserPresets, saveUserPreset, deleteUserPreset,
+  snapshotEngineParams, saveUserPreset, deleteUserPreset,
 } from './user-preset-store';
 import { getInstrumentIndex } from '../samples/instrument-loader';
+import { readRack } from '../audio-dsp/layers/layer-spec';
 import { withUndo } from '../save/history-wiring';
 import {
   pagePresetName, presetControlsDeps, setPresetControlsDeps, type PresetControlsDeps,
@@ -166,36 +166,15 @@ export function wireInstrumentPresetControls(deps: PresetControlsDeps): void {
     if (!val || val === '__custom__') return;
     const laneId = deps.getActiveEngineLaneId();
 
-    // Sampler: a "preset" is a bundled instrument ref ('sampler:drumkit:tr808',
-    // …). Load it through the engine (async fetch + decode + keymap + id mirror).
-    if (val.startsWith('sampler:')) {
-      const ref = val.slice('sampler:'.length);
-      const instance = deps.getLaneEngineInstance(laneId) as unknown as { loadFamilyRef?: (r: string) => Promise<void> } | null;
-      void instance?.loadFamilyRef?.(ref);
-      pagePresetName.set(laneId, val);
-      return;
-    }
-
-    // A factory preset goes through engine.applyPreset — the SAME path the
-    // session loader uses. Each engine owns the mapping from its preset JSON
-    // keys to its internal state, and those keys are not always setBaseValue
-    // ids, so a generic loop here would silently no-op on some engines.
-    if (val.startsWith('engine:')) {
-      applyEnginePresetToLane(deps, laneId, val.slice('engine:'.length));
-      pagePresetName.set(laneId, val);
-      return;
-    }
-
-    // A user preset is a bag of THIS engine's setBaseValue ids, looked up under
-    // that engine — so the same name on two engines is two different sounds.
-    if (val.startsWith('user:')) {
-      const name = val.slice('user:'.length);
-      const presets = loadUserPresets(deps.getLaneEngineId(laneId));
-      if (presets[name]) {
-        applyUserPresetToLane(deps, laneId, presets[name]);
-        pagePresetName.set(laneId, val);
-      }
-    }
+    // Through the ONE door. This used to be three branches here and the same
+    // three in WEAVE, which is how the two came to disagree about what a lane
+    // could be put on — this copy understood the sampler's ids and that one did
+    // not, so the panel offered a third of the list.
+    //
+    // Recorded only when something was actually applied: a user preset deleted
+    // in another tab, or an id from an engine this lane no longer runs, must
+    // leave the selection alone rather than claim a sound that never arrived.
+    if (applyPresetToLane(laneId, val)) pagePresetName.set(laneId, val);
   };
 
   const undoable = (fn: () => void) => () => {
@@ -220,7 +199,16 @@ export function wireInstrumentPresetControls(deps: PresetControlsDeps): void {
     const laneId = deps.getActiveEngineLaneId();
     const engine = deps.getLaneEngineInstance(laneId);
     if (!engine) return;
-    saveUserPreset(deps.getLaneEngineId(laneId), trimmed, snapshotEngineParams(engine));
+    // The rack goes WITH the params on a layered lane. Its params are the four
+    // slots' knobs and nothing in them says which instrument each slot holds —
+    // recalled onto a rack built differently, slot 0's cutoff would land on
+    // whatever is in slot 0 now.
+    const lane = deps.getSessionState()?.lanes.find((l) => l.id === laneId);
+    const layers = lane?.engineState?.layers;
+    saveUserPreset(deps.getLaneEngineId(laneId), trimmed, {
+      params: snapshotEngineParams(engine),
+      ...(layers?.length ? { layers: readRack(layers) } : {}),
+    });
     populateInstrumentPresetSelect();
     pagePresetName.set(laneId, `user:${trimmed}`);
     refreshInstrumentPresetSelect();

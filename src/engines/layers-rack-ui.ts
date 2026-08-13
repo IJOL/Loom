@@ -234,6 +234,23 @@ export function slotChoices() {
     .filter((e) => e.id !== LAYERS_ENGINE_ID && allowed.has(e.id) && isWorkletHosted(e.id));
 }
 
+/** Put a whole RACK on a lane, replacing whatever it held.
+ *
+ *  What recalling a layered preset needs, and the reason such a preset carries
+ *  its rack at all: the saved params are the four slots' knobs, and nothing in
+ *  them says which instrument each slot holds. Restore the knobs onto a rack
+ *  built differently and slot 0's cutoff lands on whichever engine is in slot 0
+ *  now — values that mean nothing, applied in silence.
+ *
+ *  Rebuilds the lane, like every rack write. The caller must therefore apply the
+ *  preset's PARAMS afterwards, onto the engine that exists then: a rebuilt engine
+ *  takes each param from its spec default. */
+export function setLaneRack(lane: SessionLane | undefined, layers: readonly Partial<LayerSpec>[]): boolean {
+  if (!deps || !lane) return false;
+  deps.setRack(lane.id, readRack(layers));
+  return true;
+}
+
 /** Fill this rack's EMPTY slots, in order, and say which ones were filled.
  *
  *  One write and therefore one rebuild: a lane is numbered once for its

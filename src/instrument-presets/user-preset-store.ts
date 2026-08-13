@@ -9,12 +9,41 @@
 
 import { isStripParamId } from '../core/channel-strip-params';
 import type { EngineParamSpec } from '../engines/engine-params';
+import type { LayerSpec } from '../audio-dsp/layers/layer-spec';
 
 /** Engine id → name → param bag. One key holds them all. */
 export const USER_PRESETS_KEY = 'loom-user-presets-v1';
 
 /** A saved sound: param id → base value, in the vocabulary of one engine. */
 export type UserPresetParams = Record<string, number>;
+
+/** What "Save As…" keeps.
+ *
+ *  The params alone were enough while every engine was one instrument. A LAYERS
+ *  lane is not: its declared params are the four slots' knobs, prefixed
+ *  `l0.`…`l3.`, and WHICH instrument sits in each slot is the rack — structural,
+ *  not a param, and so absent from the snapshot.
+ *
+ *  Saving the knobs without the rack is worse than not saving at all: recall it
+ *  onto a rack built differently and slot 0's cutoff lands on whatever engine is
+ *  in slot 0 now. Values that mean nothing, applied in silence. So a preset for
+ *  a layered lane carries its rack, and recalling one rebuilds it. */
+export interface UserPreset {
+  params: UserPresetParams;
+  /** The rack, for a lane that has one. Absent on every ordinary engine. */
+  layers?: LayerSpec[];
+}
+
+/** Read a stored entry in either shape.
+ *
+ *  Everything written before this existed is a bare param bag. Accepting both is
+ *  three lines and keeps every preset anyone has already saved — the alternative
+ *  is a migration, and a migration for a format nobody has strong feelings about
+ *  is more code and more risk than a `typeof` check. */
+function asPreset(raw: unknown): UserPreset {
+  if (raw && typeof raw === 'object' && 'params' in (raw as object)) return raw as UserPreset;
+  return { params: (raw ?? {}) as UserPresetParams };
+}
 
 /** The half of a SynthEngine a snapshot needs. Narrow on purpose — it makes the
  *  snapshot testable without building an engine. */
@@ -38,7 +67,7 @@ export function snapshotEngineParams(engine: SnapshotSource): UserPresetParams {
   return out;
 }
 
-type PresetsByEngine = Record<string, Record<string, UserPresetParams>>;
+type PresetsByEngine = Record<string, Record<string, unknown>>;
 
 /** The store, or nothing at all.
  *
@@ -67,13 +96,16 @@ function writeAll(all: PresetsByEngine): void {
 }
 
 /** Every user preset available to `engineId`. */
-export function loadUserPresets(engineId: string): Record<string, UserPresetParams> {
-  return readAll()[engineId] ?? {};
+export function loadUserPresets(engineId: string): Record<string, UserPreset> {
+  const forEngine = readAll()[engineId] ?? {};
+  const out: Record<string, UserPreset> = {};
+  for (const [name, raw] of Object.entries(forEngine)) out[name] = asPreset(raw);
+  return out;
 }
 
-export function saveUserPreset(engineId: string, name: string, params: UserPresetParams): void {
+export function saveUserPreset(engineId: string, name: string, preset: UserPreset): void {
   const all = readAll();
-  all[engineId] = { ...(all[engineId] ?? {}), [name]: params };
+  all[engineId] = { ...(all[engineId] ?? {}), [name]: preset };
   writeAll(all);
 }
 
