@@ -15,6 +15,7 @@
 import { html, render } from 'lit-html';
 import { listEngines } from './registry';
 import { melodicSynthEngineIds } from './engine-selector-ui';
+import { isWorkletHosted } from '../plugins/capabilities';
 import type { EngineUIContext, SynthEngine } from './engine-types';
 import type { SessionLane } from '../session/session';
 import { LAYERS_ENGINE_ID, LAYERS_DEFAULT_MODULATORS, laneLayers } from './layers-engine';
@@ -106,8 +107,14 @@ export function convertLaneToLayers(
   const rack: LayerSpec[] = spread && spread.length > 0
     ? [
         { ...own, gain: 1 },
-        ...spread.slice(0, MAX_LAYERS - 1)
-          .map((engineId) => ({ engineId, lo: 0, hi: 127, gain: 0 })),
+        // A slot holding the lane's OWN engine records the lane's preset too.
+        // Without it a duplicated slot plays that very sound while its dropdown
+        // reads "— pick —", which is the label/sound split this file already
+        // fixed once for `recallLayerPreset`.
+        ...spread.slice(0, MAX_LAYERS - 1).map((engineId) => ({
+          engineId, lo: 0, hi: 127, gain: 0,
+          presetName: engineId === lane.engineId ? presetName : undefined,
+        })),
       ]
     : [{ ...own, gain: 1 }, { ...own, gain: 0 }];
 
@@ -198,12 +205,24 @@ export function hiddenLayerParam(laneId: string, paramId: string): boolean {
 /** Everything a slot can actually hold.
  *
  *  `melodicSynthEngineIds` is the host's OWN answer to "which engines is a
- *  melodic lane allowed to be", and asking it is the whole point: it already
- *  drops the audio channel and the pad-editor engines. Building the list here
- *  from `listEngines` — which is what this did first — offered the Sampler and
- *  the drum machine, and NEITHER is reachable from the worklet's renderer
- *  registry: they run in processors of their own. A slot holding one would have
- *  been silently skipped at spawn, which reads as a broken instrument.
+ *  melodic lane allowed to be", and asking it drops the audio channel and the
+ *  pad-editor engines. It is NOT enough on its own, and believing it was is the
+ *  bug this list shipped with: it answers by NOTE EDITOR, and the Sampler's
+ *  editor is a piano roll like any melodic engine's, so the Sampler passed —
+ *  and, being registered at module scope while the plugin engines arrive later
+ *  over HTTP, it passed FIRST. Every rack built by the WEAVE sound control got
+ *  it in slot 2. A Sampler slot cannot make a sound: it runs in a processor of
+ *  its own, `hasRenderer` is false for it inside the worklet and
+ *  `LayersRenderer` skips it at spawn — so the crossfade's far end was silence
+ *  with a full-looking dropdown above it. Measured at the master: RMS 0.032 at
+ *  the near end, 0.0020 at the far one.
+ *
+ *  So the real question is asked directly: is this engine's voice built inside
+ *  the worklet at all. Every plugin engine answers yes by construction, and the
+ *  three in-tree engines that own browser resources answer no. It is the closest
+ *  the main thread can get — the renderer registry itself lives in the worklet,
+ *  so a plugin that declared an engine and shipped no DSP would still slip
+ *  through, and be skipped just the same.
  *
  *  Excluding LAYERS itself is a separate rule and not tidiness: a LAYERS inside
  *  a LAYERS would build its own sub-engines at spawn with nothing bounding the
@@ -212,7 +231,7 @@ export function hiddenLayerParam(laneId: string, paramId: string): boolean {
 export function slotChoices() {
   const allowed = new Set(melodicSynthEngineIds());
   return listEngines('polyhost')
-    .filter((e) => e.id !== LAYERS_ENGINE_ID && allowed.has(e.id));
+    .filter((e) => e.id !== LAYERS_ENGINE_ID && allowed.has(e.id) && isWorkletHosted(e.id));
 }
 
 /** Fill this rack's EMPTY slots, in order, and say which ones were filled.
@@ -257,19 +276,11 @@ export function setLayerEngine(lane: SessionLane | undefined, i: number, engineI
   return true;
 }
 
-/** A preset for this slot that is NOT the one it is already on.
- *
- *  What makes a two-slot rack a MORPH rather than one sound played twice: with
- *  both slots identical the fader moves and nothing changes, which reads exactly
- *  like a broken control. The first that differs, so the answer is stable —
- *  a random one would make the same lane convert differently twice.
- *
- *  Undefined when the engine ships fewer than two presets. The caller then
- *  leaves the slot as it is: two identical instruments is a poor morph, and a
- *  slot silently emptied is worse. */
-export function contrastPresetName(engineId: string, current: string | undefined): string | undefined {
-  return getCachedPresets(engineId).find((p) => p.name !== current)?.name;
-}
+// `contrastPresetName` stood here: the first preset of an engine that was not
+// the one a slot already had, so that converting a lane gave its sound control
+// two ENDS that differed. Both callers are gone — per user direction a rack is
+// built by duplicating the lane's instrument, and what the far end holds is a
+// choice made on purpose rather than one dealt for you.
 
 /** Recall a preset INTO one layer.
  *
