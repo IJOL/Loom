@@ -518,3 +518,54 @@ describe('Task 5 fix round 1: the declared groups table survives every hop to th
     expect(res.engine!.groups).toEqual(groups);
   });
 });
+
+// A preset id is ONE engine's vocabulary. Convert a 303 lane to a rack and it
+// still claimed to be on "BASS Acid Classic" — an id no list on the new engine
+// offers — so the dropdown went blank while insisting something was chosen.
+// Nothing cleared that record but the dice.
+describe('swapLaneEngine announces a REAL instrument change', () => {
+  it('fires when the engine id actually changes', () => {
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const changed: string[] = [];
+    const lanes = createLaneAllocator({
+      ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [],
+      onEngineChanged: (id) => changed.push(id),
+    });
+    lanes.ensureLaneResource('L', 'tb303');
+    lanes.swapLaneEngine('L', 'subtractive');
+    expect(changed).toEqual(['L']);
+  });
+
+  it('stays QUIET when the engine is the same', () => {
+    // Setting a rack's slot re-runs the swap with the same id. That is one
+    // instrument holding different things, not a different instrument — and
+    // clearing the lane's preset there would throw away a record nobody asked
+    // to lose.
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const changed: string[] = [];
+    const lanes = createLaneAllocator({
+      ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [],
+      onEngineChanged: (id) => changed.push(id),
+    });
+    lanes.ensureLaneResource('L', 'tb303');
+    lanes.swapLaneEngine('L', 'tb303');
+    expect(changed).toEqual([]);
+  });
+
+  it('says nothing when the new engine does not exist', () => {
+    // The swap bails and leaves the lane intact, so its preset still names
+    // something real.
+    const ctx = makeCtx();
+    const { master, fx, sidechainBus } = makeDeps(ctx);
+    const changed: string[] = [];
+    const lanes = createLaneAllocator({
+      ctx, master, fx, sidechainBus, getBpm: () => 120, extraIds: [],
+      onEngineChanged: (id) => changed.push(id),
+    });
+    lanes.ensureLaneResource('L', 'tb303');
+    lanes.swapLaneEngine('L', 'not-an-engine');
+    expect(changed).toEqual([]);
+  });
+});

@@ -66,6 +66,14 @@ export interface LaneAllocatorDeps {
    *  worth of params). Drives DestinationRegistry.invalidate(). Optional so
    *  test fixtures without the registry still compile. */
   onDestinationsChanged?: () => void;
+  /** A lane's instrument was REPLACED — not rebuilt, replaced by a different
+   *  one. Fired after the swap, and only when the id actually changed.
+   *
+   *  It exists because a preset id is one engine's vocabulary: convert a 303
+   *  lane to a rack and it still claimed to be on "BASS Acid Classic", which no
+   *  list on the new engine offers, so the dropdown went blank while insisting
+   *  something was chosen. Nothing cleared that record but the dice. */
+  onEngineChanged?: (laneId: string) => void;
   /** The lane, for an engine whose DECLARED params depend on the lane's own
    *  state — today only LAYERS, whose four slots each contribute their engine's
    *  params. Read at construction because a lane's param numbering is fixed for
@@ -358,6 +366,11 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
   const swapLaneEngine = (laneId: string, newEngineId: string): void => {
     const res = resources.get(laneId);
     if (!res) return;
+    // Read BEFORE the replacement, and off the ENGINE rather than the lane: the
+    // callers set `lane.engineId` first, so by now the session already claims to
+    // be the new one. The live engine is the only thing that still remembers
+    // what this lane was.
+    const wasEngineId = res.engine?.id;
     // createLaneEngine registers a NEW worklet engine's node with the cap,
     // overwriting the old laneId entry (the old node's stale reports are then
     // ignored by the cap's node-identity guard). Build first so that on an
@@ -372,6 +385,15 @@ export function createLaneAllocator(deps: LaneAllocatorDeps): LaneAllocator {
     resources.replaceEngine(laneId, engine);    // disposes old engine, keeps strip+inserts
     bindLaneModulators(laneId);                 // the new engine owns a new host
     deps.onDestinationsChanged?.();             // the new engine's params replaced the old set
+    // The lane is a different instrument now, so whatever preset it was on names
+    // nothing: a preset id is one engine's vocabulary. Announced rather than
+    // acted on here — this file allocates audio nodes and has no business
+    // knowing what a preset is.
+    //
+    // Only on a REAL change. Setting a rack's slot re-runs this with the same
+    // engine id, and that must not throw away the lane's preset: it is still
+    // the same instrument, holding different things.
+    if (wasEngineId && wasEngineId !== newEngineId) deps.onEngineChanged?.(laneId);
   };
 
   const getLaneEngineInstance = (laneId: string): SynthEngine | null =>

@@ -58,7 +58,7 @@ import {
 import {
   wireInstrumentPresetControls, refreshInstrumentPresetSelect,
 } from './instrument-presets/instrument-preset-select';
-import { recordPagePresetForLane } from './instrument-presets/preset-select-state';
+import { recordPagePresetForLane, markPresetCustomForLane } from './instrument-presets/preset-select-state';
 import { initRandomize } from './core/randomize-ui';
 import { wireFxUI, type FxUIDeps } from './core/fx-ui';
 import { wireTransport, setPlaying, type TransportDeps } from './core/transport';
@@ -214,6 +214,11 @@ const lanes = createLaneAllocator({
   globalVoiceCap,
   masterInserts: masterInsertChain,
   onDestinationsChanged: () => destinations.invalidate(),
+  // The lane is a different instrument, so the preset it claimed to be on names
+  // nothing any list offers. Through the door that already meant exactly this —
+  // the one the dice uses — which also repaints every select currently showing
+  // the lane, instead of leaving a blank box that insists something is chosen.
+  onEngineChanged: (laneId) => markPresetCustomForLane(laneId),
   // A closure, not a value: sessionHost is built below, and New/Open replace
   // its state wholesale. LAYERS reads its rack through this when a lane's
   // engine is constructed.
