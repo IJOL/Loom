@@ -184,7 +184,13 @@ export class WorkletLaneEngine implements SynthEngine {
     for (const s of cfg.params) {
       if (!isStripParamId(s.id)) this.state[s.id] = s.default;
     }
-    this.maxVoices = cfg.polyphony === 'mono' ? 1 : 8;
+    // The engine's OWN declared default, not a number chosen here. It was 8
+    // whatever the manifest said, which made the knob's spec-default a decoration
+    // — an engine asking for 6 got 8, and the two disagreed from the first frame.
+    // Only the polyphony KIND is decided here, because mono is not a count.
+    this.maxVoices = cfg.polyphony === 'mono'
+      ? 1
+      : Math.max(1, Math.round(cfg.params.find((p) => p.id === 'poly.voices')?.default ?? 8));
     this.state['poly.voices'] = this.maxVoices;   // keep the bag in sync with the authoritative cap
     // The lane's DECLARED live param set, built ONCE and used for both jobs it
     // has: seeding the worklet's values, and numbering them. It is NOT

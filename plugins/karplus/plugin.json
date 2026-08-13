@@ -22,7 +22,7 @@
         { "id": "amp.attack",        "label": "Attack",      "kind": "continuous", "min": 0.001, "max": 0.5, "default": 0.005, "unit": "s", "group": "amp" },
         { "id": "amp.release",       "label": "Release",     "kind": "continuous", "min": 0.05,  "max": 4,   "default": 0.5,   "unit": "s", "group": "amp" },
         { "id": "amp.level",         "label": "Level",       "kind": "continuous", "min": 0,     "max": 1,   "default": 0.8,   "group": "amp" },
-        { "id": "poly.voices",       "label": "Voices",      "kind": "continuous", "min": 1,     "max": 16,  "default": 8,     "group": "poly" }
+        { "id": "poly.voices",       "label": "Voices",      "kind": "continuous", "min": 1,     "max": 64,  "default": 32,    "group": "poly" }
       ],
       "groups": [
         { "id": "string", "title": "STRING", "row": 0, "color": "var(--knob-cyan)" },

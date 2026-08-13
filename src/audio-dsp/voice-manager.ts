@@ -7,7 +7,28 @@ import { SlotSmoother } from './slot-smoother';
 /** Phase origin for the all-free/all-shared fast path: the LFO ignores notes. */
 const SHARED_ORIGIN: PhaseOrigin = { voiceStartT: 0, lastNoteOnT: 0 };
 
-interface Slot { midi: number; allocatedAt: number; v: VoiceRenderer; voiceId?: number; }
+interface Slot {
+  midi: number; allocatedAt: number; v: VoiceRenderer; voiceId?: number;
+  /** When this voice was STOLEN, i.e. when its retirement ramp began. Undefined
+   *  for every voice that is simply playing — including one in its own release,
+   *  which is ending on the instrument's terms rather than being taken. */
+  stolenAt?: number;
+}
+
+/** How long a stolen voice takes to reach silence.
+ *
+ *  This number is the whole difference between a voice cap that works and the
+ *  one that was removed. That one spliced the oldest voice out of the render
+ *  loop on the spot, which discarded whatever amplitude it happened to be
+ *  rendering — and a discarded amplitude IS a step discontinuity, which is a
+ *  click. Ramping to zero first has no step in it anywhere: the gain leaves 1
+ *  continuously and arrives at 0, and only then is the slot dropped.
+ *
+ *  Eight milliseconds is long enough that the ramp itself is below the ear's
+ *  click threshold and short enough to be a handover rather than an audible
+ *  fade — about a third of a cycle at the bottom of the keyboard, which is why
+ *  a stolen bass note reads as ending rather than as being cut. */
+const STEAL_FADE_SEC = 0.008;
 
 export class VoiceManager {
   private slots: Slot[] = [];
@@ -174,17 +195,49 @@ export class VoiceManager {
     for (let i = this.slots.length - 1; i >= 0; i--) {
       if (this.slots[i].midi === note.midi) this.slots[i].v.noteOff(this.lastT);
     }
-    // Monophonic lanes (maxVoices === 1) steal the previous voice so the line stays
-    // mono (e.g. TB-303 acid bass). Polyphonic lanes are intentionally UNCAPPED: the
-    // AudioWorklet handles dense polyphony, and an artificial per-lane cap produced
-    // audible clicks — it yanked a still-sounding voice out of the render loop
-    // mid-note so its release never rendered (a step discontinuity). Voices
-    // self-terminate on release, so they don't grow unbounded. (User-confirmed
-    // click-free uncapped, 2026-06-24.)
+    // Monophonic lanes (maxVoices === 1) steal the previous voice so the line
+    // stays mono (e.g. TB-303 acid bass).
     if (this.maxVoices <= 1) {
       while (this.slots.length >= 1) {
         const oldest = this.slots.shift();
         oldest?.v.noteOff(this.lastT);
+      }
+      // Polyphonic lanes hold `poly.voices` and no more.
+      //
+      // They were UNCAPPED, and the reasoning written here was that voices
+      // self-terminate on release so they cannot grow unbounded. Per voice that
+      // is true; what it misses is the STEADY STATE, which is the note rate
+      // times how long each voice rings. Measured — voice-accumulation.dsp.test
+      // — a pad with a 3 s release at 16ths settles at 28 simultaneous voices,
+      // and a LAYERS rack builds one sub-renderer per slot on top of that: 21%
+      // of a core for ONE track at four slots. A worklet that misses its
+      // deadline outputs nothing while every light on screen stays right.
+      //
+      // The cap came out because it CLICKED, and it clicked because of HOW it
+      // stole: `slots.shift()` dropped a voice mid-note, discarding whatever
+      // amplitude it was rendering. Taking a voice is not the problem; taking
+      // it instantly is. Stolen voices leave on a ramp here (see STEAL_FADE_SEC
+      // and renderSample), so there is no step to hear — pinned by a test that
+      // measures the jump AT the steal, across twenty phases of the stolen
+      // voice's cycle, against the same material a moment earlier. Dropping the
+      // voice on the spot measures 1.05 there against 0.068 just before it;
+      // ramping it out measures nothing above the material at all.
+      //
+      // The OLDEST goes first, and one already leaving is never taken twice.
+      // Counting only the voices that are not already on their way out is what
+      // stops a burst of notes from stealing the same slot repeatedly and
+      // leaving the lane thinner than it was asked to be.
+    } else {
+      let live = 0;
+      for (const s of this.slots) if (s.stolenAt === undefined) live++;
+      for (let i = 0; i < this.slots.length && live >= this.maxVoices; i++) {
+        const s = this.slots[i];
+        if (s.stolenAt !== undefined) continue;
+        s.stolenAt = this.lastT;
+        // The instrument is told too: a renderer that tracks its own gate would
+        // otherwise be left believing this note is still held.
+        s.v.noteOff(this.lastT);
+        live--;
       }
     }
     const v = createRenderer(this.engineId, note, this.params, this.sr, this.structural);
@@ -293,10 +346,19 @@ export class VoiceManager {
       const s = this.slots[i];
       // Per-voice phase: this voice's own note-on drives SCOPE=voice, while the
       // lane's most recent note-on drives a shared TRIG=note retrigger.
+      // A STOLEN voice leaves on a ramp. Dropped at the far end of it and not
+      // before: the gain reaches exactly 0 first, so the slot disappears at a
+      // sample that was already silent. Removing it a moment earlier is the
+      // step discontinuity that made the old cap click.
+      let steal = 1;
+      if (s.stolenAt !== undefined) {
+        steal = 1 - (t - s.stolenAt) / STEAL_FADE_SEC;
+        if (steal <= 0) { this.slots.splice(i, 1); continue; }
+      }
       const mo = perVoice
         ? this.fillOffsets(t, { voiceStartT: s.allocatedAt, lastNoteOnT: this.lastNoteOnT })
         : shared;
-      out += s.v.renderSample(t, mo) * this.outputTrim;
+      out += s.v.renderSample(t, mo) * this.outputTrim * steal;
       if (s.v.done) this.slots.splice(i, 1);
     }
     return out;

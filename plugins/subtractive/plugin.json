@@ -160,7 +160,7 @@
         { "id": "master.detune", "label": "Detune", "kind": "continuous", "min": 0, "max": 50, "default": 25, "unit": "¢", "group": "master" },
         { "id": "master.drift",  "label": "Drift",  "kind": "continuous", "min": 0, "max": 1, "default": 0, "group": "master" },
 
-        { "id": "poly.voices", "label": "Voices", "kind": "continuous", "min": 1, "max": 16, "default": 8, "group": "poly" }
+        { "id": "poly.voices", "label": "Voices", "kind": "continuous", "min": 1, "max": 64, "default": 32, "group": "poly" }
       ],
       "groups": [
         { "id": "osc1",    "title": "OSC 1",    "row": 0, "color": "var(--knob-cyan)" },
