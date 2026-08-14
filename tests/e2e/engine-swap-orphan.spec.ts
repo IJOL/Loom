@@ -59,6 +59,11 @@ test('swapping the instrument mid-play leaves nothing behind', async ({ page }) 
   // And the session still plays afterwards. Reported after a swap that killed a
   // stuck lane: "ahora ya no hace play". A swap that leaves the transport
   // unable to start again trades one silence for another.
+  //
+  // Back to the Session view first: the scene launches live there, and a
+  // locator that resolves to a hidden element waits out the whole timeout
+  // saying "element is not visible" — which reads exactly like the bug.
+  await page.locator('#mode-toggle .mode-btn[data-mode="session"]').click();
   await page.locator('.session-scene-launch').first().click();
   await waitForAudible(page);
   const again = await measureMaster(page, 800);

@@ -27,7 +27,21 @@ export class Sequencer {
   /** Total song length (Loom ticks) for the tempo map, to loop the live readout. */
   tempoSongTicks = 0;
   setTempoMap(map: import('./tempo-map').TempoMap | undefined, songTicks = 0): void {
-    this.tempoMap = map; this.tempoSongTicks = songTicks;
+    // A map is EXTERNAL data — it comes from a MIDI file, where a tempo is
+    // three bytes of microseconds-per-quarter turned into `60_000_000 / us`.
+    // Three zero bytes make that Infinity, and every tick-to-second conversion
+    // in tempo-map.ts divides by `secPerTick(bpm)`, which is then 0. The times
+    // that come out are Infinity or NaN, and a note whose times are not numbers
+    // makes a voice that can neither reach its gate-off nor be released by a
+    // stop — the lane sings until the page is reloaded.
+    //
+    // The scalar tempo is refused at its own door (bpmBroadcast); a map reaches
+    // the sequencer without passing it, so it is refused here. Entry by entry,
+    // because one bad tempo event in a long file should cost that segment and
+    // not the import.
+    const clean = map?.filter((e) => Number.isFinite(e.bpm) && e.bpm > 0);
+    this.tempoMap = clean && clean.length > 0 ? clean : undefined;
+    this.tempoSongTicks = songTicks;
   }
 
   /** Session-mode tick hook. Called every scheduler tick with (currentTime,
