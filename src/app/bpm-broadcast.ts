@@ -50,6 +50,21 @@ export function createBpmBroadcaster(deps: BpmBroadcasterDeps): BpmBroadcaster {
   };
   return {
     broadcast(bpm: number) {
+      // Every tempo change comes through here, which makes this the only place
+      // one can be refused — and a tempo that is not a number has to be, because
+      // of what it does downstream. Note times are `(60 / bpm) / 96` per tick,
+      // so a NaN tempo makes every note's gate NaN, on EVERY lane at once; and a
+      // gate of NaN is a voice that can neither reach its own gate-off nor be
+      // released by a stop, since every comparison against NaN is false. One
+      // bad tempo would lock the whole instrument into noise until reload.
+      //
+      // The paths that reach here are the ones that read a tempo from somewhere
+      // else — a MIDI file, a detected loop, a save, a demo — and `clampBpm` is
+      // `Math.max/min`, which passes NaN through untouched.
+      //
+      // Keeping the tempo we have is the honest answer: there is no sensible
+      // number to invent, and the caller asked for one that does not exist.
+      if (!Number.isFinite(bpm)) return;
       deps.seq.bpm = bpm;
       // Broadcast BPM to all insert chains (send buses, per-lane, master).
       for (const send of deps.fx.sends) send.inserts.setBpm(bpm);
