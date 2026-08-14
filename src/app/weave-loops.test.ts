@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { weaveLoopContext, weaveLoopNotes, rehookOnArrival, pushTrail, nearestOffset } from './weave-loops';
 import { setLibrary } from '../patterns/pattern-library';
+import { cloudPathPoint } from '../weave/topology-cloud';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { inScale } from '../core/musicality';
 import type { SessionLane } from '../session/session';
@@ -294,6 +295,65 @@ describe('a journey that keeps going', () => {
 
   it('is still repeatable — the same lane on the same seed travels the same way', () => {
     expect(walk(3, 'd1', 12)).toEqual(walk(3, 'd1', 12));
+  });
+
+  // The CLOUD, asked the same question, and it answers worse.
+  //
+  // "Four laps renew the whole square, one corner at a time" is what the function
+  // claims. It cannot: a lap ENDS where it began, so `applyFlow` writes the
+  // wrapped position — the top-left corner, weight 1, the other three at 0 —
+  // before it calls the re-hook. The quietest slot is therefore the same slot on
+  // every single lap, and three of the four corners never move at all.
+  //
+  // Walked through the real path arithmetic rather than asserted from reading
+  // it: `cloudPathPoint` is what places the dot, and the wrapped position is the
+  // one the flow has just written.
+  describe('a cloud renews more than one of its corners', () => {
+    const cornersOf = (sel: unknown) => (sel as { corners: string[] }).corners;
+
+    /** Lap the square, re-hooking at each wrap exactly where the flow leaves the
+     *  dot: a hair past the start of the lap, which is the top-left corner. */
+    const lapCloud = (seed: number, laps: number) => {
+      const c = drumCtx();
+      let sel = {
+        kind: 'cloud',
+        corners: [0, 1, 2, 3].map((i) => `lib:${STYLE}:drums:${i}`),
+        path: 'rim',
+        ...cloudPathPoint('rim', 0.02),
+      } as never;
+      const seen = [new Set<string>(), new Set<string>(), new Set<string>(), new Set<string>()];
+      for (let i = 0; i < laps; i++) {
+        cornersOf(sel).forEach((id, at) => seen[at].add(id));
+        const next = rehookOnArrival(sel, c, seed, 'd1');
+        if (!next) break;
+        sel = { ...next, ...cloudPathPoint('rim', 0.02) } as never;
+      }
+      cornersOf(sel).forEach((id, at) => seen[at].add(id));
+      return seen;
+    };
+
+    it('renews every corner that is silent when the lap ends', () => {
+      // At the wrap the dot sits a hair past the top-left: that corner is at
+      // full weight and the top-right is a few percent in, on its way to being
+      // the destination. The other two are at exactly zero and can be re-drawn
+      // without a cut — so both of them must move, not just the last one.
+      //
+      // Measured before this change: 1, 1, 1, 4 loops per corner over twelve
+      // laps. Two of the four corners still hold, and that is a LIMIT of
+      // re-hooking once per lap rather than a tie left unbroken — the corner the
+      // lap ends on is the one sounding, and the next one is already being
+      // approached. Renewing those needs a re-hook at each leg of the path, not
+      // at the lap boundary alone, which is a change to what the flow reports.
+      const held = lapCloud(1, 12).map((ids) => ids.size);
+      const silent = [held[2], held[3]];
+      expect(silent.every((n) => n > 1), `loops held per corner: ${held.join(', ')}`)
+        .toBe(true);
+    });
+
+    it('crosses most of the shelf rather than a handful of loops', () => {
+      const all = new Set(lapCloud(1, 30).flatMap((s) => [...s]));
+      expect(all.size).toBeGreaterThanOrEqual(SHELF / 2);
+    });
   });
 });
 

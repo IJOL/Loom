@@ -407,16 +407,32 @@ export function rehookOnArrival(
   // needs it — a lap of a cloud crosses four loops and then crossed the same
   // four for ever.
   //
-  // Four laps renew the whole square, one corner at a time, which is evolution
-  // rather than a shuffle.
+  // "Four laps renew the whole square, one corner at a time" is what this used
+  // to claim, and it could not: a lap ENDS where it began, so the position the
+  // flow writes just before the re-hook is the same one every lap — the corner
+  // the path starts from at weight 1, the other three at 0. The quietest slot
+  // was therefore the same slot for ever, and three corners never moved at all:
+  // one loop each over twelve laps, against four on the slot that did. The
+  // rotation below is what spreads the draw over the silent corners.
+  //
+  // The corner the lap STARTS and ENDS on is still the exception, and by
+  // construction: it is the one thing sounding at the only moment a re-hook is
+  // allowed to happen, so it cannot be re-drawn without a cut.
   if (sel.kind === 'cloud') {
     const pool = weaveLoopChoices(c).map((ch) => ch.id).filter((id) => !id.startsWith('clip:'));
     if (pool.length === 0) return null;
+    // The square remembers itself: a cloud keeps no trail, so what it has played
+    // is what its corners have HELD, and the ones it is about to leave behind
+    // are the loops to draw away from. Without it the far corner alternated
+    // between a handful of loops for the same reason A→B did.
+    const fresh = unplayed(pool, [...(trail ?? []), ...sel.corners]);
     // Rotated by where the square IS, so consecutive laps do not keep offering
     // the same first candidate. The corners change every lap, so the rotation
-    // does too.
-    const at = hashOf([String(seed), laneId, sel.corners.join('|')]) % pool.length;
-    return redrawQuietest(sel, [...pool.slice(at), ...pool.slice(0, at)]);
+    // does too — and the same number turns the slot choice as well, or every
+    // draw would land on one corner.
+    const spin = hashOf([String(seed), laneId, sel.corners.join('|')]);
+    const at = spin % fresh.length;
+    return redrawQuietest(sel, [...fresh.slice(at), ...fresh.slice(0, at)], spin);
   }
 
   if (sel.kind !== 'ab') return null;
