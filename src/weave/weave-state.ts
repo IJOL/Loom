@@ -110,6 +110,21 @@ export function defaultLaneSelection(): LaneSelection {
   return { weave: null, locked: false, harmonyLeader: false };
 }
 
+/** Is this selection's POSITION a pair of real numbers?
+ *
+ *  Asked at the one door a panel's numbers come through, because a position
+ *  that is not a number is not caught anywhere downstream: every clamp in this
+ *  directory is `Math.min(1, Math.max(0, v))` or its ternary twin, and both
+ *  hand NaN straight back. It then reaches `blendLoops`, which writes it into
+ *  the note DURATIONS the lane plays — and a note whose duration is NaN makes a
+ *  voice that can neither reach its gate-off nor be released by a stop.
+ *
+ *  `y` is optional (only a cloud has one) but must be a number when present. */
+export function finitePosition(w: { x?: number; y?: number }): boolean {
+  if (w.x !== undefined && !Number.isFinite(w.x)) return false;
+  return w.y === undefined || Number.isFinite(w.y);
+}
+
 /** The master flow: one journey the whole scene travels.
  *
  *  `speedBars` is how long a lap takes, and 0 — the default — means the flow

@@ -6,7 +6,7 @@
 // nothing speculative.
 
 import type { PanelContext, PanelLane, PanelLoopPhase, PanelWeave } from '@loom/plugin-sdk';
-import { defaultLaneSelection, defaultWeaveSteps } from '../weave/weave-state';
+import { defaultLaneSelection, defaultWeaveSteps, finitePosition } from '../weave/weave-state';
 import {
   retopologise, positionOf, defaultSelection, selectionLoopIds, redrawQuietest,
 } from '../weave/weave-selection';
@@ -842,6 +842,17 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // lock exists to hold an arrangement still, and a dropdown that swapped
       // the material under it would be the one hole in that promise.
       if (deps.weave.locked || deps.weave.lanes[laneId]?.locked) return;
+      // The panel is a PLUGIN, and this is where its numbers enter the host's
+      // state. A position that is not a number survives every clamp on the way
+      // in — `Math.min(1, Math.max(0, NaN))` is NaN, and so is the ternary form
+      // — and ends as two NaN weights, which `blendLoops` drops (nothing is
+      // ever "above 0.005"). The lane then plays SILENCE with its row, its
+      // loops and its lights all still saying otherwise.
+      //
+      // Refused rather than repaired, and refused HERE: guessing a position
+      // moves someone's crossfade to a place they did not put it, and the five
+      // separate clamps downstream would each have to guess the same way.
+      if (weave && !finitePosition(weave)) return;
       const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
       deps.weave.lanes[laneId] = { ...cur, weave };
       deps.onWeaveChanged?.(laneId);
