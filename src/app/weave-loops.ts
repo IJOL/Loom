@@ -359,11 +359,40 @@ function hashOf(parts: readonly string[]): number {
   return v;
 }
 
+/** How many candidates the draw has to be left with. Below two there is no
+ *  choice to make, and a memory that leaves no choice has to give way: a short
+ *  shelf repeats sooner, which is honest, and a lane that stopped evolving to
+ *  protect its memory would be the very failure this guards against. */
+const MIN_CANDIDATES = 2;
+
+/** The shelf minus what the lane has played recently — oldest memories given up
+ *  first when the shelf is too short to honour them all.
+ *
+ *  This is what stops the journey going round in circles. A lap draws from where
+ *  the lane IS, so without this the walk over the shelf was `b → f(b)`: an
+ *  iterated map on twenty states, which is eventually periodic by construction
+ *  and whose cycles are short — a fifth of the lane/seed pairs settled into two
+ *  loops alternating for ever, which is exactly what was reported from the
+ *  panel. Remembering the loops already played turns the same draw into a walk
+ *  that has to move on. */
+function unplayed(pool: readonly string[], recent: readonly string[]): string[] {
+  for (let keep = recent.length; keep > 0; keep--) {
+    const banned = new Set(recent.slice(recent.length - keep));
+    const out = pool.filter((id) => !banned.has(id));
+    if (out.length >= MIN_CANDIDATES) return out;
+  }
+  return [...pool];
+}
+
 export function rehookOnArrival(
   sel: PanelWeave | null | undefined,
   c: WeaveLoopContext,
   seed: number,
   laneId: string,
+  /** The loops this lane has already played, oldest first — the same trail the
+   *  wheel winds back along. Absent, the draw only avoids where it stands, which
+   *  is how the journey used to go round in circles. */
+  trail?: readonly string[],
 ): PanelWeave | null {
   if (!sel) return null;
 
@@ -422,12 +451,17 @@ export function rehookOnArrival(
   const pool = weaveLoopChoices(c).map((ch) => ch.id).filter((id) => !id.startsWith('clip:'));
   if (pool.length === 0) return null;
 
+  // Everywhere it has been, most recent last. `sel.a` is the near end of the leg
+  // just finished and belongs at the head of that memory: the caller pushes it
+  // onto the trail AFTER this returns, so it is not in there yet.
+  const fresh = unplayed(pool, [...(trail ?? []), sel.a]);
+
   // The loop it just arrived at stands in for "where the journey is": it differs
   // on every leg by construction, since the draw never picks the loop it came
   // from.
   const pick = (n: number) => hashOf([String(seed), laneId, sel.b]) % Math.max(1, n);
 
-  const next = abAdvance({ a: sel.a, b: sel.b, x: 1 }, 1, pool, pick);
+  const next = abAdvance({ a: sel.a, b: sel.b, x: 1 }, 1, fresh, pick);
   // The POSITION stays the flow's: it has already wrapped to the near end of the
   // next leg. Writing abAdvance's own 0 here would yank the lane back a fraction
   // of a bar every lap.

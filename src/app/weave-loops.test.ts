@@ -6,7 +6,7 @@
 // loop is pulled into it.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { weaveLoopContext, weaveLoopNotes, rehookOnArrival, nearestOffset } from './weave-loops';
+import { weaveLoopContext, weaveLoopNotes, rehookOnArrival, pushTrail, nearestOffset } from './weave-loops';
 import { setLibrary } from '../patterns/pattern-library';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { inScale } from '../core/musicality';
@@ -204,6 +204,96 @@ describe('what a lane hands over TO', () => {
       c, 1, 'l1',
     );
     expect(next).toMatchObject({ a: `lib:${STYLE}:bass:0`, b: `lib:${STYLE}:bass:0` });
+  });
+});
+
+// Reported from the panel: a techno DRUM lane left to evolve ends up crossing
+// the same two loops for ever — "Industrial Pound" against "Stripped" — however
+// long you let it run.
+//
+// One lap is `b → f(b)`, and the draw was seeded by the arrived loop ALONE, so
+// the walk over a twenty-loop shelf was an iterated map on twenty states. Every
+// such map is eventually periodic and its cycles are short: over a thousand
+// lane/seed pairs, 22% settled into a two-loop alternation and 99% into twelve
+// or fewer. The shelf being large bought nothing.
+//
+// What the lane already carries is its TRAIL — the loops it has actually played,
+// pushed by both callers on the way out — so the fix is to draw from what it has
+// NOT played recently. That is also what "evolve" means to a listener.
+describe('a journey that keeps going', () => {
+  const SHELF = 20;
+  const shelf = Array.from({ length: SHELF }, () => OFF_SCALE);
+
+  /** A percussion lane: it reads the drum shelf and is never snapped. */
+  const drumCtx = () => ({
+    ...weaveLoopContext(
+      { id: 'd1', engineId: 'drums-machine', name: 'd1', clips: [], inserts: [] } as unknown as SessionLane,
+      { ...DEFAULT_MUSICALITY, lock: false }, undefined,
+      { styleMix: 0, darkness: 0.5, laneIndex: 0, seed: 1 },
+    ),
+    harmonic: false,
+  });
+
+  /** Walk `laps` legs and report every far end the lane travelled to. */
+  const walk = (seed: number, laneId: string, laps: number) => {
+    const c = drumCtx();
+    let sel = { kind: 'ab', a: `lib:${STYLE}:drums:0`, b: `lib:${STYLE}:drums:1`, x: 1 } as never;
+    let trail: string[] = [];
+    const visited: string[] = [];
+    for (let i = 0; i < laps; i++) {
+      const next = rehookOnArrival(sel, c, seed, laneId, trail) as typeof sel | null;
+      if (!next) break;
+      trail = pushTrail(trail, (sel as unknown as { a: string }).a);
+      sel = next;
+      visited.push((sel as unknown as { b: string }).b);
+    }
+    return visited;
+  };
+
+  beforeEach(() => {
+    setLibrary({ synth: {}, bass: {}, drums: { [STYLE]: shelf }, catalog: {} } as never);
+  });
+
+  it('crosses most of the shelf instead of settling into two loops', () => {
+    // Every seed, not a lucky one: the old draw failed on roughly a fifth of
+    // them and the report is one lane on one seed.
+    for (let seed = 1; seed <= 8; seed++) {
+      const visited = walk(seed, 'd1', 30);
+      expect(new Set(visited).size).toBeGreaterThanOrEqual(SHELF / 2);
+    }
+  });
+
+  it('never returns to a loop it is still holding in its trail', () => {
+    const c = drumCtx();
+    const trail = [`lib:${STYLE}:drums:5`, `lib:${STYLE}:drums:7`];
+    const next = rehookOnArrival(
+      { kind: 'ab', a: `lib:${STYLE}:drums:7`, b: `lib:${STYLE}:drums:9`, x: 1 } as never,
+      c, 1, 'd1', trail,
+    ) as { b: string };
+    expect(trail).not.toContain(next.b);
+    expect(next.b).not.toBe(`lib:${STYLE}:drums:9`);
+  });
+
+  it('gives the memory up, oldest first, rather than running out of loops', () => {
+    // Three patterns and a trail naming all of them: remembering everything
+    // would leave nothing to draw and the lane would stop evolving — which is
+    // the very thing this is here to prevent. A short shelf repeats sooner;
+    // that is honest.
+    setLibrary({
+      synth: {}, bass: {}, drums: { [STYLE]: [OFF_SCALE, OFF_SCALE, OFF_SCALE] }, catalog: {},
+    } as never);
+    const c = drumCtx();
+    const next = rehookOnArrival(
+      { kind: 'ab', a: `lib:${STYLE}:drums:0`, b: `lib:${STYLE}:drums:1`, x: 1 } as never,
+      c, 1, 'd1',
+      [`lib:${STYLE}:drums:0`, `lib:${STYLE}:drums:1`, `lib:${STYLE}:drums:2`],
+    ) as { b: string } | null;
+    expect(next).not.toBeNull();
+    expect(next!.b).not.toBe(`lib:${STYLE}:drums:1`);
+  });
+
+  it('is still repeatable — the same lane on the same seed travels the same way', () => {
+    expect(walk(3, 'd1', 12)).toEqual(walk(3, 'd1', 12));
   });
 });
 

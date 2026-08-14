@@ -925,8 +925,10 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
 
       const rehook = (laneId: string) => {
         const entry = deps.weave.lanes[laneId];
+        // The trail goes IN as well as out: the draw avoids the loops this lane
+        // has already played, or the journey circles back onto two of them.
         const next = rehookOnArrival(
-          entry?.weave, loopContext(laneId), deps.weave.seed, laneId,
+          entry?.weave, loopContext(laneId), deps.weave.seed, laneId, entry?.trail,
         );
         if (!next || !entry) return;
         // Remember what it is leaving, so winding the wheel back can find it.

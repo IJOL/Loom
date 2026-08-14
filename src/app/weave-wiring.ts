@@ -582,7 +582,11 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       // between an endless journey and a loop of a loop.
       const rehook = (laneId: string) => {
         const entry = state.lanes[laneId];
-        const next = rehookOnArrival(entry?.weave, loopContext(laneId), state.seed, laneId);
+        // The trail goes IN as well as out: the draw avoids the loops this lane
+        // has already played, or the journey circles back onto two of them.
+        const next = rehookOnArrival(
+          entry?.weave, loopContext(laneId), state.seed, laneId, entry?.trail,
+        );
         if (!next || !entry) return;
         // Remember what it is leaving. Only the way OUT records: the way home
         // walks this list, and pushing there would leave a trail that grew as
