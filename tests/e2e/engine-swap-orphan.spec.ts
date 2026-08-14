@@ -55,5 +55,14 @@ test('swapping the instrument mid-play leaves nothing behind', async ({ page }) 
 
   // Nothing may outlive the stop. Relative, per the project's rule.
   expect(stopped.peak).toBeLessThan(playing.peak * 0.1);
+
+  // And the session still plays afterwards. Reported after a swap that killed a
+  // stuck lane: "ahora ya no hace play". A swap that leaves the transport
+  // unable to start again trades one silence for another.
+  await page.locator('.session-scene-launch').first().click();
+  await waitForAudible(page);
+  const again = await measureMaster(page, 800);
+  expect(again.peak).toBeGreaterThan(playing.peak * 0.1);
+
   expect(errors).toEqual([]);
 });

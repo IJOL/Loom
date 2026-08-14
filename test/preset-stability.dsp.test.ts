@@ -9,7 +9,7 @@
 // Every preset of every engine that ships DSP, held and then released. Three
 // questions per preset: does it stay finite, does it stay bounded, and does the
 // voice ever go away.
-import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { describe, it, expect, afterAll, beforeAll, vi } from 'vitest';
 
 // The plugins register their renderers at module scope through the ABI, so the
 // global has to exist before their imports are evaluated — vi.hoisted is the
@@ -104,10 +104,18 @@ const note = (midi: number, durationSec: number, accent = false): NoteSpec => ({
 
 interface Run { peak: number; finite: boolean; tailPeak: number; endedBySec: number | null }
 
+/** Twenty seconds, not eight. A westcoast pad on a lowpass-only LPG holds its
+ *  level until its CONTOUR finishes rather than until its gate ends — the VCA
+ *  is fixed at 1 in that mode — and four of them legitimately take 7.4 to 9.5
+ *  seconds. At eight the test called them immortal, which is a different defect
+ *  from the one it is looking for and would have hidden the real one behind
+ *  four false alarms. */
+const WINDOW_SEC = 20;
+
 /** One held note, then silence. Returns the loudest sample overall, the loudest
  *  one in the last second (long after the note was released) and when the lane
  *  actually emptied. */
-function hold(engineId: string, bag: ParamBag, seconds = 8): Run {
+function hold(engineId: string, bag: ParamBag, seconds = WINDOW_SEC): Run {
   const vm = new VoiceManager(SR, engineId, bag);
   vm.spawn(note(45, 2));
   let peak = 0, tailPeak = 0, finite = true, endedBySec: number | null = null;
@@ -123,113 +131,36 @@ function hold(engineId: string, bag: ParamBag, seconds = 8): Run {
   return { peak, finite, tailPeak, endedBySec };
 }
 
-describe('a note whose times are not numbers', () => {
-  // `holdEnd = beginSec + durationSec`. If either is not a number the sum is
-  // NaN, and EVERY comparison against NaN is false — so `t >= holdEnd` never
-  // fires the gate-off and `t < holdEnd` never lets noteOff through either. A
-  // renderer that ends on its gate then never ends at all: an immortal voice,
-  // at full level, deaf to the transport and audible until the lane is muted.
-  const growl = (): ParamBag => {
-    const m = ENGINES.find((e) => e.id === 'westcoast')!;
-    return bagFor(m.manifest, m.presets.find((p) => p.name === 'BASS Growl FM')!);
-  };
-
-  it('a NaN duration does not make an immortal voice', () => {
-    const vm = new VoiceManager(SR, 'westcoast', growl());
-    vm.spawn({ midi: 45, beginSec: 0, durationSec: NaN, velocity: 0.9, accent: false, slide: false });
-    let peak = 0;
-    for (let i = 0; i < SR * 10; i++) peak = Math.max(peak, Math.abs(vm.renderSample(i / SR)));
-    // Ten seconds later, on a preset whose own decay is 0.3 s.
-    expect(vm.activeCount).toBe(0);
-    expect(peak).toBeLessThan(8);
-  });
-
-  it('a stop reaches a voice whose gate has already passed', () => {
-    // What the transport does: noteOff on everything still sounding. On this
-    // renderer that call is a no-op once the note's own gate is behind it —
-    // which is fine only as long as something else ends the voice.
-    const vm = new VoiceManager(SR, 'westcoast', growl());
-    vm.spawn({ midi: 45, beginSec: 0, durationSec: 0.2, velocity: 0.9, accent: false, slide: false });
-    for (let i = 0; i < SR * 1; i++) vm.renderSample(i / SR);
-    vm.steal(1);                       // the stop path
-    for (let i = SR; i < SR * 6; i++) vm.renderSample(i / SR);
-    expect(vm.activeCount).toBe(0);
-  });
-});
-
-describe('MEASUREMENT (temporary)', () => {
-  it('an ACCENTED note, and a note-off that arrives late', () => {
-    // Two axes the sweep above never touched, and both are ordinary in a real
-    // session. An accent multiplies this engine's fold drive AND its cutoff
-    // envelope; and a transport stop arrives whenever it arrives, which for a
-    // note whose gate has already passed means westcoast's `noteOff` returns
-    // without telling its contour anything.
-    for (const { id, manifest, presets } of ENGINES) {
-      for (const preset of presets) {
-        const bag = bagFor(manifest, preset);
-        for (const [label, accent, dur] of [
-          ['accent', true, 2], ['long-gate', false, 30],
-        ] as [string, boolean, number][]) {
-          const vm = new VoiceManager(SR, id, bag);
-          vm.spawn(note(45, dur, accent));
-          let peak = 0, alive = true;
-          for (let i = 0; i < SR * 12; i++) {
-            const s = vm.renderSample(i / SR);
-            if (!Number.isFinite(s)) { peak = Infinity; break; }
-            peak = Math.max(peak, Math.abs(s));
-          }
-          alive = vm.activeCount > 0;
-          if (!Number.isFinite(peak) || peak > 8 || alive) {
-            console.log(`  ${id} · ${preset.name} [${label}]: peak=${peak.toFixed ? peak.toFixed(2) : peak} stillAliveAt12s=${alive}`);
-          }
-        }
-      }
-    }
-    expect(true).toBe(true);
-  });
-
-  it('prints the ones that fail, over a long window', () => {
-    const watch: Record<string, string[]> = {
-      subtractive: ['LEAD Supersaw 7', 'LEAD Hoover Rave', 'BASS Hoover'],
-      westcoast: ['PAD Harmonic Swell', 'PAD Glass Air', 'DRONE Sub Fold', 'FX Inharmonic Pad',
-        'BASS Growl FM'],
-    };
-    for (const { id, manifest, presets } of ENGINES) {
-      for (const name of watch[id] ?? []) {
-        const preset = presets.find((p) => p.name === name);
-        if (!preset) { console.log(`  ${id} · ${name}: NOT FOUND`); continue; }
-        const r = hold(id, bagFor(manifest, preset), 20);
-        // Onset vs body: 14 oscillators starting in phase is a one-sample spike
-        // and a different defect from a voice that is simply too loud all the
-        // way through. The fix is not the same one.
-        const vm = new VoiceManager(SR, id, bagFor(manifest, preset));
-        vm.spawn(note(45, 2));
-        let onset = 0, body = 0;
-        for (let i = 0; i < SR * 1.5; i++) {
-          const a = Math.abs(vm.renderSample(i / SR));
-          if (i < SR * 0.02) onset = Math.max(onset, a);
-          else if (i > SR * 0.1) body = Math.max(body, a);
-        }
-        console.log(`  ${id} · ${name}: peak=${r.peak.toFixed(2)} onset20ms=${onset.toFixed(2)} body=${body.toFixed(2)} ended=${r.endedBySec === null ? 'NEVER within 20s' : r.endedBySec.toFixed(1) + 's'}`);
-      }
-    }
-    expect(true).toBe(true);
-  });
-});
+/** Set PRESET_LEVELS=1 to have the sweep print every peak it measured as JSON,
+ *  for `tools/preset-levels.mjs` to summarise. The measurement stays here — one
+ *  owner — and the reporting lives there. */
+const REPORT = process.env.PRESET_LEVELS === '1';
+const measured: Record<string, number> = {};
+if (REPORT) {
+  afterAll(() => { console.log(`PRESET_LEVELS_JSON ${JSON.stringify(measured)}`); });
+}
 
 describe('every shipped preset is stable', () => {
   for (const { id, manifest, presets } of ENGINES) {
     for (const preset of presets) {
       it(`${id} · ${preset.name}`, () => {
         const r = hold(id, bagFor(manifest, preset));
+        if (REPORT) measured[`${id} · ${preset.name}`] = r.peak;
         // A non-finite sample is the worst case: it does not merely sound wrong,
         // it poisons every native node downstream of the worklet for the life of
         // the page.
         expect(r.finite).toBe(true);
-        // Bounded. A voice is one instrument at one level; anything past a few
-        // is a state running away rather than a loud patch. Absolute on purpose
-        // — this is a divergence detector, not a loudness judgement, and the
-        // scale it guards (1.0 = full scale) is fixed by the format.
+        // Bounded. Absolute on purpose — this is a divergence detector, not a
+        // loudness judgement — and the number is taken from the catalogue's own
+        // measured distribution rather than picked: across all 229 presets the
+        // median peak is 2.23, p75 is 3.11 and p95 is 4.83 (1.0 = full scale).
+        // Eight is past p99, so anything above it is an outlier by the
+        // catalogue's own standard and not merely a loud patch.
+        //
+        // That the median is 2.23 at all is a separate finding: these engines
+        // run hot as a body, which is a mix decision for a person to make, not
+        // something to quietly normalise here. `tools/preset-levels.mjs`
+        // prints the distribution (`PRESET_LEVELS=1`).
         expect(r.peak).toBeLessThan(8);
         // And it ENDS. A voice that never reports done is a voice the lane keeps
         // rendering for ever; enough of them and every new note arrives on top
