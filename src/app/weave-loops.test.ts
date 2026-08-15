@@ -6,7 +6,9 @@
 // loop is pulled into it.
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { weaveLoopContext, weaveLoopNotes, rehookOnArrival, pushTrail, nearestOffset } from './weave-loops';
+import {
+  weaveLoopContext, weaveLoopNotes, rehookOnArrival, evolveCloudOnLeg, pushTrail, nearestOffset,
+} from './weave-loops';
 import { setLibrary } from '../patterns/pattern-library';
 import { cloudPathPoint } from '../weave/topology-cloud';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
@@ -145,25 +147,20 @@ describe('what a lane hands over TO', () => {
     expect(next).toMatchObject({ a: `lib:${STYLE}:bass:0`, b: `lib:${STYLE}:bass:1` });
   });
 
-  it('a CLOUD swaps the corner the dot is furthest from', () => {
-    // Reported as "cloud no cambia en evolve". A lap used to return null for
-    // anything but A→B, so a square crossed its four loops and then crossed the
-    // same four for ever — and it is the topology that most needs evolving.
-    //
-    // The corner nobody is hearing is the one that may change without a cut,
-    // which is the same rule the dice follows. Near the top-left, that is the
-    // bottom-right.
+  it('a CLOUD is not this function’s business — it evolves per LEG', () => {
+    // Reported as "cloud no cambia en evolve", and answered HERE first, which
+    // was the mistake. A lap ends where it began, so this is called at the same
+    // position every time and "the corner nobody is hearing" is the same corner
+    // every time: three of the four never moved at all. The draw lives on the
+    // leg crossings now — see `evolveCloudOnLeg`.
     setLibrary({
       synth: {}, drums: {}, bass: { [STYLE]: [OFF_SCALE, OFF_SCALE, OFF_SCALE] }, catalog: {},
     } as never);
     const c = ctxFor(laneWith([]));
     const corners = [`lib:${STYLE}:bass:0`, `lib:${STYLE}:bass:1`, `lib:${STYLE}:bass:0`, `lib:${STYLE}:bass:1`];
-    const next = rehookOnArrival(
+    expect(rehookOnArrival(
       { kind: 'cloud', corners, x: 0.1, y: 0.1 } as never, c, 1, 'l1',
-    );
-    const after = (next as { corners: string[] }).corners;
-    expect(after.slice(0, 3)).toEqual(corners.slice(0, 3));
-    expect(after[3]).toBe(`lib:${STYLE}:bass:2`);
+    )).toBeNull();
   });
 
   it('a cloud with the whole shelf already in play holds what it has', () => {
@@ -173,13 +170,13 @@ describe('what a lane hands over TO', () => {
       synth: {}, drums: {}, bass: { [STYLE]: [OFF_SCALE, OFF_SCALE] }, catalog: {},
     } as never);
     const c = ctxFor(laneWith([]));
-    const next = rehookOnArrival(
+    const next = evolveCloudOnLeg(
       {
         kind: 'cloud',
         corners: [`lib:${STYLE}:bass:0`, `lib:${STYLE}:bass:1`, `lib:${STYLE}:bass:0`, `lib:${STYLE}:bass:1`],
-        x: 0.5, y: 0.5,
+        path: 'rim', x: 1, y: 0,
       } as never,
-      c, 1, 'l1',
+      c, 1, 'l1', 1,
     );
     expect(next).toBeNull();
   });
@@ -297,62 +294,88 @@ describe('a journey that keeps going', () => {
     expect(walk(3, 'd1', 12)).toEqual(walk(3, 'd1', 12));
   });
 
-  // The CLOUD, asked the same question, and it answers worse.
+  // The CLOUD travels in LEGS, and a leg is its A→B.
   //
-  // "Four laps renew the whole square, one corner at a time" is what the function
-  // claims. It cannot: a lap ENDS where it began, so `applyFlow` writes the
-  // wrapped position — the top-left corner, weight 1, the other three at 0 —
-  // before it calls the re-hook. The quietest slot is therefore the same slot on
-  // every single lap, and three of the four corners never move at all.
+  // A lap of a square is four of them — side or diagonal, depending on the path
+  // — and each one leaves a corner and arrives at the next with only those two
+  // loops mattering along the way. So the square hands over on arrival at a
+  // corner, four times a lap, re-drawing the corner it came FROM: by the time
+  // the next leg starts, the one behind is already something else.
   //
-  // Walked through the real path arithmetic rather than asserted from reading
-  // it: `cloudPathPoint` is what places the dot, and the wrapped position is the
-  // one the flow has just written.
-  describe('a cloud renews more than one of its corners', () => {
+  // Drawing once per LAP instead is what it used to do, and it could not work.
+  // A lap ends where it began, so the position the flow writes before the
+  // re-hook is the same one every lap and "the quietest corner" is the same
+  // corner for ever: measured at 1, 1, 1 and 4 loops per corner over twelve
+  // laps, three of them stuck on whatever they were dealt.
+  describe('a cloud hands a corner over on every leg', () => {
     const cornersOf = (sel: unknown) => (sel as { corners: string[] }).corners;
 
-    /** Lap the square, re-hooking at each wrap exactly where the flow leaves the
-     *  dot: a hair past the start of the lap, which is the top-left corner. */
-    const lapCloud = (seed: number, laps: number) => {
+    /** Walk the square leg by leg, exactly as the tick does: the dot crosses
+     *  into a leg and the corner behind it is re-drawn. */
+    const walkCloud = (seed: number, legs: number) => {
       const c = drumCtx();
       let sel = {
         kind: 'cloud',
         corners: [0, 1, 2, 3].map((i) => `lib:${STYLE}:drums:${i}`),
         path: 'rim',
-        ...cloudPathPoint('rim', 0.02),
+        ...cloudPathPoint('rim', 0),
       } as never;
       const seen = [new Set<string>(), new Set<string>(), new Set<string>(), new Set<string>()];
-      for (let i = 0; i < laps; i++) {
-        cornersOf(sel).forEach((id, at) => seen[at].add(id));
-        const next = rehookOnArrival(sel, c, seed, 'd1');
-        if (!next) break;
-        sel = { ...next, ...cloudPathPoint('rim', 0.02) } as never;
-      }
       cornersOf(sel).forEach((id, at) => seen[at].add(id));
+      for (let i = 1; i <= legs; i++) {
+        const leg = i % 4;
+        const next = evolveCloudOnLeg(sel, c, seed, 'd1', leg);
+        if (!next) break;
+        sel = { ...next, ...cloudPathPoint('rim', leg / 4) } as never;
+        cornersOf(sel).forEach((id, at) => seen[at].add(id));
+      }
       return seen;
     };
 
-    it('renews every corner that is silent when the lap ends', () => {
-      // At the wrap the dot sits a hair past the top-left: that corner is at
-      // full weight and the top-right is a few percent in, on its way to being
-      // the destination. The other two are at exactly zero and can be re-drawn
-      // without a cut — so both of them must move, not just the last one.
-      //
-      // Measured before this change: 1, 1, 1, 4 loops per corner over twelve
-      // laps. Two of the four corners still hold, and that is a LIMIT of
-      // re-hooking once per lap rather than a tie left unbroken — the corner the
-      // lap ends on is the one sounding, and the next one is already being
-      // approached. Renewing those needs a re-hook at each leg of the path, not
-      // at the lap boundary alone, which is a change to what the flow reports.
-      const held = lapCloud(1, 12).map((ids) => ids.size);
-      const silent = [held[2], held[3]];
-      expect(silent.every((n) => n > 1), `loops held per corner: ${held.join(', ')}`)
+    it('renews all four corners in a single lap', () => {
+      // Four legs, four corners. The old draw took twelve laps to move one of
+      // them.
+      const held = walkCloud(1, 4).map((ids) => ids.size);
+      expect(held.every((n) => n > 1), `loops held per corner: ${held.join(', ')}`)
         .toBe(true);
     });
 
+    it('re-draws the corner just LEFT, which is the one at zero', () => {
+      // Arriving at the top-right ends the leg that set off from the top-left,
+      // so the top-left is what changes. It is also the only safe choice: the
+      // dot is standing on the top-right, so every other corner weighs exactly
+      // nothing and the swap cannot be heard.
+      const c = drumCtx();
+      const corners = [0, 1, 2, 3].map((i) => `lib:${STYLE}:drums:${i}`);
+      const next = evolveCloudOnLeg(
+        { kind: 'cloud', corners, path: 'rim', ...cloudPathPoint('rim', 0.25) } as never,
+        c, 1, 'd1', 1,
+      );
+      const after = cornersOf(next);
+      expect(after[0]).not.toBe(corners[0]);
+      expect(after.slice(1)).toEqual(corners.slice(1));
+    });
+
     it('crosses most of the shelf rather than a handful of loops', () => {
-      const all = new Set(lapCloud(1, 30).flatMap((s) => [...s]));
+      const all = new Set(walkCloud(1, 30).flatMap((s) => [...s]));
       expect(all.size).toBeGreaterThanOrEqual(SHELF / 2);
+    });
+
+    it('draws nothing at a lap boundary — that is a leg like any other', () => {
+      // The wrap used to be the ONE moment a square evolved. It is now just the
+      // arrival at the corner the path starts from, handled by the same code as
+      // the other three, and `rehookOnArrival` has nothing left to say about a
+      // cloud.
+      const c = drumCtx();
+      const next = rehookOnArrival(
+        {
+          kind: 'cloud',
+          corners: [0, 1, 2, 3].map((i) => `lib:${STYLE}:drums:${i}`),
+          path: 'rim', x: 0, y: 0,
+        } as never,
+        c, 1, 'd1',
+      );
+      expect(next).toBeNull();
     });
   });
 });

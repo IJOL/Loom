@@ -90,6 +90,17 @@ export interface LaneSelection {
    *  Capped, because it is saved with the session and a scene left running for
    *  an hour would otherwise carry thousands of ids nobody will wind back to. */
   trail?: string[];
+  /** Which leg of its path a CLOUD lane was walking when it was last looked at.
+   *
+   *  The square evolves on ARRIVAL at a corner, and nothing else in the state
+   *  says when that happens: the position is a coordinate, and a coordinate a
+   *  clock has just written cannot be told apart from the same coordinate a
+   *  moment earlier. Remembering the leg is what turns a position into an event.
+   *
+   *  Absent means "not looked at yet", which is deliberately not leg 0 — a lane
+   *  whose first sighting counted as an arrival would re-draw a corner the
+   *  moment a session loaded. */
+  legAt?: number;
   /** The SOUND fader: which instrument this lane's notes are played on, 0..1
    *  between the two slots of its rack.
    *

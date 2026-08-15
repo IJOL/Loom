@@ -16,6 +16,7 @@ import {
   weaveLoopChoices, weaveLoopContext, rehookOnArrival, rehookOnRewind, pushTrail,
   type WeaveLoopContext,
 } from './weave-loops';
+import { evolveCloudLanes } from './weave-cloud-evolve';
 import { stylesWithPatterns } from '../patterns/pattern-library';
 import { STYLE_CATALOG, SCALE_CATALOG, rootName, type StyleId } from '../core/musicality';
 import type { MusicalityState, LaneRole } from '../session/session-types';
@@ -979,6 +980,16 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         // the far end one at a time.
         evolving,
       );
+      // Same event, found the other way: a square arrives at a corner four times
+      // a lap and none of those is a wrap, so `rehook` above never hears them.
+      if (evolving && advancing) {
+        evolveCloudLanes(
+          deps.weave.lanes,
+          deps.sessionHost.state.lanes.map((l) => l.id),
+          loopContext,
+          deps.weave.seed,
+        );
+      }
       deps.onWeaveChanged?.('*');
     },
 

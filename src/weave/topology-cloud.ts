@@ -60,11 +60,43 @@ const LEGS: Record<CloudPath, number[][][]> = {
  *  is a clock and 1 is a position it can legitimately produce. */
 export function cloudPathPoint(path: CloudPath | undefined, t: number): { x: number; y: number } {
   const legs = LEGS[path ?? 'rim'] ?? LEGS.rim;
-  const f = Number.isFinite(t) ? ((t % 1) + 1) % 1 : 0;
-  const leg = Math.min(legs.length - 1, Math.floor(f * legs.length));
-  const k = f * legs.length - leg;
+  const { leg, k } = legAndPhase(path, t);
   const [from, to] = legs[leg];
   return { x: from[0] + (to[0] - from[0]) * k, y: from[1] + (to[1] - from[1]) * k };
+}
+
+/** How many legs every path has. Four because a square has four corners, and
+ *  both shapes visit all of them — that is what makes a leg the cloud's unit of
+ *  travel and not just an implementation detail of the drawing. */
+export const CLOUD_LEGS = 4;
+
+function legAndPhase(path: CloudPath | undefined, t: number): { leg: number; k: number } {
+  const legs = LEGS[path ?? 'rim'] ?? LEGS.rim;
+  const f = Number.isFinite(t) ? ((t % 1) + 1) % 1 : 0;
+  const leg = Math.min(legs.length - 1, Math.floor(f * legs.length));
+  return { leg, k: f * legs.length - leg };
+}
+
+/** Which leg of its path the dot is walking, 0..3.
+ *
+ *  A leg is the cloud's A→B: it leaves one corner and arrives at the next, by a
+ *  side or by a diagonal depending on the path, and everywhere along it the two
+ *  ends are the only loops that matter. Crossing into a new one is therefore the
+ *  same event as an A→B lap, which is what a lane evolving hangs its draw on. */
+export function cloudLegAt(path: CloudPath | undefined, t: number): number {
+  return legAndPhase(path, t).leg;
+}
+
+/** The corner a leg SETS OFF from, as an index into `corners` — the [TL, TR, BL,
+ *  BR] order the state is stored in.
+ *
+ *  A coordinate is turned into that index rather than the pairs being listed
+ *  again: `x + 2y` IS the order, and a second table of which corner is which is
+ *  the kind that ends up disagreeing with the first. */
+export function cloudLegOrigin(path: CloudPath | undefined, leg: number): number {
+  const legs = LEGS[path ?? 'rim'] ?? LEGS.rim;
+  const [from] = legs[((leg % legs.length) + legs.length) % legs.length];
+  return from[0] + 2 * from[1];
 }
 
 export function cloudWeights(s: CloudState): LoopWeight[] {

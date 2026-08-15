@@ -19,7 +19,8 @@ import type { LaneRole } from '../session/session-types';
 import { isHarmonic } from '../plugins/capabilities';
 import { laneRoleOf } from '../session/lane-role';
 import { formatLoopId, parseLoopId } from '../weave/loop-ids';
-import { redrawQuietest } from '../weave/weave-selection';
+import { redrawSlot } from '../weave/weave-selection';
+import { cloudLegOrigin } from '../weave/topology-cloud';
 import { scaleForDarkness, styleForLane } from '../weave/style-mix';
 import { patternNotes, patternsFor, KIND_LABEL, type PatternKind } from '../patterns/pattern-library';
 import { PAD_LOOPS, renderPadLoop } from '../core/pad-loops';
@@ -407,33 +408,20 @@ export function rehookOnArrival(
   // needs it — a lap of a cloud crosses four loops and then crossed the same
   // four for ever.
   //
-  // "Four laps renew the whole square, one corner at a time" is what this used
-  // to claim, and it could not: a lap ENDS where it began, so the position the
-  // flow writes just before the re-hook is the same one every lap — the corner
-  // the path starts from at weight 1, the other three at 0. The quietest slot
-  // was therefore the same slot for ever, and three corners never moved at all:
-  // one loop each over twelve laps, against four on the slot that did. The
-  // rotation below is what spreads the draw over the silent corners.
+  // A CLOUD does NOT evolve here, and the reason is the whole of a bug.
   //
-  // The corner the lap STARTS and ENDS on is still the exception, and by
-  // construction: it is the one thing sounding at the only moment a re-hook is
-  // allowed to happen, so it cannot be re-drawn without a cut.
-  if (sel.kind === 'cloud') {
-    const pool = weaveLoopChoices(c).map((ch) => ch.id).filter((id) => !id.startsWith('clip:'));
-    if (pool.length === 0) return null;
-    // The square remembers itself: a cloud keeps no trail, so what it has played
-    // is what its corners have HELD, and the ones it is about to leave behind
-    // are the loops to draw away from. Without it the far corner alternated
-    // between a handful of loops for the same reason A→B did.
-    const fresh = unplayed(pool, [...(trail ?? []), ...sel.corners]);
-    // Rotated by where the square IS, so consecutive laps do not keep offering
-    // the same first candidate. The corners change every lap, so the rotation
-    // does too — and the same number turns the slot choice as well, or every
-    // draw would land on one corner.
-    const spin = hashOf([String(seed), laneId, sel.corners.join('|')]);
-    const at = spin % fresh.length;
-    return redrawQuietest(sel, [...fresh.slice(at), ...fresh.slice(0, at)], spin);
-  }
+  // A lap ends where it began, so the position the flow writes just before this
+  // is the same position every lap: the corner the path starts from at weight 1
+  // and the far pair at exactly 0. "The quietest corner" was therefore the same
+  // corner for ever — measured over twelve laps of a twenty-loop shelf, the four
+  // corners held 1, 1, 1 and 4 loops, three of them stuck on whatever they were
+  // dealt. Once per lap is also the wrong RATE: a lap of a cloud is four legs,
+  // and a leg IS an A→B — it leaves one corner and arrives at the next.
+  //
+  // So the draw moved to `evolveCloudOnLeg`, which fires on each of those
+  // arrivals and re-draws the corner just LEFT. See it for why that corner is
+  // the safe one.
+  if (sel.kind === 'cloud') return null;
 
   if (sel.kind !== 'ab') return null;
 
@@ -482,6 +470,48 @@ export function rehookOnArrival(
   // next leg. Writing abAdvance's own 0 here would yank the lane back a fraction
   // of a bar every lap.
   return { ...sel, a: next.a, b: next.b };
+}
+
+/** A cloud lane has just arrived at a corner: re-draw the one it came FROM.
+ *
+ *  This is the cloud's A→B, and it is a LEG and not a lap. A lap of a square is
+ *  four legs — side or diagonal, depending on the path — and each one leaves a
+ *  corner and arrives at the next with only those two loops mattering along the
+ *  way. That is the same event as an A→B crossing, so it draws at the same rate:
+ *  one corner per leg, four per lap, the whole square renewed every time round.
+ *
+ *  The corner just LEFT is the safe one, and it is safe twice over. At the
+ *  moment of arrival the dot is standing on the next corner, so every other
+ *  corner weighs exactly 0 and the swap cannot be heard. And the journey does
+ *  not come back to it until the last leg of the lap, so the new material has
+ *  the width of the square to arrive in — which is more room than A→B gives its
+ *  own far end.
+ *
+ *  Null when there is nothing to do, so a caller running per tick can skip the
+ *  write. */
+export function evolveCloudOnLeg(
+  sel: PanelWeave | null | undefined,
+  c: WeaveLoopContext,
+  seed: number,
+  laneId: string,
+  /** The leg the dot has just entered. The one that ENDED is the one before it,
+   *  and its origin is the corner being left behind. */
+  leg: number,
+  trail?: readonly string[],
+): PanelWeave | null {
+  if (!sel || sel.kind !== 'cloud') return null;
+
+  const pool = weaveLoopChoices(c).map((ch) => ch.id).filter((id) => !id.startsWith('clip:'));
+  if (pool.length === 0) return null;
+
+  // The square remembers itself. A cloud keeps no trail of its own — only A→B
+  // records one — so what it has played is what its corners HOLD, and drawing
+  // away from those is what stops the same handful of loops coming round again.
+  const fresh = unplayed(pool, [...(trail ?? []), ...sel.corners]);
+  const spin = hashOf([String(seed), laneId, sel.corners.join('|')]) % fresh.length;
+  return redrawSlot(
+    sel, cloudLegOrigin(sel.path, leg - 1), [...fresh.slice(spin), ...fresh.slice(0, spin)],
+  );
 }
 
 /** How many legs back a lane can be wound. Saved with the session, so it is a

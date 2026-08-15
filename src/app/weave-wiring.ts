@@ -29,6 +29,7 @@ import { isHarmonic } from '../plugins/capabilities';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { ticksPerBar, type TimeSignature } from '../core/meter';
 import { applyFlow, flowAt } from '../weave/flow';
+import { evolveCloudLanes } from './weave-cloud-evolve';
 import { retimeClip } from '../weave/clip-length';
 import { fillSteps } from '../automation/automation-steps';
 import { TICKS_PER_QUARTER } from '../core/notes';
@@ -630,7 +631,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       // clamps, because a fader has ends; that is a property of who is moving
       // it, not of EVOLVE.
       const evolving = !!state.flow.evolve;
-      if (applyFlow(
+      const moved = applyFlow(
         state.lanes, laneIds, pos, state.flow.drift, base,
         evolving ? rehook : undefined,
         // Only on a THERE-AND-BACK journey. A plain one advances and nothing
@@ -643,7 +644,14 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
         // but not home would be a stranger control than either.
         state.flow.pingPongLaps ? rewind : undefined,
         true,
-      )) {
+      );
+
+      // A square hands a corner over on ARRIVAL at one, which is four times a
+      // lap and never a wrap — so it cannot ride on the callback above.
+      const evolved = evolving
+        && evolveCloudLanes(state.lanes, laneIds, loopContext, state.seed);
+
+      if (moved || evolved) {
 
         sources.clear();
         guarded.clear();

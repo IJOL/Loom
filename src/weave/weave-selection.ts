@@ -145,36 +145,39 @@ function withSlot(sel: PanelWeave, at: number, id: string): PanelWeave {
  *  you can press at any moment — what you hear carries on, and what the lane is
  *  travelling TOWARDS is new.
  *
- *  Ties are broken by `rot`, and on a CLOUD that is not a detail — it decides
- *  whether the square evolves at all. A lap ends where it began, so the position
- *  the flow writes before a re-hook is the same one every lap: one corner at
- *  weight 1 and the other three at exactly 0. Taking the last of those three,
- *  which is what this did, re-drew the SAME corner for ever and left the other
- *  two frozen on their first loop — measured at one loop each over twelve laps
- *  against four on the slot that moved. Slots tied at the minimum are equally
- *  inaudible, so choosing between them is free, and rotating is what turns "the
- *  corner nobody is hearing" from one corner into all of them.
+ *  Ties go to the LATER slot: at the start of an A→B leg both readings are
+ *  defensible, and B is the end the journey is heading for.
  *
  *  Never draws a loop the selection already names, or the press would look like
  *  it did nothing. Null when the shelf has nothing else to offer, so a caller can
  *  leave the lane exactly as it was. */
 export function redrawQuietest(
-  sel: PanelWeave, shelf: readonly string[], rot = 0,
+  sel: PanelWeave, shelf: readonly string[],
 ): PanelWeave | null {
   const ids = slotIds(sel);
   if (ids.length === 0) return null;
 
   const weights = slotWeights(sel);
-  const quietest = ids.reduce((m, _, i) => Math.min(m, weights[i] ?? 0), Infinity);
-  // A hair of tolerance, because these weights are PRODUCTS of a coordinate: at
-  // the top-left corner the two silent-by-construction slots come out as 0 and
-  // the third as x*0, which is 0 in exact arithmetic and need not be once the
-  // position is a float the clock computed. Slots that differ by less than this
-  // are inaudible against each other, which is the only property being used.
-  const tied = ids.map((_, i) => i).filter((i) => (weights[i] ?? 0) <= quietest + 1e-9);
-  const at = tied[((rot % tied.length) + tied.length) % tied.length];
+  let at = 0;
+  for (let i = 1; i < ids.length; i++) {
+    if ((weights[i] ?? 0) <= (weights[at] ?? 0)) at = i;
+  }
+  return redrawSlot(sel, at, shelf);
+}
 
-  const taken = new Set(ids);
+/** Put a fresh loop on ONE named slot — the caller has already decided which.
+ *
+ *  What a CLOUD needs, and what "the quietest" could not give it: a lane
+ *  evolving on its journey knows exactly which corner it has just left, and that
+ *  is a better answer than a weight comparison taken at whatever instant the
+ *  clock happened to fire.
+ *
+ *  Never draws a loop the selection already names, and null when the shelf has
+ *  nothing else to offer — same contract as above, for the same reason. */
+export function redrawSlot(
+  sel: PanelWeave, at: number, shelf: readonly string[],
+): PanelWeave | null {
+  const taken = new Set(slotIds(sel));
   const draw = shelf.find((id) => !taken.has(id));
   return draw === undefined ? null : withSlot(sel, at, draw);
 }
