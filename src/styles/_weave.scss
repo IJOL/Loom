@@ -236,8 +236,14 @@
 // that emptiness is what the settings moved into.
 .weave-lane-setup {
   display: grid;
-  // Notes at a quarter, then which SLOT, instrument, preset, part, shelf, bars,
-  // octave — and the filler LAST, so nothing sits marooned in white space.
+  // Notes at a quarter, then which SLOT, instrument, preset, part, WHO IT
+  // FOLLOWS, shelf, bars, octave — and the filler LAST, so nothing sits
+  // marooned in white space.
+  //
+  // Every control that takes a place here needs a column declared for it. The
+  // follow picker was inserted with role.after() and had none, so everything
+  // after it sat a column to the left and the octave buttons ended up in the
+  // elastic filler, stretched across the row.
   //
   // The selects are wider than they were upstairs: "BASS Acid Classic" and
   // "Acid Techno" were both truncating, and a name you cannot read is a name
@@ -251,7 +257,7 @@
   // that row alone, which reads as a mis-built row rather than as an absent
   // control. The slot buttons and the part are both empty on the lanes that have
   // no use for them, never missing.
-  grid-template-columns: 25% auto 110px 190px 118px 130px auto auto 1fr;
+  grid-template-columns: 25% auto 110px 190px 118px 130px 130px auto auto 1fr;
   gap: 8px;
   align-items: center;
   padding: 2px 8px 4px;
@@ -1060,3 +1066,4 @@
   .weave-led { transition: none; }
   .weave-logo { text-shadow: 0 0 8px var(--amber-glow); }
 }
+

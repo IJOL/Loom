@@ -28,6 +28,22 @@ export function migrateLoadedSessionState(s: SessionState): SessionState {
     lane.inserts ??= [];
     lane.clips = lane.clips.map((c) => (c ? migrateClip(c) : null));
   }
+  // A follower's leaderId is a reference into this same session, so it can
+  // dangle: delete the leading lane and every follower is left pointing at
+  // nothing. Resolving that to "not following" rather than erroring is the
+  // tolerance the rest of this file already applies — a session that lost a
+  // lane still loads and still plays.
+  //
+  // A lane following ITSELF is the degenerate cycle and is dropped here too,
+  // because the follow source would end up asking itself for its own notes.
+  //
+  // After the per-lane loop, not inside it: the check needs every id.
+  const laneIds = new Set(s.lanes.map((l) => l.id));
+  for (const lane of s.lanes) {
+    const leaderId = lane.follow?.leaderId;
+    if (leaderId === undefined) continue;
+    if (leaderId === lane.id || !laneIds.has(leaderId)) delete lane.follow;
+  }
   return s;
 }
 

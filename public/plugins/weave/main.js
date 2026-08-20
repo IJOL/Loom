@@ -608,6 +608,17 @@ function buildLaneRow(lane, ctx, engines) {
     }
   );
   if (roleChoices.length === 0) role.title = "A drum lane plays percussion, whatever part anything says";
+  const followChoices = ctx.followChoices(lane.id);
+  const follow = followChoices.length > 0 ? picker(
+    "weave-follow",
+    `Lane accompanied by ${lane.name}`,
+    followChoices,
+    ctx.laneFollow(lane.id) ?? "",
+    (id) => {
+      ctx.setLaneFollow(lane.id, id || null);
+      repaintCell();
+    }
+  ) : null;
   const topo = document.createElement("select");
   topo.className = "weave-topo";
   topo.setAttribute("aria-label", `How ${lane.name} weaves`);
@@ -682,7 +693,19 @@ function buildLaneRow(lane, ctx, engines) {
   row.append(meter.el, ring.el, name, transport, levelWrap, topo, cellHost, soundWrap);
   const strip = noteStrip(lane.id, ctx);
   const setup = el("div", "weave-lane-setup");
-  setup.append(strip.el, slots, engineHost, presetHost, role, style, length, octave);
+  const followCell = el("div", "weave-follow-cell");
+  if (follow) followCell.append(follow);
+  setup.append(
+    strip.el,
+    slots,
+    engineHost,
+    presetHost,
+    role,
+    followCell,
+    style,
+    length,
+    octave
+  );
   const wrap = el("div", "weave-lane-wrap");
   wrap.append(row, setup);
   return {
@@ -815,8 +838,10 @@ var MACROS = [
   { id: "energy", label: "Energy", color: "var(--knob-yellow)" },
   // 'Mood' on the outside, `darkness` in the data — see weave-catalog for why.
   { id: "darkness", label: "Mood", color: "var(--knob-purple)" },
-  { id: "space", label: "Space", color: "var(--knob-blue)" },
-  { id: "motion", label: "Motion", color: "var(--knob-orange)" },
+  // Space and Motion sat here and are gone. They were the only two that wrote
+  // PARAMS instead of notes, and every one that survives changes the music
+  // itself — which is the difference the user reported between a knob that
+  // keeps giving and one that is spent after the first sweep.
   { id: "styleMix", label: "Style mix", color: "var(--knob-red)" }
 ];
 var R = 22;
@@ -921,8 +946,7 @@ function mountWeave(host, ctx) {
   const held = /* @__PURE__ */ new Map();
   const SURGE_TARGETS = [
     { id: "density", value: 1 },
-    { id: "energy", value: 1 },
-    { id: "motion", value: 1 }
+    { id: "energy", value: 1 }
   ];
   const repaintMacros = [];
   const press = () => {

@@ -22,8 +22,10 @@ const MACROS = [
   { id: 'energy', label: 'Energy', color: 'var(--knob-yellow)' },
   // 'Mood' on the outside, `darkness` in the data — see weave-catalog for why.
   { id: 'darkness', label: 'Mood', color: 'var(--knob-purple)' },
-  { id: 'space', label: 'Space', color: 'var(--knob-blue)' },
-  { id: 'motion', label: 'Motion', color: 'var(--knob-orange)' },
+  // Space and Motion sat here and are gone. They were the only two that wrote
+  // PARAMS instead of notes, and every one that survives changes the music
+  // itself — which is the difference the user reported between a knob that
+  // keeps giving and one that is spent after the first sweep.
   { id: 'styleMix', label: 'Style mix', color: 'var(--knob-red)' },
 ];
 
@@ -159,10 +161,12 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   surge.title = 'Hold: everything at full. Release: exactly as it was.';
 
   const held = new Map<string, number>();
+  // Motion was the third of these and is gone with the macro. What is left is
+  // the two that rewrite NOTES, which is what SURGE was ever about: everything
+  // at full for as long as you hold it.
   const SURGE_TARGETS = [
     { id: 'density', value: 1 },
     { id: 'energy', value: 1 },
-    { id: 'motion', value: 1 },
   ];
   // Repaints the knobs and NOTHING else. ctx.refresh() would remount the whole
   // panel — including this very button, mid-gesture, destroying the element the

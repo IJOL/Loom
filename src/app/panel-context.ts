@@ -13,7 +13,7 @@ import {
 import { applyFlow, asDrift } from '../weave/flow';
 import { stepPreset } from '../automation/automation-steps';
 import {
-  weaveLoopChoices, weaveLoopContext, rehookOnArrival, rehookOnRewind, pushTrail,
+  weaveLoopChoices, weaveLoopEntry, weaveLoopContext, rehookOnArrival, rehookOnRewind, pushTrail,
   type WeaveLoopContext,
 } from './weave-loops';
 import { evolveCloudLanes } from './weave-cloud-evolve';
@@ -29,6 +29,7 @@ import { layerPrefix } from '../audio-dsp/layers/layer-spec';
 import { commitParamForLane } from '../engines/engine-param-commit';
 import { dbfsOf } from '../core/level-meter';
 import { roleMembers } from './panel-context-role';
+import { followMembers } from './panel-context-follow';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { emptyClip } from '../session/session';
 import type { SessionHost } from '../session/session-host';
@@ -208,6 +209,10 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         darkness: macro('darkness'),
         laneIndex: Math.max(0, lanes.findIndex((l) => l.id === laneId)),
         seed: deps.weave.seed,
+        // The leg travels with the rest for the reason stated just above: the
+        // style is now re-thrown per leg, so a list built without it would
+        // offer the loops of the style this lane had two legs ago.
+        legs: deps.weave.lanes[laneId]?.legs ?? 0,
       },
       // The same length the scheduler resolves against, for the same reason the
       // macros are passed: this lists the loops and that plays them.
@@ -391,6 +396,34 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       history: () => deps.sessionHost.deps?.historyDeps,
     }),
 
+    // Which lane each one ACCOMPANIES — the same three-member shape, in
+    // panel-context-follow.ts, and next to the role members because the two
+    // controls are read together: a follower's role is what part it plays.
+    ...followMembers({
+      getState: () => deps.sessionHost.state,
+      // Straight at the weave state rather than through setLaneWeave, which
+      // refuses on a LOCKED lane. The lock exists to hold a crossfade still,
+      // and a lane that is no longer crossfading has nothing to hold.
+      clearWeave: (laneId) => {
+        const cur = deps.weave.lanes[laneId];
+        // SHELVED, not discarded. Follow wins over a weave while it lasts; it
+        // does not get to destroy one. Only the first shelving counts, so
+        // re-pointing a follower at a different leader cannot overwrite the
+        // weave it had before it started following at all.
+        if (cur && cur.shelvedWeave === undefined) cur.shelvedWeave = cur.weave;
+        if (cur) cur.weave = null;
+      },
+      restoreWeave: (laneId) => {
+        const cur = deps.weave.lanes[laneId];
+        if (!cur || cur.shelvedWeave === undefined) return;
+        cur.weave = cur.shelvedWeave;
+        delete cur.shelvedWeave;
+      },
+      onWeaveChanged: (id) => deps.onWeaveChanged?.(id),
+      refresh: () => deps.refresh(),
+      history: () => deps.sessionHost.deps?.historyDeps,
+    }),
+
     lanes(): PanelLane[] {
       // A flat, serialisable summary. Handing the real lane objects over would
       // let a plugin mutate the session behind the host's back.
@@ -557,7 +590,32 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // The pattern library first-class, the lane's own clips alongside it. One
       // list, one vocabulary, so a weave can cross-fade a library loop into a
       // clip without either side knowing which is which.
-      return weaveLoopChoices(loopContext(laneId));
+      const c = loopContext(laneId);
+      const out = weaveLoopChoices(c);
+
+      // Plus WHATEVER THIS LANE IS ACTUALLY PLAYING, named, even when it came
+      // off another shelf.
+      //
+      // A lane that has travelled is very often weaving loops drawn under an
+      // earlier style, and a list built from today's shelf alone does not
+      // contain them — so the row could not name what you were listening to and
+      // fell back to reading the id out loud, "breakbeat drums #3". Worse than
+      // ugly: the two ends of a crossfade were unpickable, so you could hear a
+      // loop and not swap it.
+      //
+      // Appended rather than merged into the shelf groups: they are a different
+      // answer to a different question — not "what may this lane play" but
+      // "what is it playing" — and burying them among two hundred entries would
+      // hide the two that matter.
+      const seen = new Set(out.map((x) => x.id));
+      const sel = deps.weave.lanes[laneId]?.weave;
+      for (const id of sel ? selectionLoopIds(sel) : []) {
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const entry = weaveLoopEntry(id, c);
+        if (entry) out.push({ ...entry, group: 'Playing now · ' + entry.group });
+      }
+      return out;
     },
 
     styles() {
@@ -855,6 +913,26 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // separate clamps downstream would each have to guess the same way.
       if (weave && !finitePosition(weave)) return;
       const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
+      // Choosing a weave STOPS the lane following, and until now it did not.
+      //
+      // The exclusivity was enforced in one direction only: setLaneFollow put
+      // the weave away, and this wrote a weave and left the follow standing.
+      // The host resolves follow FIRST, so the lane went on accompanying while
+      // its row showed a topology, two loops and a moving crossfade — which
+      // from the outside is indistinguishable from a lane that put itself back
+      // into follow on its own. Reported as exactly that: "solo hace follow y
+      // aunque esté en normal, e incluso se cambia sola a follow".
+      //
+      // Only a real weave clears it. Turning the topology OFF is not a claim on
+      // the lane, so a follower whose topology dropdown is set to "off" is
+      // simply a follower.
+      if (weave) {
+        const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
+        if (lane?.follow) delete lane.follow;
+        // And the shelved copy goes with it: the user has just chosen a weave
+        // by hand, so there is nothing older worth coming back to.
+        delete cur.shelvedWeave;
+      }
       deps.weave.lanes[laneId] = { ...cur, weave };
       deps.onWeaveChanged?.(laneId);
     },

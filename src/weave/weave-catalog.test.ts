@@ -2,9 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { WEAVE_MACROS, WEAVE_SCOPE, macroDestinationId, macroNeutral } from './weave-catalog';
 
 describe('weave catalogue', () => {
-  it('declares the six macros', () => {
+  it('declares the four macros', () => {
+    // Six, until Space and Motion were removed. What is left has a property the
+    // six did not: every one of them changes the MUSIC — how many notes, how
+    // hard, which scale, which shelf. The two that went were the only two that
+    // wrote params instead, and they were reported as spent after one sweep.
     expect(WEAVE_MACROS.map((m) => m.id)).toEqual(
-      ['density', 'energy', 'darkness', 'space', 'motion', 'styleMix'],
+      ['density', 'energy', 'darkness', 'styleMix'],
     );
   });
 
@@ -15,16 +19,23 @@ describe('weave catalogue', () => {
     }
   });
 
-  it('centres the bipolar macros and floors the additive ones', () => {
+  it('centres the bipolar macros and floors the additive one', () => {
     // Density, energy and darkness cut as well as add, so their neutral is the
-    // middle. Space, motion and style-mix only ever add, so theirs is zero —
-    // and zero is what "the scene sounds untouched" means for them.
+    // middle. Style mix only ever adds, so its neutral is zero — and zero is
+    // what "the scene sounds untouched" means for it.
     expect(macroNeutral('density')).toBeCloseTo(0.5);
     expect(macroNeutral('energy')).toBeCloseTo(0.5);
     expect(macroNeutral('darkness')).toBeCloseTo(0.5);
+    expect(macroNeutral('styleMix')).toBe(0);
+  });
+
+  it('answers zero for a macro that no longer exists', () => {
+    // A save written before Space and Motion were removed still carries them.
+    // `macroNeutral` falls back to 0 for an unknown id, so those keys read as
+    // "does nothing" rather than as NaN travelling into the arithmetic — which
+    // is why removing the two needed no migration at all.
     expect(macroNeutral('space')).toBe(0);
     expect(macroNeutral('motion')).toBe(0);
-    expect(macroNeutral('styleMix')).toBe(0);
   });
 
   it('gives every macro its own label and colour', () => {

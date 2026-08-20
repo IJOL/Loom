@@ -537,6 +537,24 @@ export function tickSession(
         // Automation kept minimal in Phase D.3; refined in a later task.
       },
     });
+    // Count the iterations that just completed.
+    //
+    // `loopCount` was declared, initialised in three places and reset in a
+    // fourth, and NOTHING ever advanced it — a field whose name promised a lap
+    // counter and whose value was always zero. Read in good faith by the
+    // follower's phrase shaping, which then behaved as though every bar were
+    // the first, which is to say it did nothing at all.
+    //
+    // Counted from the boundary rather than incremented by one, because a tick
+    // can cross more than one iteration: a short loop under a long look-ahead
+    // advances several at once, and a counter that stepped by one per tick
+    // would drift out of step with the music it is supposed to be measuring.
+    if (newLoopStart > currentLoopStart) {
+      const loopSec = clipLoopSec(clip, bpm, meter);
+      if (loopSec > 0) {
+        lp.loopCount += Math.max(1, Math.round((newLoopStart - currentLoopStart) / loopSec));
+      }
+    }
     lp.loopStartedAt = newLoopStart;
   }
 }

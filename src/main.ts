@@ -19,7 +19,6 @@ import { createWeaveWiring } from './app/weave-wiring';
 import { launchWeavingLanes, createWeaveAwareStart } from './weave/weave-transport';
 import { getStripParam, setStripParam } from './core/channel-strip-params';
 import { defaultWeaveState } from './weave/weave-state';
-import { createWeaveParamMacros } from './app/weave-param-macros';
 import { createWeaveSound } from './app/weave-sound';
 import { printScene, nextSceneName } from './session/session-runtime';
 import { envelopesForPrint } from './weave/print-automation';
@@ -404,20 +403,8 @@ const activeLaneStore = createActiveLaneStore();
 // WEAVE's live state, built BEFORE the host so the host can ask it for a gate
 // on every tick, and read later by the panel plugin. Neither can own it: the
 // host exists before the panel does.
-// Space and Motion, landed on real destinations. A factory rather than a bare
-// call because it has to remember where the macros were LAST time: a knob
-// brought home has to write its neutral once, and writing it always would zero
-// every send a user set by hand the moment the panel opened.
-//
-// Playback semantics — the value reaches the audio and NOT the lane's saved
-// sound. The macro owns it; what should persist is the weave's own state.
-const weaveParamMacros = createWeaveParamMacros({
-  destinations: () => destinations.list(),
-  write: (id, v, ranges) => writes?.applyPlaybackUnmountedWrite(id, v, ranges),
-});
-
-// The SOUND fader, turned into a lane's two layer gains. Same door as the
-// macros, and a factory for the same reason: a lane whose fader is cleared has
+// The SOUND fader, turned into a lane's two layer gains. A factory because it
+// has to remember where the fader was LAST time: a lane whose fader is cleared has
 // to get its layers back to unity once, or it keeps a balance nothing on screen
 // governs.
 const weaveSound = createWeaveSound({
@@ -676,9 +663,13 @@ const performanceFeature = createPerformanceFeature({
     // tell the autosave it moved — and a weave is exactly the kind of live state
     // a crash should not cost you.
     autosave?.request();
-    // On the change, never per tick: a param written sixty times a second with
-    // the same value is sixty ramps the smoother chases for nothing.
-    weaveParamMacros.apply(weaveWiring.state.macros);
+    // The SOUND fader still lands here, on the change and never per tick: a
+    // param written sixty times a second with the same value is sixty ramps the
+    // smoother chases for nothing.
+    //
+    // The param MACROS used to be applied alongside it. Space and Motion were
+    // the only two, and they are gone — so what is left of "the six macros
+    // reach the sound two different ways" is one way: they rewrite notes.
     weaveSound.apply(weaveWiring.state);
   },
   // The desk's mute/solo, shared by reference: a panel's M and S and the

@@ -130,6 +130,24 @@ export interface SessionLane {
    *  feature wants it: the arranger needs to know which lane is the bass, and a
    *  MIDI import could fill it in from the track it came from. */
   role?: LaneRole;
+  /** The lane this one accompanies. Present ⇒ the lane plays nothing of its
+   *  own: its notes are derived from the leader's, every scheduling iteration.
+   *
+   *  Only the leader is stored. WHAT the follower plays — bass, comp, pad, arp
+   *  — is the lane's own `role` above, resolved by `laneRoleOf`, because that
+   *  answer already exists and a second copy here would be free to disagree
+   *  with it.
+   *
+   *  Mutually exclusive with WEAVE's selection: both decide what the lane
+   *  plays, and the inspector clears one when you set the other. */
+  follow?: {
+    leaderId: string;
+    /** The progression, corrected by hand. Present ⇒ it wins over whatever the
+     *  analysis inferred, which is the same precedence `activeProgression`
+     *  applies to a written progression over a picked one. Absent — the
+     *  ordinary case — means the harmony is read from the leader every time. */
+    chords?: import('../arranger/progression').Chord[];
+  };
   clips: (SessionClip | null)[];
   launchQuantize?: LaunchQuantize;
   engineState?: {

@@ -16,8 +16,6 @@
         { "id": "density", "label": "Density", "kind": "continuous", "min": 0, "max": 1, "default": 0.5 },
         { "id": "energy", "label": "Energy", "kind": "continuous", "min": 0, "max": 1, "default": 0.5 },
         { "id": "darkness", "label": "Darkness", "kind": "continuous", "min": 0, "max": 1, "default": 0.5 },
-        { "id": "space", "label": "Space", "kind": "continuous", "min": 0, "max": 1, "default": 0 },
-        { "id": "motion", "label": "Motion", "kind": "continuous", "min": 0, "max": 1, "default": 0 },
         { "id": "styleMix", "label": "Style mix", "kind": "continuous", "min": 0, "max": 1, "default": 0 }
       ]
     }

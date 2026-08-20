@@ -460,6 +460,26 @@ export interface PanelContext {
    *  part draws from IS the point of the mark, so a lane left playing the shelf
    *  it just left would show a picker that had visibly done nothing. */
   setLaneRole(laneId: string, role: string | null): void;
+  /** The lanes this one may ACCOMPANY, the not-following option first.
+   *
+   *  A follower plays no material of its own: it reads the leading lane's notes
+   *  and derives a part from them, in the register its `role` names. The host
+   *  writes the list because only it can say which lanes are eligible — never
+   *  itself, never a percussion lane, and never a lane that already follows,
+   *  since a chain of followers is a cycle waiting to happen.
+   *
+   *  EMPTY means show no control, exactly as `roleChoices` does: a lane with no
+   *  possible leader has nothing to be asked about. The not-following option's
+   *  id is the empty string. */
+  followChoices(laneId: string): PanelChoice[];
+  /** The lane this one accompanies, or null when it plays its own material. */
+  laneFollow(laneId: string): string | null;
+  /** Point a lane at a leader, or stop following with null.
+   *
+   *  Setting a leader CLEARS the lane's weave. The two answer the same question
+   *  — what does this lane play — and the host resolves follow first, so
+   *  leaving a selection behind would be a setting that silently does nothing. */
+  setLaneFollow(laneId: string, leaderId: string | null): void;
   /** Whether this lane sits out the master flow's journey.
    *
    *  A locked lane holds its position while everything else travels — the way
@@ -608,6 +628,7 @@ export interface PanelContext {
   /** Choose loops or move the position. Passing null clears the lane back to
    *  playing its clip untouched. */
   setLaneWeave(laneId: string, weave: PanelWeave | null): void;
+
   /** Move EVERY lane's cross-fade at once.
    *
    *  The difference between a panel you operate and a panel you play: dragging

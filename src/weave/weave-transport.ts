@@ -46,7 +46,17 @@ export function clipRowForLane(
 }
 
 export interface WeaveLaunchDeps {
-  lanes: readonly { id: string; clips: readonly (SessionClip | null)[] }[];
+  lanes: readonly {
+    id: string;
+    clips: readonly (SessionClip | null)[];
+    /** A lane that ACCOMPANIES another is driven by this panel exactly as a
+     *  weaving one is, and has to start with it. Without this Play skipped it —
+     *  choosing a leader clears the lane's weave, so it stopped matching "has a
+     *  weave selection" and fell out of the launch. The only way to hear it was
+     *  to leave the panel and launch a scene by hand, which is precisely as
+     *  strange as it sounds. */
+    follow?: { leaderId: string };
+  }[];
   /** The scene the grid has launched, which the weaving lanes fall in behind. */
   activeSceneIdx: number;
   /** The host's own launch, so a lane started by Play is queued and quantised
@@ -62,11 +72,18 @@ export interface WeaveLaunchDeps {
  *  "which lanes, which row, in what order", and all three are decisions worth
  *  pinning. */
 export function launchWeavingLanes(state: WeaveState, deps: WeaveLaunchDeps): void {
-  for (const id of weavingLaneIds(state, deps.lanes.map((l) => l.id))) {
-    const lane = deps.lanes.find((l) => l.id === id);
-    if (!lane) continue;
+  // Weaving OR following: both are lanes this panel decides the notes of, and
+  // a lane the panel drives has to start when the panel's Play does. Walked in
+  // SESSION order rather than in the order the ids happen to come out of the
+  // weave state, so the launches queue the way the grid reads.
+  const weaving = new Set(weavingLaneIds(state, deps.lanes.map((l) => l.id)));
+  for (const lane of deps.lanes) {
+    if (!weaving.has(lane.id) && !lane.follow) continue;
     const row = clipRowForLane(lane.clips, deps.activeSceneIdx);
-    if (row >= 0) deps.launchClipAt(id, row);
+    // No clip anywhere ⇒ nothing to carry the lane, and it stays silent. That
+    // is the same answer the scheduler gives: derived notes replace what a
+    // playing clip CONTAINS, they do not replace the clip.
+    if (row >= 0) deps.launchClipAt(lane.id, row);
   }
 }
 

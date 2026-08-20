@@ -26,9 +26,15 @@ export const WEAVE_MACROS: readonly MacroSpec[] = [
   // flattened. The id stays, because it is what a saved macro is called and
   // renaming it would buy nothing a reader of this line does not already have.
   { id: 'darkness', label: 'Mood', neutral: 0.5, color: 'var(--knob-purple)' },
-  // Additive: these three only ever add, so doing nothing is the floor.
-  { id: 'space', label: 'Space', neutral: 0, color: 'var(--knob-blue)' },
-  { id: 'motion', label: 'Motion', neutral: 0, color: 'var(--knob-orange)' },
+  // Additive: only ever adds, so doing nothing is the floor.
+  //
+  // There were three here. Space and Motion are gone, and the reason is worth
+  // keeping: they were the only two that wrote PARAMS — a reverb send and an
+  // LFO depth — rather than notes. Every macro that survived changes the MUSIC
+  // (how many notes, how hard, which scale, which shelf); the two that were
+  // removed changed the treatment of whatever was already there, and that is
+  // the difference between a knob that keeps giving and one that is exhausted
+  // after the first sweep. Reported, in those words, by the only user.
   { id: 'styleMix', label: 'Style mix', neutral: 0, color: 'var(--knob-red)' },
 ] as const;
 

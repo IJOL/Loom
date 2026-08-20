@@ -21,7 +21,7 @@ import { laneRoleOf } from '../session/lane-role';
 import { formatLoopId, parseLoopId } from '../weave/loop-ids';
 import { redrawSlot } from '../weave/weave-selection';
 import { cloudLegOrigin } from '../weave/topology-cloud';
-import { scaleForDarkness, styleForLane } from '../weave/style-mix';
+import { sceneScale, styleForLane } from '../weave/style-mix';
 import { patternNotes, patternsFor, KIND_LABEL, type PatternKind } from '../patterns/pattern-library';
 import { PAD_LOOPS, renderPadLoop } from '../core/pad-loops';
 import { shapeForStyle } from '../core/chord-rhythms';
@@ -81,6 +81,18 @@ export interface WeaveMusicalMacros {
    *  repeatable: a lane must not change style because a curve was repainted. */
   laneIndex: number;
   seed: number;
+  /** How many legs of the journey this lane has finished.
+   *
+   *  Without it the style draw is a coin thrown ONCE: seed and laneIndex never
+   *  change on their own, so a lane either strays or does not and stays that way
+   *  until somebody reshuffles by hand. Style mix then reads as "does this lane
+   *  wander", when what it should mean is "how OFTEN". Reported exactly so:
+   *  "style mix no hace nada si no das a reshuffle, debería actuar por sí
+   *  mismo haciendo más frecuentes los cambios de estilo".
+   *
+   *  Absent ⇒ 0, which reproduces the old single throw — so a session that has
+   *  not travelled yet draws precisely what it always drew. */
+  legs?: number;
 }
 
 /** Everything the list and the resolver need about a lane, gathered ONCE.
@@ -106,19 +118,42 @@ export function weaveLoopContext(
     lane,
     clipBars: fill?.clipBars,
     barTicks: fill?.barTicks,
-    style: macros
-      ? styleForLane(musicality.style, macros.styleMix, macros.laneIndex, macros.seed, forcedStyle)
+    // A lane that FOLLOWS never strays. Straying picks which shelf a lane
+    // draws its loops from, and a following lane draws none — its style is
+    // read for one thing only, the rhythm its part comps with. Left in, the
+    // row showed "Electro" on a lane comping in Acid Techno, which is the same
+    // readout-disagrees-with-the-music failure from the other side: the
+    // picker was right about the shelf and the shelf was not being used.
+    style: macros && !lane?.follow
+      ? styleForLane(musicality.style, macros.styleMix, macros.laneIndex, macros.seed,
+        forcedStyle, macros.legs ?? 0)
       : forcedStyle ?? musicality.style,
     // Asked through the capability door, so a plugin drum machine answers for
     // itself rather than the core keeping a list of ids that mean "drums".
     harmonic: lane ? isHarmonic(lane.engineId) : true,
     key: musicality.key,
-    // At the neutral, darkness has no opinion and the session's scale stands.
-    scale: macros && macros.darkness !== 0.5
-      ? scaleForDarkness(macros.darkness)
+    // The scale the SCENE is in, which is not always the session's.
+    //
+    // Asked even at the neutral Mood, which is the whole point of the change:
+    // the drift used to hang off `scaleForDarkness` and that only ran when Mood
+    // was off centre, so a scene left at the default never changed colour
+    // however far it travelled. `sceneScale` takes the session's scale as home
+    // instead, and Mood merely says whether home is somewhere else.
+    scale: macros
+      ? sceneScale(musicality.scale, macros.darkness, macros.legs ?? 0, macros.seed)
       : musicality.scale,
     lock: musicality.lock,
-    darkened: !!macros && macros.darkness !== 0.5,
+    // True when the scene is NOT in the session's scale — whoever moved it.
+    //
+    // It gates the snap, so it has to follow the scale rather than the knob:
+    // now that a scene drifts a rung at the neutral Mood, a flag reading only
+    // the knob would leave drawn loops in the session's scale while every
+    // generated part was in the drifted one. Two scales at once, which is the
+    // one thing worse than not drifting at all.
+    darkened: !!macros
+      && (macros.darkness !== 0.5
+        || sceneScale(musicality.scale, macros.darkness, macros.legs ?? 0, macros.seed)
+          !== musicality.scale),
   };
 }
 
@@ -205,6 +240,47 @@ export function rootFor(
 /** The key as a shift of −6..+5 semitones rather than 0..+11. */
 export function nearestOffset(key: number): number {
   return ((((key % 12) + 12) % 12) + 6) % 12 - 6;
+}
+
+/** A named entry for ANY loop id, whatever shelf it came from.
+ *
+ *  The list a lane is offered is one style's shelf, and a lane that has
+ *  travelled is very often playing something drawn from another — so the id it
+ *  holds is not in its own list, and the panel had nowhere to look the name up.
+ *  It parsed one out of the id instead and showed "breakbeat drums #3", which
+ *  is a database row where a name should be. Reported, bluntly and rightly:
+ *  "no quiero volver a ver nombres estilo#numero".
+ *
+ *  The library HAS the name — patternsFor reads the catalogue for any style it
+ *  is asked about, not merely the one on screen. The only thing missing was
+ *  somebody asking it. Undefined for an id that names nothing real, which is a
+ *  loop that is GONE rather than one that is elsewhere: the caller shows a dash
+ *  for that, and a dash is honest.
+ *
+ *  The GROUP says which shelf it came from, so a name from another style does
+ *  not read as if this lane's style had changed under you.
+ */
+export function weaveLoopEntry(id: string, c: WeaveLoopContext): PanelChoice | undefined {
+  const parsed = parseLoopId(id);
+  if (!parsed) return undefined;
+
+  if (parsed.source === 'clip') {
+    const row = (c.lane?.clips ?? []).findIndex((cl) => cl?.id === parsed.clipId);
+    const clip = row >= 0 ? c.lane?.clips[row] : undefined;
+    // A clip from ANOTHER lane is a real thing to be weaving and has no name
+    // here; "Another clip" is what it is, and it beats a raw id.
+    const name = clip ? (clip.name || 'Clip ' + (row + 1)) : 'Another clip';
+    return { id, name, group: 'This lane' };
+  }
+
+  if (parsed.source === 'chord') {
+    const shape = PAD_LOOPS.find((s) => s.id === parsed.shape);
+    return shape ? { id, name: shape.label, group: 'Chords' } : undefined;
+  }
+
+  const entry = patternsFor(parsed.style, parsed.kind)[parsed.index];
+  if (!entry) return undefined;
+  return { id, name: entry.name, group: KIND_LABEL[parsed.kind] + ' · ' + parsed.style };
 }
 
 export function weaveLoopChoices(c: WeaveLoopContext): PanelChoice[] {

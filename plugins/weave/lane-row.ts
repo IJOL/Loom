@@ -745,6 +745,28 @@ export function buildLaneRow(
     });
   if (roleChoices.length === 0) role.title = 'A drum lane plays percussion, whatever part anything says';
 
+  // Which lane this one ACCOMPANIES. Beside the part because the two are read
+  // together: following says WHOSE harmony, the part says which instrument's
+  // job to do with it.
+  //
+  // An empty list means the question does not apply — a drum lane, or a session
+  // with no other lane to follow — and the control is simply not built, which
+  // is the same convention the part picker uses for the same reason.
+  // `picker` BUILDS the control; it does not place it. Everything on this row
+  // is appended once, together, into `setup` further down — so a picker that is
+  // created and not added to that list is built, wired and thrown away, which
+  // looks from the outside exactly like a plugin that was never rebuilt.
+  const followChoices = ctx.followChoices(lane.id);
+  const follow = followChoices.length > 0
+    ? picker('weave-follow', `Lane accompanied by ${lane.name}`, followChoices,
+      ctx.laneFollow(lane.id) ?? '', (id) => {
+        ctx.setLaneFollow(lane.id, id || null);
+        // Choosing a leader clears this lane's weave, so the loop cell is left
+        // showing a selection that no longer decides anything.
+        repaintCell();
+      })
+    : null;
+
   const topo = document.createElement('select');
   topo.className = 'weave-topo';
   topo.setAttribute('aria-label', `How ${lane.name} weaves`);
@@ -857,9 +879,23 @@ export function buildLaneRow(
   // settings went.
   const strip = noteStrip(lane.id, ctx);
   const setup = el('div', 'weave-lane-setup');
-  // What you set once and leave: which instrument, which preset, which part,
-  // which shelf, how many bars, which octave. None of them is a gesture.
-  setup.append(strip.el, slots, engineHost, presetHost, role, style, length, octave);
+  // WHO IT FOLLOWS gets a cell of its own, right after the part, because the
+  // two are read together: following says whose harmony, the part says which
+  // instrument's job to do with it.
+  //
+  // In the APPEND, not inserted with role.after(), and that is a bug this row
+  // carried from the day the picker was added. Inserted, it took a place in the
+  // grid that the template did not declare — so on a following lane every
+  // control from the shelf onward sat one column left of where it belonged and
+  // `octave` fell into the elastic filler and stretched across the row.
+  // Reported as "le pasa lo mismo a las pistas de más abajo con los botones de
+  // octava". A cell on every row, empty where the control does not apply: one
+  // that DISAPPEARS slides everything after it one place left on that row
+  // alone, which reads as a mis-built row rather than as an absent control.
+  const followCell = el('div', 'weave-follow-cell');
+  if (follow) followCell.append(follow);
+  setup.append(strip.el, slots, engineHost, presetHost, role, followCell,
+    style, length, octave);
 
   const wrap = el('div', 'weave-lane-wrap');
   wrap.append(row, setup);

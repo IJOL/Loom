@@ -17,13 +17,16 @@ import {
   applyProgression, progressionBars, chordAtBar,
 } from '../arranger/progression';
 import { activeProgression } from '../arranger/chord-track';
+import { travelProgression } from '../weave/progression-journey';
 import {
   weaveLoopNotes, weaveLoopContext, rehookOnArrival, rehookOnRewind, pushTrail,
   isChordalRole, roleOctaveBase,
 } from './weave-loops';
 import { laneRoleOf } from '../session/lane-role';
+import { createFollowSource } from '../harmony/follow-source';
+import { resolveTonality } from '../session/session';
 import { diatonicTriad, revoiceChords } from '../core/harmony';
-import type { ScaleId } from '../core/musicality';
+import { scaleIntervals, type ScaleId } from '../core/musicality';
 import { macroNeutral } from '../weave/weave-catalog';
 import { isHarmonic } from '../plugins/capabilities';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
@@ -147,6 +150,9 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
         // lane must not change style because another was renamed.
         laneIndex: Math.max(0, lanes.findIndex((l) => l.id === laneId)),
         seed: state.seed,
+        // How far this lane has travelled, so the style is re-thrown per leg
+        // rather than once for the life of the session.
+        legs: state.lanes[laneId]?.legs ?? 0,
       },
       { clipBars: clipBarsFor(laneId), barTicks: ticksPerBar(deps.getMeter()) },
     );
@@ -180,8 +186,116 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *  weave would end up in a different key from everything else on screen. */
   const musicality = () => deps.getState?.().musicality ?? DEFAULT_MUSICALITY;
 
+  /** Where a follower's part sits, as a MIDI note.
+   *
+   *  Middle C's octave: the bass drops an octave below it and the pad, comp and
+   *  arp sit on it, so all four parts land in a usable register without asking
+   *  the user for a number before they have heard anything. */
+  const FOLLOW_OCTAVE_BASE = 48;
+
+  /** What a lane is PLAYING, for a follower to read.
+   *
+   *  A weaving leader is answered by its own fold, so a follower tracks the
+   *  crossfade rather than the clip the crossfade is ignoring. Taken from
+   *  `rawFor` — before the leader guard — because the guard reads the leading
+   *  lane and reading it from inside would be the same loop that made the
+   *  guarded sources need a second cache.
+   *
+   *  Non-recursive by construction: a lane that follows never has a weave
+   *  selection (the inspector clears it), so the weave branch below can never
+   *  reach another follower. A corrupt save that holds both still terminates —
+   *  it falls through to the clips.
+   *
+   *  Falling back to the first clip that has notes covers the transport being
+   *  STOPPED, which is when most of the setting-up is done: pick a leader with
+   *  nothing running and you still hear what it will sound like. */
+  const playedNotesOf = (laneId: string): readonly NoteEvent[] | undefined => {
+    const lane = deps.getState?.().lanes.find((l) => l.id === laneId);
+    if (!lane) return undefined;
+    if (!lane.follow && state.lanes[laneId]?.weave) {
+      const woven = rawFor(laneId)?.();
+      if (woven) return woven;
+    }
+    const playing = deps.getLaneStates().get(laneId)?.playing;
+    if (playing) return playing.notes;
+    return lane.clips.find((c) => c && c.notes.length > 0)?.notes;
+  };
+
+
   const build = (laneId: string): WeaveSource | undefined => {
     const barTicks = ticksPerBar(deps.getMeter());
+    // Follow is checked FIRST and returns outright. Both this and the weave
+    // selection answer "what does this lane play", and the two cannot both be
+    // right — so one wins rather than the two being merged, and the inspector
+    // clears the weave when you pick a leader. Checking here rather than after
+    // the selection is what makes that a property of the data instead of a
+    // tie-break nobody can see.
+    const followerLane = deps.getState?.().lanes.find((l) => l.id === laneId);
+    const follow = followerLane?.follow;
+    if (followerLane && follow) {
+      const leaderId = follow.leaderId;
+      return createFollowSource({
+        leaderNotes: () => playedNotesOf(leaderId),
+        role: () => laneRoleOf(followerLane),
+        tonality: () => resolveTonality(followerLane, { musicality: musicality() }),
+        // Through the SAME door the panel reads, so the picker on the row and
+        // the rhythm the part comps with cannot disagree. `weaveLoopContext`
+        // already knows a following lane must not stray — it draws no loops to
+        // stray with — so this is its override or the session's, and asking it
+        // here rather than repeating the rule is what keeps the two in step.
+        style: () => loopContext(laneId).style,
+        barTicks: () => ticksPerBar(deps.getMeter()),
+        // The LEADER's length, not the follower's: the progression has to span
+        // the phrase being accompanied. A follower with no clips of its own —
+        // the ordinary case — has no length to offer anyway.
+        bars: () => clipBarsFor(leaderId) ?? 1,
+        // Each part in the register its ROLE declares — bass below pad below
+        // comp below melody — instead of one number for all four. They shared
+        // 48, so a comp sat where a pad sits and an arp sang in the pad octave
+        // too; the table that says otherwise has been in the tree since the
+        // weave drew its first library loop, and this simply never asked it.
+        octaveBase: () => roleOctaveBase(laneRoleOf(followerLane)),
+        written: () => followerLane.follow?.chords,
+        // The harmony the session CHOSE — untravelled, because the user
+        // picking a progression is a gesture and lands at once.
+        sessionProgression: () => activeProgression(state),
+        // The journey, handed over separately so the follower can sample it
+        // when its own bar comes round rather than when the leader's does.
+        //
+        // Counted on the LEADER's legs: a following lane weaves nothing, so
+        // its own leg counter never moves and a harmony hung on it would sit
+        // still for ever. The leader is the lane doing the travelling — but it
+        // wraps when IT likes, which is why this is a function the follower
+        // calls at a moment of its own choosing instead of a value read on
+        // every tick. A chord landing mid-bar was reported from the panel.
+        travel: (base) => travelProgression(
+          base,
+          state.lanes[leaderId]?.legs ?? 0,
+          {
+            scaleLen: scaleIntervals(
+              resolveTonality(followerLane, { musicality: musicality() }).scale,
+            ).length,
+            seed: state.seed,
+          },
+        ),
+        // The FOLLOWER's own clip, which is what the scheduler will loop and
+        // therefore the only length that may reach a voice. Falling back to the
+        // LEADER's rather than to a number: a follower usually has no clip of
+        // its own, and answering 1 there would cut every progression down to a
+        // single bar. Undefined when neither is known, which plays it whole.
+        clipBars: () => clipBarsFor(laneId) ?? clipBarsFor(leaderId),
+        // Latch the harmony only while this lane is in flight.
+        playing: () => !!deps.getLaneStates().get(laneId)?.playing,
+        // The same two knobs a woven lane breathes with. Without them a
+        // follower is the one part in the session nothing can move: its
+        // harmony walks with the progression fold and its register with the
+        // octave fold, but bar sixteen is note for note bar one.
+        macros: noteMacros,
+        // Which repeat of its own clip this lane is on, so two bars of loop can
+        // be the two halves of a four-bar phrase instead of the same bar twice.
+        lap: () => deps.getLaneStates().get(laneId)?.loopCount ?? 0,
+      });
+    }
     const sel = state.lanes[laneId]?.weave;
 
     if (sel) {
@@ -496,6 +610,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *  as it did before WEAVE existed. Checked here rather than inside the source
    *  because "nothing to say" is already this function's own answer — the
    *  additive path is the one that was always there. */
+
   const foldFor = (laneId: string): WeaveSource | undefined => {
     if (state.bypass) return undefined;
     if (guarded.has(laneId)) return guarded.get(laneId);
@@ -597,6 +712,11 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
           ...entry,
           weave: next,
           trail: leaving ? pushTrail(entry.trail, leaving) : entry.trail,
+          // Counted HERE, where a leg genuinely ends, because this is the only
+          // moment the lane draws fresh material — and the style draw has to be
+          // re-thrown at exactly the moment the loops are, or the lane would
+          // pick up a new style with the old loops still under it.
+          legs: (entry.legs ?? 0) + 1,
         };
       };
 

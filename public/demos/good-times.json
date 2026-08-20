@@ -713,8 +713,8 @@
   ],
   "globalQuantize": "1/1",
   "musicality": {
-    "key": 0,
-    "scale": "minor",
+    "key": 2,
+    "scale": "major",
     "style": "acid-techno",
     "lock": false
   },

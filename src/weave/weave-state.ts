@@ -42,6 +42,20 @@ export interface LaneWeaveConfig {
  *  second copy of the session's material, stale from the first clip edit. */
 export interface LaneSelection {
   weave: PanelWeave | null;
+  /** The weave this lane had before it was told to follow somebody.
+   *
+   *  Follow and weave answer the same question and the host resolves follow
+   *  first, so setting a leader has to put the weave away — but PUTTING AWAY is
+   *  not the same as throwing out, and it used to be. A lane that had been
+   *  woven, pointed at a leader and then set back to "plays its own" came back
+   *  with no topology at all: nothing to weave, an empty carrier clip, silence,
+   *  and a row reading "Pick a topology to start weaving". Reported as "cuando
+   *  un canal se pone a follow después ya nunca recupera el funcionamiento
+   *  normal".
+   *
+   *  Absent means there is nothing to come back to, which is the ordinary case
+   *  for a lane that was never weaving in the first place. */
+  shelvedWeave?: PanelWeave | null;
   locked: boolean;
   forcedStyle?: StyleId;
   harmonyLeader: boolean;
@@ -90,6 +104,19 @@ export interface LaneSelection {
    *  Capped, because it is saved with the session and a scene left running for
    *  an hour would otherwise carry thousands of ids nobody will wind back to. */
   trail?: string[];
+  /** How many legs of the journey this lane has FINISHED.
+   *
+   *  Monotonic, and deliberately not the trail's length: the trail is capped
+   *  because it is saved, so its length stops growing after a while and a
+   *  counter taken from it would silently stop counting.
+   *
+   *  It exists so the style draw can be re-thrown per leg. Without it Style mix
+   *  is a coin flipped once — seed and laneIndex never change on their own — so
+   *  the macro reads as "does this lane wander" instead of "how often", and
+   *  nothing happens automatically at all.
+   *
+   *  Absent ⇒ 0, which draws exactly what a session drew before this existed. */
+  legs?: number;
   /** Which leg of its path a CLOUD lane was walking when it was last looked at.
    *
    *  The square evolves on ARRIVAL at a corner, and nothing else in the state

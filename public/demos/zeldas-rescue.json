@@ -1570,8 +1570,8 @@
   ],
   "globalQuantize": "1/1",
   "musicality": {
-    "key": 7,
-    "scale": "minor",
+    "key": 0,
+    "scale": "lydian",
     "style": "acid-techno",
     "lock": false
   },

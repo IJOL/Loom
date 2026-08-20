@@ -1024,3 +1024,49 @@ describe('a track s level', () => {
     expect(r.max).toBeGreaterThan(1);
   });
 });
+
+describe('a weave and a follow are exclusive BOTH ways', () => {
+  const AB = { kind: 'ab' as const, a: 'lib:techno:bass:0', b: 'lib:techno:bass:1', x: 0.25 };
+  const followOf = (h: ReturnType<typeof harness>) =>
+    (h.state.lanes[1] as { follow?: { leaderId: string } }).follow;
+
+  it('choosing a topology stops the lane following', () => {
+    // The exclusivity ran ONE way: setLaneFollow put the weave away, and
+    // setLaneWeave wrote a weave and left the follow standing. The host
+    // resolves follow first, so the lane kept accompanying while its row showed
+    // a topology, two loops and a moving crossfade — which from the outside is
+    // a lane that put itself back into follow. Reported as exactly that.
+    const h = harness();
+    h.ctx.setLaneFollow('lane2', 'lane1');
+    expect(followOf(h)).toEqual({ leaderId: 'lane1' });
+    h.ctx.setLaneWeave('lane2', AB);
+    expect(followOf(h)).toBeUndefined();
+  });
+
+  it('and the lane really weaves afterwards', () => {
+    const h = harness();
+    h.ctx.setLaneFollow('lane2', 'lane1');
+    h.ctx.setLaneWeave('lane2', AB);
+    expect(h.ctx.laneWeave('lane2')).toEqual(AB);
+  });
+
+  it('turning the topology OFF is not a claim, so a follower stays one', () => {
+    // Only a real weave is somebody choosing this lane's material. "Off" says
+    // nothing, and a follower whose topology reads off is simply a follower.
+    const h = harness();
+    h.ctx.setLaneFollow('lane2', 'lane1');
+    h.ctx.setLaneWeave('lane2', null);
+    expect(followOf(h)).toEqual({ leaderId: 'lane1' });
+  });
+
+  it('a weave chosen by hand drops the shelved one — there is nothing older to want', () => {
+    const h = harness();
+    h.ctx.setLaneWeave('lane2', AB);
+    h.ctx.setLaneFollow('lane2', 'lane1');   // shelves AB
+    const other = { ...AB, a: 'lib:techno:bass:1', x: 0.75 };
+    h.ctx.setLaneWeave('lane2', other);      // chosen by hand, so AB is spent
+    h.ctx.setLaneFollow('lane2', 'lane1');
+    h.ctx.setLaneFollow('lane2', null);
+    expect(h.ctx.laneWeave('lane2')).toEqual(other);
+  });
+});

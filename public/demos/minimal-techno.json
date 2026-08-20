@@ -3377,7 +3377,7 @@
   "globalQuantize": "1/1",
   "name": "Minimal Techno",
   "musicality": {
-    "key": 9,
+    "key": 0,
     "scale": "minor",
     "style": "acid-techno",
     "lock": false

@@ -3434,8 +3434,8 @@
   ],
   "globalQuantize": "1/1",
   "musicality": {
-    "key": 5,
-    "scale": "minor",
+    "key": 0,
+    "scale": "mixolydian",
     "style": "acid-techno",
     "lock": false
   },
