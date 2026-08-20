@@ -23,7 +23,7 @@ import {
   isChordalRole, roleOctaveBase,
 } from './weave-loops';
 import { laneRoleOf } from '../session/lane-role';
-import { createFollowSource } from '../harmony/follow-source';
+import { createFollowSource, DEFAULT_LEVEL } from '../harmony/follow-source';
 import { resolveTonality } from '../session/session';
 import { diatonicTriad, revoiceChords } from '../core/harmony';
 import { scaleIntervals, type ScaleId } from '../core/musicality';
@@ -284,6 +284,10 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
         // its own, and answering 1 there would cut every progression down to a
         // single bar. Undefined when neither is known, which plays it whole.
         clipBars: () => clipBarsFor(laneId) ?? clipBarsFor(leaderId),
+        // How long this lane takes to repeat itself. Read at ask time like
+        // everything else here, so dragging it is heard on the next iteration
+        // rather than at the next launch.
+        level: () => state.lanes[laneId]?.arrangeLevel ?? DEFAULT_LEVEL,
         // Latch the harmony only while this lane is in flight.
         playing: () => !!deps.getLaneStates().get(laneId)?.playing,
         // The same two knobs a woven lane breathes with. Without them a

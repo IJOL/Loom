@@ -138,7 +138,7 @@ const PHRASE_BARS = 4;
  *
  *  So the knob goes DOWN into pure repetition as well as up into a long form,
  *  and leaving it alone changes nothing. */
-const DEFAULT_LEVEL = 0.25;
+export const DEFAULT_LEVEL = 0.25;
 
 const NEUTRAL_MACROS: ReadNoteMacros = () => ({ density: 0.5, energy: 0.5 });
 

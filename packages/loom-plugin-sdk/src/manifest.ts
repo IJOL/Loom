@@ -628,6 +628,16 @@ export interface PanelContext {
   /** Choose loops or move the position. Passing null clears the lane back to
    *  playing its clip untouched. */
   setLaneWeave(laneId: string, weave: PanelWeave | null): void;
+  /** How long this lane takes to repeat ITSELF, 0..1.
+   *
+   *  Not how much it plays — how many independent wheels are turning under it,
+   *  and so how many phrases pass before the arrangement comes round. At the
+   *  bottom the lane repeats every phrase; at the top it takes hundreds.
+   *
+   *  A lane that plays nothing derived — one weaving its own loops, or a drum
+   *  lane — returns null, and the control is not shown. */
+  laneArrangeLevel(laneId: string): number | null;
+  setLaneArrangeLevel(laneId: string, level: number): void;
 
   /** Move EVERY lane's cross-fade at once.
    *

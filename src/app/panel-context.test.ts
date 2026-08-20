@@ -1070,3 +1070,44 @@ describe('a weave and a follow are exclusive BOTH ways', () => {
     expect(h.ctx.laneWeave('lane2')).toEqual(other);
   });
 });
+
+describe('the arrangement level', () => {
+  it('is offered only to a lane whose notes are DERIVED', () => {
+    // A weaving lane already travels with its weave and a drum lane has no
+    // part at all; a knob there would move nothing, which is worse than an
+    // absent one.
+    const h = harness();
+    expect(h.ctx.laneArrangeLevel('lane2')).toBeNull();
+    h.ctx.setLaneFollow('lane2', 'lane1');
+    expect(h.ctx.laneArrangeLevel('lane2')).not.toBeNull();
+  });
+
+  it('starts where the accompaniment already was, not at silence', () => {
+    // One wheel. A default of 0 would take the rotating comp figure away from
+    // every existing session as the price of gaining a knob.
+    const h = harness();
+    h.ctx.setLaneFollow('lane2', 'lane1');
+    expect(h.ctx.laneArrangeLevel('lane2')).toBe(0.25);
+  });
+
+  it('round-trips what it is given, clamped', () => {
+    const h = harness();
+    h.ctx.setLaneFollow('lane2', 'lane1');
+    h.ctx.setLaneArrangeLevel('lane2', 0.75);
+    expect(h.ctx.laneArrangeLevel('lane2')).toBe(0.75);
+    h.ctx.setLaneArrangeLevel('lane2', 9);
+    expect(h.ctx.laneArrangeLevel('lane2')).toBe(1);
+    h.ctx.setLaneArrangeLevel('lane2', -4);
+    expect(h.ctx.laneArrangeLevel('lane2')).toBe(0);
+    h.ctx.setLaneArrangeLevel('lane2', NaN);
+    expect(h.ctx.laneArrangeLevel('lane2')).toBe(0);
+  });
+
+  it('tells the host the lane moved, so the next tick re-folds', () => {
+    const h = harness();
+    h.ctx.setLaneFollow('lane2', 'lane1');
+    const before = h.changed.length;
+    h.ctx.setLaneArrangeLevel('lane2', 1);
+    expect(h.changed.length).toBeGreaterThan(before);
+  });
+});

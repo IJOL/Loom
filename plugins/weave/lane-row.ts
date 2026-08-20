@@ -68,6 +68,25 @@ const el = (tag: string, cls?: string, text?: string) => {
   return n;
 };
 
+/** The rungs of the arrangement ladder, named for what they do to the music
+ *  rather than numbered. A number would be a setting; these are descriptions of
+ *  how long the lane takes to come round, which is the thing being chosen. */
+const LEVELS = [
+  { id: '0', name: 'Loop' },
+  { id: '0.25', name: 'Turns' },
+  { id: '0.5', name: 'Travels' },
+  { id: '0.75', name: 'Wanders' },
+  { id: '1', name: 'Never repeats' },
+];
+
+/** The rung nearest a stored value, so a level written by automation — or by a
+ *  save from a build with different rungs — still selects something rather than
+ *  leaving the picker blank. */
+function nearestLevel(v: number): string {
+  return LEVELS.reduce((best, l) =>
+    Math.abs(Number(l.id) - v) < Math.abs(Number(best.id) - v) ? l : best, LEVELS[0]).id;
+}
+
 /** A readable name for a loop the current list does not offer.
  *
  *  Parsed from the id rather than looked up, because the whole situation IS "the

@@ -6,6 +6,7 @@
 // nothing speculative.
 
 import type { PanelContext, PanelLane, PanelLoopPhase, PanelWeave } from '@loom/plugin-sdk';
+import { DEFAULT_LEVEL } from '../harmony/follow-source';
 import { defaultLaneSelection, defaultWeaveSteps, finitePosition } from '../weave/weave-state';
 import {
   retopologise, positionOf, defaultSelection, selectionLoopIds, redrawQuietest,
@@ -934,6 +935,26 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         delete cur.shelvedWeave;
       }
       deps.weave.lanes[laneId] = { ...cur, weave };
+      deps.onWeaveChanged?.(laneId);
+    },
+
+    laneArrangeLevel(laneId) {
+      // Only a lane whose notes are DERIVED has an arrangement to lengthen.
+      // A weaving lane already has the weave to travel with, and a drum lane
+      // has no part at all — offering the control there would be a knob that
+      // moves nothing, which is worse than an absent one.
+      const lane = deps.sessionHost.state.lanes.find((l) => l.id === laneId);
+      if (!lane?.follow) return null;
+      // The SAME default the source falls back to, imported rather than
+      // repeated: a readout that disagreed with what the lane is playing is
+      // the one thing a knob must never do.
+      return deps.weave.lanes[laneId]?.arrangeLevel ?? DEFAULT_LEVEL;
+    },
+
+    setLaneArrangeLevel(laneId, level) {
+      const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
+      const v = Math.min(1, Math.max(0, Number.isFinite(level) ? level : 0));
+      deps.weave.lanes[laneId] = { ...cur, arrangeLevel: v };
       deps.onWeaveChanged?.(laneId);
     },
 

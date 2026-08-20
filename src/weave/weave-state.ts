@@ -56,6 +56,21 @@ export interface LaneSelection {
    *  Absent means there is nothing to come back to, which is the ordinary case
    *  for a lane that was never weaving in the first place. */
   shelvedWeave?: PanelWeave | null;
+  /** How long this lane takes to repeat itself, 0..1.
+   *
+   *  Not "how much accompaniment" — how many independent WHEELS are turning,
+   *  and so how many phrases pass before every one of them stands where it
+   *  started. At 0 nothing turns and the lane repeats every phrase. At 1 four
+   *  wheels of co-prime period take 420 phrases to come back into line.
+   *
+   *  Per LANE rather than per scene: the whole point is that parts do not turn
+   *  together, and one number for all of them would put them back in step at
+   *  the level above the one this is trying to break.
+   *
+   *  Absent ⇒ one wheel, which is what the accompaniment did before the ladder
+   *  existed. A default of 0 would have taken the rotating comp figure away
+   *  from every existing session as the price of gaining a knob. */
+  arrangeLevel?: number;
   locked: boolean;
   forcedStyle?: StyleId;
   harmonyLeader: boolean;
