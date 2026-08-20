@@ -13,7 +13,7 @@
 import { TICKS_PER_STEP, type NoteEvent } from '../../core/notes';
 import { diatonicTriad } from '../../core/harmony';
 import type { Progression } from '../../arranger/progression';
-import { chordSpans, placeOf, type PartOptions } from '../part-types';
+import { chordSpans, placeOf, registerOctaves, type PartOptions } from '../part-types';
 import { inHole } from '../phrase';
 
 const ARP_VELOCITY = 96;
@@ -26,7 +26,8 @@ export function renderArp(progression: Progression, o: PartOptions): NoteEvent[]
     // heard as a line, and inverting it to sit near the previous chord would
     // put that line's contour at the mercy of a rule written for stacked
     // voicings — the pad wants the nearest inversion, a melody does not.
-    const tones = diatonicTriad(span.degree, o.octaveBase, o.key, o.scale);
+    const tones = diatonicTriad(
+      span.degree, o.octaveBase + 12 * registerOctaves(o.register), o.key, o.scale);
     const steps = Math.max(1, Math.round(span.ticks / TICKS_PER_STEP));
     for (let i = 0; i < steps; i++) {
       const start = span.start + i * TICKS_PER_STEP;

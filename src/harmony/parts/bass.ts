@@ -43,6 +43,11 @@ function inRegister(midi: number, bottom: number): number {
   return m;
 }
 
+// The register wheel is deliberately NOT read here. Every other part may be
+// lifted or dropped an octave as the arrangement turns; the bass may not,
+// because holding one register IS the job — a bass that wandered octaves would
+// be a second melody in the wrong place, and the fold below would spend its
+// time undoing the move anyway.
 export function renderBass(progression: Progression, o: PartOptions): NoteEvent[] {
   // The SAME index into the same palette the comp reads, so the two move
   // figure together. Picking independently would be two players in one band

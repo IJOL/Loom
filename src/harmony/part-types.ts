@@ -6,7 +6,7 @@
 // the caller works.
 
 import type { NoteEvent } from '../core/notes';
-import type { ScaleId, StyleId } from '../core/musicality';
+import { scaleDegreeToMidi, type ScaleId, type StyleId } from '../core/musicality';
 import type { Progression } from '../arranger/progression';
 
 export interface PartOptions {
@@ -38,10 +38,8 @@ export interface PartOptions {
    *
    *  This is the difference between an accompaniment and a loop pedal. A style
    *  used to name ONE rhythm, so a part was a constant function of a constant:
-   *  the harmony cannot move on its own (every library loop infers the tonic)
-   *  and the rhythm was a table lookup on a style that does not move either.
-   *  Nothing downstream could rescue that, and no amount of phrase shaping did
-   *  — it rearranges a bar, it cannot write a different one.
+   *  the harmony cannot move on its own and the rhythm was a table lookup on a
+   *  style that does not move either.
    *
    *  Counted in PHRASES by the caller, not in bars: a comp that changed figure
    *  every bar is not a player, it is a shuffle button.
@@ -49,6 +47,90 @@ export interface PartOptions {
    *  Absent ⇒ the style's typical shape, which is what every caller got before
    *  this existed. */
   variant?: number;
+  /** Which colour the chord is voiced in — the pad's wheel.
+   *
+   *  Separate from `variant`, and that separation is the point. The two used to
+   *  be one number, so the pad re-voiced on exactly the phrase the comp changed
+   *  figure and the pair came round together. Turning at different rates is
+   *  what makes a scene take longer to repeat than any one of its parts.
+   *
+   *  Absent ⇒ the plain triad. */
+  colour?: number;
+  /** How many octaves to move this part, as a wheel position rather than a
+   *  number of octaves — the renderer decides what a step means, because a pad
+   *  climbing an octave and a bass climbing one are not the same idea. The bass
+   *  ignores it outright: staying put is the one job it has.
+   *
+   *  Absent ⇒ where the role says it sits. */
+  register?: number;
+  /** How thinned this phrase is, as a wheel position. Read by the caller and
+   *  applied to the macros rather than by the renderers, so the thinning that
+   *  a knob does and the thinning that time does are the same code.
+   *
+   *  Absent ⇒ untouched. */
+  density?: number;
+}
+
+/** How far the register wheel moves a part, in octaves, at each of its five
+ *  positions.
+ *
+ *  Mostly home. A part that changed octave every turn would be a part with no
+ *  register at all — the effect works because it is rare enough to read as a
+ *  decision rather than as wobble, and because it always comes back.
+ *
+ *  Up more often than down: a comp or a pad lifted an octave opens the mix,
+ *  while the same move downwards crowds whatever is holding the bottom.
+ */
+const REGISTER_STEPS = [0, 0, 1, 0, -1];
+
+export function registerOctaves(wheel: number | undefined): number {
+  if (wheel === undefined || !Number.isFinite(wheel)) return 0;
+  const n = REGISTER_STEPS.length;
+  return REGISTER_STEPS[((Math.floor(wheel) % n) + n) % n];
+}
+
+/** How the density wheel leans on whatever the knob already said.
+ *
+ *  Small, and centred on nothing: a phrase is a little thinner, then plain,
+ *  then a little fuller. It is added to Density rather than replacing it, so
+ *  the user's setting stays the middle of the range instead of being
+ *  overwritten by a wheel they did not touch.
+ */
+const DENSITY_STEPS = [0, -0.12, 0.08, -0.05, 0.15, -0.2, 0.04];
+
+export function densityLean(wheel: number | undefined): number {
+  if (wheel === undefined || !Number.isFinite(wheel)) return 0;
+  const n = DENSITY_STEPS.length;
+  return DENSITY_STEPS[((Math.floor(wheel) % n) + n) % n];
+}
+
+/** The four colours a chord may be voiced in, as scale degrees above its root.
+ *
+ *  Shared by the pad and the comp rather than written twice: they are the same
+ *  four chords, and two tables would drift into the pad and the comp voicing
+ *  the same bar differently for no reason anyone chose.
+ *
+ *  THREE voices in every one of them, deliberately. `nearestVoicing` compares
+ *  voicings voice by voice and gives up when the counts differ, so a four-note
+ *  colour among three-note ones would silently switch the voice-leading off for
+ *  that chord alone and let the part leap. Sevenths and ninths get in by
+ *  replacing a voice rather than by being added to one.
+ */
+export const CHORD_COLOURS: number[][] = [
+  [0, 2, 4],  // the triad
+  [0, 2, 6],  // shell: root, third, seventh — the fifth is the voice nobody misses
+  [0, 4, 8],  // open: root, fifth, ninth
+  [0, 1, 4],  // sus2
+];
+
+export function chordColour(
+  degree: number, wheel: number | undefined, octaveBase: number,
+  key: number, scale: ScaleId,
+): number[] {
+  const w = Number.isFinite(wheel ?? 0) ? Math.floor(wheel ?? 0) : 0;
+  const n = CHORD_COLOURS.length;
+  const colour = CHORD_COLOURS[((w % n) + n) % n];
+  return colour.map((d) => scaleDegreeToMidi(degree + d, octaveBase, key, scale));
 }
 
 export type PartRenderer = (progression: Progression, o: PartOptions) => NoteEvent[];

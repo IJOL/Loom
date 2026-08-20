@@ -10,10 +10,10 @@
 // is not changing is not a lean, it is an early note.
 
 import { TICKS_PER_QUARTER, type NoteEvent } from '../../core/notes';
-import { diatonicTriad, nearestVoicing } from '../../core/harmony';
+import { nearestVoicing } from '../../core/harmony';
 import { SHAPES, shapeForStyleVariant } from '../../core/chord-rhythms';
 import type { Progression } from '../../arranger/progression';
-import { chordSpans, placeOf, type PartOptions } from '../part-types';
+import { chordSpans, placeOf, registerOctaves, chordColour, type PartOptions } from '../part-types';
 import { survivingHits } from '../phrase';
 
 /** Half a beat. Enough to be heard as a lean rather than as a mistake, and a
@@ -36,7 +36,15 @@ export function renderComp(progression: Progression, o: PartOptions): NoteEvent[
   const spans = chordSpans(progression, o.barTicks);
 
   spans.forEach((span, ci) => {
-    const triad = nearestVoicing(diatonicTriad(span.degree, o.octaveBase, o.key, o.scale), prev);
+    // The register wheel moves the whole part bodily, BEFORE the voicing is
+    // chosen — so the chain still leads voice to voice inside the new octave
+    // rather than leaping back to where it used to sit.
+    const base = o.octaveBase + 12 * registerOctaves(o.register);
+    // Voiced in a COLOUR, the same four the pad uses. Without this the colour
+    // wheel turned and the comp did not hear it — a wheel that changes nothing
+    // is a number growing while the music stands still, which is the failure
+    // this whole idea has to avoid rather than commit.
+    const triad = nearestVoicing(chordColour(span.degree, o.colour, base, o.key, o.scale), prev);
     prev = triad;
     const bars = Math.round(span.ticks / o.barTicks);
     const spanEnd = span.start + span.ticks;

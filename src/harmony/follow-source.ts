@@ -18,6 +18,8 @@ import { applyNoteMacros } from '../weave/macro-notes';
 import { inferChords } from './infer-chords';
 import { renderPart } from './render-part';
 import { barsOfProgression } from './clip-window';
+import { cyclesAt } from './cycle';
+import { densityLean } from './part-types';
 
 export interface FollowDeps {
   /** What the LEADER plays this iteration: its launched clip's notes, or its
@@ -106,6 +108,17 @@ export interface FollowDeps {
    *  played over it is not. Absent ⇒ always the top of the phrase, which is the
    *  old behaviour exactly. */
   lap?: () => number;
+  /** How long this lane takes to repeat itself, 0..1.
+   *
+   *  Not "how much accompaniment" — how many independent WHEELS are turning,
+   *  and therefore how many phrases pass before every one of them stands where
+   *  it started. At 0 nothing turns and the lane repeats every phrase, which is
+   *  what it did before this existed. At 1 four wheels of co-prime period take
+   *  420 phrases to come back into line.
+   *
+   *  Absent ⇒ one wheel, which is exactly what this did before the ladder
+   *  existed — see DEFAULT_LEVEL. */
+  level?: () => number;
 }
 
 /** The shortest phrase worth shaping, in bars.
@@ -114,6 +127,18 @@ export interface FollowDeps {
  *  shaping was designed against. A progression already this long or longer is
  *  its own phrase and is left alone. */
 const PHRASE_BARS = 4;
+
+/** The level a lane that has never been given one plays at.
+ *
+ *  ONE wheel — the figure — because that is what the accompaniment already did
+ *  before the ladder existed, and what shipped and was liked. Zero is a real
+ *  rung and a reachable one, but it is not where the music was standing: a
+ *  default of 0 would have quietly taken the rotating comp figure away from
+ *  every existing session as the price of gaining a knob.
+ *
+ *  So the knob goes DOWN into pure repetition as well as up into a long form,
+ *  and leaving it alone changes nothing. */
+const DEFAULT_LEVEL = 0.25;
 
 const NEUTRAL_MACROS: ReadNoteMacros = () => ({ density: 0.5, energy: 0.5 });
 
@@ -225,6 +250,7 @@ export function createFollowSource(deps: FollowDeps): WeaveSource {
       // The lap is in the key because it CHANGES the answer now: the same notes
       // on the next pass are the other half of the phrase.
       lap,
+      (deps.level?.() ?? DEFAULT_LEVEL).toFixed(3),
     ].join('|');
 
     if (next !== cacheKey) {
@@ -254,15 +280,32 @@ export function createFollowSource(deps: FollowDeps): WeaveSource {
       // opening — the same mistake the style draw made and had to be held to
       // two laps to fix.
       const variant = Math.floor((lap * clipBars) / phraseLength);
+      // Which PHRASE this is — the one number every wheel is measured against.
+      // They used to share a single counter, so figure, colour and everything
+      // else changed on the same phrase and came round together: the scene
+      // repeated as soon as the SHORTEST of them did. Given periods with no
+      // common divisor, the same wheels take their product to come back into
+      // line, which is how two bars become a long piece without one extra note
+      // being written.
+      const wheels = cyclesAt(variant, deps.level?.() ?? DEFAULT_LEVEL);
       const part = renderPart(role, prog, {
         key, scale, style: deps.style(), barTicks, octaveBase: deps.octaveBase(),
-        phraseLength, phraseOffset, variant,
+        phraseLength, phraseOffset,
+        variant: wheels.figure,
+        colour: wheels.colour,
+        register: wheels.register,
+        density: wheels.density,
       });
       // ON TOP of the rendered part, exactly where the weave applies them to
       // the blend: the macros shape whatever is playing, and what is playing
       // here is the accompaniment.
+      //
+      // The density WHEEL leans on the knob rather than replacing it, so the
+      // user's setting stays the middle of the range instead of being
+      // overwritten by something they did not touch.
+      const leaned = { ...m, density: Math.min(1, Math.max(0, m.density + densityLean(wheels.density))) };
       out = applyNoteMacros(
-        barsOfProgression(part, own, atBar, clipBars, barTicks), m, barTicks);
+        barsOfProgression(part, own, atBar, clipBars, barTicks), leaned, barTicks);
     }
     return out;
   };
