@@ -824,7 +824,14 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
           for (const n of notes) {
             const start = n.start + at * barTicks;
             if (start >= bars * barTicks) continue;
-            out.push({ ...n, start });
+            // WITHOUT `layerIndex`. It is the loop a woven note survived from,
+            // and a LAYERS lane reads it as which instrument plays that note —
+            // which is right while the weave is running and wrong the moment it
+            // is written down. A printed clip is ordinary notes you can edit,
+            // and notes carrying a rack slot would keep routing themselves after
+            // the rack that gave them meaning had been changed or emptied.
+            const { layerIndex: _routed, ...plain } = n as NoteEvent & { layerIndex?: number };
+            out.push({ ...plain, start });
           }
         }
         if (out.length) byLane.set(lane.id, out);

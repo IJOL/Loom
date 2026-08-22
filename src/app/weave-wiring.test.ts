@@ -349,6 +349,22 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       expect(Math.max(...notes.map((n) => n.start))).toBeGreaterThanOrEqual(lapTicks / 2);
     });
 
+    it('writes PLAIN notes — a printed scene keeps no routing index', () => {
+      // A woven note carries `layerIndex`: the loop it survived from, which a
+      // LAYERS lane reads as which of its instruments plays it. That is right
+      // while the weave is running and wrong the moment it is written down —
+      // a printed clip is ordinary notes you edit, and one still naming a rack
+      // slot would go on routing itself after that rack was changed or emptied.
+      const w = flowing(0);
+      w.state.progression = 'i-VI-III-VII';
+      const { byLane } = w.lapNotes();
+      const all = [...byLane.values()].flat();
+      expect(all.length).toBeGreaterThan(0);
+      for (const n of all) {
+        expect(Object.hasOwn(n, 'layerIndex'), `note at ${n.start} still carries layerIndex`).toBe(false);
+      }
+    });
+
     it('leaves the cursor exactly where it found it', () => {
       // Walking the lap moves the bar cursor. Left where the loop stopped, the
       // next scheduler tick would fold against the wrong chord.
