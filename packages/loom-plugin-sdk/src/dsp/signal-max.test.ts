@@ -18,7 +18,7 @@ async function maxOf(x: number, y: number, headroom = 4): Promise<number> {
   cy.connect(m.b);
   m.output.connect(ctx.destination);
   cx.start(); cy.start();
-  const d = (await ctx.startRendering()).getChannelData(0);
+  const d = (await ctx.startRendering()).getChannelData(0).slice();
   return d[d.length - 1];
 }
 

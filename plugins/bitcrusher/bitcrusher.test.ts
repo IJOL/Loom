@@ -27,18 +27,18 @@ async function render(setup: (fx: ReturnType<typeof mk>) => void, secs = 0.3): P
   const fx = mk(ctx); setup(fx);
   osc.connect(amp).connect(fx.input); fx.output.connect(ctx.destination);
   osc.start();
-  return (await ctx.startRendering()).getChannelData(0);
+  return (await ctx.startRendering()).getChannelData(0).slice();
 }
 const rms = (b: Float32Array) => Math.sqrt(b.reduce((s, v) => s + v * v, 0) / b.length);
 /** Distance from a clean reference: how much the crusher has mangled the wave.
  *
- *  Guarded, because an unusable render used to surface here as
- *  `expected NaN to be greater than NaN` — an assertion message that says
- *  nothing about which of the three renders was empty or why. Twice, under the
- *  full suite only and never in isolation, this file has produced a render that
- *  was all zeros or all NaN; the guard turns that into a sentence instead of a
- *  riddle. It does NOT weaken the claim below: a healthy render passes it
- *  without noticing. */
+ *  The guard stays, but what it was guarding is fixed. A render that came back
+ *  all zeros or all NaN — twice, and only under the full suite — was never a
+ *  bad render. It was a good one, read after node-web-audio-api had freed the
+ *  memory behind it, because `render` returned the borrowed view rather than a
+ *  copy of it; see test/setup.ts. What is left here is what the guard should
+ *  always have been — a sentence rather than a riddle if that class ever comes
+ *  back — and a healthy render passes it without noticing. */
 function mangle(a: Float32Array, b: Float32Array): number {
   let d = 0;
   for (let i = 0; i < a.length; i++) {
@@ -112,7 +112,7 @@ describe('bitcrusher dither', () => {
     fx.setBaseValue('bits', bits);
     fx.setBaseValue('dither', dither);
     fx.output.connect(ctx.destination);   // nothing connected to fx.input
-    return (await ctx.startRendering()).getChannelData(0);
+    return (await ctx.startRendering()).getChannelData(0).slice();
   }
 
   it('is OFF by default — the crusher stays exactly as clean as it was', () => {

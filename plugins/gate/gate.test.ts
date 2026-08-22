@@ -31,7 +31,7 @@ async function through(level: number, set: Record<string, number> = {}): Promise
   fx.output.connect(ctx.destination);
   src.start();
   // Past the follower's rise, so this is the settled state and not the attack.
-  const d = (await ctx.startRendering()).getChannelData(0).subarray(Math.floor(SR * 0.5));
+  const d = (await ctx.startRendering()).getChannelData(0).slice(Math.floor(SR * 0.5));
   return rms(d) / level;
 }
 
@@ -91,7 +91,7 @@ describe('gate', () => {
       src.connect(amp).connect(fx.input);
       fx.output.connect(ctx.destination);
       src.start();
-      const d = (await ctx.startRendering()).getChannelData(0);
+      const d = (await ctx.startRendering()).getChannelData(0).slice();
       // 200–400 ms after the drop. Measured at 20–120 ms instead, a 10 ms
       // release is still on its way down and only 1.7× apart from a 1-second
       // one — true but a thin claim. By here the short release has shut
@@ -122,7 +122,7 @@ describe('gate', () => {
       src.connect(amp).connect(fx.input);
       fx.output.connect(ctx.destination);
       src.start();
-      const d = (await ctx.startRendering()).getChannelData(0);
+      const d = (await ctx.startRendering()).getChannelData(0).slice();
       // 100 ms into the dip. Measured at 20 ms in, a release of 10 ms has not
       // finished closing yet and the two settings are only 1.5x apart — true,
       // but a thin claim about a knob whose whole job is the difference.

@@ -60,7 +60,7 @@ describe('compressor DSP', () => {
       osc.start();
       const buf = await ctx.startRendering();
       let peak = 0;
-      const d = buf.getChannelData(0);
+      const d = buf.getChannelData(0).slice();
       for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
       return peak;
     };

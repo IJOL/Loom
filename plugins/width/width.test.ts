@@ -53,7 +53,7 @@ async function render(stereo: boolean, set: Record<string, number> = {}): Promis
   }
   fx.output.connect(ctx.destination);
   const out = await ctx.startRendering();
-  return [out.getChannelData(0), out.getChannelData(1)];
+  return [out.getChannelData(0).slice(), out.getChannelData(1).slice()];
 }
 
 describe('width — mid/side, on a source that already has sides', () => {

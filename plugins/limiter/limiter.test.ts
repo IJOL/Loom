@@ -48,7 +48,7 @@ describe('limiter plugin', () => {
     osc.start();
     const buf = await ctx.startRendering();
     let peak = 0;
-    const d = buf.getChannelData(0);
+    const d = buf.getChannelData(0).slice();
     for (let i = 0; i < d.length; i++) peak = Math.max(peak, Math.abs(d[i]));
     // -6 dBFS ≈ 0.5 linear; allow the compressor's soft overshoot but require
     // it well under the 6× drive. Relative ceiling check, not an absolute spec.

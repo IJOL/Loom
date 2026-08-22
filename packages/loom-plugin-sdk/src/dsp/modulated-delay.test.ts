@@ -26,7 +26,7 @@ async function render(spec: ModulatedDelaySpec, set: Record<string, number> = {}
   osc.connect(fx.input);
   fx.output.connect(ctx.destination);
   osc.start();
-  return (await ctx.startRendering()).getChannelData(0);
+  return (await ctx.startRendering()).getChannelData(0).slice();
 }
 
 /** How much the level moves over the render, as a fraction of its own mean.
@@ -57,7 +57,7 @@ describe('modulated delay — the LFO is what makes it an effect', () => {
     osc.frequency.value = 220;
     osc.connect(ctx.destination);
     osc.start();
-    const bare = (await ctx.startRendering()).getChannelData(0);
+    const bare = (await ctx.startRendering()).getChannelData(0).slice();
     // Relative to the untouched source, not to a magnitude of its own.
     expect(rms(dry)).toBeGreaterThan(rms(bare) * 0.99);
     expect(rms(dry)).toBeLessThan(rms(bare) * 1.01);
@@ -97,7 +97,7 @@ describe('modulated delay — feedback belongs to the flanger alone', () => {
       fx.output.connect(ctx.destination);
       osc.start();
       osc.stop(0.5);
-      const out = (await ctx.startRendering()).getChannelData(0);
+      const out = (await ctx.startRendering()).getChannelData(0).slice();
       return {
         during: rms(out.subarray(Math.floor(SR * 0.2), Math.floor(SR * 0.45))),
         after:  rms(out.subarray(Math.floor(SR * 0.505), Math.floor(SR * 0.56))),

@@ -88,7 +88,7 @@ describe('delay ping-pong', () => {
     src.start(0); src.stop(0.05);
 
     const buf = await ctx.startRendering();
-    const L = buf.getChannelData(0), R = buf.getChannelData(1);
+    const L = buf.getChannelData(0).slice(), R = buf.getChannelData(1).slice();
     // Window around the FIRST repeat (~0.1 s): left should carry it, right not yet.
     const from = Math.floor(0.09 * SR), to = Math.floor(0.13 * SR);
     let eL = 0, eR = 0;

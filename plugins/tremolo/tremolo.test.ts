@@ -26,7 +26,7 @@ async function render(setup: (fx: ReturnType<typeof inst>) => void, secs = 1): P
   osc.connect(fx.input); fx.output.connect(ctx.destination);
   osc.start();
   const buf = await ctx.startRendering();
-  return buf.getChannelData(0);
+  return buf.getChannelData(0).slice();
 }
 
 /** Per-window (20 ms) RMS envelope — the shape the tremolo carves. */

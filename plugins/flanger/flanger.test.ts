@@ -22,7 +22,7 @@ async function render(setup: (fx: FxInstance) => void, secs = 0.5): Promise<Floa
   const fx = create(ctx as unknown as AudioContext); setup(fx);
   osc.connect(fx.input); fx.output.connect(ctx.destination);
   osc.start();
-  return (await ctx.startRendering()).getChannelData(0);
+  return (await ctx.startRendering()).getChannelData(0).slice();
 }
 
 describe('flanger', () => {

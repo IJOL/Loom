@@ -38,7 +38,7 @@ async function render(level: number, set: Record<string, number> = {}): Promise<
   osc.connect(amp).connect(fx.input);
   fx.output.connect(ctx.destination);
   osc.start();
-  return (await ctx.startRendering()).getChannelData(0);
+  return (await ctx.startRendering()).getChannelData(0).slice();
 }
 
 describe('auto-wah', () => {
@@ -76,7 +76,7 @@ describe('auto-wah', () => {
     const amp = ctx.createGain(); amp.gain.value = 0.9;
     osc.connect(amp).connect(ctx.destination);
     osc.start();
-    const bare = (await ctx.startRendering()).getChannelData(0);
+    const bare = (await ctx.startRendering()).getChannelData(0).slice();
     expect(centroid(dry)).toBe(centroid(bare));
   });
 

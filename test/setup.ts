@@ -54,5 +54,23 @@ if (AW?.prototype) {
   AW.prototype.addModule = () => Promise.resolve();
 }
 
+// A RENDERED BUFFER IS BORROWED, NOT OWNED — copy it before the next render.
+//
+// node-web-audio-api backs an AudioBuffer with Rust-owned memory, and
+// getChannelData() hands back a Float32Array VIEW onto it. When the
+// OfflineAudioContext that produced it is collected, that memory is freed and
+// reused, so a view held across a later render silently starts reading
+// somebody else's bytes: zeros, garbage, or NaN, depending on what landed
+// there. Nothing throws. The test just compares the wrong numbers.
+//
+// This is why a render helper must return `.slice()` and never the view, and
+// why a window into one must be `.slice(from, to)` rather than `.subarray`.
+// It cannot be fixed centrally by patching getChannelData to copy: real code
+// FILLS buffers through the same call (`ir.getChannelData(0).set(left)`), and
+// a copy would send those writes nowhere.
+//
+// Found in the bitcrusher suite, where a 16-bit reference rendered first was
+// compared against a 2-bit render made two contexts later and came back
+// bit-identical to it — the reference had been freed and zeroed in between.
 // Sequencer uses `window.setTimeout` — alias window to globalThis.
 if (!('window' in g)) g.window = g;

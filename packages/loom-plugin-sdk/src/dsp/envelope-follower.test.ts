@@ -31,7 +31,7 @@ async function control(
   src.connect(amp).connect(f.input);
   f.output.connect(ctx.destination);
   src.start();
-  return (await ctx.startRendering()).getChannelData(0);
+  return (await ctx.startRendering()).getChannelData(0).slice();
 }
 
 /** The control signal after the source has STOPPED — which is the only place
@@ -45,7 +45,7 @@ async function tailAfterStop(releaseMs: number, atSec: number): Promise<number> 
   f.output.connect(ctx.destination);
   src.start();
   src.stop(0.5);
-  const d = (await ctx.startRendering()).getChannelData(0);
+  const d = (await ctx.startRendering()).getChannelData(0).slice();
   return d[Math.floor(SR * atSec)];
 }
 

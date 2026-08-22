@@ -32,7 +32,7 @@ async function renderTail(setup: (fx: FxInstance) => void): Promise<Float32Array
   fx.output.connect(ctx.destination);
   src.start(); src.stop(0.05);
   const out = await ctx.startRendering();
-  return out.getChannelData(0).subarray(Math.floor(SR * 0.1));   // past the burst
+  return out.getChannelData(0).slice(Math.floor(SR * 0.1));   // past the burst
 }
 
 describe('reverb plugin', () => {

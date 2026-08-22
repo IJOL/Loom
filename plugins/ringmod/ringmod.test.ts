@@ -46,7 +46,7 @@ async function render(set: Record<string, number> | null): Promise<Float32Array>
     osc.connect(ctx.destination);      // the control: the tone, untouched
   }
   osc.start();
-  return (await ctx.startRendering()).getChannelData(0);
+  return (await ctx.startRendering()).getChannelData(0).slice();
 }
 
 describe('ring modulator', () => {

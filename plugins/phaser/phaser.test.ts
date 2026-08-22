@@ -24,7 +24,7 @@ async function render(setup: (fx: ReturnType<typeof mk>) => void, secs = 0.5): P
   const fx = mk(ctx); setup(fx);
   osc.connect(fx.input); fx.output.connect(ctx.destination);
   osc.start();
-  return (await ctx.startRendering()).getChannelData(0);
+  return (await ctx.startRendering()).getChannelData(0).slice();
 }
 const rms = (b: Float32Array) => Math.sqrt(b.reduce((s, v) => s + v * v, 0) / b.length);
 
