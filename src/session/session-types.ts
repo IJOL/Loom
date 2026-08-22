@@ -175,6 +175,17 @@ export interface SessionLane {
      *  and the layers' OWN knob values do live in `params`, prefixed `l0.`,
      *  `l1.`… so they save, load, automate and undo like any other param. */
     layers?: import('../audio-dsp/layers/layer-spec').LayerSpec[];
+    /** Does this rack level its instruments against one another?
+     *
+     *  Absent ⇒ yes. The presets a rack draws from span 45 dB end to end, so two
+     *  picked at random can differ by thirty — at which point the quieter slot is
+     *  not quiet, it is absent. Set false to keep the difference, which is
+     *  sometimes the whole point of stacking a whisper under a lead.
+     *
+     *  Here rather than in `params` for the same reason `layers` is: it changes
+     *  each slot's TRIM, which travels with the rack as structure rather than as
+     *  a number a knob can turn. */
+    layerNormalise?: boolean;
   };
   /** Currently applied preset name for this lane, prefix-tagged with the unified
    *  preset vocabulary: `engine:Name` for any built-in/JSON preset (all engines),

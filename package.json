@@ -26,7 +26,8 @@
     "test:e2e": "cross-env NO_COLOR=1 playwright test",
     "test:e2e:headed": "cross-env NO_COLOR=1 playwright test --headed",
     "test:wav-diff": "tsx scripts/wav-diff.ts",
-    "test:wav-bless": "tsx scripts/wav-bless.ts"
+    "test:wav-bless": "tsx scripts/wav-bless.ts",
+    "measure:preset-energy": "tsx tools/measure-preset-energy.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

@@ -68,6 +68,7 @@ import { loadAllPresets } from './presets/preset-loader';
 import { loadPlugins } from './plugin-host/plugin-host';
 import { loadPluginDspModules, importPluginDspOnMainThread } from './plugin-host/plugin-dsp';
 import { loadDrumKits } from './presets/drum-kits-loader';
+import { loadPresetEnergy } from './presets/preset-energy-loader';
 import { loadLibrary } from './patterns/pattern-library';
 import { resetAutomationPosition, getAutoAbsSubIdx } from './automation/automation-tick';
 import { createDestinationRegistry } from './automation/destination-registry';
@@ -128,6 +129,10 @@ const presetsLoaded = pluginsReady.then((report) => loadAllPresets(
 // Unified Drums picker list (synth + sample kits). Fire-and-forget; the drums
 // populator re-renders when this resolves (see mountDrumsPresetSelect).
 void loadDrumKits();
+// How loud each shipped preset measured, so a LAYERS rack can level its slots
+// against one another. Fire-and-forget beside the kits: a rack built before it
+// lands simply is not levelled yet, and reposting one levels it.
+void loadPresetEnergy();
 // The pattern library (1210 patterns, ~370 KB of JSON). Fire-and-forget: the
 // inspector's pattern dropdown fills on the next render, and an empty list is
 // a harmless placeholder until it lands.

@@ -20,6 +20,7 @@ import type { EngineUIContext, SynthEngine } from './engine-types';
 import type { SessionLane } from '../session/session';
 import { LAYERS_ENGINE_ID, LAYERS_DEFAULT_MODULATORS, laneLayers } from './layers-engine';
 import { layerPrefix, MAX_LAYERS, readRack, type LayerSpec } from '../audio-dsp/layers/layer-spec';
+import { rackNormalises } from './layers-engine';
 import { getCachedPresets } from '../presets/preset-loader';
 import { commitParamForLane } from './engine-param-commit';
 import { prefixModulators, replaceLayerModulators } from './layer-modulators';
@@ -381,6 +382,25 @@ export function buildLayersRack(host: HTMLElement, ctx: EngineUIContext, engine:
           >${i + 1}</button>
         `)}
       </div>
+
+      <label class="layers-normalise" title=Level every instrument in this rack against the others. Off keeps the difference between them, which is sometimes the arrangement.>
+        <input
+          type="checkbox"
+          .checked=${rackNormalises(lane)}
+          @change=${(e: Event) => {
+            // Written straight onto engineState and then reposted through the
+            // rack door, because the flag changes each slot's TRIM — which is
+            // structural, not a param, and reaches the worklet with the rack.
+            // The rack itself is handed back unchanged; what moved is what
+            // `structuralFor` reads while building it.
+            if (!lane) return;
+            const on = (e.target as HTMLInputElement).checked;
+            lane.engineState = { ...lane.engineState, layerNormalise: on };
+            deps?.setRack(ctx.laneId, rack);
+          }}
+        />
+        <span>Level the slots</span>
+      </label>
 
       <label class="layers-field">
         <span>Instrument</span>

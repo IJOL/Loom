@@ -30,6 +30,8 @@ import { requireModulator } from '../modulation/modulator-registry';
 import type { ModulatorState } from '../modulation/types';
 import { getCachedPresets } from '../presets/preset-loader';
 import { pluginSynthTrim, registerEngineCapabilities } from '../plugins/capabilities';
+import { slotNormalisation } from '../audio-dsp/layers/slot-normalise';
+import { presetEnergy, presetEnergyTarget } from '../presets/preset-energy-loader';
 import { isStripParamId } from '../core/channel-strip-params';
 import {
   MAX_LAYERS, layerPrefix, layerModTargets, readRack, type LayerSpec,
@@ -71,11 +73,11 @@ function rackParams(): EngineParamSpec[] {
     const g = `${p}slot`;
     out.push(
       // Up to 2, not 1. At a ceiling of unity a quiet slot is already at the top
-      // of its fader with nowhere to go — the same dead end a user hit on a lane
-      // ("lo tengo al maximo", and it was still buried). The mixer's own lane
-      // fader has gone above unity for exactly this reason and the weave's row
-      // copies it; a rack was the one place with no way to say "more of this
-      // one". Zero stays the floor, because silencing a slot is a thing you do.
+      // of its fader with nowhere to go — which is the same dead end a user hit
+      // on a lane ("lo tengo al maximo" and it was still buried). The mixer's own
+      // lane fader has gone above unity for exactly this reason and the weave's
+      // copies it; a rack had no way to say "more of this one". Zero stays the
+      // bottom, because silencing a slot is a thing you do.
       { id: `${p}gain`, label: 'Gain', kind: 'continuous', min: 0, max: 2, default: 1, group: g },
       // The zone is a pair of MIDI notes, not a range control, because the two
       // ends are independent: a stack is two layers whose zones OVERLAP, and a
@@ -94,6 +96,49 @@ export const LAYERS_PARAMS: EngineParamSpec[] = rackParams();
  *  audio side and the UI cannot disagree about what an absent slot means. */
 export function laneLayers(lane: SessionLane | undefined): LayerSpec[] {
   return readRack(lane?.engineState?.layers);
+}
+
+/** Does this rack level its slots against each other?
+ *
+ *  Per RACK and not global, and ON unless someone says otherwise. On, because
+ *  the catalogue it draws from spans 45 dB and two presets picked at random can
+ *  differ by thirty — at which point the quieter slot is not quiet, it is
+ *  absent. Off, because a rack is also how you stack a whisper under a lead and
+ *  the difference IS the arrangement; asked for in exactly those words.
+ *
+ *  A rack saved before this existed has no flag and gets the levelling. That is
+ *  a deliberate choice rather than an oversight: the flag says "leave my
+ *  balance alone", and a rack that never had the option never expressed one. */
+export function rackNormalises(lane: SessionLane | undefined): boolean {
+  return (lane?.engineState as { layerNormalise?: boolean } | undefined)?.layerNormalise !== false;
+}
+
+/** Everything that scales ONE slot before its own gain fader: its engine's
+ *  declared balance, its preset's declared balance, and what neither of those
+ *  fixed.
+ *
+ *  All three ride the same field for the same reason — `trim` is derived, never
+ *  saved, and travels with the rack rather than as a param. The preset's
+ *  `output.trim` has to come this way because it is NOT a declared param: on an
+ *  ordinary lane the host seeds it by hand for exactly that reason, while a
+ *  slot's params come from the engine's spec, so `l0.output.trim` had nowhere
+ *  to land and was silently dropped. Measured: LEAD Supersaw 7 declares 0.25 and
+ *  played a rack at 11.90 against 2.98 on a lane — 4.000x, to three decimals. */
+export function slotTrim(l: LayerSpec, normalise: boolean): number {
+  const engine = pluginSynthTrim(l.engineId) ?? 1;
+  const preset = presetTrimOf(l.engineId, l.presetName);
+  const norm = normalise
+    ? slotNormalisation(presetEnergy(l.engineId, l.presetName), presetEnergyTarget())
+    : 1;
+  return engine * preset * norm;
+}
+
+/** A preset's own `output.trim`, 1 when it declares none. */
+function presetTrimOf(engineId: string, presetName: string | undefined): number {
+  if (!presetName) return 1;
+  const p = getCachedPresets(engineId).find((x) => x.name === presetName);
+  const v = (p?.params as Record<string, number> | undefined)?.['output.trim'];
+  return typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 1;
 }
 
 /** Each filled slot's OWN engine params, wearing this slot's prefix.
@@ -160,7 +205,7 @@ function makeLayersDescriptor() {
     structuralFor: (lane) => ({
       layers: laneLayers(lane).map((l) => ({
         ...l,
-        trim: l.engineId ? pluginSynthTrim(l.engineId) ?? 1 : 1,
+        trim: l.engineId ? slotTrim(l, rackNormalises(lane)) : 1,
       })),
     }),
     // A slot's own envelopes. `amp` and `filter.env` are how an engine finds its
