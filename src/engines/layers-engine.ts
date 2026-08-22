@@ -70,7 +70,13 @@ function rackParams(): EngineParamSpec[] {
     const p = layerPrefix(i);
     const g = `${p}slot`;
     out.push(
-      { id: `${p}gain`, label: 'Gain', kind: 'continuous', min: 0, max: 1, default: 1, group: g },
+      // Up to 2, not 1. At a ceiling of unity a quiet slot is already at the top
+      // of its fader with nowhere to go — the same dead end a user hit on a lane
+      // ("lo tengo al maximo", and it was still buried). The mixer's own lane
+      // fader has gone above unity for exactly this reason and the weave's row
+      // copies it; a rack was the one place with no way to say "more of this
+      // one". Zero stays the floor, because silencing a slot is a thing you do.
+      { id: `${p}gain`, label: 'Gain', kind: 'continuous', min: 0, max: 2, default: 1, group: g },
       // The zone is a pair of MIDI notes, not a range control, because the two
       // ends are independent: a stack is two layers whose zones OVERLAP, and a
       // single range widget would make that the awkward case rather than the
