@@ -5,6 +5,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import type { FxInstance } from '@loom/plugin-sdk';
 import manifest from './plugin.json';
+import { crushCurve } from './curve';
 
 // The plugin's own test, run against the plugin the way the host runs it: a
 // two-line Loom double captures the factory, which is all main.ts asks of the
@@ -72,11 +73,23 @@ describe('bitcrusher', () => {
     expect(closed).toBeLessThan(open);
   });
 
-  it('stays bounded', async () => {
+  it('stays bounded — and is not bounded by being silent', async () => {
     const b = await render((fx) => { fx.setBaseValue('mix', 1); fx.setBaseValue('bits', 1); fx.setBaseValue('tone', 20000); });
     let peak = 0; for (const v of b) { const a = Math.abs(v); if (a > peak) peak = a; }
     expect(peak).toBeLessThan(2);
     expect(Number.isFinite(peak)).toBe(true);
+    // The half that was missing. One bit is the bottom of the knob's own range
+    // and it rendered pure silence, which sails through every ceiling above.
+    // A bound nothing can reach is not a bound.
+    expect(rms(b), 'one bit is silent').toBeGreaterThan(0.05);
+  });
+
+  it('one bit is a hard square — louder than the sine it came from', async () => {
+    const clean = await render((fx) => { fx.setBaseValue('mix', 1); fx.setBaseValue('bits', 16); fx.setBaseValue('tone', 20000); });
+    const oneBit = await render((fx) => { fx.setBaseValue('mix', 1); fx.setBaseValue('bits', 1); fx.setBaseValue('tone', 20000); });
+    // Two levels, ±1: every sample is driven to full scale, so the RMS rises
+    // above the 0.8-peak sine's own. Relative to the source, not a magnitude.
+    expect(rms(oneBit)).toBeGreaterThan(rms(clean));
   });
 
   it('round-trips its params', () => {
@@ -145,5 +158,61 @@ describe('bitcrusher dither', () => {
     const fx = mk(ctx);
     fx.setBaseValue('dither', 1.25);
     expect(fx.getBaseValue('dither')).toBeCloseTo(1.25, 5);
+  });
+});
+
+// The staircase as pure numbers. Everything above renders it; this asks what it
+// IS — because the defect that shipped was not audible as distortion, it was
+// audible as nothing at all, and one assertion here would have caught it.
+describe('crushCurve', () => {
+  const levelsOf = (bits: number) => new Set(Array.from(crushCurve(bits)).map((v) => v.toFixed(6)));
+
+  it('gives exactly 2^bits distinct levels', () => {
+    // Five levels out of a 2-bit crusher is not a rounding detail: the knob
+    // says four and the ear hears the extra tread on zero as less crush.
+    for (const bits of [1, 2, 3, 4]) {
+      expect(levelsOf(bits).size, `${bits} bits`).toBe(Math.pow(2, bits));
+    }
+  });
+
+  it('is symmetric about zero — a crushed wave must not gain a DC offset', () => {
+    // The sharper half of the count above. The old staircase produced
+    // {-0.667, 0, 0.667, 1} at two bits: four levels, so a headcount passed it,
+    // but leaning one way. Quantizing a centred wave on a lopsided grid pushes
+    // its average off zero, and DC is the one artefact a lo-fi effect has no
+    // excuse for — it costs headroom everywhere downstream and is inaudible
+    // until something clips.
+    for (const bits of [1, 2, 3, 4]) {
+      const levels = Array.from(levelsOf(bits)).map(Number).sort((a, b) => a - b);
+      const mirrored = levels.map((v) => -v).sort((a, b) => a - b);
+      for (let i = 0; i < levels.length; i++) {
+        expect(levels[i], `${bits} bits, level ${i}`).toBeCloseTo(mirrored[i], 5);
+      }
+    }
+  });
+
+  it('reaches both ends — the quietest level is -1 and the loudest +1', () => {
+    for (const bits of [1, 2, 3, 8]) {
+      const c = crushCurve(bits);
+      expect(c[0], `${bits} bits, bottom`).toBeCloseTo(-1, 5);
+      expect(c[c.length - 1], `${bits} bits, top`).toBeCloseTo(1, 5);
+    }
+  });
+
+  it('at one bit it is a square: two levels, no tread on zero', () => {
+    const c = crushCurve(1);
+    expect(levelsOf(1)).toEqual(new Set(['-1.000000', '1.000000']));
+    expect(Array.from(c).some((v) => v === 0)).toBe(false);
+  });
+
+  it('at sixteen bits it is close enough to a straight wire', () => {
+    const c = crushCurve(16);
+    let worst = 0;
+    for (let i = 0; i < c.length; i++) {
+      worst = Math.max(worst, Math.abs(c[i] - ((i / (c.length - 1)) * 2 - 1)));
+    }
+    // One step at 16 bits is 3e-5; the curve's own 2048 points are coarser than
+    // that, so the bound is the table's resolution, not the quantizer's.
+    expect(worst).toBeLessThan(1e-3);
   });
 });
