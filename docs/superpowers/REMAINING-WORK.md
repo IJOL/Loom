@@ -1,59 +1,34 @@
 # Remaining work
 
-Audit refreshed 2026-08-06. **WEAVE section re-audited 2026-08-22** — see below,
-it had gone stale in the direction that costs the most.
+Swept 2026-08-22. **Everything in this file is open.** Anything that shipped has
+moved to [`archive/`](archive/) — read those as history, never as instructions.
 
-The `specs/` and `plans/` directories were pruned on 2026-08-06 and have filled
-up again since. The one draft that is still live —
-`specs/2026-07-26-architecture-symmetry-master-plan.md` — is pending review, not
-obsolete, and stays where it is. **Every other document in those two directories
-describes a round that has since shipped and merged**, and by this repo's own
-convention they should be pruned; the rationale is recoverable from git history:
-`git log --diff-filter=D --name-only -- docs/superpowers/`.
+Two things still sit outside the archive: this file, and
+`specs/2026-07-26-architecture-symmetry-master-plan.md`, which is pending review
+rather than obsolete.
 
-Left in place rather than deleted, because deletion is the user's call and
-because `CLAUDE.md` also says an approved mockup is a committed artifact — and
-two of these are mockups whose specs would go with them. The list, so the next
-person is deciding rather than surveying: the three **inserts-as-plugins**
-documents, **lane-selection-coherence** (design + plan), **scene-countdown-ring**
-(design + plan + mockup), **weave-panel-dinamico** (design + plan + mockup),
-**weave-evolution-and-debts** (spec + plan), **lane-roles** (design + plan),
-**progression-editor** (plan), **layers-per-slot-modulation** (design),
-**weave-transport-locks-and-print**, **auto-accompaniment**,
-**harmony-that-moves**, and **follower-lane-accompaniment** (design + plan).
+Every item below was re-verified against the code on 2026-08-22 — but verify
+again before acting. That is what this list is for, and the WEAVE section below
+is what happens when nobody does.
 
-## WEAVE — re-audited 2026-08-22, and it had gone stale in the worst direction
+## WEAVE — a scene does not choose what a weaving lane plays
 
-**Every one of the three slices this section called "deliberately unfinished" has
-shipped.** Checked against the code, not remembered:
+With loops chosen, `weave-wiring`'s `build` reads the SELECTION and nothing
+else, so launching a scene decides only *whether* that lane sounds, never
+*what*. Every scene sounds the same on it, a scene of empty clips included — and
+a scene written by PRINT plays the weave rather than the print.
 
-- *"The weave state does not persist."* It does: `SavedStateV3.weave`, written
-  through `getWeave`/`setWeave` and deep-cloned on save because the live weave
-  keeps moving. A save with no weave clears the live one.
-- *"The lane pads are drawn but not bound."* They are bound — `weave-wiring`
-  builds each lane's `LaneWeaveConfig` from the row.
-- *"`Print to scene` is a button with no handler."* `printWeaveScene` exists and
-  is wired from `main.ts` through `performance-feature` to the panel, inside
-  `withUndo`.
+Reported by the user and **not yet decided**. It is a design question about what
+a scene MEANS on a weaving lane, not a bug to patch, which is why it is here
+rather than fixed. Carried in the manual as a known limitation so a user meets
+it as a decision rather than a fault.
 
-It also said **six macros**. There are four: Space and Motion were removed
-because they were the only two that moved parameters rather than notes.
-
-A backlog that lists finished work as open is worse than no backlog: the next
-reader implements something that already exists, and stops trusting the file
-that told them to. Re-verify this section against the code before acting on it,
-which is what this whole document asks for and what nobody did here.
-
-### What is actually open
-
-- **A scene does not choose what a weaving lane plays.** With loops chosen,
-  `weave-wiring`'s `build` reads the SELECTION and nothing else, so launching a
-  scene decides only *whether* that lane sounds, never *what* — every scene
-  sounds the same on it, a scene of empty clips included, and a scene written by
-  PRINT plays the weave rather than the print. Known, reported by the user, and
-  **not yet decided**: the fix is a design question about what a scene MEANS on a
-  weaving lane, not a bug to patch. Documented as a known limitation in the
-  manual so a user meets it as a decision rather than a fault.
+> This section used to list three more slices as unfinished — the weave not
+> persisting, the lane pads not bound, PRINT having no handler. All three had
+> shipped, and the file went on saying otherwise until 2026-08-22. A backlog
+> that lists finished work as open is worse than no backlog: the next reader
+> builds something that exists, and then stops trusting the file that sent them.
+> Verify against the code before acting on anything below.
 
 ## Which preset a lane is on has three answers and no owner
 
@@ -95,17 +70,6 @@ verify again before acting; that is what this list is for.
   bus, clip automation, note-FX, worklet registration, and `ModulationRuntime`
   for melodic lanes (`export/kernel-lane-render.ts:64`).
 
-  Two symptoms are now **closed**, both by removing the divergence rather than
-  patching the exporter:
-  - *Channel filter was live-only* → `ChannelFilter` deleted outright; filtering
-    a drums/sampler lane is a `multifilter` insert like every other lane, and
-    inserts already export.
-  - *Shared-param modulation was unbound offline* → binding moved into the lane
-    allocator, which the live host and the exporter **share**, so the exporter
-    gained it without being touched. (It also turned out that the six melodic
-    engines never bound those destinations **live** either — the panel offered
-    FX destinations that were connected to nothing.)
-
   **Still open: there is no parity test.** Both drifts were found by reading the
   code, not by a failing test, and that is the actual debt — the next node the
   exporter forgets will be found the same slow way. The durable fix is to render
@@ -137,20 +101,14 @@ verify again before acting; that is what this list is for.
   `<laneId>.preset` automation id — so a preset change cannot be automated or
   recorded like every other control.
 
-## Reference (kept deliberately — not a backlog)
+## Sample rights — open, and disclosure is not clearance
 
-- **Promotion research 2026-07-15** ([report](../promo-research-2026-07-15.md)):
-  not feature work. Its three launch-gate repo/licensing items have all landed —
-  `index.html` carries the AGPL notice and source link in the header plus a
-  "Licence & source" block in the About dialog crediting Strudel's `dough.mjs`,
-  `package.json` declares `"license": "AGPL-3.0-or-later"`, and README.md has a
-  "Credits — sample sources" section with the counts (68 sample kits, 486 audio
-  files, 64 tidal-derived, 3 hand-curated, `gm-percussion` CC0).
+Most of the bundled audio is uncleared: the upstream collections state no
+licence, and the Amen Break loop is explicitly not cleared. README.md and the
+About dialog both say so plainly, which is honest and is not permission.
 
-  What stays open is the **sample-rights debt itself**: most of the bundled audio
-  remains uncleared, the upstream collections state no licence, and the Amen
-  Break loop is explicitly not cleared. Both the README and the About dialog now
-  say so plainly, which is disclosure, not clearance.
-
-  Read the report's §0 before using any of the rest of it: only 5 of its 13
-  research angles were ever fact-checked.
+The launch-gate items from the 2026-07-15 promotion research have all landed —
+the AGPL notice and source link, the licence declaration, the credits section
+with its counts — so that report is now
+[reference](../promo-research-2026-07-15.md) rather than work. Read its §0
+first: only 5 of its 13 research angles were ever fact-checked.

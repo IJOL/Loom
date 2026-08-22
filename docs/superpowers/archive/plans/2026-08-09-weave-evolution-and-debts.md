@@ -12,7 +12,7 @@
 
 - **UI text, labels, comments and commit messages in ENGLISH.** No exceptions.
 - **File size:** target 300 lines of code, hard cap 500. Comments and blanks do not count.
-- **Never add `engineId === '…'` to the core.** Ask [src/plugins/capabilities.ts](../../../src/plugins/capabilities.ts).
+- **Never add `engineId === '…'` to the core.** Ask [src/plugins/capabilities.ts](../../../../src/plugins/capabilities.ts).
 - **Anything listing automatable params** goes through `DestinationRegistry.list()` — never a parallel list.
 - **A plugin change is invisible until `npm run build:plugins` runs.** The app loads `public/plugins/`, not `plugins/`.
 - **Tests assert RELATIVE**: ratios, never absolute magnitudes.

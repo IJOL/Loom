@@ -20,8 +20,8 @@ This pass keeps only what is still missing, and re-aims it.
 
 ### The analysis layer — built, and better
 
-[src/analysis/pitch-profile.ts](../../../src/analysis/pitch-profile.ts) and
-[src/analysis/key-detect.ts](../../../src/analysis/key-detect.ts) exist. Three corrections to
+[src/analysis/pitch-profile.ts](../../../../src/analysis/pitch-profile.ts) and
+[src/analysis/key-detect.ts](../../../../src/analysis/key-detect.ts) exist. Three corrections to
 the first pass, each of which came from measuring rather than from arguing:
 
 1. **Two scales are excluded, not one.** The first pass excluded `chromatic` because it matches
@@ -42,7 +42,7 @@ seven-note modes are exactly the templates of equal size that make the compariso
 
 ### The chord progression — built, in degrees, and wired into WEAVE
 
-[src/arranger/progression.ts](../../../src/arranger/progression.ts) is the chord track the first
+[src/arranger/progression.ts](../../../../src/arranger/progression.ts) is the chord track the first
 pass designed: scale degrees, no chord quality, diatonic transposition. Two decisions it made
 that the first pass had not:
 
@@ -53,7 +53,7 @@ that the first pass had not:
   being reversible. That is a fault this codebase has shipped once already.
 
 It is wired: the picker sits in WEAVE's header beside Key and Style, the id lives in
-`WeaveState.progression`, and [weave-wiring.ts](../../../src/app/weave-wiring.ts) applies it per
+`WeaveState.progression`, and [weave-wiring.ts](../../../../src/app/weave-wiring.ts) applies it per
 bar — **before** the harmony-leader guard, and walking the *session's* bars rather than each
 clip's, so a two-bar clip under a four-bar progression hears all four chords instead of the
 first two twice.
@@ -62,7 +62,7 @@ So `SessionState.chords` from the first pass is dead. There is one owner and it 
 
 ### `printScene` — the scene stamper, smaller than proposed
 
-[`printScene(state, notesByLane, name, lengthBars)`](../../../src/session/session-runtime.ts#L108)
+[`printScene(state, notesByLane, name, lengthBars)`](../../../../src/session/session-runtime.ts#L108)
 takes computed notes and writes **one** scene row, one clip per lane that has notes, copying the
 arrays. It does **not** create lanes.
 
@@ -77,7 +77,7 @@ Three things, in the order they are worth doing.
 ### 1 · The analysis layer has no way in
 
 `detectKey` has exactly one caller in the tree, and it is
-[tools/loop-fingerprints.ts](../../../tools/loop-fingerprints.ts) — an offline script. **Nothing
+[tools/loop-fingerprints.ts](../../../../tools/loop-fingerprints.ts) — an offline script. **Nothing
 a user can press reaches it.** Four pieces close that:
 
 - **`src/analysis/chroma.ts`** — `profileFromAudio(mono, sampleRate)`, unchanged from the first
@@ -161,14 +161,14 @@ scenes, and `printScene` already captures a moment worth keeping.
 
 What survives is the **Fill**, and the answer is the one the research report reached, not the one
 the first pass cut:
-[docs/research/2026-08-07-roland-mc-performance-modes.md](../../research/2026-08-07-roland-mc-performance-modes.md) §9 and §11.
+[docs/research/2026-08-07-roland-mc-performance-modes.md](../../../research/2026-08-07-roland-mc-performance-modes.md) §9 and §11.
 A fill is **held**, not launched. There is no return-to-previous state machine because nothing
 ever left.
 
 And there is a loose end to tidy first. **The momentary primitive exists twice.**
-[src/weave/momentary.ts](../../../src/weave/momentary.ts) is written, tested and has **no
+[src/weave/momentary.ts](../../../../src/weave/momentary.ts) is written, tested and has **no
 caller**; the panel's SURGE button implements the same snapshot-press-restore inline in
-[plugins/weave/main.ts](../../../plugins/weave/main.ts). That is not carelessness — a plugin
+[plugins/weave/main.ts](../../../../plugins/weave/main.ts). That is not carelessness — a plugin
 cannot import this repo's source, so the panel *had* to write its own. The fix is to decide the
 primitive's home:
 
@@ -221,7 +221,7 @@ Assertions relative throughout — ratios and orderings, never absolute magnitud
 
 ## Conventions this must respect
 
-- No `engineId === '…'`; ask [capabilities.ts](../../../src/plugins/capabilities.ts).
+- No `engineId === '…'`; ask [capabilities.ts](../../../../src/plugins/capabilities.ts).
 - Files ≤ 300 code lines (hard cap 500). `style-kits.ts` is the one at risk; split by style
   family if it grows, never by splitting the types away from the table.
 - All UI text in English.

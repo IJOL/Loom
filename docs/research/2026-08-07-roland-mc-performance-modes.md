@@ -1,8 +1,8 @@
 # Roland MC series — performance modes, read against Loom
 
 **Date:** 2026-08-07
-**Why:** WEAVE ([spec](../superpowers/specs/2026-08-07-weave-panel-dinamico-design.md)) and the
-arranger ([spec](../superpowers/specs/2026-08-07-auto-accompaniment-design.md)) are both about
+**Why:** WEAVE ([spec](../superpowers/archive/specs/2026-08-07-weave-panel-dinamico-design.md)) and the
+arranger ([spec](../superpowers/archive/specs/2026-08-10-auto-accompaniment-design.md)) are both about
 making a scene move while it plays. Roland's groovebox line has been solving that exact problem
 since 1996, and its answers are a catalogue of *primitives*, not of features. This report
 extracts the primitives and marks, for each, what Loom already has and what is missing.

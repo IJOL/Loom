@@ -7,7 +7,7 @@ Mockup aprobado: [2026-08-07-weave-panel-dinamico-mockup.html](2026-08-07-weave-
 
 Loom tiene mucho material y ninguna forma rápida de combinarlo. Hay 20 estilos
 × ~20 patrones × 3 pools en la biblioteca importada
-([pattern-library.ts](../../../src/patterns/pattern-library.ts)), nueve motores,
+([pattern-library.ts](../../../../src/patterns/pattern-library.ts)), nueve motores,
 más de veinte presets por motor melódico y 81 kits de batería. Combinar cuatro
 canales son hoy ocho decisiones repartidas por el inspector, canal a canal, y el
 resultado es **estático**: una vez elegido el patrón, el bucle se repite igual
@@ -98,7 +98,7 @@ Los ataques se relevan igual que en §1.1 — un patrón melódico también es u
 conjunto de posiciones. Lo que cambia son las **alturas**.
 
 Cada nota se convierte primero a **grado de escala** (`midiToScaleDegree` en
-[musicality.ts](../../../src/core/musicality.ts) ya lo hace), se interpola el
+[musicality.ts](../../../../src/core/musicality.ts) ya lo hace), se interpola el
 grado, y se vuelve a nota. El grado 1 de A camina hacia el grado 5 de B pasando
 por el 3, y nunca por nada que esté fuera de la escala:
 
@@ -288,12 +288,12 @@ aplicación pintando mal.
 de lo que decía este spec.** Dos puertas hay que abrir, no una:
 
 1. **Un parámetro sólo puede ser `continuous` o `discrete`** — un número suelto
-   ([manifest-validate.ts:19](../../../src/plugin-host/manifest-validate.ts#L19)).
+   ([manifest-validate.ts:19](../../../../src/plugin-host/manifest-validate.ts#L19)).
    `pad2d` emite dos valores, `queue` uno más un recuento y `steps` emite N.
    Ninguno de los tres es expresable hoy, así que el catálogo necesita **una
    forma de parámetro cuyo valor no sea escalar** antes que los controles.
 2. **Un componente sólo puede ser `engine`, `modulator` o `fx`**
-   ([manifest-validate.ts:103](../../../src/plugin-host/manifest-validate.ts#L103)).
+   ([manifest-validate.ts:103](../../../../src/plugin-host/manifest-validate.ts#L103)).
    WEAVE no es ninguna de las tres: no hace sonido, no modula y no procesa audio.
    Hace falta **una cuarta categoría** —un añadido que es un panel— con su sitio
    en la interfaz.
@@ -374,7 +374,7 @@ componente**. Es el mayor riesgo del proyecto y la primera fase del plan.
 ### 12.2 El identificador de destino se parte por puntos, y eso muerde
 
 `parseAutomationParamId`
-([automation-apply.ts:24](../../../src/automation/automation-apply.ts#L24))
+([automation-apply.ts:24](../../../../src/automation/automation-apply.ts#L24))
 devuelve `engine` o `insert`, y decide entre los dos buscando un segmento
 `fx:<slot>`. **Sin ese marcador, todo lo demás cae en `engine` con el primer
 segmento como identificador de canal.**
@@ -391,9 +391,9 @@ parseo gana un tercer caso antes del actual, no después.
 ### 12.3 El sitio de la decisión nota a nota
 
 `tickLane(clip, ctx)`
-([lane-scheduler.ts:82](../../../src/core/lane-scheduler.ts#L82)) recorre las
+([lane-scheduler.ts:82](../../../../src/core/lane-scheduler.ts#L82)) recorre las
 notas del clip con anticipación y dispara sólo las que entran en la ventana;
-`noteTrigger` ([:214](../../../src/core/lane-scheduler.ts#L214)) construye el
+`noteTrigger` ([:214](../../../../src/core/lane-scheduler.ts#L214)) construye el
 disparo. La decisión de §1.5 —«suena o no suena», nunca a medias— cuelga de ahí:
 un filtro justo antes de `noteTrigger`, con la posición de fundido leída en ese
 instante. Nada de recalcular el clip.
@@ -402,7 +402,7 @@ Esto confirma que §1.5 sale gratis: el planificador ya es nota a nota.
 
 ### 12.4 El painter no admite un segundo modo dentro de su fichero
 
-[clip-automation-lanes.ts](../../../src/session/clip-automation-lanes.ts) tiene
+[clip-automation-lanes.ts](../../../../src/session/clip-automation-lanes.ts) tiene
 358 líneas físicas y ya aloja el panel, la plantilla de lane, la región, la fila
 del LFO y la barra de pinceles, con un `lfoState` compartido a nivel de módulo.
 El modo de pasos **cabe en la fila plegable pero no en el fichero**: va en un

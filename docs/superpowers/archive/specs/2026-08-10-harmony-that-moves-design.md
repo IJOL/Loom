@@ -26,12 +26,12 @@ being precise about why, because the fix follows from the diagnosis.
 
 ## What is wrong with the harmoniser we have
 
-[`melodyToChordRoots`](../../../src/core/harmony.ts) counts, per bar, how many
+[`melodyToChordRoots`](../../../../src/core/harmony.ts) counts, per bar, how many
 notes START on each scale degree and keeps the most frequent.
 
 1. **It counts onsets, unweighted.** A run of passing sixteenths outvotes a bass
    note held through the bar. This is the exact mistake
-   [pitch-profile.ts](../../../src/analysis/pitch-profile.ts) was written to
+   [pitch-profile.ts](../../../../src/analysis/pitch-profile.ts) was written to
    avoid — *"counting note-ons would say a sixteenth-note hi-hat line of one
    pitch matters more than a bass note held through the bar, and the ear says
    the opposite"* — and that module is right there, unused by this one.

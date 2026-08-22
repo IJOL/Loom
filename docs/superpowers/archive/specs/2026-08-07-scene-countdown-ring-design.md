@@ -45,13 +45,13 @@ nothing is mirrored — the ring reads the same state the scheduler acts on, so 
 cannot contradict the audio.
 
 **Queued** — `launchScene` writes the shared switch instant `T` into every affected lane's
-`lp.queuedBoundary` ([session-runtime.ts](../../../src/session/session-runtime.ts)), and
+`lp.queuedBoundary` ([session-runtime.ts](../../../../src/session/session-runtime.ts)), and
 `launchClip` writes that lane's own next loop end into the same field. The ring takes the
 **smallest `queuedBoundary` among lanes that have something queued** — which is why a lone
 clip launch is covered for free, with no extra branch.
 
 **Idle** — `governingLoopSec()`
-([launch-timing.ts](../../../src/core/launch-timing.ts)) over the loop lengths of every
+([launch-timing.ts](../../../../src/core/launch-timing.ts)) over the loop lengths of every
 playing clip gives the governing loop; the phase is `(now - lp.loopStartedAt) / loopSec`
 for a lane whose loop equals the governing one.
 
@@ -111,14 +111,14 @@ counts 5·4·3·2·1; the wedge stays exact because it is driven by `frac`, not 
 lit-html render of the SVG, then a shared RAF loop that mutates the wedge `d`, the centre
 text and the caption imperatively — per-frame work never goes through a template diff.
 The loop starts lazily on the first ring and stops when the last one is disposed, exactly
-like `registerMeter` in [level-meter.ts](../../../src/core/level-meter.ts).
+like `registerMeter` in [level-meter.ts](../../../../src/core/level-meter.ts).
 
 `deps` is `{ laneStates, ctx, seq, activeSceneName(), queuedLabel() }` — everything
 `SessionHost` already holds.
 
 ## Mounting
 
-Inside `buildMasterStrip` ([master-strip.ts](../../../src/core/master-strip.ts)), inline
+Inside `buildMasterStrip` ([master-strip.ts](../../../../src/core/master-strip.ts)), inline
 with the `MASTER` label: a flex row of `[ring][MASTER]`. The handle is passed to
 `registerDisposable`, so `renderWithMixer` tears the ring down with the VU meters and
 nothing leaks across the re-renders that every play-state change triggers.

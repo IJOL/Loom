@@ -26,7 +26,7 @@ nothing, so the panel looks broken until you go and launch clips by hand. Stop d
 everything, so the asymmetry is the surprise.
 
 **Change:** ▶ launches the carrier clip of every lane that has a `LaneSelection`, then starts the
-clock. `seq.start` is already wrapped at [main.ts:709](../../../src/main.ts#L709) for the
+clock. `seq.start` is already wrapped at [main.ts:709](../../../../src/main.ts#L709) for the
 performance bookkeeping, so there is one place to add it and no second door.
 
 A lane the user muted stays muted — launching is not unmuting, and conflating them would make ▶
@@ -61,7 +61,7 @@ apart on its own. There is no master lock at all.
   decides where the material sits, not which material plays. Freezing the loops and freezing the
   harmony are two different wishes and only one of them is being expressed by a lock on the loops.
 
-Concretely, in [weave-wiring.ts](../../../src/app/weave-wiring.ts): a locked lane still passes
+Concretely, in [weave-wiring.ts](../../../../src/app/weave-wiring.ts): a locked lane still passes
 through `withProgression`; what a lock removes is `applyFlow` and `rehook`.
 
 ## 4 · The journey is visible
@@ -94,7 +94,7 @@ instant.
 Reported: a row switched on, pointed at a sub's cutoff, and nothing heard. Tried several times.
 
 This was reported once before and the whole chain was pinned then
-([weave-steps-chain.test.ts](../../../src/app/weave-steps-chain.test.ts)), so the join is
+([weave-steps-chain.test.ts](../../../../src/app/weave-steps-chain.test.ts)), so the join is
 unlikely to be where it breaks. Two findings from re-reading it, either of which explains the
 report without a defect in the chain:
 

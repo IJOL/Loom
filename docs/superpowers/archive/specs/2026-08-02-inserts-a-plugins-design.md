@@ -26,13 +26,13 @@ daba por futuro.
 **Lo que ya existe y esta rebanada REUTILIZA en vez de inventar:**
 
 - **El contrato de "componente no instalado", implementado y verificado a oído.**
-  Vive en cuatro sitios: [lane-allocator.ts:281](../../../src/app/lane-allocator.ts)
+  Vive en cuatro sitios: [lane-allocator.ts:281](../../../../src/app/lane-allocator.ts)
   (la pista se aloja igual — conserva su `ChannelStrip` y su `InsertChain` — y
-  sólo le falta el motor), [session-grid-templates.ts:116-135](../../../src/session/session-grid-templates.ts)
+  sólo le falta el motor), [session-grid-templates.ts:116-135](../../../../src/session/session-grid-templates.ts)
   (un `⚠` en la cabecera de la pista, con `title` explicando que los ajustes
-  siguen ahí), [session-host-lane-editor.ts:146-152](../../../src/session/session-host-lane-editor.ts)
+  siguen ahí), [session-host-lane-editor.ts:146-152](../../../../src/session/session-host-lane-editor.ts)
   (*"Engine not installed: `<id>`"* en lugar de una página vacía) y
-  [session-host-persistence.ts:90](../../../src/session/session-host-persistence.ts)
+  [session-host-persistence.ts:90](../../../../src/session/session-host-persistence.ts)
   (guardar no pierde los ajustes del componente ausente).
 - **El SDK ya publica los primitivos de síntesis**: `osc`, `ladder`, `filter`,
   `unison`, `fold`, `sync-osc`, `comb`, `filter-stack`, además de `adsr`,
@@ -60,7 +60,7 @@ escribirlo.
 
 ## 1. Qué se construye
 
-Los once inserts dejan de vivir en [`src/plugins/fx/`](../../../src/plugins/fx/)
+Los once inserts dejan de vivir en [`src/plugins/fx/`](../../../../src/plugins/fx/)
 y pasan a ser **plugins externos**, una carpeta por efecto en `plugins/<id>/`,
 cargados en runtime. Sueltas la carpeta y el efecto aparece en el desplegable;
 la borras y desaparece — sin que eso te descoloque el rack ni te borre los
@@ -94,9 +94,9 @@ el censo **no ve**:
 
 | dónde | qué hace | destino |
 | --- | --- | --- |
-| [core/fx.ts:30-31](../../../src/core/fx.ts) | siembra `delay` y `reverb` en los buses de envío A y B | se mueve detrás de `pluginsReady` (§3.4) |
-| [core/send-migration.ts:6-7](../../../src/core/send-migration.ts) | el estado por defecto de los envíos nombra `pluginId: 'delay'` y `'reverb'` | **se queda** (§3.4) |
-| [lane-insert-ui.ts:39-47](../../../src/session/lane-insert-ui.ts) | `FX_COLORS`, tabla escrita a mano que cubre 6 de los 11 y da ámbar al resto | capacidad `color` del manifiesto |
+| [core/fx.ts:30-31](../../../../src/core/fx.ts) | siembra `delay` y `reverb` en los buses de envío A y B | se mueve detrás de `pluginsReady` (§3.4) |
+| [core/send-migration.ts:6-7](../../../../src/core/send-migration.ts) | el estado por defecto de los envíos nombra `pluginId: 'delay'` y `'reverb'` | **se queda** (§3.4) |
+| [lane-insert-ui.ts:39-47](../../../../src/session/lane-insert-ui.ts) | `FX_COLORS`, tabla escrita a mano que cubre 6 de los 11 y da ámbar al resto | capacidad `color` del manifiesto |
 
 La tercera fila **no la cuenta el censo**, porque sus claves van sin comillas
 (`multifilter: '#ffa726'`) y el patrón sólo reconoce el id entrecomillado. Es un
@@ -147,9 +147,9 @@ distinguir "esto corre en el worklet" de "esto te fabrica un grafo".
 ### 2.4 Dos fallos vivos hoy en `main`
 
 **(a) Un hueco que falta descoloca a los siguientes.**
-[insert-slot.ts:39-51](../../../src/session/insert-slot.ts) dice por escrito
+[insert-slot.ts:39-51](../../../../src/session/insert-slot.ts) dice por escrito
 *"Slots that reference an unknown plugin id are silently skipped"*. Pero el rack
-empareja **por posición**: [lane-insert-ui.ts:80-99](../../../src/session/lane-insert-ui.ts)
+empareja **por posición**: [lane-insert-ui.ts:80-99](../../../../src/session/lane-insert-ui.ts)
 recorre `chain.list()` y saca los datos de `slots[idx]`. Si el hueco 2 de 5 se
 salta, la cadena tiene 4 elementos y la lista de huecos 5: los tres siguientes se
 pintan con el nombre, el color y los mandos del vecino. Hoy sólo se alcanza
@@ -157,7 +157,7 @@ editando un guardado a mano; **en cuanto un insert sea desinstalable se alcanza
 por diseño**.
 
 **(b) Los buses de envío nacen antes que los plugins.**
-[core/fx.ts:24-38](../../../src/core/fx.ts) siembra `delay` y `reverb` de forma
+[core/fx.ts:24-38](../../../../src/core/fx.ts) siembra `delay` y `reverb` de forma
 **síncrona** en el constructor de `FxBus`; `loadPlugins()` es **asíncrona**. Con
 esos dos convertidos en plugins, los envíos A y B nacen vacíos y en seco. Es el
 mismo fallo de orden que ya hizo que Karplus no saliera en el selector de motores
@@ -253,11 +253,11 @@ haberlo dimensionado mal dos veces:
   **Se borran enteros.** No hay un noveno caso escondido.
 - El `dsp.js` —el único código de verdad que llevan hoy— viaja por un camino
   aparte (`plugin-dsp.ts`, a las dos realidades) que esto no toca.
-- [`test/plugin-fixtures.ts`](../../../test/plugin-fixtures.ts) deja de dar el
+- [`test/plugin-fixtures.ts`](../../../../test/plugin-fixtures.ts) deja de dar el
   rodeo por el global y llama a la adopción del host directamente: una línea, y
   además pasa a usar exactamente la misma puerta que producción.
 - `main` deja de ser obligatorio en la ficha: validador
-  ([manifest-validate.ts:116](../../../src/plugin-host/manifest-validate.ts)),
+  ([manifest-validate.ts:116](../../../../src/plugin-host/manifest-validate.ts)),
   empaquetador y generador de plugins nuevos.
 
 **Lo que se gana además del arreglo**, y es la razón de que encaje justo aquí:
@@ -500,7 +500,7 @@ daba el mismo verde que uno correcto.
   2026-08-03: 12.465 nodos / 32.883 aristas). 4 llamantes directos, 23 símbolos
   alcanzados, **6 flujos de ejecución** y tres módulos —`Session` (21 impactos,
   directo), `Save` (indirecto) y `Audio-worklet` (directo)—. Entre los flujos
-  está **`record` de [offline-recorder.ts](../../../src/export/offline-recorder.ts)**:
+  está **`record` de [offline-recorder.ts](../../../../src/export/offline-recorder.ts)**:
   el tapón de §3.3 cambia también el camino del export, que en este repo ya se
   desincronizó del vivo una vez sin que test ni oído lo notaran. Por eso §5.7 es
   un criterio y no una nota.
@@ -539,7 +539,7 @@ que el mío — yo había puesto por delante la objeción equivocada.
 
 **Lo que hay hoy**, verificado:
 
-- `CompBlock` ([src/core/comp-block.ts](../../../src/core/comp-block.ts)) — una
+- `CompBlock` ([src/core/comp-block.ts](../../../../src/core/comp-block.ts)) — una
   ganancia → `DynamicsCompressor` → compensación → salida, con `CompState`
   (bypass, umbral, ratio, ataque, caída, rodilla, compensación). Se instancia en
   **dos** sitios: dentro de cada `ChannelStrip` (`fx.ts:142`) y dentro del
