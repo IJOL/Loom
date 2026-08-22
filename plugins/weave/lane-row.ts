@@ -913,6 +913,21 @@ export function buildLaneRow(
   // alone, which reads as a mis-built row rather than as an absent control.
   const followCell = el('div', 'weave-follow-cell');
   if (follow) followCell.append(follow);
+  // How long this lane takes to repeat ITSELF. Inside the follow cell rather
+  // than in a column of its own, because it is the same question one step on:
+  // whose harmony this lane plays, and how long before it plays it the same way
+  // twice. It also leaves the row's grid alone, which has been broken once
+  // already by a control added without a column.
+  //
+  // `weave-arrange` and not `weave-level`: that class is the lane's LEVEL fader
+  // and has been since long before this. Two controls under one name is a
+  // selector that returns both and a stylesheet that dresses the wrong one.
+  const arrangeLevel = ctx.laneArrangeLevel?.(lane.id);
+  if (arrangeLevel !== null && arrangeLevel !== undefined) {
+    followCell.append(picker('weave-arrange', `How long ${lane.name} takes to repeat`,
+      LEVELS, nearestLevel(arrangeLevel),
+      (id) => { ctx.setLaneArrangeLevel?.(lane.id, Number(id)); }));
+  }
   setup.append(strip.el, slots, engineHost, presetHost, role, followCell,
     style, length, octave);
 

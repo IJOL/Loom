@@ -176,6 +176,16 @@ var el = (tag, cls, text) => {
   if (text !== void 0) n.textContent = text;
   return n;
 };
+var LEVELS = [
+  { id: "0", name: "Loop" },
+  { id: "0.25", name: "Turns" },
+  { id: "0.5", name: "Travels" },
+  { id: "0.75", name: "Wanders" },
+  { id: "1", name: "Never repeats" }
+];
+function nearestLevel(v) {
+  return LEVELS.reduce((best, l) => Math.abs(Number(l.id) - v) < Math.abs(Number(best.id) - v) ? l : best, LEVELS[0]).id;
+}
 function offShelfLabel(id) {
   if (id.startsWith("clip:")) return "Another clip";
   if (!id.startsWith("lib:")) return void 0;
@@ -695,6 +705,18 @@ function buildLaneRow(lane, ctx, engines) {
   const setup = el("div", "weave-lane-setup");
   const followCell = el("div", "weave-follow-cell");
   if (follow) followCell.append(follow);
+  const arrangeLevel = ctx.laneArrangeLevel?.(lane.id);
+  if (arrangeLevel !== null && arrangeLevel !== void 0) {
+    followCell.append(picker(
+      "weave-arrange",
+      `How long ${lane.name} takes to repeat`,
+      LEVELS,
+      nearestLevel(arrangeLevel),
+      (id) => {
+        ctx.setLaneArrangeLevel?.(lane.id, Number(id));
+      }
+    ));
+  }
   setup.append(
     strip.el,
     slots,
