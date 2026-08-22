@@ -62,9 +62,20 @@ test('every lane row carries a loop ring', async ({ page }) => {
   await expect(page.locator(`${PANEL} .loop-ring`).first()).toHaveClass(/silent/);
 });
 
-test('the panel offers the six macros', async ({ page }) => {
+test('the panel offers its four macros, and they are the four that move the MUSIC', async ({ page }) => {
   await openWeave(page);
-  await expect(page.locator(`${PANEL} .weave-macro`)).toHaveCount(6);
+  // Four, not six. Space and Motion were removed with the follower-lane work
+  // because they were the only two that wrote PARAMS rather than notes — a
+  // knob that is spent after the first sweep, which is the difference the user
+  // reported. This test asked for six for as long as that has been true.
+  //
+  // Named rather than counted, because a bare count of four survives one macro
+  // being quietly swapped for another, and losing Mood is not the same event
+  // as losing Density.
+  const macros = page.locator(`${PANEL} .weave-macro [role="slider"]`);
+  await expect(macros).toHaveCount(4);
+  const labels = await macros.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  expect(labels).toEqual(['Density', 'Energy', 'Mood', 'Style mix']);
 });
 
 test('a held gesture restores exactly what was there', async ({ page }) => {
