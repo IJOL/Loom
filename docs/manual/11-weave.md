@@ -30,7 +30,7 @@ Each track is one row, split into two lines. The top line is what a hand reaches
 - **The weaving control itself** — a dial, a queue or a square, depending on the topology.
 - **◐ Sound** — off by default. See *Playing one part on several instruments*.
 
-**Second line:** the note bar this track is about to play, then which slot (on a rack), instrument, preset, part, style shelf, half/double time, and octave.
+**Second line:** the note bar this track is about to play, then which slot (on a rack), instrument, preset, part, **who it follows**, **how long it takes to repeat itself**, style shelf, half/double time, and octave. The two in bold have sections of their own below.
 
 ---
 
@@ -92,6 +92,33 @@ A track's **part** decides which material it draws and in which register: **Bass
 
 ---
 
+## Following — a track that plays what another track implies
+
+A track can accompany another instead of playing material of its own. Set **Follow `<track>`** on its second line and it stops reading loops and clips entirely: every bar it works out what to play from what the track it follows is playing.
+
+What it plays is decided by its **part** — the same Bass / Comp / Pad / Arp choice as above. Following says *whose* harmony; the part says *which player*. A bass takes roots and leans on the change; a comp reads a rhythm from the style; a pad takes the nearest inversion; an arp walks the chord's own tones and is deliberately not voice-led, because an arpeggio is heard as a line.
+
+The harmony is **taken, not deduced**, in that order of preference: a progression you wrote by hand, then the session's own, and only then an analysis of the leader's notes. The analysis is the last resort because it is the weakest — a one-bar library loop transposed per bar reads back as a single chord, and most of the shelf does exactly that.
+
+Worth knowing:
+
+- **It reads the leader AHEAD**, not behind. That is what lets a cadence be placed before it arrives, and what makes an offline render come out the same as what you heard.
+- **Its harmony changes only where a BAR does**, and only while it is playing. A chord arriving mid-bar would re-schedule music already sounding.
+- **Following and weaving are exclusive, both ways.** Choosing a leader shelves the track's weave; switching back to *— plays its own —* hands it back exactly as it was. Choosing a topology clears the follow.
+- A **percussion** track cannot follow: it has no part to play. The control is simply not built rather than offered empty.
+
+---
+
+## How long a track takes to repeat itself
+
+Beside the follow picker is a five-rung ladder: **Loop · Turns · Travels · Wanders · Never repeats**.
+
+It does not add notes and it does not make anything busier. It buys **length** — how long the track plays before it plays the same way twice. At *Loop* the accompaniment is a loop in the ordinary sense. Each rung up brings in another wheel that turns at its own rate: which figure it uses, which colour the chord takes, which register it sits in, how dense it leans. Because those rates share no common factor, the combination takes far longer to come round than any of them does alone.
+
+Set it by ear rather than by the label. *Turns* is the default and is enough for most tracks. The top of the ladder is a long piece of music, and on a short one it can read as drifting rather than developing.
+
+---
+
 ## Playing one part on several instruments
 
 The **◐** button is a second axis: the weave decides which NOTES play, this decides **what they are played on**.
@@ -108,11 +135,23 @@ The `1 2` buttons on the second line pick which slot the instrument and preset d
 
 Every chordal track follows one progression, walked across the session's bars and shown as a bar with the current chord in Roman numerals. Pick a catalogue entry, or edit the strip and it becomes yours — the catalogue is never written to. "Stay home" is a single chord and no journey.
 
+**The progression travels too**, in the same legs the loops do. The first chord never moves — home is what a departure is measured against — an interior chord may be swapped for its diatonic relative, and the last alternates with V as a turnaround. Only ONE chord moves per leg: harmony is far less forgiving than timbre, and two changing at once stops reading as a variation and starts reading as a wrong chord.
+
+If the progression is longer than a track's clip, the track hears a **window** of it at a time rather than the first two chords for ever; a short progression tiles instead.
+
 ---
 
 ## The macros
 
-Six knobs colour everything at once. **Density** and **Energy** rewrite notes; **Space** and **Motion** move parameters; **Mood** chooses the scale the blends walk their degrees in, from brightest to darkest; **Style mix** decides how far a track may stray from the session's style. At their neutral positions they say nothing at all.
+Four knobs colour everything at once, and each of them changes the MUSIC rather than the treatment of it.
+
+- **Density** and **Energy** rewrite the notes themselves.
+- **Mood** chooses the scale the blends walk their degrees in, from brightest to darkest. At its neutral it does not mean "no scale": the session's own scale is home, and a travelling scene still wanders a step either side of home and holds there a couple of legs. Mood only says where home is.
+- **Style mix** decides how far a track may stray from the session's style, and how often. A stray steps one to three places along a catalogue ordered by family, so a downtempo scene drifts to its neighbours instead of landing in jungle and back.
+
+At their neutral positions they say nothing at all.
+
+> There used to be six. **Space** and **Motion** are gone: they were the only two that moved PARAMETERS rather than notes, and a knob that sweeps a reverb is spent after its first pass while one that rewrites the music keeps giving.
 
 ---
 

@@ -2795,7 +2795,7 @@ uvicorn app:app --port 8765
 <li><strong>The weaving control itself</strong> — a dial, a queue or a square, depending on the topology.</li>
 <li><strong>◐ Sound</strong> — off by default. See <em>Playing one part on several instruments</em>.</li>
 </ul>
-<p><strong>Second line:</strong> the note bar this track is about to play, then which slot (on a rack), instrument, preset, part, style shelf, half/double time, and octave.</p>
+<p><strong>Second line:</strong> the note bar this track is about to play, then which slot (on a rack), instrument, preset, part, <strong>who it follows</strong>, <strong>how long it takes to repeat itself</strong>, style shelf, half/double time, and octave. The two in bold have sections of their own below.</p>
 <hr>
 <h2 id="11-weave--topologies--how-a-track-weaves">Topologies — how a track weaves</h2>
 <p>Pick one per track from the dropdown.</p>
@@ -2837,6 +2837,23 @@ uvicorn app:app --port 8765
 <p><strong>Style</strong> picks which shelf of the library this track draws from, independent of the session&#39;s own style. A style change lands on the <strong>next</strong> loop drawn, not the one playing — changing it mid-phrase would be a splice, not an evolution.</p>
 <p><strong>Half and double time</strong> (<code>×2</code> / <code>÷2</code>) and the <strong>octave</strong> (<code>− +</code>) both live on the weave, never on the clip. The phrase is always delivered whole: half time stretches it and takes the room it needs.</p>
 <hr>
+<h2 id="11-weave--following--a-track-that-plays-what-another-track-implies">Following — a track that plays what another track implies</h2>
+<p>A track can accompany another instead of playing material of its own. Set <strong>Follow <code>&lt;track&gt;</code></strong> on its second line and it stops reading loops and clips entirely: every bar it works out what to play from what the track it follows is playing.</p>
+<p>What it plays is decided by its <strong>part</strong> — the same Bass / Comp / Pad / Arp choice as above. Following says <em>whose</em> harmony; the part says <em>which player</em>. A bass takes roots and leans on the change; a comp reads a rhythm from the style; a pad takes the nearest inversion; an arp walks the chord&#39;s own tones and is deliberately not voice-led, because an arpeggio is heard as a line.</p>
+<p>The harmony is <strong>taken, not deduced</strong>, in that order of preference: a progression you wrote by hand, then the session&#39;s own, and only then an analysis of the leader&#39;s notes. The analysis is the last resort because it is the weakest — a one-bar library loop transposed per bar reads back as a single chord, and most of the shelf does exactly that.</p>
+<p>Worth knowing:</p>
+<ul>
+<li><strong>It reads the leader AHEAD</strong>, not behind. That is what lets a cadence be placed before it arrives, and what makes an offline render come out the same as what you heard.</li>
+<li><strong>Its harmony changes only where a BAR does</strong>, and only while it is playing. A chord arriving mid-bar would re-schedule music already sounding.</li>
+<li><strong>Following and weaving are exclusive, both ways.</strong> Choosing a leader shelves the track&#39;s weave; switching back to <em>— plays its own —</em> hands it back exactly as it was. Choosing a topology clears the follow.</li>
+<li>A <strong>percussion</strong> track cannot follow: it has no part to play. The control is simply not built rather than offered empty.</li>
+</ul>
+<hr>
+<h2 id="11-weave--how-long-a-track-takes-to-repeat-itself">How long a track takes to repeat itself</h2>
+<p>Beside the follow picker is a five-rung ladder: <strong>Loop · Turns · Travels · Wanders · Never repeats</strong>.</p>
+<p>It does not add notes and it does not make anything busier. It buys <strong>length</strong> — how long the track plays before it plays the same way twice. At <em>Loop</em> the accompaniment is a loop in the ordinary sense. Each rung up brings in another wheel that turns at its own rate: which figure it uses, which colour the chord takes, which register it sits in, how dense it leans. Because those rates share no common factor, the combination takes far longer to come round than any of them does alone.</p>
+<p>Set it by ear rather than by the label. <em>Turns</em> is the default and is enough for most tracks. The top of the ladder is a long piece of music, and on a short one it can read as drifting rather than developing.</p>
+<hr>
 <h2 id="11-weave--playing-one-part-on-several-instruments">Playing one part on several instruments</h2>
 <p>The <strong>◐</strong> button is a second axis: the weave decides which NOTES play, this decides <strong>what they are played on</strong>.</p>
 <p>Turning it on builds what it needs — the track becomes a <strong>rack</strong> of instruments, its own sound in the first slot and others alongside, each on its own preset. The control then wears the shape of that track&#39;s loop control: a <strong>fader</strong> on A→B, a <strong>square</strong> on a cloud. Off, it collapses back to just the button.</p>
@@ -2845,9 +2862,20 @@ uvicorn app:app --port 8765
 <hr>
 <h2 id="11-weave--the-chord-progression">The chord progression</h2>
 <p>Every chordal track follows one progression, walked across the session&#39;s bars and shown as a bar with the current chord in Roman numerals. Pick a catalogue entry, or edit the strip and it becomes yours — the catalogue is never written to. &quot;Stay home&quot; is a single chord and no journey.</p>
+<p><strong>The progression travels too</strong>, in the same legs the loops do. The first chord never moves — home is what a departure is measured against — an interior chord may be swapped for its diatonic relative, and the last alternates with V as a turnaround. Only ONE chord moves per leg: harmony is far less forgiving than timbre, and two changing at once stops reading as a variation and starts reading as a wrong chord.</p>
+<p>If the progression is longer than a track&#39;s clip, the track hears a <strong>window</strong> of it at a time rather than the first two chords for ever; a short progression tiles instead.</p>
 <hr>
 <h2 id="11-weave--the-macros">The macros</h2>
-<p>Six knobs colour everything at once. <strong>Density</strong> and <strong>Energy</strong> rewrite notes; <strong>Space</strong> and <strong>Motion</strong> move parameters; <strong>Mood</strong> chooses the scale the blends walk their degrees in, from brightest to darkest; <strong>Style mix</strong> decides how far a track may stray from the session&#39;s style. At their neutral positions they say nothing at all.</p>
+<p>Four knobs colour everything at once, and each of them changes the MUSIC rather than the treatment of it.</p>
+<ul>
+<li><strong>Density</strong> and <strong>Energy</strong> rewrite the notes themselves.</li>
+<li><strong>Mood</strong> chooses the scale the blends walk their degrees in, from brightest to darkest. At its neutral it does not mean &quot;no scale&quot;: the session&#39;s own scale is home, and a travelling scene still wanders a step either side of home and holds there a couple of legs. Mood only says where home is.</li>
+<li><strong>Style mix</strong> decides how far a track may stray from the session&#39;s style, and how often. A stray steps one to three places along a catalogue ordered by family, so a downtempo scene drifts to its neighbours instead of landing in jungle and back.</li>
+</ul>
+<p>At their neutral positions they say nothing at all.</p>
+<blockquote>
+<p>There used to be six. <strong>Space</strong> and <strong>Motion</strong> are gone: they were the only two that moved PARAMETERS rather than notes, and a knob that sweeps a reverb is spent after its first pass while one that rewrites the music keeps giving.</p>
+</blockquote>
 <hr>
 <h2 id="11-weave--the-step-rack">The step rack</h2>
 <p>Below the tracks is a row of bars pointing at a <strong>destination</strong> — any parameter a knob can move. It moves that parameter <strong>in time with the loop</strong> rather than on a curve of its own, which is what a step row on an old sequencer was for. <strong>+ ROW</strong> adds another; each row has its own length and its own mode, so a sixteen-step row cannot silence a four-step one.</p>

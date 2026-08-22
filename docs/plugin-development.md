@@ -81,19 +81,24 @@ cover the whole plugin tree, not just `fx/`.
 ## Writing an FX plugin
 
 `kind: 'fx'`. The instance exposes `input` and `output` instead of
-`trigger`/`release`. Complete examples in [`src/plugins/fx/`](../src/plugins/fx/):
+`trigger`/`release`. Every insert Loom ships is an EXTERNAL plugin — there is no `src/plugins/fx/`
+any more — so the complete examples are the shipped plugins themselves, in
+[`plugins/`](../plugins/):
 
-- [`multifilter.ts`](../src/plugins/fx/multifilter.ts) — biquad, and the
+- [`multifilter/main.ts`](../plugins/multifilter/main.ts) — biquad, and the
   reference for `getAudioParamRange`
-- [`distortion.ts`](../src/plugins/fx/distortion.ts) — waveshaper with a dry/wet
-  split; the clearest small template
-- [`reverb.ts`](../src/plugins/fx/reverb.ts) — convolver, with its impulse in
-  `reverb-ir.ts`
-- [`delay.ts`](../src/plugins/fx/delay.ts) — delay with damping in the feedback
-  loop
-- [`modulated-delay.ts`](../src/plugins/fx/modulated-delay.ts) — not a plugin;
-  the shared DSP that `chorus.ts` and `flanger.ts` are both built on. The example
-  to follow when two plugins want the same engine underneath.
+- [`distortion/main.ts`](../plugins/distortion/main.ts) — waveshaper with a
+  dry/wet split; the clearest small template
+- [`reverb/main.ts`](../plugins/reverb/main.ts) — convolver, with its impulse
+  built by the SDK's
+  [`reverb-ir.ts`](../packages/loom-plugin-sdk/src/dsp/reverb-ir.ts)
+- [`delay/main.ts`](../plugins/delay/main.ts) — delay with damping in the
+  feedback loop
+- [`modulated-delay.ts`](../packages/loom-plugin-sdk/src/dsp/modulated-delay.ts)
+  — not a plugin: SDK DSP that `chorus` and `flanger` are both built on, and the
+  example to follow when two plugins want the same engine underneath. It lives
+  BELOW the dividing line in the SDK's index — it builds native nodes and runs
+  on the main thread only, never inside the worklet.
 
 Minimal template:
 
@@ -926,8 +931,11 @@ see [`modulator-registry.ts`](../src/modulation/modulator-registry.ts) instead.
   actually broken — see `plugin-modulator.spec.ts`'s header comment.
 
 [`src/plugins/registry.test.ts`](../src/plugins/registry.test.ts) and
-[`src/plugins/fx/insert-chain.test.ts`](../src/plugins/fx/insert-chain.test.ts)
-are the in-tree patterns to copy.
+[`src/core/insert-chain.test.ts`](../src/core/insert-chain.test.ts) are the
+in-tree patterns to copy. For a plugin's OWN tests, the pattern is a plugin's
+own directory — [`plugins/bitcrusher/bitcrusher.test.ts`](../plugins/bitcrusher/bitcrusher.test.ts)
+stands up a two-line Loom double and needs nothing from `src/`, which is the
+point of it.
 
 ---
 
@@ -938,7 +946,7 @@ are the in-tree patterns to copy.
 - **SPI types** — [`src/plugins/types.ts`](../src/plugins/types.ts)
 - **Registry** — [`src/plugins/registry.ts`](../src/plugins/registry.ts)
 - **Bootstrap** — [`src/app/plugin-bootstrap.ts`](../src/app/plugin-bootstrap.ts)
-- **FX plugins** — [`src/plugins/fx/`](../src/plugins/fx/)
+- **FX plugins** — external, one directory each under [`plugins/`](../plugins/)
 - **Built-in modulators** — [`src/plugins/modulators/`](../src/plugins/modulators/) +
   [`src/modulation/modulator-registry.ts`](../src/modulation/modulator-registry.ts)
 - **Note-FX plugins** — [`src/plugins/notefx/`](../src/plugins/notefx/) +
