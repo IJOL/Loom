@@ -7494,7 +7494,8 @@
         "amp.sustain": 0.7,
         "amp.release": 0.1,
         "amp.builtinEnv": 0,
-        "filter.builtinEnv": 0
+        "filter.builtinEnv": 0,
+        "output.trim": 0.25
       },
       "modulators": [
         {
@@ -7587,7 +7588,8 @@
         "amp.sustain": 0.7,
         "amp.release": 0.08,
         "amp.builtinEnv": 0,
-        "filter.builtinEnv": 0
+        "filter.builtinEnv": 0,
+        "output.trim": 0.3
       },
       "modulators": [
         {
@@ -7680,7 +7682,8 @@
         "amp.sustain": 0.7,
         "amp.release": 0.1,
         "amp.builtinEnv": 0,
-        "filter.builtinEnv": 0
+        "filter.builtinEnv": 0,
+        "output.trim": 0.35
       },
       "modulators": [
         {

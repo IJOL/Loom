@@ -6,7 +6,7 @@ function crushCurve(bits) {
   const step = 2 / (levels - 1);
   for (let i = 0; i < n; i++) {
     const x = i / (n - 1) * 2 - 1;
-    curve[i] = Math.max(-1, Math.min(1, Math.round(x / step) * step));
+    curve[i] = Math.max(-1, Math.min(1, Math.round((x + 1) / step) * step - 1));
   }
   return curve;
 }
