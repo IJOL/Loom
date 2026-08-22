@@ -1,6 +1,7 @@
 // Globalize node-web-audio-api so src/ code that calls `new AudioContext()`
 // or `new OfflineAudioContext(...)` works under Vitest in Node.
 
+import { afterAll } from 'vitest';
 import * as nwa from 'node-web-audio-api';
 
 const g = globalThis as unknown as Record<string, unknown>;
@@ -72,5 +73,42 @@ if (AW?.prototype) {
 // Found in the bitcrusher suite, where a 16-bit reference rendered first was
 // compared against a 2-bit render made two contexts later and came back
 // bit-identical to it — the reference had been freed and zeroed in between.
+// A LIVE AudioContext outlives the file that opened one, and eventually throws.
+//
+// node-web-audio-api goes out of its way to keep one alive: each instance pins
+// itself to `process` under a symbol and holds a 10-second interval, expressly
+// "to prevent garbage collection and process exit" (its AudioContext.js). Forty
+// three are opened across this suite and nothing ever closed one, so they pile
+// up in the worker and keep their native audio threads running long after the
+// test that wanted them.
+//
+// The bang comes from a detail of how it raises events. The handler builds one
+// with the AMBIENT global `Event` at the moment the native side fires, while
+// the instance's own `dispatchEvent` is whatever `EventTarget` existed when the
+// class was defined. Inside a jsdom test file those are the same object. Once
+// vitest has torn that environment down they are not — and a `statechange`
+// landing late hands a Node Event to jsdom's dispatchEvent:
+//
+//   TypeError: Failed to execute 'dispatchEvent' on 'EventTarget':
+//   parameter 1 is not of type 'Event'.
+//
+// Uncaught, so the RUN exits non-zero with every one of its 5657 tests green —
+// which is the teardown flake this suite has been re-running past. Measured at
+// three runs in eight before this hook, blamed on whichever file happened to be
+// executing rather than on the one that opened the context.
+//
+// Closing them here rather than in each test is deliberate: `close()` is what
+// clears the interval and deletes the pin, and the pin is also the LIST, so the
+// library's own registry finds a context opened anywhere — including one built
+// deep inside the code under test, which no `new AudioContext()` in a test file
+// would have caught.
+afterAll(async () => {
+  for (const sym of Object.getOwnPropertySymbols(process)) {
+    if (!sym.description?.startsWith('node-web-audio-api:audio-context-')) continue;
+    const ctx = (process as unknown as Record<symbol, { close?: () => Promise<void> }>)[sym];
+    try { await ctx?.close?.(); } catch { /* already closed, or never opened a device */ }
+  }
+});
+
 // Sequencer uses `window.setTimeout` — alias window to globalThis.
 if (!('window' in g)) g.window = g;
