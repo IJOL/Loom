@@ -223,7 +223,18 @@ export function applyEngineStateForLane(self: SessionHost, lane: SessionLane): v
   const res = self.deps.laneResources?.get(lane.id);
   // Restore the per-lane mixer strip (level/pan/EQ/sends/mute/comp/sidechain).
   // Older saves have no `mixer` — the strip then keeps its constructed defaults.
-  if (res?.strip && lane.mixer) res.strip.restore(lane.mixer);
+  if (res?.strip && lane.mixer) {
+    res.strip.restore(lane.mixer);
+    // Mute has TWO representations and restore() only sets one. The strip owns
+    // the gain; the mixer's M button — and the solo arithmetic — read
+    // `mixerDeps.muteState`, a record keyed by track id that createMuteSolo
+    // builds all-false and the session reset re-zeroes on every load. Seed it
+    // here, or a lane saved muted comes back inaudible with its button dark,
+    // and pressing M twice (a no-op for the record) "fixes" it only because
+    // the second click makes applyMuteSolo rewrite the strip.
+    const muteState = self.deps.mixerDeps?.muteState;
+    if (muteState) muteState[lane.id] = lane.mixer.muted;
+  }
   const engine = res?.engine;
   if (!engine) return;
   void applyLaneEngineState(engine as never, lane, self.deps.ctx, {

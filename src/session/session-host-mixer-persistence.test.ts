@@ -97,3 +97,65 @@ describe('SessionHost mixer persistence (Save/Load the full per-lane mixer)', ()
     expect(after.muted).toBe(true);
   });
 });
+
+// Regression: loading a session with a muted lane silenced the audio but left
+// the mixer's M button dark. The strip's mute came back via
+// ChannelStrip.restore(lane.mixer); the button reads mixerDeps.muteState, a
+// separate record that createMuteSolo builds all-false and session-host-reset
+// re-zeroes on every load. Two owners for one fact: the lane was inaudible at
+// gain 0 with nothing on screen saying so, and pressing M twice (a no-op for
+// the record) "fixed" it by making applyMuteSolo rewrite the strip.
+describe('SessionHost mute persistence (the M button must agree with the strip)', () => {
+  function makeHostWithMute(
+    strip: ChannelStrip,
+    ctx: AudioContext,
+    muteState: Record<string, boolean>,
+  ): SessionHost {
+    const engine = { id: 'tb303' };
+    const laneResources = {
+      get: (id: string) => (id === 'tb-303-1' ? { engine, strip } : undefined),
+      ids: () => ['tb-303-1'],
+      dispose: () => {},
+    };
+    return new SessionHost(
+      {
+        laneResources, ctx, destinations: fakeDestinations(),
+        mixerDeps: { muteState, soloState: {}, applyMuteSolo: () => {} },
+      } as unknown as ConstructorParameters<typeof SessionHost>[0],
+    );
+  }
+
+  it('seeds muteState from lane.mixer.muted on load', () => {
+    const { ctx, fx } = makeCtx();
+    const src = new ChannelStrip(ctx, ctx.destination, fx);
+    src.setMuted(true);
+    const mixerState = src.serialize();
+
+    const dst = new ChannelStrip(ctx, ctx.destination, fx);
+    const muteState: Record<string, boolean> = { 'tb-303-1': false };
+    const host = makeHostWithMute(dst, ctx, muteState);
+    host.state.lanes = [{ inserts: [], id: 'tb-303-1', engineId: 'tb303', clips: [], mixer: mixerState }];
+
+    host.applyEngineState();
+
+    expect(dst.serialize().muted, 'the strip is silenced').toBe(true);
+    expect(muteState['tb-303-1'], 'and the mixer M button says so').toBe(true);
+  });
+
+  it('clears muteState for a lane saved unmuted', () => {
+    const { ctx, fx } = makeCtx();
+    const src = new ChannelStrip(ctx, ctx.destination, fx);
+    src.setMuted(false);
+    const mixerState = src.serialize();
+
+    const dst = new ChannelStrip(ctx, ctx.destination, fx);
+    const muteState: Record<string, boolean> = { 'tb-303-1': true };
+    const host = makeHostWithMute(dst, ctx, muteState);
+    host.state.lanes = [{ inserts: [], id: 'tb-303-1', engineId: 'tb303', clips: [], mixer: mixerState }];
+
+    host.applyEngineState();
+
+    expect(dst.serialize().muted).toBe(false);
+    expect(muteState['tb-303-1'], 'a stale muted record must not survive').toBe(false);
+  });
+});
