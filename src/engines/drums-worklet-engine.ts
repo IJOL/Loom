@@ -83,10 +83,18 @@ const VOICE_SYNTH_SPECS: Record<DrumVoice, EngineParamSpec[]> = {
     { id: 'endFreq',   label: 'END',    kind: 'continuous', min: 30,  max: 150, default: 55,  unit: 'Hz' },
     { id: 'sweep',     label: 'SWEEP',  kind: 'continuous', min: 0.005, max: 0.3, default: 0.03 },
     { id: 'wave',      label: 'WAVE',   kind: 'discrete',   min: 0,   max: 2,   default: 0, options: WAVE_OPTIONS },
-    { id: 'snap',      label: 'SNAP',   kind: 'continuous', min: 0,   max: 1,   default: 0 },
-    { id: 'snapDecay', label: 'SDEC',   kind: 'continuous', min: 0.002, max: 0.15, default: 0.02 },
-    { id: 'tone',      label: 'TONE',   kind: 'continuous', min: 200, max: KICK_TONE_OPEN, default: KICK_TONE_OPEN, unit: 'Hz' },
-    { id: 'drive',     label: 'DRIVE',  kind: 'continuous', min: 0,   max: 1,   default: 0 },
+    // The full Karst kick control set. Their ten boundary ports minus the three
+    // we already had under other names (Pitch = tune/start/end, Length = decay,
+    // Trigger = the hit), plus SDEC and DRIVE. Every amount defaults to 0.
+    { id: 'snap',       label: 'SNAP',  kind: 'continuous', min: 0,   max: 1,    default: 0 },
+    { id: 'snapDecay',  label: 'SDEC',  kind: 'continuous', min: 0.002, max: 0.15, default: 0.02 },
+    { id: 'thud',       label: 'THUD',  kind: 'continuous', min: 0,   max: 1,    default: 0 },
+    { id: 'boom',       label: 'BOOM',  kind: 'continuous', min: 0,   max: 1,    default: 0 },
+    { id: 'body',       label: 'BODY',  kind: 'continuous', min: 0,   max: 1,    default: 0 },
+    { id: 'bodyCentre', label: 'BCTR',  kind: 'continuous', min: 80,  max: 1200, default: 220, unit: 'Hz' },
+    { id: 'bodyLength', label: 'BLEN',  kind: 'continuous', min: 0.01, max: 0.6, default: 0.12 },
+    { id: 'tone',       label: 'TONE',  kind: 'continuous', min: 200, max: KICK_TONE_OPEN, default: KICK_TONE_OPEN, unit: 'Hz' },
+    { id: 'drive',      label: 'DRIVE', kind: 'continuous', min: 0,   max: 1,    default: 0 },
   ],
   snare: [
     { id: 'tune',       label: 'TUNE', kind: 'continuous', min: 0.5, max: 2,    default: 1 },
@@ -602,7 +610,7 @@ export class DrumsWorkletEngine implements SynthEngine {
   getRackLayout() {
     if (this.kitMode === 'sample') return this.sampler.getRackLayout();
     return {
-      curatedSynth: ['tune', 'attack', 'decay', 'tone', 'snap'],
+      curatedSynth: ['tune', 'attack', 'decay', 'tone', 'snap', 'thud', 'boom', 'body'],
       curatedMixer: ['level', 'dly', 'rev'],
       advancedMixer: ['pan', 'eq.low', 'eq.mid', 'eq.high'],
     };

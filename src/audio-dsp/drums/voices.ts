@@ -21,6 +21,32 @@ import { Svf } from '../filter';
  *  two literals drifting apart would silently colour every default kit. */
 export const KICK_TONE_OPEN = 12000;
 
+// THUD is a punch, not a note: it has no length control on Karst's kick either,
+// so it gets a fixed short decay and stays out of the parameter budget. It sits
+// an octave ABOVE the landing frequency — at f1 it would merely double the note
+// the body is already landing on, which is not a knock, it is more of the same.
+const THUD_DECAY = 0.03;
+const THUD_RATIO = 2;
+// BOOM sits an octave below. With the body's own sweep between them, the three
+// split the low end into knock, note and weight instead of stacking on one spot.
+const BOOM_RATIO = 0.5;
+// BOOM is the tail, so it outlasts the body it hangs off — tied to `decay`
+// rather than being a number of its own, which keeps a long kick's sub long.
+const BOOM_DECAY_RATIO = 1.5;
+// The resonant shell. Svf's res is DAMPING (0..1): higher rings longer.
+//
+// The normaliser is MEASURED, not derived, and the difference matters. This
+// topology's bandpass peaks at 0.5/r in its FREQUENCY RESPONSE — 27.9 at this
+// res — which is the right normaliser for a sine sitting on the centre and the
+// wrong one for noise, where only a narrow band gets through. Driven by white
+// noise the tap actually comes out at RMS 0.89 / peak 2.61 (measured, 800 Hz,
+// 44.1 kHz), so dividing by 27.9 buried the whole layer 28x under everything
+// else. Normalising by the measured PEAK puts a full body at the same peak as
+// the kick body it sits beside.
+const BODY_RES = 0.6;
+const BODY_BP_PEAK = 2.61;
+const BODY_BP_NORM = 1 / BODY_BP_PEAK;
+
 const CHOKE_FADE = 0.006;   // 6 ms linear fade-to-zero on choke (matches drums.ts)
 const TAIL = 0.05;          // extra silence past the decay before reporting done
 
@@ -109,19 +135,38 @@ abstract class OneShot implements DrumRenderer {
 // sine/tri/square osc swept startFreq→endFreq over `sweep`; amp peak vel·1.2.
 // Optional 1500 Hz square click (gated to the first 15 ms) scaled by `attack`.
 //
-// Three layers past that, added 2026-08-23 after measuring Karst's factory kick
-// (72 modules: sine + noise + four AD envelopes + a 4-pole filter + a
-// waveshaper). Ours reaches the same places in ~40 lines, and every one of them
-// defaults to OFF so no existing kit changes by a sample:
-//   SNAP  — a noise transient on its OWN envelope (post-amp, hence extra()),
-//           which is the point: a click that outlives or dies before the body.
-//   TONE  — two cascaded Svf lowpasses = 24 dB/oct, the 4-pole they use.
-//   DRIVE — tanh saturation, after the filter, as in their signal path.
+// Everything past that was added 2026-08-23 to reach the FULL control set of
+// Karst's factory kick, whose ten boundary ports are Pitch, Length, Snap, Thud,
+// Boom, Tone, Body, Body Centre, Body Length and Trigger. Three of those we
+// already had under other names (Pitch = tune/startFreq/endFreq, Length = decay,
+// Trigger = the hit itself); the other seven are below. Their patch spends 72
+// modules on it; this is the same reach in ~70 lines.
+//
+//   SNAP + SDEC — a noise transient on its OWN envelope (post-amp, hence
+//                 extra()): a click that can outlive or die before the body.
+//   THUD        — a short low burst at the landing frequency: the punch that
+//                 lands before the body has settled. Fixed short decay, as
+//                 theirs has no Thud Length.
+//   BOOM        — the sub tail, an octave under the landing frequency, on a
+//                 decay longer than the body's. Thud and Boom split the low end
+//                 into its attack and its weight.
+//   BODY + BCTR + BLEN — the resonant shell: noise through a bandpass at Body
+//                 Centre, ringing for Body Length. This is the one that was not
+//                 reachable at all before; a kick had no resonance of its own.
+//   TONE        — two cascaded Svf lowpasses = 24 dB/oct, the 4-pole they use.
+//   DRIVE       — tanh saturation, after the filter, as in their signal path.
+//
+// Every amount defaults to 0 and TONE defaults to open, so no existing kit
+// changes by a single sample — proved by kick-shape.dsp.test.ts.
 class KickRenderer extends OneShot {
   private o: { update(f: number): number };
   private click: SquareOsc | null;
   private clickAmt: number; private sweep: number; private f0: number; private f1: number;
   private noise: WhiteNoise | null; private snapAmt: number; private snapDecay: number;
+  private thudOsc: SineOsc | null; private thudAmt: number;
+  private boomOsc: SineOsc | null; private boomAmt: number; private boomDecay: number;
+  private bodyNoise: WhiteNoise | null; private bodyBp: Svf | null;
+  private bodyAmt: number; private bodyCentre: number; private bodyLength: number;
   private lpA: Svf | null; private lpB: Svf | null; private tone: number; private drive: number;
   constructor(hit: DrumHit, p: ParamBag, sr: number) {
     super(hit);
@@ -138,9 +183,28 @@ class KickRenderer extends OneShot {
     this.snapAmt = param(p, 'snap', 0);
     this.snapDecay = param(p, 'snapDecay', 0.02);
     this.noise = this.snapAmt > 0 ? new WhiteNoise() : null;
-    // Tell the base how long the snap rings, or a snap longer than the body decay
-    // would be truncated when `done` flips.
-    if (this.noise) this.extraDecay = this.snapDecay;
+
+    this.thudAmt = param(p, 'thud', 0);
+    this.thudOsc = this.thudAmt > 0 ? new SineOsc(sr) : null;
+
+    this.boomAmt = param(p, 'boom', 0);
+    this.boomDecay = this.decay * BOOM_DECAY_RATIO;
+    this.boomOsc = this.boomAmt > 0 ? new SineOsc(sr) : null;
+
+    this.bodyAmt = param(p, 'body', 0);
+    this.bodyCentre = param(p, 'bodyCentre', 220);
+    this.bodyLength = param(p, 'bodyLength', 0.12);
+    this.bodyNoise = this.bodyAmt > 0 ? new WhiteNoise() : null;
+    this.bodyBp = this.bodyAmt > 0 ? new Svf(sr) : null;
+
+    // The base ends the voice at max(decay, extraDecay): every extra layer has to
+    // declare its tail or it is cut off mid-ring when `done` flips.
+    this.extraDecay = Math.max(
+      this.noise ? this.snapDecay : 0,
+      this.thudOsc ? THUD_DECAY : 0,
+      this.boomOsc ? this.boomDecay : 0,
+      this.bodyNoise ? this.bodyLength : 0,
+    );
 
     this.tone = param(p, 'tone', KICK_TONE_OPEN);
     this.drive = param(p, 'drive', 0);
@@ -149,13 +213,34 @@ class KickRenderer extends OneShot {
     this.lpB = filtered ? new Svf(sr) : null;
   }
 
-  /** The snap layer. It bypasses the amp env by construction — that separation
-   *  IS the feature — so it carries its own exp decay and its own peak. */
+  /** The four layers that bypass the amp env. That separation IS the feature —
+   *  each carries its own exp decay, which is what "four AD envelopes" buys you
+   *  and what a single shared envelope can never express. */
   protected extra(t: number): number {
-    if (!this.noise) return 0;
-    const env = expEnv(1, this.t0, t, this.snapDecay);
-    if (env <= 0) return 0;
-    return this.noise.update() * this.snapAmt * this.peak * env;
+    let s = 0;
+    if (this.noise) {
+      const env = expEnv(1, this.t0, t, this.snapDecay);
+      if (env > 0) s += this.noise.update() * this.snapAmt * this.peak * env;
+    }
+    if (this.thudOsc) {
+      // An octave over the sweep's destination: the knock, not the note.
+      const env = expEnv(1, this.t0, t, THUD_DECAY);
+      if (env > 0) s += this.thudOsc.update(this.f1 * THUD_RATIO) * this.thudAmt * this.peak * env;
+    }
+    if (this.boomOsc) {
+      const env = expEnv(1, this.t0, t, this.boomDecay);
+      if (env > 0) s += this.boomOsc.update(this.f1 * BOOM_RATIO) * this.boomAmt * this.peak * env;
+    }
+    if (this.bodyNoise && this.bodyBp) {
+      const env = expEnv(1, this.t0, t, this.bodyLength);
+      if (env > 0) {
+        this.bodyBp.update(this.bodyNoise.update(), this.bodyCentre, BODY_RES);
+        // Normalised: this topology's bandpass peaks at 0.5/r, so without
+        // BODY_BP_NORM a resonant body would be ~28x everything else.
+        s += this.bodyBp.bp * BODY_BP_NORM * this.bodyAmt * this.peak * env;
+      }
+    }
+    return s;
   }
 
   /** 4-pole lowpass then saturation, over the summed voice. Resonance is 0: a

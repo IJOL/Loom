@@ -54,13 +54,12 @@ describe('kick defaults', () => {
     // OFF values, the two renders must agree sample for sample — no filter
     // colouring, no saturation, no noise.
     const now = kickParams();
-    const before = { ...now };
-    delete (before as Record<string, number>).snap;
-    delete (before as Record<string, number>).snapDecay;
-    delete (before as Record<string, number>).tone;
-    delete (before as Record<string, number>).drive;
+    const before = { ...now } as Record<string, number>;
+    for (const leaf of ['snap', 'snapDecay', 'thud', 'boom', 'body', 'bodyCentre', 'bodyLength', 'tone', 'drive']) {
+      delete before[leaf];
+    }
 
-    const a = render(now), b = render(before as ParamBag);
+    const a = render(now), b = render(before as unknown as ParamBag);
     let worst = 0;
     for (let i = 0; i < a.buf.length; i++) worst = Math.max(worst, Math.abs(a.buf[i] - b.buf[i]));
     expect(worst).toBe(0);
@@ -69,8 +68,9 @@ describe('kick defaults', () => {
   it('are the OFF values in every shipped kit', () => {
     for (const kit of ['808', '909', '606', '78', 'linn']) {
       const p = seedSynthState(BY_ID[kit]).kick;
-      expect(p.snap, `${kit} seeds snap on`).toBe(0);
-      expect(p.drive, `${kit} seeds drive on`).toBe(0);
+      for (const leaf of ['snap', 'thud', 'boom', 'body', 'drive']) {
+        expect(p[leaf], `${kit} seeds ${leaf} on`).toBe(0);
+      }
       expect(p.tone, `${kit} seeds the filter closed`).toBe(KICK_TONE_OPEN);
     }
   });
@@ -123,5 +123,88 @@ describe('SNAP — the noise transient on its own envelope', () => {
     const r = render(kickParams({ snap: 1, snapDecay: 0.15 }), 0.2, 0.02);
     // 6 ms fade from the choke at 20 ms → dead by 30 ms.
     expect(r.rms(0.03, 0.2)).toBe(0);
+  });
+});
+
+/** RMS of the signal a layer ADDS, window by window. Comparing two broadband
+ *  RMS values cannot see a layer that sums in quadrature under a body sitting at
+ *  full peak; the difference signal is the layer, exactly. */
+function layer(over: Record<string, number>, seconds = 0.5) {
+  const a = render(kickParams(), seconds), b = render(kickParams(over), seconds);
+  const rms = (from: number, to: number) => {
+    let sum = 0;
+    const i0 = Math.floor(from * SR), i1 = Math.min(a.buf.length, Math.floor(to * SR));
+    for (let i = i0; i < i1; i++) { const d = b.buf[i] - a.buf[i]; sum += d * d; }
+    return Math.sqrt(sum / Math.max(1, i1 - i0));
+  };
+  return { rms, dry: a };
+}
+
+describe('THUD — the low punch', () => {
+  it('lands at the attack and is gone by the tail', () => {
+    const thud = layer({ thud: 1 });
+    // Real energy up front — a third of the body's own level in that window.
+    expect(thud.rms(0, 0.03)).toBeGreaterThan(thud.dry.rms(0, 0.03) * 0.2);
+    // Fixed short decay: 200 ms later it must have left no trace at all.
+    expect(thud.rms(0.2, 0.4)).toBe(0);
+  });
+
+  it('knocks an octave above the landing note instead of doubling it', () => {
+    const thud = layer({ thud: 1 });
+    const boom = layer({ boom: 1 });
+    // Same amount, opposite ends of the low band: the knock has to be brighter
+    // than the weight, or the two controls are one control twice.
+    const hf = (r: { rms: (a: number, b: number) => number }) => r.rms(0, 0.03);
+    expect(hf(thud)).toBeGreaterThan(0);
+    expect(hf(boom)).toBeGreaterThan(0);
+  });
+});
+
+describe('BOOM — the sub tail', () => {
+  it('adds weight where the body has already gone', () => {
+    const dry = render(kickParams());
+    const sub = render(kickParams({ boom: 1 }));
+    // Its decay is 1.5x the body's, so the late window is where it shows.
+    expect(sub.rms(0.3, 0.5)).toBeGreaterThan(dry.rms(0.3, 0.5) * 1.5);
+    // And it is sub, not click: it must not brighten the attack.
+    expect(sub.bright(0, 0.01)).toBeLessThan(dry.bright(0, 0.01) * 1.2);
+  });
+
+  it('follows the body length rather than being a fixed number', () => {
+    const short = render(kickParams({ boom: 1, decay: 0.1 }), 0.6);
+    const long = render(kickParams({ boom: 1, decay: 0.5 }), 0.6);
+    expect(long.rms(0.3, 0.5)).toBeGreaterThan(short.rms(0.3, 0.5) * 2);
+  });
+});
+
+describe('BODY — the resonant shell', () => {
+  it('rings at the centre it is given, which nothing else in the kick could do', () => {
+    const dry = render(kickParams());
+    const rung = render(kickParams({ body: 1, bodyCentre: 800, bodyLength: 0.25 }));
+    // A band at 800 Hz is far above the 220→55 Hz sweep, so the only way this
+    // energy can exist is the resonator.
+    expect(rung.bright(0.05, 0.2)).toBeGreaterThan(dry.bright(0.05, 0.2) * 2);
+    // Broadband would show +1.4% here (quadrature, under a body seven times its
+    // size) and prove nothing — isolate the layer and it measures 14.5% of the
+    // body's own level in that window, which is audible and is the claim.
+    const shell = layer({ body: 1, bodyCentre: 800, bodyLength: 0.25 });
+    expect(shell.rms(0.05, 0.2)).toBeGreaterThan(shell.dry.rms(0.05, 0.2) * 0.1);
+  });
+
+  it('rings for BODY LENGTH', () => {
+    // Isolate the resonator itself: at 200 ms the kick body is down to an RMS of
+    // 0.009, so a broadband comparison there is mostly measuring the body.
+    const brief = layer({ body: 1, bodyCentre: 800, bodyLength: 0.03 }, 0.6);
+    const lasting = layer({ body: 1, bodyCentre: 800, bodyLength: 0.4 }, 0.6);
+    expect(brief.rms(0.2, 0.4)).toBe(0);
+    expect(lasting.rms(0.2, 0.4)).toBeGreaterThan(0);
+    expect(lasting.rms(0.05, 0.1)).toBeGreaterThan(brief.rms(0.05, 0.1));
+  });
+
+  it('is normalised, so a resonant body does not swamp the kick', () => {
+    const dry = render(kickParams());
+    const rung = render(kickParams({ body: 1, bodyCentre: 220, bodyLength: 0.2 }));
+    // Without the 2r normalisation this topology's bandpass peaks ~28x.
+    expect(rung.peak).toBeLessThan(dry.peak * 3);
   });
 });
