@@ -23,6 +23,7 @@
 // nothing to persist.
 
 import { mirrorParamChange } from '../session/session-engine-state';
+import { isStripParamId } from '../core/channel-strip-params';
 import type { EngineUIContext } from './engine-types';
 import type { EngineParamSpec } from './engine-params';
 import type { SessionState } from '../session/session';
@@ -51,7 +52,8 @@ export function commitParamForLane(
   if (sessionState) mirrorParamChange(sessionState, laneId, paramId, value);
 }
 
-/** Mirror EVERY declared param's current base value into the lane's engineState.
+/** Mirror every declared param's current base value into the lane's engineState,
+ *  except the mixer strip's (see the guard in the loop).
  *
  *  The bulk sibling, for the programmatic applies that move a whole sound at
  *  once — recalling a preset, loading a user preset, Randomize. Those push
@@ -75,6 +77,13 @@ export function commitEngineBaseValues(
 ): void {
   if (!sessionState) return;
   for (const spec of engine.params) {
+    // EVERY declared param except the mixer strip's. Those persist as
+    // `lane.mixer` (strip.serialize()), and descriptor-engine spreads them into
+    // every engine's list, so without this guard one preset recall gave seven
+    // numbers a second owner — and on load the stale copy won. The same guard
+    // its siblings already carry: engine-param-grid, engine-randomize,
+    // user-preset-store and applyLiveControlWrite.
+    if (isStripParamId(spec.id)) continue;
     mirrorParamChange(sessionState, laneId, spec.id, engine.getBaseValue(spec.id));
   }
 }

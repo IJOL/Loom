@@ -6,6 +6,7 @@
 import type { SessionLane } from '../session/session';
 import type { NoteFxState } from '../notefx/notefx-types';
 import type { KeymapEntry } from '../samples/types';
+import { isStripParamId } from '../core/channel-strip-params';
 
 export interface ApplyLaneEngineStateDeps {
   loadNoteFx: (laneId: string, state: NoteFxState[] | undefined) => void;
@@ -57,6 +58,12 @@ export async function applyLaneEngineState(
   const params = es?.params;
   if (params) {
     for (const [id, v] of Object.entries(params)) {
+      // The seven mixer-strip params have ONE owner, `lane.mixer`. Older saves
+      // carry them here too (a preset recall used to mirror every declared
+      // param, and descriptor-engine spreads the strip specs into every engine's
+      // list), and replaying them would overwrite the strip the caller has just
+      // restored. Skipping heals those saves on load — no migration needed.
+      if (isStripParamId(id)) continue;
       if (typeof v === 'number') engine.setBaseValue(id, v);
     }
   }

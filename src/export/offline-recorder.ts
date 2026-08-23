@@ -208,6 +208,13 @@ export class OfflineSceneRecorder implements SceneRecorder {
       if (res?.inserts && lane.inserts.length > 0) {
         rehydrateInsertChain(offlineCtx as unknown as AudioContext, res.inserts, lane.inserts);
       }
+      // Per-lane mixer strip (level/pan/EQ/sends/mute), same as the live host
+      // does on load. This path used to get level/pan/sends by accident, from
+      // the `bus.*` copies a preset recall left in engineState.params — so a
+      // lane that never had a preset rendered at level 1, centred and dry, no
+      // matter what its fader said. With that mirror gone, lane.mixer is the
+      // only owner and the export has to read it here or lose the desk entirely.
+      if (res?.strip && lane.mixer) res.strip.restore(lane.mixer);
     }
 
     // Master insert plugin slots.

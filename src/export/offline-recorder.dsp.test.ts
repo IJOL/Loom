@@ -87,3 +87,51 @@ describe('OfflineSceneRecorder (DSP)', () => {
     expect(rms(rendered.channels[0])).toBeGreaterThan(1e-3);
   });
 });
+
+// Regression: the offline export never restored `lane.mixer`. It got level/pan/
+// sends by accident, from the `bus.*` copies a preset recall used to leave in
+// engineState.params — so a lane that never had a preset rendered at level 1,
+// centred and dry, however its fader was set. Now that bus.* is no longer
+// mirrored (one owner: lane.mixer), the export reads the strip state directly.
+describe('OfflineSceneRecorder honours the per-lane mixer', () => {
+  function sceneAt(level: number): { state: SessionState; laneStates: Map<string, LanePlayState> } {
+    const clip: SessionClip = { color: '#f4c8a8', gridResolution: '1/16',
+      id: 'c', lengthBars: 1,
+      notes: [
+        { start: 0, duration: 24, midi: 40, velocity: 110 },
+        { start: 48, duration: 24, midi: 43, velocity: 110 },
+      ],
+    };
+    const mixer = {
+      level, pan: 0, sendA: 0, sendB: 0, eqLow: 0, eqMid: 0, eqHigh: 0, muted: false,
+      comp: { bypass: true, threshold: -24, ratio: 4, attack: 0.003, release: 0.25, knee: 30, makeup: 1 },
+      sidechain: null,
+    };
+    const state: SessionState = { name: 'Test', masterInserts: [], musicality: { key: 9, scale: 'minor', style: 'acid-techno', lock: false }, sends: [],
+      lanes: [{ inserts: [], id: 'tb-303-1', engineId: 'tb303', clips: [clip], mixer } as never],
+      scenes: [], globalQuantize: '1/1',
+    };
+    const laneStates = new Map<string, LanePlayState>();
+    const lp = emptyLanePlayState('tb-303-1'); lp.playing = clip;
+    laneStates.set('tb-303-1', lp);
+    return { state, laneStates };
+  }
+
+  async function rmsAt(level: number): Promise<number> {
+    const { state, laneStates } = sceneAt(level);
+    const rec = new OfflineSceneRecorder({ state, laneStates, bpm: 120, meter: DEFAULT_METER, sampleRate: 44100 });
+    const rendered = await rec.record(1.5);
+    // The rendered buffer is BORROWED from the OfflineAudioContext; measure now
+    // rather than holding it across the second render.
+    return rms(rendered.channels[0]);
+  }
+
+  it('renders a lane quieter when its fader is down', async () => {
+    const loud = await rmsAt(1);
+    const quiet = await rmsAt(0.25);
+    expect(loud, 'the full-level render is audible').toBeGreaterThan(1e-4);
+    // Relative, per the house rule: a quarter-gain fader lands well below half.
+    expect(quiet).toBeLessThan(loud * 0.5);
+    expect(quiet, 'and is attenuated, not silenced').toBeGreaterThan(loud * 0.05);
+  });
+});

@@ -23,16 +23,34 @@ describe('applyLaneEngineState', () => {
       id: 'drums-1', engineId: 'drums-machine', clips: [],
       engineState: {
         kitMode: 'synth',
-        params: { 'bus.level': 0.8 },
+        params: { 'filter.cutoff': 0.8 },
         modulators: [{ kind: 'lfo' } as never],
         drumMutes: { kick: true },
       },
     };
     await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument: vi.fn(), reloadPreset: vi.fn() });
     expect(eng.setKitMode).toHaveBeenCalledWith('synth');
-    expect(eng.setBaseValue).toHaveBeenCalledWith('bus.level', 0.8);
+    expect(eng.setBaseValue).toHaveBeenCalledWith('filter.cutoff', 0.8);
     expect(eng.modulators.deserialize).toHaveBeenCalledWith(lane.engineState!.modulators);
     expect(eng.setDrumVoiceMutes).toHaveBeenCalledWith({ kick: true });
+  });
+
+  // Regression: the seven mixer-strip params have ONE owner, `lane.mixer`
+  // (strip.serialize()). They leaked into engineState.params via
+  // commitEngineBaseValues — a preset recall mirrors every declared param, and
+  // descriptor-engine spreads STRIP_PARAM_SPECS into every engine's list — and
+  // replaying them here overwrote the strip that had just been restored, two
+  // lines earlier in the same function. A fader that jumped to a value the user
+  // never set: a lane saved at 42% came back at 5%, with its reverb send zeroed.
+  it('skips mixer-strip params, which lane.mixer owns', async () => {
+    const eng = fakeEngine();
+    const lane: SessionLane = { inserts: [], id: 'l', engineId: 'fm', clips: [],
+      engineState: { params: { 'bus.level': 0.05, 'bus.sendB': 0, 'filter.cutoff': 0.8 } },
+    };
+    await applyLaneEngineState(eng as never, lane, ctx, { loadNoteFx: vi.fn(), reloadDrumkit: vi.fn(), reloadInstrument: vi.fn(), reloadPreset: vi.fn() });
+    expect(eng.setBaseValue, "the engine's own params still land").toHaveBeenCalledWith('filter.cutoff', 0.8);
+    expect(eng.setBaseValue).not.toHaveBeenCalledWith('bus.level', 0.05);
+    expect(eng.setBaseValue).not.toHaveBeenCalledWith('bus.sendB', 0);
   });
 
   it('defaults kitMode to synth when absent', async () => {

@@ -157,3 +157,31 @@ describe('commitEngineBaseValues', () => {
     expect(paramsOf(state, 'sub-1')).toBeUndefined();
   });
 });
+
+// Regression: the mixer-strip params (`bus.level`, `bus.pan`, `bus.sendA|B`,
+// `bus.eq.*`) already persist as `lane.mixer` via strip.serialize(). They must
+// not ALSO be mirrored into engineState.params — live-control-apply spells out
+// why: "one number two owners, and on load whichever of restore(lane.mixer) /
+// engineState-apply ran last would win". The bulk commit had no such guard, and
+// descriptor-engine spreads STRIP_PARAM_SPECS into every engine's param list,
+// so one preset recall stamped all seven into the lane's saved state.
+describe('commitEngineBaseValues and the mixer-strip params', () => {
+  const WITH_STRIP: EngineParamSpec[] = [
+    ...SPECS,
+    { id: 'bus.level', label: 'Vol', kind: 'continuous', min: 0, max: 1.5, default: 1 },
+    { id: 'bus.sendB', label: 'B', kind: 'continuous', min: 0, max: 1, default: 0 },
+  ];
+
+  it('mirrors the engine own params but never the strip ones', () => {
+    const engine = statefulEngine(WITH_STRIP);
+    const state = oneLane('l1');
+
+    engine.applyPreset(); // moves every base value, strip params included
+    commitEngineBaseValues(engine, state, 'l1');
+
+    const params = state.lanes[0].engineState?.params ?? {};
+    expect(params['filter.cutoff'], 'the engine params still persist').toBe(1);
+    expect('bus.level' in params, 'bus.level belongs to lane.mixer').toBe(false);
+    expect('bus.sendB' in params, 'bus.sendB belongs to lane.mixer').toBe(false);
+  });
+});
