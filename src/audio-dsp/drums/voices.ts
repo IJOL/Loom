@@ -15,6 +15,12 @@ import { param } from '../types';
 import { SineOsc, SquareOsc, TriOsc, WhiteNoise } from '../osc';
 import { Svf } from '../filter';
 
+/** TONE at its maximum means "filter open": the cascade is not built at all, so
+ *  a default kick renders through exactly the pre-filter path it always did.
+ *  Exported because the param spec MUST declare this same number as its max —
+ *  two literals drifting apart would silently colour every default kit. */
+export const KICK_TONE_OPEN = 12000;
+
 const CHOKE_FADE = 0.006;   // 6 ms linear fade-to-zero on choke (matches drums.ts)
 const TAIL = 0.05;          // extra silence past the decay before reporting done
 
@@ -32,6 +38,16 @@ function expEnv(peak: number, t0: number, t: number, decay: number): number {
   return peak * Math.pow(0.001 / Math.max(1e-6, peak), frac);
 }
 
+/** tanh saturation, normalised by tanh(k) so the PEAK stays put as drive rises
+ *  and only the shape changes — otherwise DRIVE doubles as a volume knob and
+ *  every A/B sounds "better" simply for being louder. drive 0 is a bypass, not
+ *  a near-bypass: the identity must be exact so kits keep their sound. */
+function saturate(x: number, drive: number): number {
+  if (drive <= 0) return x;
+  const k = 1 + drive * 9;
+  return Math.tanh(x * k) / Math.tanh(k);
+}
+
 /** Base class: handles the choke fade + done bookkeeping around a subclass DSP.
  *  Subclasses provide `source(t)` (the raw pre-amp signal, per sample) and set
  *  `peak`/`decay` in their constructor. */
@@ -41,11 +57,31 @@ abstract class OneShot implements DrumRenderer {
   protected decay = 0.3;
   private chokeAt: number | null = null;
   private chokeFrom = 0;
+  /** Longest tail of any post-envelope `extra()` layer, so a snap that outlives
+   *  the body env is not cut short by `done`. 0 when the voice has no extra. */
+  protected extraDecay = 0;
   done = false;
   constructor(hit: DrumHit) { this.t0 = hit.beginSec; }
 
   /** Raw signal (pre-amp), per sample. */
   protected abstract source(t: number): number;
+
+  /** Optional layer that carries its OWN envelope and must therefore bypass the
+   *  amp env (a transient whose decay is independent of the body). It is still
+   *  choked, via chokeScale. Default 0 — most voices are a single source. */
+  protected extra(_t: number): number { return 0; }
+
+  /** Applied to the SUMMED voice (source·env + extra), so a filter or saturator
+   *  sees every layer — the order a real signal path has. Identity by default. */
+  protected postFx(y: number): number { return y; }
+
+  /** 1 → 0 across the choke fade; 1 when not choked. Multiplies `extra`, which
+   *  does not pass through ampAt and would otherwise survive a choke. */
+  protected chokeScale(t: number): number {
+    if (this.chokeAt == null) return 1;
+    const f = (t - this.chokeAt) / CHOKE_FADE;
+    return f >= 1 ? 0 : 1 - f;
+  }
 
   ampAt(t: number): number {
     if (this.chokeAt != null) {
@@ -61,19 +97,32 @@ abstract class OneShot implements DrumRenderer {
 
   renderSample(t: number): number {
     if (t < this.t0) return 0;
-    const end = this.chokeAt != null ? this.chokeAt + CHOKE_FADE : this.t0 + this.decay + TAIL;
+    const end = this.chokeAt != null
+      ? this.chokeAt + CHOKE_FADE
+      : this.t0 + Math.max(this.decay, this.extraDecay) + TAIL;
     if (t > end) { this.done = true; return 0; }
-    return this.source(t) * this.ampAt(t);
+    return this.postFx(this.source(t) * this.ampAt(t) + this.extra(t) * this.chokeScale(t));
   }
 }
 
 // ── Kick ─────────────────────────────────────────────────────────────────────
 // sine/tri/square osc swept startFreq→endFreq over `sweep`; amp peak vel·1.2.
 // Optional 1500 Hz square click (gated to the first 15 ms) scaled by `attack`.
+//
+// Three layers past that, added 2026-08-23 after measuring Karst's factory kick
+// (72 modules: sine + noise + four AD envelopes + a 4-pole filter + a
+// waveshaper). Ours reaches the same places in ~40 lines, and every one of them
+// defaults to OFF so no existing kit changes by a sample:
+//   SNAP  — a noise transient on its OWN envelope (post-amp, hence extra()),
+//           which is the point: a click that outlives or dies before the body.
+//   TONE  — two cascaded Svf lowpasses = 24 dB/oct, the 4-pole they use.
+//   DRIVE — tanh saturation, after the filter, as in their signal path.
 class KickRenderer extends OneShot {
   private o: { update(f: number): number };
   private click: SquareOsc | null;
   private clickAmt: number; private sweep: number; private f0: number; private f1: number;
+  private noise: WhiteNoise | null; private snapAmt: number; private snapDecay: number;
+  private lpA: Svf | null; private lpB: Svf | null; private tone: number; private drive: number;
   constructor(hit: DrumHit, p: ParamBag, sr: number) {
     super(hit);
     const tune = param(p, 'tune', 1);
@@ -85,6 +134,41 @@ class KickRenderer extends OneShot {
     this.o = osc(param(p, 'wave', 0), sr);
     this.clickAmt = param(p, 'attack', 0.7);
     this.click = this.clickAmt > 0 ? new SquareOsc(sr) : null;
+
+    this.snapAmt = param(p, 'snap', 0);
+    this.snapDecay = param(p, 'snapDecay', 0.02);
+    this.noise = this.snapAmt > 0 ? new WhiteNoise() : null;
+    // Tell the base how long the snap rings, or a snap longer than the body decay
+    // would be truncated when `done` flips.
+    if (this.noise) this.extraDecay = this.snapDecay;
+
+    this.tone = param(p, 'tone', KICK_TONE_OPEN);
+    this.drive = param(p, 'drive', 0);
+    const filtered = this.tone < KICK_TONE_OPEN;
+    this.lpA = filtered ? new Svf(sr) : null;
+    this.lpB = filtered ? new Svf(sr) : null;
+  }
+
+  /** The snap layer. It bypasses the amp env by construction — that separation
+   *  IS the feature — so it carries its own exp decay and its own peak. */
+  protected extra(t: number): number {
+    if (!this.noise) return 0;
+    const env = expEnv(1, this.t0, t, this.snapDecay);
+    if (env <= 0) return 0;
+    return this.noise.update() * this.snapAmt * this.peak * env;
+  }
+
+  /** 4-pole lowpass then saturation, over the summed voice. Resonance is 0: a
+   *  kick wants a slope, not a peak, and Svf's res is a damping term (0..1),
+   *  not a biquad Q — see the note at the top of this file. */
+  protected postFx(y: number): number {
+    let s = y;
+    if (this.lpA && this.lpB) {
+      this.lpA.update(s, this.tone, 0);
+      this.lpB.update(this.lpA.lp, this.tone, 0);
+      s = this.lpB.lp;
+    }
+    return saturate(s, this.drive);
   }
   protected source(t: number): number {
     const dt = t - this.t0;

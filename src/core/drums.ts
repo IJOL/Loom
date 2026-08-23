@@ -57,6 +57,10 @@ export function seedSynthState(kit: Kit): DrumSynthState {
       tune: 1, attack: kit.kick.clickAmount, decay: kit.kick.ampDecay,
       startFreq: kit.kick.startFreq, endFreq: kit.kick.endFreq,
       sweep: kit.kick.pitchDecay, wave: WAVE_INDEX[kit.kick.tone] ?? 0, chokeGroup: 0,
+      // snap/tone/drive have no kit field: they are seeded OFF on purpose, so
+      // every existing kit renders the sample it always did and the new knobs
+      // are something you reach for, never something a kit decided for you.
+      snap: 0, snapDecay: 0.02, tone: 12000, drive: 0,
     },
     snare: {
       tune: 1, tone: kit.snare.toneAmount, snap: kit.snare.noiseAmount,

@@ -32,6 +32,7 @@ import { computeVoiceMutes } from '../core/mute-solo';
 import { ChannelStrip, type FxBus } from '../core/fx';
 import { DrumsWorkletNode } from '../audio-worklet/drums-node';
 import { DRUM_VOICE_IDS } from '../audio-dsp/drums/types';
+import { KICK_TONE_OPEN } from '../audio-dsp/drums/voices';
 import { SamplerWorkletEngine } from './sampler-worklet-engine';
 import { CATEGORY_GAIN } from '../audio-dsp/gain-staging';
 import type { KeymapEntry } from '../samples/types';
@@ -82,6 +83,10 @@ const VOICE_SYNTH_SPECS: Record<DrumVoice, EngineParamSpec[]> = {
     { id: 'endFreq',   label: 'END',    kind: 'continuous', min: 30,  max: 150, default: 55,  unit: 'Hz' },
     { id: 'sweep',     label: 'SWEEP',  kind: 'continuous', min: 0.005, max: 0.3, default: 0.03 },
     { id: 'wave',      label: 'WAVE',   kind: 'discrete',   min: 0,   max: 2,   default: 0, options: WAVE_OPTIONS },
+    { id: 'snap',      label: 'SNAP',   kind: 'continuous', min: 0,   max: 1,   default: 0 },
+    { id: 'snapDecay', label: 'SDEC',   kind: 'continuous', min: 0.002, max: 0.15, default: 0.02 },
+    { id: 'tone',      label: 'TONE',   kind: 'continuous', min: 200, max: KICK_TONE_OPEN, default: KICK_TONE_OPEN, unit: 'Hz' },
+    { id: 'drive',     label: 'DRIVE',  kind: 'continuous', min: 0,   max: 1,   default: 0 },
   ],
   snare: [
     { id: 'tune',       label: 'TUNE', kind: 'continuous', min: 0.5, max: 2,    default: 1 },
