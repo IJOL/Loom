@@ -58,3 +58,79 @@
     font-size: 11px;
   }
 }
+
+// The MIX control, beside the tabs, because it is about the same four slots the
+// tabs name — and because the numbers under it ARE those tab numbers. It only
+// ever draws the slots that hold an instrument.
+.layers-mix {
+  display: flex;
+  align-items: center;
+}
+
+.layers-mix-chain {
+  flex-direction: column;
+  gap: 2px;
+  width: 132px;
+
+  input[type="range"] {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    cursor: ew-resize;
+  }
+}
+
+// The stops are spread edge to edge to line up with the fader's own travel: at
+// each of them one instrument has the sound to itself.
+.layers-mix-stops {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 3px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-faint);
+}
+
+// Four loaded slots get a square instead of a fader. A chain of four puts the
+// first and last instrument at opposite ends of one journey, so the pair you
+// most want together is the pair you can never reach; two axes give every
+// combination. Same corner order as the cloud and the WEAVE sound pad, so a
+// hand that has learnt one of Loom's squares finds this one in the same place.
+.layers-mix-pad {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  grid-template: 1fr 1fr / 1fr 1fr;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background:
+    linear-gradient(to right, var(--border-soft) 1px, transparent 1px) 50% 0 / 50% 100%,
+    linear-gradient(to bottom, var(--border-soft) 1px, transparent 1px) 0 50% / 100% 50%,
+    var(--surface);
+  cursor: crosshair;
+  touch-action: none;                     // let the pointer drag work on touch
+}
+
+.layers-mix-corner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+
+.layers-mix-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;                  // centre on (left, top)
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber), 0 0 2px #000;
+  pointer-events: none;
+}

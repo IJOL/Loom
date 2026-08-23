@@ -12,7 +12,7 @@
 // array and two layers of the same engine must not collide. It just never
 // reaches the user's eye.
 
-import { html, render } from 'lit-html';
+import { html, nothing, render } from 'lit-html';
 import { listEngines } from './registry';
 import { melodicSynthEngineIds } from './engine-selector-ui';
 import { isWorkletHosted } from '../plugins/capabilities';
@@ -23,6 +23,9 @@ import { layerPrefix, MAX_LAYERS, readRack, type LayerSpec } from '../audio-dsp/
 import { rackNormalises } from './layers-engine';
 import { getCachedPresets } from '../presets/preset-loader';
 import { commitParamForLane } from './engine-param-commit';
+import {
+  loadedSlots, mixShape, mixGains, chainPosition, squarePosition,
+} from './layers-rack-mix';
 import { prefixModulators, replaceLayerModulators } from './layer-modulators';
 import type { ModulatorState } from '../modulation/types';
 
@@ -354,6 +357,129 @@ export function recallLayerPreset(
   };
 }
 
+/** Whether a pointer is currently drawing on the square.
+ *
+ *  Module state for the same reason the open tab is: the panel is rebuilt from
+ *  scratch on every repaint, and a flag living in the build's closure would come
+ *  back false halfway through a gesture. */
+let padDragging = false;
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+
+/** The rack's MIX: ONE gesture over the instruments the rack is holding.
+ *
+ *  Four slots meant four faders moved against one another by hand, and the
+ *  ordinary case — two instruments, cross from one to the other — took two
+ *  gestures to make one move. This is that move.
+ *
+ *  It stores nothing. The gains are ordinary params, so they already save,
+ *  automate and undo, and the WEAVE sound pad writes the very same ones; the
+ *  position is read back off them at paint time. A stored copy of the balance
+ *  would be a second owner, and the two would disagree the moment a slot's own
+ *  Gain knob was touched.
+ *
+ *  Only LOADED slots take part. An empty slot makes no sound, so a share of the
+ *  gesture spent on it is a share that goes nowhere — which is how a two-slot
+ *  rack with a gap in the middle would otherwise lose a third of its fader to
+ *  silence. */
+function mixControl(ctx: EngineUIContext, engine: SynthEngine, rack: readonly LayerSpec[]) {
+  const loaded = loadedSlots(rack);
+  const shape = mixShape(loaded);
+  if (shape === 'none') return nothing;
+
+  // The LIVE values, off the engine — not the stored rack's own `gain`. The
+  // param is what wins once a lane's values have arrived, and it is what every
+  // other writer of this balance moves.
+  const gains = loaded.map((i) => engine.getBaseValue(`${layerPrefix(i)}gain`));
+
+  const write = (x: number, y: number) => {
+    const g = mixGains(loaded, x, y);
+    loaded.forEach((slot, k) => {
+      commitParamForLane(engine, ctx.sessionState, ctx.laneId, `${layerPrefix(slot)}gain`, g[k]);
+    });
+  };
+
+  // NOT during the move. A repaint rebuilds the lane's whole editor, which
+  // destroys the very element the pointer is holding — the same way the WEAVE
+  // panel's remount killed its fader twice. It happens once, on release, so the
+  // open slot's own Gain knob catches up with where the gesture left it.
+  const settle = () => deps?.repaint(ctx.laneId);
+
+  if (shape === 'chain') {
+    return html`
+      <div class="layers-mix layers-mix-chain">
+        <input
+          class="layers-mix-fader"
+          type="range"
+          min="0"
+          max="1"
+          step="0.001"
+          aria-label="Mix across the loaded layers"
+          title="Cross between the instruments this rack is holding."
+          .value=${String(chainPosition(gains))}
+          @input=${(e: Event) => write(Number((e.target as HTMLInputElement).value), 0)}
+          @change=${settle}
+        />
+        <div class="layers-mix-stops" aria-hidden="true">
+          ${loaded.map((i) => html`<span>${i + 1}</span>`)}
+        </div>
+      </div>
+    `;
+  }
+
+  const at = (e: PointerEvent) => {
+    const surface = e.currentTarget as HTMLElement;
+    const r = surface.getBoundingClientRect();
+    // Y is NOT inverted. Down the square is down the rack: slots 3 and 4 are
+    // drawn on the bottom row, and `soundGains` reads its second axis the same
+    // way — top pair, then bottom pair. Flipping it here would put the corners
+    // somewhere other than where they are written.
+    const x = clamp01((e.clientX - r.left) / r.width);
+    const y = clamp01((e.clientY - r.top) / r.height);
+    write(x, y);
+    const dot = surface.querySelector('.layers-mix-dot') as HTMLElement | null;
+    if (dot) { dot.style.left = `${x * 100}%`; dot.style.top = `${y * 100}%`; }
+  };
+
+  const p = squarePosition(gains);
+  return html`
+    <div class="layers-mix layers-mix-square">
+      <div
+        class="layers-mix-pad"
+        role="slider"
+        aria-label="Mix across the four layers"
+        title="Balance the four instruments this rack is holding."
+        @pointerdown=${(e: PointerEvent) => {
+          padDragging = true;
+          // The write FIRST, and the capture defensively. Capture is a nicety —
+          // it keeps the drag alive when the pointer leaves the square — but it
+          // throws for a pointer the element does not own, and taking it first
+          // meant a throw cost the gesture its opening write. A tap that lands
+          // on a corner and moves no further has only that one write.
+          at(e);
+          try {
+            (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+          } catch { /* the drag still works, it just ends at the edge */ }
+        }}
+        @pointermove=${(e: PointerEvent) => { if (padDragging) at(e); }}
+        @pointerup=${(e: PointerEvent) => {
+          if (!padDragging) return;
+          padDragging = false;
+          try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* gone */ }
+          settle();
+        }}
+        @pointercancel=${() => { padDragging = false; }}
+      >
+        ${loaded.map((i) => html`<span class="layers-mix-corner">${i + 1}</span>`)}
+        <span
+          class="layers-mix-dot"
+          style=${`left:${p.x * 100}%;top:${p.y * 100}%`}
+        ></span>
+      </div>
+    </div>
+  `;
+}
+
 export function buildLayersRack(host: HTMLElement, ctx: EngineUIContext, engine: SynthEngine): void {
   const lane = ctx.sessionState?.lanes.find((l) => l.id === ctx.laneId);
   const rack = laneLayers(lane);
@@ -383,7 +509,12 @@ export function buildLayersRack(host: HTMLElement, ctx: EngineUIContext, engine:
         `)}
       </div>
 
-      <label class="layers-normalise" title=Level every instrument in this rack against the others. Off keeps the difference between them, which is sometimes the arrangement.>
+      ${mixControl(ctx, engine, rack)}
+
+      <label
+        class="layers-normalise"
+        title="Level every instrument in this rack against the others. Off keeps the difference between them, which is sometimes the arrangement."
+      >
         <input
           type="checkbox"
           .checked=${rackNormalises(lane)}
