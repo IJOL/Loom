@@ -5,10 +5,14 @@ import { buildParamIndex, type ParamIndex } from './param-index';
 import { SlotSmoother } from './slot-smoother';
 
 /** Phase origin for the all-free/all-shared fast path: the LFO ignores notes. */
-const SHARED_ORIGIN: PhaseOrigin = { voiceStartT: 0, lastNoteOnT: 0 };
+const SHARED_ORIGIN: PhaseOrigin = { voiceStartT: 0, lastNoteOnT: 0, triggerIndex: 0 };
 
 interface Slot {
   midi: number; allocatedAt: number; v: VoiceRenderer; voiceId?: number;
+  /** The lane's note ordinal at the moment this voice was spawned. Captured,
+   *  not read live: a held note must keep the value it was born with while
+   *  later notes advance the lane's counter. */
+  triggerIndex: number;
   /** When this voice was STOLEN, i.e. when its retirement ramp began. Undefined
    *  for every voice that is simply playing — including one in its own release,
    *  which is ending on the instrument's terms rather than being taken. */
@@ -57,6 +61,21 @@ export class VoiceManager {
   private lastT = 0;
   /** When the lane last received a note-on (phase origin for TRIG=note). */
   private lastNoteOnT = 0;
+  /** How many notes this lane has played. The ordinal a driver:'trigger'
+   *  modulator is a function of.
+   *
+   *  This is the one piece of state in the whole modulation path, and it is
+   *  deliberately HERE: VoiceManager is the voice allocator and already
+   *  remembers things (slots, lastNoteOnT). Kernels may not — a kernel that
+   *  counted for itself would make an offline export drift from what you heard,
+   *  because the render calls kernels in a different order.
+   *
+   *  It counts from the start of playback, so playing from the top and
+   *  rendering from the top agree exactly. Rendering a section from the middle
+   *  does NOT reproduce what you heard live from the top: the note that was the
+   *  40th is the 1st. That is inherent to counting notes rather than reading the
+   *  clock, and it is the price of this semantics. */
+  private triggerIndex = 0;
   private mod: ModulationRuntime | null = null;
   /** Voice ids released before their spawn was drained from the scheduler queue
    *  (a key tap shorter than one render quantum). spawn() consumes these.
@@ -179,7 +198,11 @@ export class VoiceManager {
    *  worklet reads it once per ~30 Hz telemetry post. */
   currentPhaseOrigin(): PhaseOrigin {
     const last = this.slots[this.slots.length - 1];
-    return { voiceStartT: last?.allocatedAt ?? 0, lastNoteOnT: this.lastNoteOnT };
+    return {
+      voiceStartT: last?.allocatedAt ?? 0,
+      lastNoteOnT: this.lastNoteOnT,
+      triggerIndex: last?.triggerIndex ?? 0,
+    };
   }
 
   spawn(note: NoteSpec): void {
@@ -283,7 +306,10 @@ export class VoiceManager {
     // The lane's most recent note-on — the phase origin for a shared LFO whose
     // TRIG is 'note' (the whole lane retriggers together).
     this.lastNoteOnT = note.beginSec;
-    this.slots.push({ midi: note.midi, allocatedAt: note.beginSec, v, voiceId: note.voiceId });
+    const triggerIndex = this.triggerIndex++;
+    this.slots.push({
+      midi: note.midi, allocatedAt: note.beginSec, v, voiceId: note.voiceId, triggerIndex,
+    });
     // A note-off that arrived before its note-on: a very short key tap can have
     // its release message overtake the spawn, which is still sitting in the
     // scheduler queue. Without this the voice would hold for its whole
@@ -370,7 +396,9 @@ export class VoiceManager {
         if (steal <= 0) { this.slots.splice(i, 1); continue; }
       }
       const mo = perVoice
-        ? this.fillOffsets(t, { voiceStartT: s.allocatedAt, lastNoteOnT: this.lastNoteOnT })
+        ? this.fillOffsets(t, {
+          voiceStartT: s.allocatedAt, lastNoteOnT: this.lastNoteOnT, triggerIndex: s.triggerIndex,
+        })
         : shared;
       out += s.v.renderSample(t, mo) * this.outputTrim * steal;
       if (s.v.done) this.slots.splice(i, 1);

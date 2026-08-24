@@ -50,8 +50,12 @@ function assertValidManifest(m) {
       if (!c.modulator || typeof c.modulator !== 'object') {
         throw new Error(`plugin.json: component ${c.id} needs a modulator object`);
       }
-      if (c.modulator.driver !== 'time' && c.modulator.driver !== 'gate') {
-        throw new Error(`plugin.json: component ${c.id} modulator.driver must be time|gate`);
+      // Keep in step with DRIVERS in src/plugin-host/manifest-validate.ts: this
+      // is the build-time gate, that one is the load-time gate, and a driver the
+      // CLI rejects can never reach the host to be judged there.
+      const DRIVERS = ['time', 'gate', 'trigger'];
+      if (!DRIVERS.includes(c.modulator.driver)) {
+        throw new Error(`plugin.json: component ${c.id} modulator.driver must be ${DRIVERS.join('|')}`);
       }
       if (!Array.isArray(c.modulator.scopes) || c.modulator.scopes.length === 0) {
         throw new Error(`plugin.json: component ${c.id} modulator.scopes must be a non-empty array`);

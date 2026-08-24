@@ -187,7 +187,7 @@ export interface ModulatorDeclaration {
    *  by the note and travels the renderer's per-voice envelope road instead
    *  (ModEnvSpec/ModEnvHost) — that road stays closed to plugins for now (see
    *  the design doc §3.3). */
-  driver: 'time' | 'gate';
+  driver: 'time' | 'gate' | 'trigger';
   /** Scopes this modulator supports. The FIRST is the default for a new
    *  instance; there is deliberately no separate defaultScope field. */
   scopes: ('shared' | 'per-voice')[];
@@ -797,7 +797,16 @@ export interface LoomApi {
    *  kernel. `id` matches the modulator component's `id`. */
   registerModulatorKernel(kernel: {
     id: string;
-    valueAt(m: import('./types').ModLiteLike, t: number, origin: number): number;
+    valueAt(
+      m: import('./types').ModLiteLike,
+      t: number,
+      origin: number,
+      /** The ordinal of the note this voice belongs to, counted by the lane
+       *  since playback started. A driver:'trigger' kernel is a function of
+       *  this and ignores `t`. Optional so a kernel written against the
+       *  three-argument signature keeps working — the host always passes it. */
+      triggerIndex?: number,
+    ): number;
   }): void;
   /** Hand the host the function that builds an insert's Web Audio nodes. The id
    *  must match a `kind: 'fx'` component in this plugin's manifest — a factory

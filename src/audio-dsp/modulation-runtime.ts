@@ -42,7 +42,7 @@ export interface ModLite {
    *  toModLite (mod-lite.ts), which has the registry; absent on a hand-built
    *  ModLite (tests that skip toModLite), which then correctly counts as
    *  "not a gate mod". */
-  driver?: 'time' | 'gate';
+  driver?: 'time' | 'gate' | 'trigger';
   enabled: boolean;
   rateHz: number;
   waveform: 'sine' | 'triangle' | 'square' | 'saw';
@@ -81,9 +81,20 @@ export interface PhaseOrigin {
   voiceStartT: number;
   /** When the lane most recently received any note-on. */
   lastNoteOnT: number;
+  /** How many notes this lane has played since the transport started — the
+   *  ordinal of the note this voice belongs to, counting from 0.
+   *
+   *  It lives HERE and not on ModLite because ModLite is the modulator's
+   *  config: one per lane, shared by every voice, posted when something
+   *  changes. An ordinal is per voice, and per voice is what this struct is.
+   *
+   *  A driver:'trigger' kernel is a function of this and nothing else, which is
+   *  what keeps it pure: the counting happens in VoiceManager, which is allowed
+   *  to remember things; the kernel only reads the number it is handed. */
+  triggerIndex: number;
 }
 
-const SHARED_FREE: PhaseOrigin = { voiceStartT: 0, lastNoteOnT: 0 };
+const SHARED_FREE: PhaseOrigin = { voiceStartT: 0, lastNoteOnT: 0, triggerIndex: 0 };
 
 /** The phase origin for one modulator. Voice scope wins over trigger: a
  *  per-voice LFO always starts with its own note, whatever TRIG says. */
@@ -147,7 +158,13 @@ export class ModulationRuntime {
       this.active.push({ m, kernel });
     }
     this.perVoicePhase = this.active.some(
-      ({ m }) => m.scope === 'voice' || m.trigger === 'note',
+      // A driver:'trigger' mod belongs here whatever its SCOPE says. Its value
+      // is a function of the note ordinal, and the ordinal only exists on the
+      // per-voice path: the shared fill runs with SHARED_ORIGIN, whose
+      // triggerIndex is 0 forever. Left out of this test, a per-note modulator
+      // set to shared scope is silently frozen on its first value — enabled,
+      // connected, drawing a ring, and inert.
+      ({ m }) => m.scope === 'voice' || m.trigger === 'note' || m.driver === 'trigger',
     );
     this.resolveSlots();
   }
@@ -193,7 +210,7 @@ export class ModulationRuntime {
   offsetsIntoSlots(out: Float64Array, t: number, o: PhaseOrigin = SHARED_FREE): void {
     out.fill(0);
     for (const s of this.slotted) {
-      const w = s.kernel.valueAt(s.m, t, originFor(s.m, o));
+      const w = s.kernel.valueAt(s.m, t, originFor(s.m, o), o.triggerIndex);
       const { slots, depths } = s;
       for (let i = 0; i < slots.length; i++) out[slots[i]] += w * depths[i];
     }
@@ -238,7 +255,7 @@ export class ModulationRuntime {
     for (const { m, kernel } of this.active) {
       const depth = m.depthByParam[field as string];
       if (!depth) continue;
-      sum += kernel.valueAt(m, t, originFor(m, o)) * depth;
+      sum += kernel.valueAt(m, t, originFor(m, o), o.triggerIndex) * depth;
     }
     return sum;
   }
@@ -251,7 +268,7 @@ export class ModulationRuntime {
   activeOffsets(t: number, o: PhaseOrigin = SHARED_FREE): Record<string, number> {
     const out: Record<string, number> = {};
     for (const { m, kernel } of this.active) {
-      const w = kernel.valueAt(m, t, originFor(m, o));
+      const w = kernel.valueAt(m, t, originFor(m, o), o.triggerIndex);
       for (const field in m.depthByParam) {
         const depth = m.depthByParam[field];
         if (!depth) continue;
@@ -269,7 +286,7 @@ export class ModulationRuntime {
   offsetsInto(out: Record<string, number>, t: number, o: PhaseOrigin = SHARED_FREE): void {
     for (const k in out) out[k] = 0;
     for (const { m, kernel } of this.active) {
-      const w = kernel.valueAt(m, t, originFor(m, o));
+      const w = kernel.valueAt(m, t, originFor(m, o), o.triggerIndex);
       for (const field in m.depthByParam) {
         const depth = m.depthByParam[field];
         if (!depth) continue;

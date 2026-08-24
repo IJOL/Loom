@@ -14,7 +14,7 @@ export interface ModulatorComponent {
   /** What drives the value. 'time' runs off the clock (LFO, S&H) and travels
    *  the worklet's per-sample offset sum; 'gate' is driven by the note (ADSR)
    *  and travels the renderer's per-voice envelope road instead. */
-  driver: 'time' | 'gate';
+  driver: 'time' | 'gate' | 'trigger';
   /** Scopes this modulator supports. The FIRST is the default for a new
    *  instance; there is deliberately no separate defaultScope field. */
   scopes: ModulatorScope[];

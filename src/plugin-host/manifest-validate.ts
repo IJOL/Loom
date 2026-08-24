@@ -85,12 +85,12 @@ function capabilitiesError(c: unknown, i: number): string | null {
   return null;
 }
 
-const DRIVERS = ['time', 'gate'];
+const DRIVERS = ['time', 'gate', 'trigger'];
 const SCOPES = ['shared', 'per-voice'];
 
 function modulatorDeclarationError(m: unknown, i: number): string | null {
   if (!isObj(m)) return `components[${i}].modulator is not an object`;
-  if (m.driver !== 'time' && m.driver !== 'gate') {
+  if (typeof m.driver !== 'string' || !DRIVERS.includes(m.driver)) {
     return `components[${i}].modulator.driver must be ${DRIVERS.join('|')}`;
   }
   if (!Array.isArray(m.scopes) || m.scopes.length === 0

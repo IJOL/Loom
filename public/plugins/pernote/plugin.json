@@ -1,0 +1,59 @@
+{
+  "id": "pernote",
+  "name": "Per-Note",
+  "version": "1.0.0",
+  "loomApi": 1,
+  "author": "Loom",
+  "dsp": "dsp.js",
+  "components": [
+    {
+      "kind": "modulator",
+      "id": "pernote",
+      "name": "Per-Note",
+      "params": [
+        {
+          "id": "pattern",
+          "label": "Pattern",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0.6180339887498949
+        },
+        {
+          "id": "skew",
+          "label": "Skew",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0
+        },
+        {
+          "id": "bipolar",
+          "label": "Polarity",
+          "kind": "discrete",
+          "min": 0,
+          "max": 1,
+          "default": 1,
+          "options": [
+            {
+              "value": "unipolar",
+              "label": "Unipolar"
+            },
+            {
+              "value": "bipolar",
+              "label": "Bipolar"
+            }
+          ]
+        }
+      ],
+      "modulator": {
+        "driver": "trigger",
+        "scopes": [
+          "per-voice",
+          "shared"
+        ],
+        "idPrefix": "pn"
+      }
+    }
+  ]
+}

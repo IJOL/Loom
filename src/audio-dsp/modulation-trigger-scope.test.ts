@@ -25,8 +25,8 @@ describe('LFO phase origin — free (the existing behaviour)', () => {
     const rt = new ModulationRuntime(48000);
     rt.setMods([lfo({ trigger: 'free', scope: 'shared' })]);
     // Same absolute time, different note-on times → identical output.
-    const a = rt.offsetFor('filterCutoff', QUARTER, { voiceStartT: 10, lastNoteOnT: 10 });
-    const b = rt.offsetFor('filterCutoff', QUARTER, { voiceStartT: 99, lastNoteOnT: 99 });
+    const a = rt.offsetFor('filterCutoff', QUARTER, { voiceStartT: 10, lastNoteOnT: 10, triggerIndex: 0 });
+    const b = rt.offsetFor('filterCutoff', QUARTER, { voiceStartT: 99, lastNoteOnT: 99, triggerIndex: 0 });
     expect(a).toBeCloseTo(1, 5);
     expect(b).toBeCloseTo(1, 5);
   });
@@ -34,7 +34,7 @@ describe('LFO phase origin — free (the existing behaviour)', () => {
   it('defaults to free+shared when the fields are absent (back-compat)', () => {
     const rt = new ModulationRuntime(48000);
     rt.setMods([lfo()]);                       // no trigger, no scope
-    expect(rt.offsetFor('filterCutoff', QUARTER, { voiceStartT: 7, lastNoteOnT: 7 })).toBeCloseTo(1, 5);
+    expect(rt.offsetFor('filterCutoff', QUARTER, { voiceStartT: 7, lastNoteOnT: 7, triggerIndex: 0 })).toBeCloseTo(1, 5);
   });
 });
 
@@ -43,7 +43,7 @@ describe('LFO phase origin — TRIG = note', () => {
     const rt = new ModulationRuntime(48000);
     rt.setMods([lfo({ trigger: 'note', scope: 'shared' })]);
     // A note landed at t=10; a quarter-cycle later the sine must peak.
-    const v = rt.offsetFor('filterCutoff', 10 + QUARTER, { voiceStartT: 10, lastNoteOnT: 10 });
+    const v = rt.offsetFor('filterCutoff', 10 + QUARTER, { voiceStartT: 10, lastNoteOnT: 10, triggerIndex: 0 });
     expect(v).toBeCloseTo(1, 5);
   });
 
@@ -51,8 +51,8 @@ describe('LFO phase origin — TRIG = note', () => {
     const rt = new ModulationRuntime(48000);
     rt.setMods([lfo({ trigger: 'note', scope: 'shared' })]);
     const t = 10 + QUARTER;
-    const beforeRetrig = rt.offsetFor('filterCutoff', t, { voiceStartT: 10, lastNoteOnT: 10 });
-    const afterRetrig  = rt.offsetFor('filterCutoff', t, { voiceStartT: 10, lastNoteOnT: t });
+    const beforeRetrig = rt.offsetFor('filterCutoff', t, { voiceStartT: 10, lastNoteOnT: 10, triggerIndex: 0 });
+    const afterRetrig  = rt.offsetFor('filterCutoff', t, { voiceStartT: 10, lastNoteOnT: t, triggerIndex: 0 });
     expect(beforeRetrig).toBeCloseTo(1, 5);   // a quarter cycle in
     expect(afterRetrig).toBeCloseTo(0, 5);    // just retriggered → phase 0
   });
@@ -63,8 +63,8 @@ describe('LFO phase origin — SCOPE = voice', () => {
     const rt = new ModulationRuntime(48000);
     rt.setMods([lfo({ scope: 'voice' })]);
     const t = 10 + QUARTER;
-    const early = rt.offsetFor('filterCutoff', t, { voiceStartT: 10, lastNoteOnT: t });
-    const late  = rt.offsetFor('filterCutoff', t, { voiceStartT: t,  lastNoteOnT: t });
+    const early = rt.offsetFor('filterCutoff', t, { voiceStartT: 10, lastNoteOnT: t, triggerIndex: 0 });
+    const late  = rt.offsetFor('filterCutoff', t, { voiceStartT: t, lastNoteOnT: t, triggerIndex: 0 });
     expect(early).toBeCloseTo(1, 5);   // a quarter cycle into ITS note
     expect(late).toBeCloseTo(0, 5);    // just started
     expect(Math.abs(early - late)).toBeGreaterThan(0.5);
@@ -74,7 +74,7 @@ describe('LFO phase origin — SCOPE = voice', () => {
     const rt = new ModulationRuntime(48000);
     rt.setMods([lfo({ scope: 'voice', trigger: 'free' })]);
     const t = 10 + QUARTER;
-    expect(rt.offsetFor('filterCutoff', t, { voiceStartT: 10, lastNoteOnT: 0 })).toBeCloseTo(1, 5);
+    expect(rt.offsetFor('filterCutoff', t, { voiceStartT: 10, lastNoteOnT: 0, triggerIndex: 0 })).toBeCloseTo(1, 5);
   });
 });
 
@@ -107,7 +107,7 @@ describe('offsetsInto honours the phase origin too', () => {
     const rt = new ModulationRuntime(48000);
     rt.setMods([lfo({ scope: 'voice' })]);
     const out: Record<string, number> = {};
-    rt.offsetsInto(out, 10 + QUARTER, { voiceStartT: 10, lastNoteOnT: 0 });
+    rt.offsetsInto(out, 10 + QUARTER, { voiceStartT: 10, lastNoteOnT: 0, triggerIndex: 0 });
     expect(out.filterCutoff).toBeCloseTo(1, 5);
   });
 });
