@@ -9260,6 +9260,63 @@
           ]
         }
       ]
+    },
+    {
+      "name": "PLUCK Per-Note Pulse",
+      "gm": [],
+      "params": {
+        "master.tune": 0,
+        "osc1.wave": 1,
+        "osc1.level": 0.6,
+        "osc1.detune": -4,
+        "osc1.pw": 0.5,
+        "osc2.wave": 1,
+        "osc2.level": 0.45,
+        "osc2.detune": 4,
+        "osc2.pw": 0.45,
+        "sub.level": 0.12,
+        "noise.level": 0,
+        "filter.model": 0,
+        "filter.type": 0,
+        "filter.cutoff": 0.42,
+        "filter.resonance": 0.28,
+        "filter.envAmount": 0.35,
+        "filter.keyTrack": 0.3,
+        "filter.drive": 0.1,
+        "filter.attack": 0.005,
+        "filter.decay": 0.22,
+        "filter.sustain": 0.25,
+        "filter.release": 0.25,
+        "amp.attack": 0.004,
+        "amp.decay": 0.28,
+        "amp.sustain": 0.35,
+        "amp.release": 0.28
+      },
+      "modulators": [
+        {
+          "id": "pn1",
+          "kind": "pernote",
+          "enabled": true,
+          "scope": "per-voice",
+          "params": {
+            "pattern": 0.6180339887498949,
+            "skew": 0,
+            "bipolar": 1
+          },
+          "connections": [
+            {
+              "id": "pn-cut",
+              "paramId": "filter.cutoff",
+              "depth": 0.35
+            },
+            {
+              "id": "pn-pw",
+              "paramId": "osc1.pw",
+              "depth": 0.22
+            }
+          ]
+        }
+      ]
     }
   ]
 }
