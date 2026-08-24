@@ -98,7 +98,7 @@ describe('live-keyboard voice pool', () => {
     });
 
     const physicalKey = 60;
-    const playMidis = expandChordForLane('lane-octave-regression', physicalKey, 100, 120);
+    const playMidis = expandChordForLane('lane-octave-regression', physicalKey, 100, 120, { key: 9, scale: 'minor' });
     expect(playMidis[0]).not.toBe(physicalKey); // sanity: expansion's root is transposed away from the key
 
     pool.noteOn('lane-octave-regression', physicalKey, 100, playMidis);

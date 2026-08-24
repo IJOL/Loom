@@ -18,6 +18,7 @@ import { parseAutomationParamId } from '../automation/automation-apply';
 import { commitParamForLane } from '../engines/engine-param-commit';
 import type { DestinationRegistry } from '../automation/destination-registry';
 import { isAudioEngine } from '../plugins/capabilities';
+import { DEFAULT_MUSICALITY } from '../session/session-types';
 
 export interface LoomFacadeDeps {
   ctx: AudioContext;
@@ -39,6 +40,14 @@ const EQ_DB = 12;               // ±12 dB at knob extremes
 
 export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
   const { ctx, sessionHost, laneResources, activeLane, knobRegistry, destinations } = deps;
+
+  /** The session's tonality, read fresh on every key. One reader for both call
+   *  sites below: a chord played and the same chord released must expand to the
+   *  same notes, and two readers would eventually disagree and strand voices. */
+  const liveTonality = () => {
+    const m = sessionHost.state.musicality ?? DEFAULT_MUSICALITY;
+    return { key: m.key, scale: m.scale };
+  };
 
   const spawnVoice = (laneId: string) => {
     const res = laneResources.get(laneId);
@@ -214,7 +223,7 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
       // `midi` (the physical key) is the group id passed straight through;
       // the chord expansion (which may transpose its root away from `midi`
       // via a nonzero octave param) is only the list of notes to sound.
-      const playMidis = expandChordForLane(laneId, midi, velocity, deps.seq.bpm);
+      const playMidis = expandChordForLane(laneId, midi, velocity, deps.seq.bpm, liveTonality());
       pool.noteOn(laneId, midi, velocity, playMidis);
       // Loop-record: forward the SOUNDED notes to the recorder while a capture
       // pass targets this lane. Known limitation (accepted, see Task 5 brief):
@@ -229,7 +238,7 @@ export function createLoomFacade(deps: LoomFacadeDeps): LoomControlFacade {
       if (recorder.isRecording() && capture && capture.laneId === laneId) {
         // Re-expand deterministically: chord params don't change while a key
         // is held, so this yields exactly the midis noteOn'd above.
-        for (const m of expandChordForLane(laneId, midi, 100, deps.seq.bpm)) recorder.noteOff(m);
+        for (const m of expandChordForLane(laneId, midi, 100, deps.seq.bpm, liveTonality())) recorder.noteOff(m);
       }
     },
     setSustain: (on) => pool.setSustain(on),
