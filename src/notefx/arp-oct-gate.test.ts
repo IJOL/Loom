@@ -23,7 +23,13 @@ describe('arp OCT control', () => {
 
   it('OCT=1 is unchanged (single octave behaves exactly as the scale walk)', () => {
     // pentMinor up, 1 octave, 4 steps → root + first 3 scale degrees.
-    const out = new ArpProcessor({ ...ARP_PROCESSOR_DEFAULTS, octaves: 1, rate: '1/16' }).process(note(0.5), { bpm: BPM });
+    // The scale is named rather than inherited: this test is about OCT, and
+    // the default scale is now 'global', which walks the session key instead
+    // of a fixed interval list. Leaning on a default made this test change
+    // meaning when the default did.
+    const out = new ArpProcessor({
+      ...ARP_PROCESSOR_DEFAULTS, scale: 'pentMinor', octaves: 1, rate: '1/16',
+    }).process(note(0.5), { bpm: BPM });
     expect(pitches(out)).toEqual([60, 63, 65, 67]); // pentMinor [0,3,5,7,10]
   });
 });

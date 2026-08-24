@@ -1,9 +1,21 @@
 // src/notefx/arp-processor.ts
 import { type SyncDiv, syncDivToHz } from '../core/sync-div';
 import type { NoteFxEvent, NoteFxContext, NoteFxProcessor } from './notefx-types';
+import { inScale, type ScaleId } from '../core/musicality';
 
 export type ArpPattern = 'up' | 'down' | 'updown' | 'random' | 'cosmic';
-export type ArpScale   = 'major' | 'minor' | 'pentMinor' | 'phrygian' | 'chromatic';
+/** The arp used to carry its own five-name scale list and its own interval
+ *  table, both duplicates of the ones in core/musicality. It now names the
+ *  session's tonality instead — 'global', the default — and keeps the fixed
+ *  names for when you deliberately want a scale of your own.
+ *
+ *  'global' is not the same shape as the others, and that is the point. A
+ *  fixed name walks intervals from the note you played: in C major, playing E
+ *  gives E-F#-G#, which is E major and out of the key. Following the session
+ *  walks the DEGREES OF THE KEY from that note upward: E-F-G-A-B. Sharing an
+ *  interval table would have been the smaller change and it would not have
+ *  been "in key" at all. */
+export type ArpScale   = 'global' | 'major' | 'minor' | 'pentMinor' | 'phrygian' | 'chromatic';
 
 export interface ArpProcessorParams {
   pattern: ArpPattern;
@@ -17,10 +29,13 @@ export interface ArpProcessorParams {
 export const ARP_PROCESSOR_DEFAULTS: ArpProcessorParams = {
   // octaves: 1 by default — the arp walks the scale from the note you played and
   // never leaves its octave unless you ask for it. Climbing octaves is opt-in.
-  pattern: 'up', scale: 'pentMinor', rate: '1/16', rateFreeHz: 8, octaves: 1, gate: 0.7,
+  pattern: 'up', scale: 'global', rate: '1/16', rateFreeHz: 8, octaves: 1, gate: 0.7,
 };
 
-const SCALE_INTERVALS: Record<ArpScale, number[]> = {
+/** The fixed scales, rooted on the played note. Deliberately NOT reusing
+ *  core/musicality's table: these are the arp's own five, and 'global' does
+ *  not appear here because it has no fixed intervals — it asks the session. */
+const SCALE_INTERVALS: Record<Exclude<ArpScale, 'global'>, number[]> = {
   major:     [0, 2, 4, 5, 7, 9, 11],
   minor:     [0, 2, 3, 5, 7, 8, 10],
   pentMinor: [0, 3, 5, 7, 10],
@@ -28,8 +43,25 @@ const SCALE_INTERVALS: Record<ArpScale, number[]> = {
   chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
 };
 
-function buildPool(root: number, scale: ArpScale, octaves: number): number[] {
-  const intervals = SCALE_INTERVALS[scale];
+/** The degrees of the session key at or above `root`, one octave of them.
+ *  This is what 'global' means: the notes the KEY has, starting from the note
+ *  you played — not a scale transposed onto it. */
+function keyDegreesFrom(root: number, key: number, scale: ScaleId): number[] {
+  const out: number[] = [];
+  for (let n = root; n < root + 12 && out.length < 12; n++) {
+    if (inScale(n, key, scale)) out.push(n - root);
+  }
+  // A key always has degrees; an empty pool would silence the arp outright.
+  return out.length ? out : [0];
+}
+
+function buildPool(
+  root: number, scale: ArpScale, octaves: number,
+  tonality?: { key: number; scale: ScaleId },
+): number[] {
+  const intervals = scale === 'global'
+    ? keyDegreesFrom(root, tonality?.key ?? 0, tonality?.scale ?? 'minor')
+    : SCALE_INTERVALS[scale];
   const pool: number[] = [];
   // Octave-FIRST ordering: for each scale degree, emit it across ALL octaves
   // before moving to the next degree. This makes the OCT control audible even
@@ -44,8 +76,9 @@ function buildPool(root: number, scale: ArpScale, octaves: number): number[] {
 
 export function generateArpSequence(
   root: number, pattern: ArpPattern, octaves: number, scale: ArpScale, count: number,
+  tonality?: { key: number; scale: ScaleId },
 ): number[] {
-  const pool = buildPool(root, scale, octaves);
+  const pool = buildPool(root, scale, octaves, tonality);
   const out: number[] = [];
   switch (pattern) {
     case 'up':
@@ -92,7 +125,14 @@ export class ArpProcessor implements NoteFxProcessor {
     const noteGate = Math.max(0.01, interval * p.gate);
     for (const e of input) {
       const numNotes = Math.max(1, Math.floor(e.gate / interval));
-      const notes = generateArpSequence(e.note, p.pattern, p.octaves, p.scale, numNotes);
+      const notes = generateArpSequence(
+        e.note, p.pattern, p.octaves, p.scale, numNotes,
+        // No tonality in the context and scale 'global' ⇒ the fallback inside
+        // buildPool. Nothing else can be done: the arp must emit something.
+        ctx.key !== undefined && ctx.scale !== undefined
+          ? { key: ctx.key, scale: ctx.scale }
+          : undefined,
+      );
       for (let i = 0; i < numNotes; i++) {
         out.push({ note: notes[i], time: e.time + i * interval, gate: noteGate, accent: e.accent && i === 0 });
       }

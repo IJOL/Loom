@@ -31,7 +31,7 @@ function withMaybeUndo(deps: NoteFxUIDeps, fn: () => void): void {
 }
 
 const ARP_PATTERNS = ['up', 'down', 'updown', 'random', 'cosmic'];
-const ARP_SCALES = ['major', 'minor', 'pentMinor', 'phrygian', 'chromatic'];
+const ARP_SCALES = ['global', 'major', 'minor', 'pentMinor', 'phrygian', 'chromatic'];
 const ARP_RATES = ['free', '1/4', '1/8', '1/8t', '1/16', '1/16t', '1/32'];
 // 'free' last: it is the one that replaces the named voicing with three numbers.
 const CHORD_TYPES = ['maj', 'min', 'maj7', 'min7', 'sus2', 'sus4', 'dim', 'free'];
@@ -39,6 +39,10 @@ const RANDOM_MODES = ['random', 'alt'];
 const RANDOM_SIGNS = ['add', 'sub', 'bi'];
 const SCALE_IDS: ScaleId[] = SCALE_CATALOG.map((s) => s.id);
 const ROOT_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+// Follow the session's tonality. It is the DEFAULT, and it is shown by name:
+// the card used to paint a concrete root ("A") while the stored value meant
+// "follow", so what you read and what you heard were different things.
+const FOLLOW = 'Global';
 
 type Ctx = PanelHandle<NoteFxUIDeps>;
 
@@ -90,7 +94,7 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
       </div>
       ${fx.kind === 'arp' ? html`
         ${selectField('PATTERN', ARP_PATTERNS, String(fx.params.pattern ?? 'up'), (v) => set('pattern', v))}
-        ${selectField('SCALE', ARP_SCALES, String(fx.params.scale ?? 'pentMinor'), (v) => set('scale', v))}
+        ${selectField('SCALE', ARP_SCALES, String(fx.params.scale ?? 'global'), (v) => set('scale', v))}
         ${selectField('RATE', ARP_RATES, String(fx.params.rate ?? '1/16'), (v) => set('rate', v))}
         ${numberField('OCT', 1, 4, 1, Number(fx.params.octaves ?? 2), (v) => set('octaves', v))}
         ${numberField('GATE', 0.05, 1, 0.01, Number(fx.params.gate ?? 0.7), (v) => set('gate', v))}
@@ -109,8 +113,12 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
           }}>${scaleAware ? 'ON' : 'OFF'}</button>
         </div>
         ${scaleAware ? html`
-          ${selectField('ROOT', ROOT_NAMES, ROOT_NAMES[Number(fx.params.key ?? -1) < 0 ? 9 : Number(fx.params.key)], (v) => set('key', ROOT_NAMES.indexOf(v)))}
-          ${selectField('SCALE', SCALE_IDS, String(fx.params.scale ?? ''), (v) => set('scale', v))}
+          ${selectField('ROOT', [FOLLOW, ...ROOT_NAMES],
+            Number(fx.params.key ?? -1) < 0 ? FOLLOW : ROOT_NAMES[Number(fx.params.key)],
+            (v) => set('key', v === FOLLOW ? -1 : ROOT_NAMES.indexOf(v)))}
+          ${selectField('SCALE', [FOLLOW, ...SCALE_IDS],
+            String(fx.params.scale ?? '') === '' ? FOLLOW : String(fx.params.scale),
+            (v) => set('scale', v === FOLLOW ? '' : v))}
         ` : ''}
         ${numberField('VEL CHANCE', 0, 1, 0.01, Number(fx.params.velChance ?? 0), (v) => set('velChance', v))}
         ${numberField('VEL RND', 0, 1, 0.01, Number(fx.params.velRandom ?? 0.3), (v) => set('velRandom', v))}

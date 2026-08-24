@@ -229,6 +229,7 @@
     "westcoast::FX Inharmonic Pad": 1.178594,
     "westcoast::FX Sci-Fi Cycle": 0.257578,
     "westcoast::KEYS Fold E-Piano": 0.079693,
-    "westcoast::KEYS Marimba Fold": 0.050103
+    "westcoast::KEYS Marimba Fold": 0.050103,
+    "subtractive::PLUCK Per-Note Pulse": 0.416793
   }
 }
