@@ -61,3 +61,68 @@ describe('the Per-Note preset', () => {
     }
   });
 });
+
+// ── The preset's modulator actually arriving, end to end ─────────────────────
+// The chain from the shipped JSON to the audio thread is: applyPreset →
+// modHost.deserialize → toModLite → the kernel reads m.params. Every hop is a
+// shallow copy of somebody else's object, and a plugin modulator's settings
+// live in a generic bag that none of those hops knows the shape of — exactly
+// the sort of thing that gets dropped without a word.
+import { ModulationHostImpl } from '../modulation/modulation-host';
+import { toModLite } from '../engines/mod-lite';
+import type { ModulatorState, ModulatorVoice } from '../modulation/types';
+import { registerModulator } from '../modulation/modulator-registry';
+import pernoteManifest from '../../plugins/pernote/plugin.json';
+
+/** Register the modulator the way the plugin host does — FROM ITS MANIFEST —
+ *  so what is under test includes the manifest's own declaration rather than
+ *  a stub that agrees with the test by construction. */
+function registerPernoteFromManifest(): void {
+  const c = pernoteManifest.components[0];
+  registerModulator({
+    id: c.id,
+    name: c.name,
+    driver: c.modulator.driver as 'time' | 'gate' | 'trigger',
+    scopes: c.modulator.scopes as ('shared' | 'per-voice')[],
+    idPrefix: c.modulator.idPrefix,
+    defaultState: (id): ModulatorState => ({
+      id, kind: c.id, enabled: true, connections: [], scope: 'per-voice',
+    }),
+    createVoice: (): ModulatorVoice => ({
+      output: {} as AudioNode, trigger: () => {}, release: () => {},
+      dispose: () => {}, currentValue: () => 0,
+    }),
+  });
+}
+
+describe('the preset\'s modulator survives the trip to the audio thread', () => {
+  it('keeps its kind, its connections and its settings', () => {
+    const host = new ModulationHostImpl([]);
+    host.deserialize(entry().modulators as unknown as ModulatorState[]);
+
+    const live = host.modulators.find((m) => m.kind === 'pernote');
+    expect(live, 'the host dropped the modulator').toBeDefined();
+    expect(live!.params?.pattern, 'the host dropped its settings').toBeGreaterThan(0);
+
+    // And through the wire format the worklet actually receives.
+    const lite = toModLite(host.modulators, 120, (id) => id);
+    const pn = lite.find((m) => m.kind === 'pernote');
+    expect(pn, 'toModLite dropped the modulator').toBeDefined();
+    expect(pn!.params?.pattern, 'toModLite dropped the params bag').toBe(
+      entry().modulators!.find((m) => m.kind === 'pernote')!.params!.pattern,
+    );
+    // Its connections have to survive too, or it modulates nothing.
+    expect(Object.keys(pn!.depthByParam).sort()).toEqual(['filter.cutoff', 'osc1.pw']);
+  });
+
+  it('arrives with driver:trigger, which is what puts it on the per-voice path', () => {
+    registerPernoteFromManifest();
+    const host = new ModulationHostImpl([]);
+    host.deserialize(entry().modulators as unknown as ModulatorState[]);
+    const pn = toModLite(host.modulators, 120, (id) => id).find((m) => m.kind === 'pernote');
+    // Resolved from the registry by toModLite. Undefined here would mean the
+    // plugin never registered, and the runtime would treat it as an ordinary
+    // time-driven mod — frozen on the shared path's triggerIndex of 0.
+    expect(pn!.driver).toBe('trigger');
+  });
+});
