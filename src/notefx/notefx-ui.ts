@@ -35,6 +35,11 @@ const ARP_SCALES = ['global', 'major', 'minor', 'pentMinor', 'phrygian', 'chroma
 const ARP_RATES = ['free', '1/4', '1/8', '1/8t', '1/16', '1/16t', '1/32'];
 // 'free' last: it is the one that replaces the named voicing with three numbers.
 const CHORD_TYPES = ['maj', 'min', 'maj7', 'min7', 'sus2', 'sus4', 'dim', 'free'];
+// off  — play the intervals as dialled.
+// scale — stay in the key.
+// chord — lock to the tones of the chord sounding now (falls back to scale
+//         when the session names no progression).
+const CONFORM_MODES = ['off', 'scale', 'chord'];
 const RANDOM_MODES = ['random', 'alt'];
 const RANDOM_SIGNS = ['add', 'sub', 'bi'];
 const SCALE_IDS: ScaleId[] = SCALE_CATALOG.map((s) => s.id);
@@ -77,7 +82,9 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
   };
   const octaveOn = fx.params.octaveOn === true;
   const chordFree = String(fx.params.chordType ?? 'maj') === 'free';
-  const conformOn = fx.params.conformOn === true;
+  // Three-way now: off / scale / chord. The middle one is what IN KEY used
+  // to mean; the third locks to the chord sounding now.
+  const conform = String(fx.params.conform ?? 'off');
   const scaleAware = fx.params.scaleAware !== false;
   return html`
     <div class="notefx-card notefx-${fx.kind}">
@@ -137,13 +144,7 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
           ${numberField('INT 2', -24, 24, 1, Number(fx.params.i2 ?? 7), (v) => set('i2', v))}
           ${numberField('INT 3', -24, 24, 1, Number(fx.params.i3 ?? 0), (v) => set('i3', v))}
         ` : ''}
-        <div class="notefx-field notefx-oct-toggle">
-          <span>IN KEY</span>
-          <button class=${conformOn ? 'rnd primary' : 'rnd'} @click=${() => {
-            set('conformOn', !conformOn);
-            ctx.rerender();
-          }}>${conformOn ? 'ON' : 'OFF'}</button>
-        </div>
+        ${selectField('IN KEY', CONFORM_MODES, conform, (v) => set('conform', v))}
         <div class="notefx-field notefx-oct-toggle">
           <span>OCT SHIFT</span>
           <button class=${octaveOn ? 'rnd primary' : 'rnd'} @click=${() => {

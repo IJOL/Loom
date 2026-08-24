@@ -1,6 +1,6 @@
 // src/notefx/chord-processor.ts
 import type { NoteFxEvent, NoteFxContext, NoteFxProcessor } from './notefx-types';
-import { snapToScale } from '../core/musicality';
+import { snapToScale, chordTonesOf, snapToPitchClasses } from '../core/musicality';
 
 export type ChordType = 'maj' | 'min' | 'maj7' | 'min7' | 'sus2' | 'sus4' | 'dim' | 'free';
 
@@ -31,14 +31,14 @@ export interface ChordProcessorParams {
    *  question can be asked at all.
    *
    *  Off by default. A note-FX must not move your notes until you ask. */
-  conformOn: boolean;
+  conform: 'off' | 'scale' | 'chord';
 }
 
 export const CHORD_PROCESSOR_DEFAULTS: ChordProcessorParams = {
   // The free intervals default to a major triad, so switching CHORD to 'free'
   // changes nothing until a knob moves.
   chordType: 'maj', octaveOn: false, octave: 0,
-  i1: 4, i2: 7, i3: 0, conformOn: false,
+  i1: 4, i2: 7, i3: 0, conform: 'off',
 };
 
 /** The named voicings. 'free' is deliberately absent: it has no table, which
@@ -66,9 +66,18 @@ export class ChordProcessor implements NoteFxProcessor {
 
   process(input: NoteFxEvent[], ctx: NoteFxContext): NoteFxEvent[] {
     const intervals = this.intervals();
-    // Conforming needs a tonality to conform TO. Without one this stays off
-    // rather than guessing a key — a wrong key is worse than no key.
-    const conform = this.params.conformOn && ctx.key !== undefined && ctx.scale !== undefined;
+    // Conforming needs something to conform TO. Without a tonality this stays
+    // off rather than guessing a key — a wrong key is worse than no key.
+    const tonal = ctx.key !== undefined && ctx.scale !== undefined;
+    const want = this.params.conform ?? 'off';
+    // CHORD asked for with no progression falls back to SCALE rather than to
+    // nothing: the song may not name a chord, but it still has a key, and a
+    // note in the key is nearer what was asked for than a note outside it.
+    const mode = !tonal || want === 'off' ? 'off'
+      : want === 'chord' && ctx.chordDegree === undefined ? 'scale' : want;
+    const tones = mode === 'chord'
+      ? chordTonesOf(ctx.key!, ctx.scale!, Math.round(ctx.chordDegree!))
+      : [];
     // Bypassed unless explicitly switched on: with the switch OFF the chord is
     // rooted on the note you played, which is the default.
     const shift = this.params.octaveOn ? Math.round(this.params.octave) * 12 : 0;
@@ -80,7 +89,9 @@ export class ChordProcessor implements NoteFxProcessor {
       const seen = new Set<number>();
       for (const iv of intervals) {
         const raw = e.note + iv + shift;
-        const note = conform ? snapToScale(raw, ctx.key!, ctx.scale!) : raw;
+        const note = mode === 'chord' ? snapToPitchClasses(raw, tones)
+          : mode === 'scale' ? snapToScale(raw, ctx.key!, ctx.scale!)
+            : raw;
         if (seen.has(note)) continue;
         seen.add(note);
         out.push({ note, time: e.time, gate: e.gate, accent: e.accent, velocity: e.velocity });

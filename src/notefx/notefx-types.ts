@@ -21,6 +21,14 @@ export interface NoteFxContext {
   /** Effective tonality for scale-aware FX. */
   key?: number;
   scale?: ScaleId;
+  /** The scale degree of the chord sounding now, 0-based, from the active
+   *  progression. Absent when the session has no progression — which is the
+   *  ordinary case, so anything reading it must have an answer for absent
+   *  rather than a default degree. A wrong chord is worse than no chord.
+   *
+   *  Resolved by the caller, like key and scale: a note-FX stays pure and
+   *  the session state stays where it lives. */
+  chordDegree?: number;
 }
 
 export interface NoteFxProcessor {

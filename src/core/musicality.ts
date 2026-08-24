@@ -100,6 +100,47 @@ export function snapToScale(midi: number, key: number, scale: ScaleId): number {
 /** Map a scale-degree index (0-based, may exceed the scale length → wraps octaves)
  *  to an absolute midi, relative to `octaveBase` (midi of the scale root in the
  *  lowest on-screen octave). */
+/** The pitch classes of the chord built on `degree` of `scale` in `key`.
+ *
+ *  A progression's Chord is a DEGREE and nothing else — the quality comes
+ *  from the scale, which is why a ii in a major key is minor without anyone
+ *  saying so. Stacked thirds means every other degree, so a triad is degrees
+ *  d, d+2, d+4 of the scale, wrapping.
+ *
+ *  `size` is how many tones to stack: 3 for a triad, 4 for a seventh. A
+ *  pentatonic has five degrees and a chromatic twelve, so the wrap is over
+ *  the scale's own length rather than seven. */
+export function chordTonesOf(
+  key: number, scale: ScaleId, degree: number, size = 3,
+): number[] {
+  const degs = degreesOf(key, scale);
+  if (degs.length === 0) return [];
+  const out: number[] = [];
+  for (let i = 0; i < size; i++) {
+    const idx = (((degree + i * 2) % degs.length) + degs.length) % degs.length;
+    if (!out.includes(degs[idx])) out.push(degs[idx]);
+  }
+  return out;
+}
+
+/** Nearest midi note whose pitch class is in `pcs`. Ties resolve UP, the same
+ *  way snapToScale does — the two are the same gesture over different sets,
+ *  and a listener would notice at once if one leaned up and the other down.
+ *
+ *  Deliberately NOT a refactor of snapToScale into this: that function is
+ *  depended on by random-processor, pattern-library and example-loader, and
+ *  its exact behaviour is load-bearing for music people have already made. */
+export function snapToPitchClasses(midi: number, pcs: readonly number[]): number {
+  if (pcs.length === 0) return midi;
+  const has = (n: number) => pcs.includes(((n % 12) + 12) % 12);
+  if (has(midi)) return midi;
+  for (let d = 1; d <= 6; d++) {
+    if (has(midi + d)) return midi + d;   // up wins ties (checked first)
+    if (has(midi - d)) return midi - d;
+  }
+  return midi;
+}
+
 export function scaleDegreeToMidi(degree: number, octaveBase: number, key: number, scale: ScaleId): number {
   const ivs = scaleIntervals(scale);
   const n = ivs.length;
