@@ -170,6 +170,20 @@ export interface SessionLane {
      *  ordinary case — means the harmony is read from the leader every time. */
     chords?: import('../arranger/progression').Chord[];
   };
+  /** What this lane GENERATES, when it neither reads its clips nor follows
+   *  another lane. Present with a selection ⇒ the lane plays nothing of its own.
+   *
+   *  Mutually exclusive with `follow` and with WEAVE's selection, and for the
+   *  same reason those two are with each other: three answers to "what does this
+   *  lane play" is exactly what one shared shape exists to prevent.
+   *
+   *  On the LANE rather than inside the weave's panel state, decided
+   *  2026-08-25. Sharing the weave's selection was on the table and would have
+   *  cost the generator its independence — cleared by `resetWeave`, saved inside
+   *  `s.weave`, and no way to keep one set of loops for weaving and another for
+   *  generating. It costs no reuse: everything that acts on a selection takes
+   *  one as an argument rather than reading it out of the panel. */
+  generator?: import('../generator/generator-state').GeneratorLaneState;
   clips: (SessionClip | null)[];
   launchQuantize?: LaunchQuantize;
   engineState?: {

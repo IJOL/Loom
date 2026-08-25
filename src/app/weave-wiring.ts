@@ -10,6 +10,7 @@
 // ask time, because the clips are the session's and they move underneath.
 
 import { defaultWeaveState, type WeaveState, type LaneWeaveConfig } from '../weave/weave-state';
+import { createGeneratorWiring } from './generator-wiring';
 import { createWeaveSource, createMacroSource, type LaneNoteSource } from '../weave/weave-runtime';
 import { resolveSelection } from '../weave/weave-selection';
 import { avoidClash } from '../weave/harmony-guard';
@@ -222,6 +223,23 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
   };
 
 
+  /** A generating lane's source. Its own module: this file is already past its
+   *  size target, and the generator is the half that grows — four streams and
+   *  two displacement wheels still to come, none of which has anything to say
+   *  about a crossfade. It is handed the loop lookup rather than repeating it,
+   *  because there must not be two answers to what a loop id names. */
+  const generatorFor = createGeneratorWiring({
+    getMeter: () => deps.getMeter(),
+    notesOf,
+    tonalityOf: (laneId) => {
+      const m = loopContext(laneId);
+      return { key: m.key, scale: m.scale };
+    },
+    melodic: melodicLane,
+    clipBars: clipBarsFor,
+    lap: (laneId) => deps.getLaneStates().get(laneId)?.loopCount ?? 0,
+  });
+
   const build = (laneId: string): LaneNoteSource | undefined => {
     const barTicks = ticksPerBar(deps.getMeter());
     // Follow is checked FIRST and returns outright. Both this and the weave
@@ -300,6 +318,17 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
         lap: () => deps.getLaneStates().get(laneId)?.loopCount ?? 0,
       });
     }
+    // The GENERATOR: the third producer, checked here and for the reason follow
+    // is checked above it. All three answer "what does this lane play" and one
+    // has to win outright rather than the three being merged.
+    //
+    // Ahead of the weave because of WHERE it lives. This is a property of the
+    // song, saved on the lane; the weave's selection is a property of an open
+    // panel, and a panel losing a tie against the session is the right way
+    // round.
+    const generated = generatorFor(laneId, followerLane?.generator);
+    if (generated) return generated;
+
     const sel = state.lanes[laneId]?.weave;
 
     if (sel) {
