@@ -13,7 +13,8 @@
 // one thing `harmony/cycle`'s comment already warns against.
 
 import type { LaneNote } from '../session/lane-note-source';
-import { readHead, patternBars, type GridSpec } from './grid';
+import { readHead, patternBars, patternSteps, type GridSpec } from './grid';
+import { displacement, DEFAULT_WHEEL, type WheelSpec } from './displace';
 import { cadenceFires, DEFAULT_CADENCE, type CadenceSpec } from './cadence';
 import { chordPitch, DEFAULT_CHORD, type ChordSpec } from './chord';
 import {
@@ -49,6 +50,11 @@ export interface GenerateOptions {
   offset?: OffsetSpec;
   /** How long it holds. Absent ⇒ exactly one step. */
   length?: LengthSpec;
+  /** Moves the read WITHIN a pass of the pattern, once per bar. */
+  barMod?: WheelSpec;
+  /** Moves the read ACROSS passes, once per lap. The one that reaches the tail
+   *  of a pool longer than the pattern. */
+  loopMod?: WheelSpec;
 }
 
 /** One iteration's worth of notes.
@@ -73,6 +79,8 @@ export function generateNotes(o: GenerateOptions): LaneNote[] {
   const progression = o.progression ?? [];
   const offset = o.offset ?? DEFAULT_OFFSET;
   const len = o.length ?? DEFAULT_LENGTH;
+  const barWheel = o.barMod ?? DEFAULT_WHEEL;
+  const loopWheel = o.loopMod ?? DEFAULT_WHEEL;
   const span = steps * o.ticksPerStep;
 
   const out: LaneNote[] = [];
@@ -85,13 +93,29 @@ export function generateNotes(o: GenerateOptions): LaneNote[] {
       ticksPerStep: o.ticksPerStep,
       barTicks,
     };
+    // CADENCE reads the UNDISPLACED head, and that is the stage-6 decision.
+    // Karst's model puts the displacement before all four streams, which would
+    // move the rhythm and the phrase with the material — so the opening bar of
+    // a phrase would stop being the opening. Displacement moves WHAT IS PLAYED,
+    // not WHEN: the groove and the phrase stay where you put them while the
+    // material underneath them evolves, which is the thing "the loop evolves"
+    // is asking for.
     if (!cadenceFires(cadence, at, bars)) continue;
-    // The pool is read at the head REGARDLESS of whether a step fired, so
-    // thinning the rhythm does not also transpose the melody: turn CADENCE down
-    // and you hear the same line with holes in it, not a different line. A pool
-    // cursor advanced only on surviving hits would have been the other reading,
-    // and it makes one knob do two jobs.
-    const note = o.pool[head % o.pool.length];
+
+    // Added to the head rather than folded back into the pattern. Re-folding
+    // would cap the read at `patternSteps`, and then a pool LONGER than the
+    // pattern could never be reached — the exact gap stage 1 pinned by test and
+    // named this stage as the filler of.
+    const readAt = head + displacement(barWheel, loopWheel, {
+      head, step, stepsPerBar: o.stepsPerBar, patternSteps: patternSteps(o.grid, o.stepsPerBar),
+    });
+    // The pool is read REGARDLESS of whether a step fired, so thinning the
+    // rhythm does not also transpose the melody: turn CADENCE down and you hear
+    // the same line with holes in it, not a different line. A pool cursor
+    // advanced only on surviving hits would have been the other reading, and it
+    // makes one knob do two jobs.
+    const idx = ((readAt % o.pool.length) + o.pool.length) % o.pool.length;
+    const note = o.pool[idx];
     // Local to the iteration, never absolute: the scheduler loops this array and
     // a start counted from the transport's zero would put every note beyond the
     // clip's end on the second lap.
@@ -116,7 +140,10 @@ export function generateNotes(o: GenerateOptions): LaneNote[] {
       // every lane agree on where the music is while disagreeing about what to
       // play there.
       midi: chordPitch(note.midi, chord, tonality, progression, {
-        head,
+        // The DISPLACED read, so the voicing evolves with the material it is
+        // voicing rather than staying pinned to a position the material has
+        // moved away from.
+        head: readAt,
         bar: Math.floor(step / Math.max(1, o.stepsPerBar)),
       }),
       velocity: note.velocity,

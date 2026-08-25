@@ -15,6 +15,7 @@ import { DEFAULT_CHORD, type ChordSpec } from './chord';
 import {
   DEFAULT_OFFSET, DEFAULT_LENGTH, type OffsetSpec, type LengthSpec,
 } from './note-timing';
+import { DEFAULT_WHEEL, type WheelSpec } from './displace';
 import type { ScaleId } from '../core/musicality';
 import type { Progression } from '../arranger/progression';
 
@@ -48,6 +49,9 @@ export interface GeneratorDeps {
   offset?: () => OffsetSpec;
   /** How long it holds. Absent ⇒ exactly one step. */
   length?: () => LengthSpec;
+  /** The two displacement wheels. Absent ⇒ neither turning. */
+  barMod?: () => WheelSpec;
+  loopMod?: () => WheelSpec;
 }
 
 export function createGeneratorSource(deps: GeneratorDeps): LaneNoteSource {
@@ -93,6 +97,8 @@ export function createGeneratorSource(deps: GeneratorDeps): LaneNoteSource {
     const spec = {
       grid, stepsPerBar, ticksPerStep, steps, startStep, barTicks,
       cadence, chord, tonality, progression, offset, length,
+      barMod: deps.barMod?.() ?? DEFAULT_WHEEL,
+      loopMod: deps.loopMod?.() ?? DEFAULT_WHEEL,
     };
 
     // The key is the WHOLE input, serialised, rather than a hand-picked list of

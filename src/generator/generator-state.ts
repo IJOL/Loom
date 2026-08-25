@@ -21,6 +21,7 @@ import {
   clampOffset, clampLength, DEFAULT_OFFSET, DEFAULT_LENGTH,
   type OffsetSpec, type LengthSpec,
 } from './note-timing';
+import { clampWheel, DEFAULT_WHEEL, type WheelSpec } from './displace';
 
 export interface GeneratorLaneState {
   /** The loops this lane generates FROM, in exactly the shape the weave stores.
@@ -40,6 +41,11 @@ export interface GeneratorLaneState {
   offset: OffsetSpec;
   /** How long it holds. The fourth. */
   length: LengthSpec;
+  /** Moves the read WITHIN a pass of the pattern, once per bar. */
+  barMod: WheelSpec;
+  /** Moves it ACROSS passes, once per lap — the wheel that reaches the tail of
+   *  a pool longer than the pattern. */
+  loopMod: WheelSpec;
 }
 
 export function defaultGeneratorState(): GeneratorLaneState {
@@ -52,6 +58,8 @@ export function defaultGeneratorState(): GeneratorLaneState {
     chord: { ...DEFAULT_CHORD },
     offset: { ...DEFAULT_OFFSET },
     length: { ...DEFAULT_LENGTH },
+    barMod: { ...DEFAULT_WHEEL },
+    loopMod: { ...DEFAULT_WHEEL },
   };
 }
 
@@ -66,5 +74,7 @@ export function clampGeneratorState(
     chord: clampChord(g?.chord),
     offset: clampOffset(g?.offset),
     length: clampLength(g?.length),
+    barMod: clampWheel(g?.barMod),
+    loopMod: clampWheel(g?.loopMod),
   };
 }

@@ -109,6 +109,33 @@ const PARAMS: ParamSpec[] = [
     id: 'lengthMod', name: 'HOLD MOD', min: 0, max: 1, step: 0,
     get: (g) => g.length.mod, set: (g, v) => { g.length.mod = v; },
   },
+  // The two wheels. `%` last of each three because it is the one that turns the
+  // wheel ON — the other two describe a wheel that is not yet moving anything,
+  // and setting them first is how you decide what the fade will do.
+  {
+    id: 'barStep', name: 'BAR ×', min: 1, max: 16, step: 1,
+    get: (g) => g.barMod.multiple, set: (g, v) => { g.barMod.multiple = v; },
+  },
+  {
+    id: 'barCycle', name: 'BAR CYC', min: 1, max: 32, step: 1,
+    get: (g) => g.barMod.cycle, set: (g, v) => { g.barMod.cycle = v; },
+  },
+  {
+    id: 'barPercent', name: 'BAR %', min: 0, max: 1, step: 0,
+    get: (g) => g.barMod.percent, set: (g, v) => { g.barMod.percent = v; },
+  },
+  {
+    id: 'loopStep', name: 'LOOP ×', min: 1, max: 16, step: 1,
+    get: (g) => g.loopMod.multiple, set: (g, v) => { g.loopMod.multiple = v; },
+  },
+  {
+    id: 'loopCycle', name: 'LOOP CYC', min: 1, max: 32, step: 1,
+    get: (g) => g.loopMod.cycle, set: (g, v) => { g.loopMod.cycle = v; },
+  },
+  {
+    id: 'loopPercent', name: 'LOOP %', min: 0, max: 1, step: 0,
+    get: (g) => g.loopMod.percent, set: (g, v) => { g.loopMod.percent = v; },
+  },
 ];
 
 export function generatorMembers(d: GeneratorDepsUI):

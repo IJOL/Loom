@@ -23,6 +23,7 @@ import { clampGrid } from '../generator/grid';
 import { clampCadence } from '../generator/cadence';
 import { clampChord } from '../generator/chord';
 import { clampOffset, clampLength } from '../generator/note-timing';
+import { clampWheel } from '../generator/displace';
 import { blendLoops, type BlendOptions } from '../weave/blend-clip';
 import { resolveSelection } from '../weave/weave-selection';
 import { laneWeights, type LaneWeaveConfig } from '../weave/weave-state';
@@ -115,6 +116,8 @@ export function createGeneratorWiring(deps: GeneratorWiringDeps) {
       progression: deps.progression,
       offset: () => clampOffset(gen.offset),
       length: () => clampLength(gen.length),
+      barMod: () => clampWheel(gen.barMod),
+      loopMod: () => clampWheel(gen.loopMod),
       stepsPerBar,
       ticksPerStep,
       steps,
