@@ -9,6 +9,21 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const hapsOf = (n) => JSON.parse(readFileSync(join(HERE, 'data', `${n}-haps.json`), 'utf8'));
 const NAMES = Object.keys(TUNE_SPECS);
 
+/** The param ids a plugin declares, or null when the id belongs to one of the
+ *  three in-tree engines, which ship no manifest. */
+const manifestCache = new Map();
+function paramIdsOf(pluginId) {
+  if (!manifestCache.has(pluginId)) {
+    let ids = null;
+    try {
+      const m = JSON.parse(readFileSync(join(HERE, '..', 'plugins', pluginId, 'plugin.json'), 'utf8'));
+      ids = m.components.flatMap((c) => c.params.map((prm) => prm.id));
+    } catch { /* not a plugin — an in-tree engine */ }
+    manifestCache.set(pluginId, ids);
+  }
+  return manifestCache.get(pluginId);
+}
+
 describe('tune mapper', () => {
   it('derives ticks-per-cycle from cps and bpm rather than choosing it', () => {
     // A cycle lasts 1/cps seconds and a second is bpm/60 quarters.
@@ -98,6 +113,38 @@ describe('tune mapper', () => {
           for (const midi of new Set(l.clips[0].notes.map((n) => n.midi))) {
             const covered = inst.zones.some((z) => midi >= z.loNote && midi <= z.hiNote);
             expect({ id, midi, covered }).toEqual({ id, midi, covered: true });
+          }
+        }
+      });
+
+      // An envelope whose paramId names nothing is INERT, and inert is exactly
+      // what working looks like: the demo loads, plays, and quietly never moves
+      // that knob. `landAutomationValue` needs the id to be a destination the
+      // session offers, so the two shapes it can take are checked against what
+      // actually declares them — the engine's manifest, or the insert plugin's
+      // manifest plus a slot of that id on that very lane.
+      it('points every clip envelope at a param that exists', () => {
+        for (const lane of demo.lanes) {
+          for (const env of lane.clips[0].envelopes ?? []) {
+            const [scope, ...rest] = env.paramId.split('.');
+            expect({ paramId: env.paramId, scope }).toEqual({ paramId: env.paramId, scope: lane.id });
+            const slotAt = rest.findIndex((seg) => seg.startsWith('fx:'));
+            if (slotAt >= 0) {
+              const slotId = rest[slotAt].slice(3);
+              const slot = (lane.inserts ?? []).find((i) => i.id === slotId);
+              expect({ paramId: env.paramId, slot: !!slot }).toEqual({ paramId: env.paramId, slot: true });
+              expect(paramIdsOf(slot.pluginId)).toContain(rest.slice(slotAt + 1).join('.'));
+              continue;
+            }
+            const leaf = rest.join('.');
+            // A strip param is the desk, not the patch, and no manifest names one.
+            if (leaf.startsWith('bus.')) continue;
+            const declared = paramIdsOf(lane.engineId);
+            // Only the plugin engines declare their params as data; the three
+            // in-tree ones (sampler, audio, drums-machine) have no manifest to
+            // read, so there is nothing here to check them against.
+            if (!declared) continue;
+            expect({ paramId: env.paramId, declared }).toEqual({ paramId: env.paramId, declared: expect.arrayContaining([leaf]) });
           }
         }
       });
