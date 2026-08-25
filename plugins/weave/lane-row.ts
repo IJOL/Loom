@@ -12,6 +12,7 @@
 import { CLOUD_PATHS } from '@loom/plugin-sdk';
 import type { PanelChoice, PanelContext, PanelLoopPhase, PanelWeave } from '@loom/plugin-sdk';
 import { endlessDial } from './endless-dial';
+import { generatorCell } from './generator-cell';
 
 export interface LaneRowHandle {
   laneId: string;
@@ -928,11 +929,18 @@ export function buildLaneRow(
       LEVELS, nearestLevel(arrangeLevel),
       (id) => { ctx.setLaneArrangeLevel?.(lane.id, Number(id)); }));
   }
+  // GENERATE: the third answer to what this lane plays, beside weaving and
+  // following. Its switch goes in the follow cell — same family of question,
+  // and no new grid column, which this row has been broken by once already —
+  // and its controls go on a LINE of their own below, where nine of them fit.
+  const gen = generatorCell(ctx, lane.id);
+  followCell.appendChild(gen.toggle);
+
   setup.append(strip.el, slots, engineHost, presetHost, role, followCell,
     style, length, octave);
 
   const wrap = el('div', 'weave-lane-wrap');
-  wrap.append(row, setup);
+  wrap.append(row, setup, gen.line);
 
   return {
     laneId: lane.id, el: wrap, meter, ring, syncTransport,

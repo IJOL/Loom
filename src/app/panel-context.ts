@@ -31,6 +31,7 @@ import { commitParamForLane } from '../engines/engine-param-commit';
 import { dbfsOf } from '../core/level-meter';
 import { roleMembers } from './panel-context-role';
 import { followMembers } from './panel-context-follow';
+import { generatorMembers } from './panel-context-generator';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { emptyClip } from '../session/session';
 import type { SessionHost } from '../session/session-host';
@@ -417,6 +418,28 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         // does not get to destroy one. Only the first shelving counts, so
         // re-pointing a follower at a different leader cannot overwrite the
         // weave it had before it started following at all.
+        if (cur && cur.shelvedWeave === undefined) cur.shelvedWeave = cur.weave;
+        if (cur) cur.weave = null;
+      },
+      restoreWeave: (laneId) => {
+        const cur = deps.weave.lanes[laneId];
+        if (!cur || cur.shelvedWeave === undefined) return;
+        cur.weave = cur.shelvedWeave;
+        delete cur.shelvedWeave;
+      },
+      onWeaveChanged: (id) => deps.onWeaveChanged?.(id),
+      refresh: () => deps.refresh(),
+      history: () => deps.sessionHost.deps?.historyDeps,
+    }),
+
+    // Whether each lane GENERATES, and the controls if it does — the third
+    // answer to "what does this lane play", in panel-context-generator.ts. It
+    // shelves the weave exactly the way follow does above, and for the same
+    // reason: it wins while it lasts, and does not get to destroy one.
+    ...generatorMembers({
+      getState: () => deps.sessionHost.state,
+      clearWeave: (laneId) => {
+        const cur = deps.weave.lanes[laneId];
         if (cur && cur.shelvedWeave === undefined) cur.shelvedWeave = cur.weave;
         if (cur) cur.weave = null;
       },

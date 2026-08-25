@@ -238,6 +238,28 @@ export interface PanelChoice {
   group?: string;
 }
 
+/** One of the note generator's controls, described rather than named.
+ *
+ *  The host declares the whole surface as data and the panel draws it without
+ *  knowing what any of it means — the same bargain `engine-param-grid` already
+ *  makes for an engine's knobs. The spec has four streams of five controls each
+ *  still to land, and a panel with a named accessor per control would need
+ *  editing for every one. */
+export interface PanelGeneratorParam {
+  id: string;
+  name: string;
+  value: number;
+  min: number;
+  max: number;
+  /** 0 for continuous. A positive step means the control lands on whole values,
+   *  which is what a division or a bar count is. */
+  step: number;
+  /** Present ⇒ this is a CHOICE wearing a number: `labels[value]` is what the
+   *  value means. It is still a number over the ABI because everything else
+   *  here is, and one shape the panel can draw beats two it has to branch on. */
+  labels?: string[];
+}
+
 /** A lane's transport and desk state, as a panel sees it.
  *
  *  Muted and soloed are the MIXER's, not a private copy: a panel that kept its
@@ -480,6 +502,28 @@ export interface PanelContext {
    *  — what does this lane play — and the host resolves follow first, so
    *  leaving a selection behind would be a setting that silently does nothing. */
   setLaneFollow(laneId: string, leaderId: string | null): void;
+  /** Is this lane GENERATING — playing a read head over material rather than
+   *  its own clips?
+   *
+   *  The third answer to "what does this lane play", beside weaving and
+   *  following, and mutually exclusive with both for the reason those two are
+   *  with each other. */
+  generatorOn(laneId: string): boolean;
+  /** Switch the generator on or off.
+   *
+   *  Switching ON seeds the lane's material from its own clips, so the control
+   *  makes a sound the moment it is pressed rather than showing an empty picker.
+   *  Switching OFF keeps that selection, because coming back to a generator you
+   *  had set up is not the same gesture as building a new one. */
+  setGeneratorOn(laneId: string, on: boolean): void;
+  /** The generator's controls for this lane, flat, in display order.
+   *
+   *  Data rather than a fixed set of named accessors: the spec has four streams
+   *  of five controls each still to arrive, and a panel that named them one by
+   *  one would need editing for every one of them. EMPTY when the lane is not
+   *  generating — the same "show no control" convention `roleChoices` uses. */
+  generatorParams(laneId: string): PanelGeneratorParam[];
+  setGeneratorParam(laneId: string, id: string, value: number): void;
   /** Whether this lane sits out the master flow's journey.
    *
    *  A locked lane holds its position while everything else travels — the way

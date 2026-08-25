@@ -161,6 +161,53 @@ function endlessDial(o) {
   };
 }
 
+// plugins/weave/generator-cell.ts
+var el = (tag, cls, text) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== void 0) n.textContent = text;
+  return n;
+};
+function readout(p, v) {
+  if (p.labels) return p.labels[Math.round(v)] ?? String(v);
+  return p.step > 0 ? String(Math.round(v)) : v.toFixed(2);
+}
+function control(ctx, laneId, p) {
+  const wrap = el("div", "weave-gen-param");
+  const label = el("label", "weave-gen-label", p.name);
+  const out = el("span", "weave-gen-value", readout(p, p.value));
+  const input = document.createElement("input");
+  input.type = "range";
+  input.className = "weave-gen-range";
+  input.min = String(p.min);
+  input.max = String(p.max);
+  input.step = String(p.step > 0 ? p.step : 0.01);
+  input.value = String(p.value);
+  input.setAttribute("aria-label", p.name);
+  input.dataset.gen = p.id;
+  input.addEventListener("input", () => {
+    const v = Number(input.value);
+    out.textContent = readout(p, v);
+    ctx.setGeneratorParam(laneId, p.id, v);
+  });
+  label.appendChild(out);
+  wrap.append(label, input);
+  return wrap;
+}
+function generatorCell(ctx, laneId) {
+  const on = ctx.generatorOn(laneId);
+  const toggle = el("button", `weave-tbtn weave-gen-on${on ? " on" : ""}`, "GEN");
+  toggle.type = "button";
+  toggle.title = on ? "Stop generating \u2014 the lane goes back to its clips" : "Generate: a read head over this lane's own loops, instead of playing them";
+  toggle.addEventListener("click", () => {
+    ctx.setGeneratorOn(laneId, !ctx.generatorOn(laneId));
+  });
+  const line = el("div", "weave-lane-gen");
+  const params = ctx.generatorParams(laneId);
+  for (const p of params) line.appendChild(control(ctx, laneId, p));
+  return { toggle, line };
+}
+
 // plugins/weave/lane-row.ts
 var TOPOS = [
   { kind: "ab", label: "A\u2192B", title: "Two loops. Arrive at B and a fresh B is drawn \u2014 the journey never ends." },
@@ -173,7 +220,7 @@ var TOPO_NAME = {
 };
 var OFF = "";
 var OFF_LABEL = "\u2014 off \u2014";
-var el = (tag, cls, text) => {
+var el2 = (tag, cls, text) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
   if (text !== void 0) n.textContent = text;
@@ -203,21 +250,21 @@ function picker(cls, label, choices, current, onPick) {
   sel.className = cls;
   sel.setAttribute("aria-label", label);
   if (choices.length === 0) {
-    sel.appendChild(el("option", void 0, "\u2014"));
+    sel.appendChild(el2("option", void 0, "\u2014"));
     sel.disabled = true;
     return sel;
   }
   const offered = current !== void 0 && choices.some((c) => c.id === current);
   if (!offered) {
     const named = current ? offShelfLabel(current) : void 0;
-    const o = el("option", void 0, named ?? "\u2014");
+    const o = el2("option", void 0, named ?? "\u2014");
     o.value = named ? current : "";
     o.selected = true;
     sel.appendChild(o);
   }
   const groups = /* @__PURE__ */ new Map();
   for (const c of choices) {
-    const o = el("option", void 0, c.name);
+    const o = el2("option", void 0, c.name);
     o.value = c.id;
     if (c.id === current) o.selected = true;
     if (!c.group) {
@@ -239,10 +286,10 @@ function picker(cls, label, choices, current, onPick) {
   return sel;
 }
 function weaveCell(laneId, ctx, loops, onChanged) {
-  const cell = el("div", "weave-cell");
+  const cell = el2("div", "weave-cell");
   const sel = ctx.laneWeave(laneId);
   if (!sel) {
-    cell.appendChild(el("span", "weave-hint", loops.length === 0 ? "No clips on this lane yet" : "Pick a topology to start weaving"));
+    cell.appendChild(el2("span", "weave-hint", loops.length === 0 ? "No clips on this lane yet" : "Pick a topology to start weaving"));
     return { el: cell };
   }
   const nameOf = (id) => loops.find((l) => l.id === id)?.name ?? id;
@@ -279,7 +326,7 @@ function weaveCell(laneId, ctx, loops, onChanged) {
     };
   }
   if (sel.kind === "queue") {
-    const between = el("span", "weave-between");
+    const between = el2("span", "weave-between");
     const q = Loom.controls.queue({
       length: Math.max(1, sel.loops.length),
       value: sel.x,
@@ -313,7 +360,7 @@ function weaveCell(laneId, ctx, loops, onChanged) {
     };
   }
   const AT = ["cn-tl", "cn-tr", "cn-bl", "cn-br"];
-  const cloud = el("div", "weave-cloud");
+  const cloud = el2("div", "weave-cloud");
   const pickers = Array.from({ length: 4 }, (_, i) => {
     const p = slot(i, sel.corners[i] ?? "", (id) => ({
       ...sel,
@@ -330,9 +377,9 @@ function weaveCell(laneId, ctx, loops, onChanged) {
       ctx.setLaneWeave(laneId, { ...sel, x, y });
     }
   });
-  const path = el("div", "weave-path");
+  const path = el2("div", "weave-path");
   const pathBtns = CLOUD_PATHS.map((p) => {
-    const b = el("button", "weave-topo-btn", p.label);
+    const b = el2("button", "weave-topo-btn", p.label);
     b.type = "button";
     b.title = p.title;
     b.addEventListener("click", () => {
@@ -349,7 +396,7 @@ function weaveCell(laneId, ctx, loops, onChanged) {
     }
   };
   paintPath(sel.path ?? "rim");
-  const padWrap = el("div", "cn-pad");
+  const padWrap = el2("div", "cn-pad");
   padWrap.append(pad.el, path);
   cloud.append(pickers[0], padWrap, pickers[1], pickers[2], pickers[3]);
   cell.appendChild(cloud);
@@ -428,18 +475,18 @@ function noteStrip(laneId, ctx) {
 }
 var openSlot = /* @__PURE__ */ new Map();
 function buildLaneRow(lane, ctx, engines) {
-  const row = el("div", "weave-lane");
+  const row = el2("div", "weave-lane");
   const meter = Loom.controls.levelMeter();
   meter.el.classList.add("weave-vu");
   const ring = Loom.controls.loopRing({ label: `Loop position for ${lane.name}` });
-  const name = el("span", "weave-lane-name", lane.name);
+  const name = el2("span", "weave-lane-name", lane.name);
   const slotOf = () => openSlot.get(lane.id) ?? 0;
   const setSlot = (i) => {
     openSlot.set(lane.id, i);
   };
-  const engineHost = el("div", "weave-pick-host");
-  const presetHost = el("div", "weave-pick-host");
-  const slots = el("div", "weave-slotpick");
+  const engineHost = el2("div", "weave-pick-host");
+  const presetHost = el2("div", "weave-pick-host");
+  const slots = el2("div", "weave-slotpick");
   const paintPickers = () => {
     const rack = ctx.laneSlots(lane.id);
     const inRack = rack.length > 1;
@@ -449,7 +496,7 @@ function buildLaneRow(lane, ctx, engines) {
     slots.classList.toggle("off", !inRack);
     if (inRack) {
       rack.forEach((_, i) => {
-        const b = el("button", `weave-slot-btn${i === slot ? " on" : ""}`, String(i + 1));
+        const b = el2("button", `weave-slot-btn${i === slot ? " on" : ""}`, String(i + 1));
         b.type = "button";
         b.title = `Instrument ${i + 1} of this lane's rack \u2014 the ${i === 0 ? "near" : "far"} end of its sound fader`;
         b.addEventListener("click", () => {
@@ -489,9 +536,9 @@ function buildLaneRow(lane, ctx, engines) {
     ));
   };
   paintPickers();
-  const transport = el("div", "weave-transport");
+  const transport = el2("div", "weave-transport");
   const tbtn = (cls, text, title, on) => {
-    const b = el("button", `weave-tbtn ${cls}`, text);
+    const b = el2("button", `weave-tbtn ${cls}`, text);
     b.type = "button";
     b.title = title;
     b.addEventListener("click", on);
@@ -528,7 +575,7 @@ function buildLaneRow(lane, ctx, engines) {
   };
   syncTransport();
   const range = ctx.laneLevelRange();
-  const levelWrap = el("div", "weave-level");
+  const levelWrap = el2("div", "weave-level");
   const level = document.createElement("input");
   level.type = "range";
   level.className = "weave-level-fader";
@@ -537,7 +584,7 @@ function buildLaneRow(lane, ctx, engines) {
   level.step = "0.01";
   level.value = String(ctx.laneLevel(lane.id));
   level.setAttribute("aria-label", "Level for this track");
-  const levelOut = el("span", "weave-level-out");
+  const levelOut = el2("span", "weave-level-out");
   const showLevel = (v) => {
     levelOut.textContent = `${Math.round(v * 100)}%`;
   };
@@ -548,10 +595,10 @@ function buildLaneRow(lane, ctx, engines) {
     showLevel(v);
   });
   levelWrap.append(level, levelOut);
-  const soundWrap = el("div", "weave-sound");
-  const soundOn = el("button", "weave-sound-btn", "\u25D0");
+  const soundWrap = el2("div", "weave-sound");
+  const soundOn = el2("button", "weave-sound-btn", "\u25D0");
   soundOn.type = "button";
-  const soundHost = el("div", "weave-sound-host");
+  const soundHost = el2("div", "weave-sound-host");
   const paintSound = () => {
     const at = ctx.laneSound(lane.id);
     const on = at !== null;
@@ -593,7 +640,7 @@ function buildLaneRow(lane, ctx, engines) {
     paintPickers();
   });
   soundWrap.append(soundOn, soundHost);
-  const cellHost = el("div", "weave-cell-host");
+  const cellHost = el2("div", "weave-cell-host");
   let cell = { el: cellHost };
   const repaintCell = () => {
     cell = weaveCell(lane.id, ctx, ctx.loops(lane.id), repaintCell);
@@ -635,12 +682,12 @@ function buildLaneRow(lane, ctx, engines) {
   const topo = document.createElement("select");
   topo.className = "weave-topo";
   topo.setAttribute("aria-label", `How ${lane.name} weaves`);
-  const off = el("option", void 0, OFF_LABEL);
+  const off = el2("option", void 0, OFF_LABEL);
   off.value = OFF;
   off.title = "Stop weaving \u2014 the lane plays its clip untouched";
   topo.appendChild(off);
   for (const t of TOPOS) {
-    const o = el("option", void 0, t.label);
+    const o = el2("option", void 0, t.label);
     o.value = t.kind;
     o.title = t.title;
     topo.appendChild(o);
@@ -653,12 +700,12 @@ function buildLaneRow(lane, ctx, engines) {
     paintSound();
     paintPickers();
   });
-  const length = el("div", "weave-len");
+  const length = el2("div", "weave-len");
   for (const [label, factor, title] of [
     ["\xF72", 0.5, "Double time: this lane plays its phrase twice as fast"],
     ["\xD72", 2, "Half time: this lane stretches its phrase over twice the room"]
   ]) {
-    const b = el("button", "weave-len-btn", label);
+    const b = el2("button", "weave-len-btn", label);
     b.type = "button";
     b.title = title;
     b.addEventListener("click", () => {
@@ -667,8 +714,8 @@ function buildLaneRow(lane, ctx, engines) {
     });
     length.appendChild(b);
   }
-  const octave = el("div", "weave-oct");
-  const octOut = el("span", "weave-oct-out");
+  const octave = el2("div", "weave-oct");
+  const octOut = el2("span", "weave-oct-out");
   const paintOct = () => {
     const v = ctx.laneOctave(lane.id);
     octOut.textContent = v === 0 ? "0" : v > 0 ? `+${v}` : String(v);
@@ -678,7 +725,7 @@ function buildLaneRow(lane, ctx, engines) {
     ["\u2212", -1, "Down an octave"],
     ["+", 1, "Up an octave"]
   ]) {
-    const b = el("button", "weave-oct-btn", label);
+    const b = el2("button", "weave-oct-btn", label);
     b.type = "button";
     b.title = `${title} \u2014 the lane's register, never its notes`;
     b.addEventListener("click", () => {
@@ -693,7 +740,7 @@ function buildLaneRow(lane, ctx, engines) {
   const paintTopo = () => {
     const kind = ctx.laneWeave(lane.id)?.kind;
     if (kind && !TOPOS.some((t) => t.kind === kind) && !topo.querySelector(`option[value="${kind}"]`)) {
-      const o = el("option", void 0, TOPO_NAME[kind]);
+      const o = el2("option", void 0, TOPO_NAME[kind]);
       o.value = kind;
       o.title = "Retired: still plays, no longer offered";
       topo.appendChild(o);
@@ -705,8 +752,8 @@ function buildLaneRow(lane, ctx, engines) {
   paintSound();
   row.append(meter.el, ring.el, name, transport, levelWrap, topo, cellHost, soundWrap);
   const strip = noteStrip(lane.id, ctx);
-  const setup = el("div", "weave-lane-setup");
-  const followCell = el("div", "weave-follow-cell");
+  const setup = el2("div", "weave-lane-setup");
+  const followCell = el2("div", "weave-follow-cell");
   if (follow) followCell.append(follow);
   const arrangeLevel = ctx.laneArrangeLevel?.(lane.id);
   if (arrangeLevel !== null && arrangeLevel !== void 0) {
@@ -720,6 +767,8 @@ function buildLaneRow(lane, ctx, engines) {
       }
     ));
   }
+  const gen = generatorCell(ctx, lane.id);
+  followCell.appendChild(gen.toggle);
   setup.append(
     strip.el,
     slots,
@@ -731,8 +780,8 @@ function buildLaneRow(lane, ctx, engines) {
     length,
     octave
   );
-  const wrap = el("div", "weave-lane-wrap");
-  wrap.append(row, setup);
+  const wrap = el2("div", "weave-lane-wrap");
+  wrap.append(row, setup, gen.line);
   return {
     laneId: lane.id,
     el: wrap,
@@ -750,7 +799,7 @@ function buildLaneRow(lane, ctx, engines) {
 }
 
 // plugins/weave/step-rack.ts
-var el2 = (tag, cls, text) => {
+var el3 = (tag, cls, text) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
   if (text !== void 0) n.textContent = text;
@@ -765,15 +814,15 @@ function option(value, text) {
 }
 function buildRow(ctx, row, choices, rebuild) {
   const st = ctx.stepRows()[row];
-  const wrap = el2("div", "weave-step-row");
+  const wrap = el3("div", "weave-step-row");
   const places = [...new Set(choices.map(placeOf))];
   const current = choices.find((c) => c.id === st.destId);
   const place = current ? placeOf(current) : places[0] ?? "";
-  const placePick = el2("select", "weave-step-place");
+  const placePick = el3("select", "weave-step-place");
   placePick.setAttribute("aria-label", "Which track this row moves");
   for (const p of places) placePick.appendChild(option(p, p));
   placePick.value = place;
-  const destPick = el2("select", "weave-step-dest");
+  const destPick = el3("select", "weave-step-dest");
   destPick.setAttribute("aria-label", "What the step row moves");
   const fillDests = (forPlace) => {
     destPick.replaceChildren(option("", "\u2014 nothing yet \u2014"));
@@ -789,7 +838,7 @@ function buildRow(ctx, row, choices, rebuild) {
     ctx.setStepsDest(row, destPick.value);
   });
   destPick.addEventListener("change", () => ctx.setStepsDest(row, destPick.value));
-  const modePick = el2("select", "weave-step-mode");
+  const modePick = el3("select", "weave-step-mode");
   modePick.setAttribute("aria-label", "How a step reaches the next");
   for (const [v, label] of [["hold", "Step"], ["ramp", "Glide"]]) {
     modePick.appendChild(option(v, label));
@@ -798,7 +847,7 @@ function buildRow(ctx, row, choices, rebuild) {
   modePick.addEventListener("change", () => {
     ctx.setStepsMode(row, modePick.value === "ramp" ? "ramp" : "hold");
   });
-  const on = el2("button", "weave-step-on");
+  const on = el3("button", "weave-step-on");
   const paintOn = () => {
     const running = ctx.stepRows()[row]?.on ?? false;
     on.textContent = running ? "\u25CF RUNNING" : "\u25CB OFF";
@@ -816,9 +865,9 @@ function buildRow(ctx, row, choices, rebuild) {
     onChange: (i, v) => ctx.setStep(row, i, v)
   });
   grid.el.classList.add("weave-step-grid");
-  const tools = el2("div", "weave-step-tools");
+  const tools = el3("div", "weave-step-tools");
   for (const [kind, label] of [["up", "\u2197"], ["down", "\u2198"], ["invert", "\u21C5"], ["random", "\u2684"]]) {
-    const b = el2("button", "weave-step-tool", label);
+    const b = el3("button", "weave-step-tool", label);
     b.title = { up: "Ramp up", down: "Ramp down", invert: "Invert", random: "Randomise" }[kind];
     b.addEventListener("click", () => {
       ctx.stepsTool(row, kind);
@@ -826,30 +875,30 @@ function buildRow(ctx, row, choices, rebuild) {
     });
     tools.appendChild(b);
   }
-  const drop = el2("button", "weave-step-drop", "\xD7");
+  const drop = el3("button", "weave-step-drop", "\xD7");
   drop.title = "Remove this row";
   drop.addEventListener("click", () => {
     ctx.removeStepRow(row);
     rebuild();
   });
-  const head = el2("div", "weave-step-head");
+  const head = el3("div", "weave-step-head");
   head.append(placePick, destPick, modePick, on, tools, drop);
   wrap.append(head, grid.el);
   return wrap;
 }
 function buildStepRack(ctx) {
-  const rack = el2("div", "weave-steps");
+  const rack = el3("div", "weave-steps");
   const paint = () => {
     const choices = ctx.destinations();
     const rows = ctx.stepRows();
-    const label = el2("span", "weave-label", "Steps");
-    const add = el2("button", "weave-step-add", "+ ROW");
+    const label = el3("span", "weave-label", "Steps");
+    const add = el3("button", "weave-step-add", "+ ROW");
     add.title = "Another row, for another parameter";
     add.addEventListener("click", () => {
       ctx.addStepRow();
       paint();
     });
-    const bar = el2("div", "weave-step-bar");
+    const bar = el3("div", "weave-step-bar");
     bar.append(label, add);
     rack.replaceChildren(bar, ...rows.map((_, i) => buildRow(ctx, i, choices, paint)));
   };
@@ -887,13 +936,13 @@ function arcPath(frac) {
 var CUSTOM = "__custom";
 var HOLD_MS = 450;
 var svg = (tag) => document.createElementNS("http://www.w3.org/2000/svg", tag);
-var el3 = (tag, cls) => {
+var el4 = (tag, cls) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
   return n;
 };
 function macroKnob(spec, ctx) {
-  const wrap = el3("div", "weave-macro");
+  const wrap = el4("div", "weave-macro");
   const s = svg("svg");
   s.setAttribute("viewBox", "0 0 58 58");
   s.setAttribute("role", "slider");
@@ -915,9 +964,9 @@ function macroKnob(spec, ctx) {
   const tick = svg("line");
   tick.setAttribute("class", "knob-tick");
   s.append(track, arc, hub, tick);
-  const name = el3("span", "mname");
+  const name = el4("span", "mname");
   name.textContent = spec.label;
-  const val = el3("span", "mval");
+  const val = el4("span", "mval");
   const paint = () => {
     const v = ctx.macro(spec.id);
     arc.setAttribute("d", arcPath(v));
@@ -961,11 +1010,11 @@ function macroKnob(spec, ctx) {
   return { el: wrap, paint };
 }
 function mountWeave(host, ctx) {
-  const rack = el3("div", "weave-rack");
-  const head = el3("div", "weave-head");
-  const logo = el3("span", "weave-logo");
+  const rack = el4("div", "weave-rack");
+  const head = el4("div", "weave-head");
+  const logo = el4("span", "weave-logo");
   logo.textContent = "WEAVE";
-  const surge = el3("button", "weave-surge");
+  const surge = el4("button", "weave-surge");
   surge.textContent = "SURGE";
   surge.title = "Hold: everything at full. Release: exactly as it was.";
   const held = /* @__PURE__ */ new Map();
@@ -993,7 +1042,7 @@ function mountWeave(host, ctx) {
   surge.addEventListener("pointercancel", release);
   surge.addEventListener("pointerleave", release);
   window.addEventListener("blur", release);
-  const print = el3("button", "weave-print");
+  const print = el4("button", "weave-print");
   print.textContent = "\u25A3 Print to scene";
   print.title = "Freeze what is playing right now into a new scene";
   let printTimer = 0;
@@ -1006,8 +1055,8 @@ function mountWeave(host, ctx) {
     }, 1800);
   });
   const field = (label, ...controls) => {
-    const f = el3("span", "weave-field");
-    const l = el3("span", "weave-label");
+    const f = el4("span", "weave-field");
+    const l = el4("span", "weave-label");
     l.textContent = label;
     f.append(l, ...controls);
     return f;
@@ -1046,7 +1095,7 @@ function mountWeave(host, ctx) {
     ctx.setProgression(progSel.value);
     paintChords();
   });
-  const reseed = el3("button", "weave-reseed");
+  const reseed = el4("button", "weave-reseed");
   reseed.textContent = "\u27F3 Reshuffle";
   reseed.title = "Tap: deal the loop you are NOT hearing \xB7 Hold: deal them all";
   reseed.style.setProperty("--weave-hold", `${HOLD_MS}ms`);
@@ -1081,7 +1130,7 @@ function mountWeave(host, ctx) {
     }
     ctx.reseed("quiet");
   });
-  const bars = el3("button", "weave-bars-toggle");
+  const bars = el4("button", "weave-bars-toggle");
   const paintBars = () => {
     const open = rack.classList.contains("bars-open");
     bars.textContent = open ? "\u25A4 Notes" : "\u25A4 Notes";
@@ -1093,7 +1142,7 @@ function mountWeave(host, ctx) {
     rack.classList.toggle("bars-open");
     paintBars();
   });
-  const hold = el3("button", "weave-hold");
+  const hold = el4("button", "weave-hold");
   const paintHold = () => {
     const on = ctx.locked();
     hold.textContent = on ? "\u{1F512} HELD" : "\u{1F513} HOLD";
@@ -1105,7 +1154,7 @@ function mountWeave(host, ctx) {
     ctx.setLocked(!ctx.locked());
     paintHold();
   });
-  const halt = el3("button", "weave-halt");
+  const halt = el4("button", "weave-halt");
   const paintHalt = () => {
     const off = ctx.bypassed();
     halt.textContent = off ? "\u23FB WEAVE OFF" : "\u23FB WEAVE ON";
@@ -1117,7 +1166,7 @@ function mountWeave(host, ctx) {
     ctx.setBypassed(!ctx.bypassed());
     paintHalt();
   });
-  const spacer = el3("span", "weave-head-spacer");
+  const spacer = el4("span", "weave-head-spacer");
   head.append(
     logo,
     field("Key", keySel, scaleSel),
@@ -1134,18 +1183,18 @@ function mountWeave(host, ctx) {
   paintBars();
   paintHold();
   paintHalt();
-  const pulse = el3("div", "weave-pulse");
+  const pulse = el4("div", "weave-pulse");
   const cells = [];
   for (let i = 0; i < 16; i++) {
-    const c = el3("i", i % 4 === 0 ? "accent" : "");
+    const c = el4("i", i % 4 === 0 ? "accent" : "");
     pulse.appendChild(c);
     cells.push(c);
   }
-  const flowRow = el3("div", "weave-flow");
-  const flowLabel = el3("span", "weave-label");
+  const flowRow = el4("div", "weave-flow");
+  const flowLabel = el4("span", "weave-label");
   flowLabel.textContent = "Flow";
   const flowNow = ctx.flow();
-  const flowOut = el3("span", "weave-readout");
+  const flowOut = el4("span", "weave-readout");
   let flowWound = flowNow.position;
   const showFlow = () => {
     flowOut.textContent = flowDial.shown().toFixed(2);
@@ -1223,16 +1272,16 @@ function mountWeave(host, ctx) {
   drift.addEventListener("change", resend);
   speed.addEventListener("change", resend);
   pingPong.addEventListener("change", resend);
-  const driftLabel = el3("span", "weave-label");
+  const driftLabel = el4("span", "weave-label");
   driftLabel.textContent = "Drift";
-  const speedLabel = el3("span", "weave-label");
+  const speedLabel = el4("span", "weave-label");
   speedLabel.textContent = "Speed";
-  const pingPongLabel = el3("span", "weave-label");
+  const pingPongLabel = el4("span", "weave-label");
   pingPongLabel.textContent = "Journey";
   const ROMAN = ["i", "II", "III", "iv", "v", "VI", "VII"];
-  const chordWrap = el3("div", "weave-chordbar");
-  const chordFill = el3("span", "weave-chordbar-fill");
-  const chordOut = el3("span", "weave-chordbar-text");
+  const chordWrap = el4("div", "weave-chordbar");
+  const chordFill = el4("span", "weave-chordbar-fill");
+  const chordOut = el4("span", "weave-chordbar-text");
   chordWrap.append(chordFill, chordOut);
   const paintChord = () => {
     const now = ctx.chordNow();
@@ -1268,13 +1317,13 @@ function mountWeave(host, ctx) {
     pingPong,
     chordWrap
   );
-  const chordStrip = el3("div", "weave-chords");
+  const chordStrip = el4("div", "weave-chords");
   const paintChords = () => {
     chordStrip.textContent = "";
     const track = ctx.chordTrack();
     const total = track.reduce((n, c) => n + c.bars, 0) || 1;
     track.forEach((c, i) => {
-      const cell = el3("div", "weave-chord-cell");
+      const cell = el4("div", "weave-chord-cell");
       cell.textContent = ROMAN[c.degree] ?? String(c.degree);
       cell.style.flexGrow = String(c.bars);
       cell.title = `${c.bars} bar${c.bars === 1 ? "" : "s"} \u2014 click to change the chord, drag the right edge to lengthen`;
@@ -1282,7 +1331,7 @@ function mountWeave(host, ctx) {
         ctx.setChordDegree(i, (c.degree + 1) % ROMAN.length);
         paintChords();
       });
-      const grip = el3("div", "weave-chord-grip");
+      const grip = el4("div", "weave-chord-grip");
       grip.addEventListener("pointerdown", (e) => {
         e.stopPropagation();
         e.preventDefault();
@@ -1301,7 +1350,7 @@ function mountWeave(host, ctx) {
         window.addEventListener("pointerup", up);
       });
       cell.appendChild(grip);
-      const kill = el3("button", "weave-chord-kill");
+      const kill = el4("button", "weave-chord-kill");
       kill.type = "button";
       kill.textContent = "\xD7";
       kill.title = "Remove this chord";
@@ -1313,7 +1362,7 @@ function mountWeave(host, ctx) {
       cell.appendChild(kill);
       chordStrip.appendChild(cell);
     });
-    const add2 = el3("button", "weave-chord-add");
+    const add2 = el4("button", "weave-chord-add");
     add2.type = "button";
     add2.textContent = "+";
     add2.title = "Add a chord at the end";
@@ -1325,8 +1374,8 @@ function mountWeave(host, ctx) {
     progSel.value = ctx.isCustomProgression() ? CUSTOM : ctx.progression();
   };
   paintChords();
-  const lanes = el3("div", "weave-lanes");
-  const head2 = el3("div", "weave-lane weave-lane-head");
+  const lanes = el4("div", "weave-lanes");
+  const head2 = el4("div", "weave-lane weave-lane-head");
   for (const label of [
     "",
     "",
@@ -1337,7 +1386,7 @@ function mountWeave(host, ctx) {
     "Loops",
     "Sound"
   ]) {
-    const c = el3("span", "weave-col");
+    const c = el4("span", "weave-col");
     c.textContent = label;
     head2.appendChild(c);
   }
@@ -1345,16 +1394,16 @@ function mountWeave(host, ctx) {
   const engineChoices = ctx.engines();
   const laneRows = ctx.lanes().map((lane) => buildLaneRow(lane, ctx, engineChoices));
   for (const r of laneRows) lanes.appendChild(r.el);
-  const addRow = el3("div", "weave-empty");
+  const addRow = el4("div", "weave-empty");
   if (laneRows.length === 0) {
     head2.remove();
-    const msg = el3("p", "");
+    const msg = el4("p", "");
     msg.textContent = "Nothing to weave yet.";
     addRow.appendChild(msg);
   }
   const addWhat = pick("weave-add-engine", engineChoices, "subtractive");
   addWhat.setAttribute("aria-label", "Instrument for the new track");
-  const add = el3("button", "weave-add");
+  const add = el4("button", "weave-add");
   add.textContent = "+ Weaving track";
   add.title = "Add a track already weaving two loops from the library";
   add.addEventListener("click", () => {
@@ -1363,7 +1412,7 @@ function mountWeave(host, ctx) {
   addRow.append(add, addWhat);
   lanes.appendChild(addRow);
   const stepsRow = buildStepRack(ctx);
-  const macros = el3("div", "weave-macros");
+  const macros = el4("div", "weave-macros");
   for (const m of MACROS) {
     const knob = macroKnob(m, ctx);
     macros.appendChild(knob.el);

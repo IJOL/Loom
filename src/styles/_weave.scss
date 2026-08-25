@@ -263,6 +263,76 @@
   padding: 2px 8px 4px;
 }
 
+// The GENERATOR's controls: a THIRD line under the lane, not a cell in the grid
+// above. Nine controls could not have a column each, and the note beside that
+// template is about what happens when one is added without one.
+//
+// Empty and zero-height on a lane that is not generating, rather than absent.
+// A line that came and went would move every lane under it by its own height
+// each time the switch was pressed.
+.weave-lane-gen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 0 8px;
+
+  &:not(:empty) { padding: 2px 8px 6px; }
+}
+
+.weave-gen-param {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 92px;
+}
+
+.weave-gen-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 9px;
+  letter-spacing: .06em;
+  opacity: .62;
+}
+
+// The value in a fixed-width figure so a dragging slider does not make its own
+// label jitter left and right under the pointer.
+.weave-gen-value {
+  font-variant-numeric: tabular-nums;
+  opacity: .9;
+}
+
+.weave-gen-range { width: 100%; }
+
+// The cell that holds WHO IT FOLLOWS, how long it takes to repeat, and now the
+// GENERATE switch. A plain block until this third control arrived, which stacked
+// them flush against each other with no room between.
+.weave-follow-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
+  min-width: 0;
+}
+
+// GEN borrows `weave-tbtn` for its colours and has to undo its geometry: that
+// class is written for the five-column transport grid — `padding: 3px 0` and
+// `min-width: 0` — so outside it the button collapses to the width of the word
+// with no horizontal padding at all, which is what it did.
+.weave-gen-on {
+  padding: 3px 8px;
+  letter-spacing: .08em;
+  align-self: start;
+}
+
+// ON is the whole readout: this switch decides what the lane plays, and a lane
+// that is generating must not look like one that merely could.
+.weave-gen-on.on {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: var(--bg);
+}
+
 // The two selects live in hosts because they are REBUILT, not repainted: on a
 // rack lane they name one of the instruments inside the lane, and both the list
 // and the current value change when you pick the other slot.
