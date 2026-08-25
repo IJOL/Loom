@@ -15,6 +15,9 @@
 import type { LaneNote } from '../session/lane-note-source';
 import { readHead, patternBars, type GridSpec } from './grid';
 import { cadenceFires, DEFAULT_CADENCE, type CadenceSpec } from './cadence';
+import { chordPitch, DEFAULT_CHORD, type ChordSpec } from './chord';
+import type { ScaleId } from '../core/musicality';
+import type { Progression } from '../arranger/progression';
 import type { PoolNote } from './pool';
 
 export interface GenerateOptions {
@@ -33,6 +36,11 @@ export interface GenerateOptions {
    *  before CADENCE existed. */
   cadence?: CadenceSpec;
   barTicks?: number;
+  /** Which note each step lands on. Absent ⇒ the pool's own pitch, untouched. */
+  chord?: ChordSpec;
+  tonality?: { key: number; scale: ScaleId };
+  /** The SONG's progression, promoted out of the weave in 2c. */
+  progression?: Progression;
 }
 
 /** One iteration's worth of notes.
@@ -52,10 +60,14 @@ export function generateNotes(o: GenerateOptions): LaneNote[] {
   // three-bar pattern gets a three-bar phrase rather than a four-bar one it
   // never finishes.
   const bars = patternBars(o.grid);
+  const chord = o.chord ?? DEFAULT_CHORD;
+  const tonality = o.tonality ?? { key: 0, scale: 'major' as ScaleId };
+  const progression = o.progression ?? [];
 
   const out: LaneNote[] = [];
   for (let i = 0; i < steps; i++) {
-    const head = readHead(o.startStep + i, o.grid, o.stepsPerBar);
+    const step = o.startStep + i;
+    const head = readHead(step, o.grid, o.stepsPerBar);
     const at = {
       head,
       stepsPerBar: o.stepsPerBar,
@@ -75,7 +87,14 @@ export function generateNotes(o: GenerateOptions): LaneNote[] {
       // beyond the clip's end on the second lap.
       start: i * o.ticksPerStep,
       duration: o.ticksPerStep,
-      midi: note.midi,
+      // The harmony walks the SONG's bars, not the pattern's. The rhythm
+      // repeats with the pattern and the chords do not, which is what lets
+      // every lane agree on where the music is while disagreeing about what to
+      // play there.
+      midi: chordPitch(note.midi, chord, tonality, progression, {
+        head,
+        bar: Math.floor(step / Math.max(1, o.stepsPerBar)),
+      }),
       velocity: note.velocity,
     });
   }

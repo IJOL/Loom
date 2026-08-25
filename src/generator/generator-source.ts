@@ -11,6 +11,9 @@ import { generateNotes } from './generate';
 import { pitchPool, type PoolNote } from './pool';
 import type { GridSpec } from './grid';
 import { DEFAULT_CADENCE, type CadenceSpec } from './cadence';
+import { DEFAULT_CHORD, type ChordSpec } from './chord';
+import type { ScaleId } from '../core/musicality';
+import type { Progression } from '../arranger/progression';
 
 export interface GeneratorDeps {
   /** The material: the lane's loop selection, already folded to one bar.
@@ -32,6 +35,12 @@ export interface GeneratorDeps {
    *  says how many steps cut the bar, and the bar's own length is the session's
    *  business. */
   barTicks: () => number;
+  /** Which note each step lands on. Absent ⇒ the pool's own pitch. */
+  chord?: () => ChordSpec;
+  /** The key and scale the lane's material was folded in. */
+  tonality?: () => { key: number; scale: ScaleId };
+  /** The SONG's progression. */
+  progression?: () => Progression;
 }
 
 export function createGeneratorSource(deps: GeneratorDeps): LaneNoteSource {
@@ -68,17 +77,27 @@ export function createGeneratorSource(deps: GeneratorDeps): LaneNoteSource {
     const startStep = deps.startStep();
     const cadence = deps.cadence?.() ?? DEFAULT_CADENCE;
     const barTicks = deps.barTicks();
+    const chord = deps.chord?.() ?? DEFAULT_CHORD;
+    const tonality = deps.tonality?.() ?? { key: 0, scale: 'major' as ScaleId };
+    const progression = deps.progression?.() ?? [];
 
     // `startStep` is in the key, so the head genuinely moves from one iteration
     // to the next — a cache that ignored it would freeze the pattern on its
     // first bar, which is the mistake that would look most like "it works".
     const key = `${poolVersion}|${grid.repeats},${grid.pow2}`
       + `|${stepsPerBar}|${ticksPerStep}|${steps}|${startStep}|${barTicks}`
-      + `|${cadence.amount},${cadence.pattern},${cadence.mod},${cadence.phrase}`;
+      + `|${cadence.amount},${cadence.pattern},${cadence.mod},${cadence.phrase}`
+      // The progression is keyed by its SHAPE, not by identity: `activeProgression`
+      // builds a fresh array per call, so an identity check would miss every
+      // time and refold on every tick.
+      + `|${chord.conform},${chord.pitch},${chord.pattern},${chord.mod}`
+      + `|${tonality.key},${tonality.scale}`
+      + `|${progression.map((c) => `${c.degree}:${c.bars}`).join('-')}`;
     if (key !== cacheKey) {
       cacheKey = key;
       out = generateNotes({
         pool, grid, stepsPerBar, ticksPerStep, steps, startStep, cadence, barTicks,
+        chord, tonality, progression,
       });
     }
     return out;

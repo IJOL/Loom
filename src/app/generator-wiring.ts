@@ -21,9 +21,11 @@ import type { GeneratorLaneState } from '../generator/generator-state';
 import { createGeneratorSource } from '../generator/generator-source';
 import { clampGrid } from '../generator/grid';
 import { clampCadence } from '../generator/cadence';
+import { clampChord } from '../generator/chord';
 import { blendLoops, type BlendOptions } from '../weave/blend-clip';
 import { resolveSelection } from '../weave/weave-selection';
 import { laneWeights, type LaneWeaveConfig } from '../weave/weave-state';
+import type { Progression } from '../arranger/progression';
 
 export interface GeneratorWiringDeps {
   getMeter: () => TimeSignature;
@@ -38,6 +40,9 @@ export interface GeneratorWiringDeps {
   clipBars: (laneId: string) => number | undefined;
   /** Which repeat of its own clip the lane is on. */
   lap: (laneId: string) => number;
+  /** The SONG's chord progression — promoted out of the weave's own state in
+   *  2c, so the note-FX, the follower and this all ask one place. */
+  progression: () => Progression;
 }
 
 /** The generator's MATERIAL: the lane's loops, folded to one bar.
@@ -101,6 +106,12 @@ export function createGeneratorWiring(deps: GeneratorWiringDeps) {
       grid: () => clampGrid(gen.grid),
       cadence: () => clampCadence(gen.cadence),
       barTicks: () => ticksPerBar(deps.getMeter()),
+      chord: () => clampChord(gen.chord),
+      // The SAME tonality the material was folded in, not the session's raw
+      // one: if Darkness has moved this lane's scale, conforming against the
+      // session's would snap the line out of the key its own notes are in.
+      tonality: () => deps.tonalityOf(laneId),
+      progression: deps.progression,
       stepsPerBar,
       ticksPerStep,
       steps,

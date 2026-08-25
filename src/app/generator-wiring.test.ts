@@ -9,6 +9,8 @@ import { DEFAULT_METER, ticksPerBar } from '../core/meter';
 import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
 import { DEFAULT_GRID } from '../generator/grid';
 import { DEFAULT_CADENCE } from '../generator/cadence';
+import { DEFAULT_CHORD } from '../generator/chord';
+import { chordTonesOf } from '../core/musicality';
 import type { SessionState } from '../session/session';
 import type { LanePlayState } from '../session/session-runtime';
 
@@ -43,6 +45,7 @@ const generating = (x = 0) => ({
     selection: { kind: 'ab' as const, a: 'clip:clipA', b: 'clip:clipB', x },
     grid: { ...DEFAULT_GRID },
     cadence: { ...DEFAULT_CADENCE },
+    chord: { ...DEFAULT_CHORD },
   },
 });
 
@@ -84,6 +87,7 @@ describe('a generating lane', () => {
         selection: { kind: 'ab' as const, a: 'clip:gone', b: 'clip:alsoGone', x: 0 },
         grid: { ...DEFAULT_GRID },
         cadence: { ...DEFAULT_CADENCE },
+        chord: { ...DEFAULT_CHORD },
       },
     });
     expect(wiring(s).notesFor('lane1')).toBeUndefined();
@@ -153,6 +157,28 @@ describe('a generating lane', () => {
 
   it('cuts the bar into as many steps as DIV says', () => {
     expect(count({ grid: { div: 8 } })).toBe(count({ grid: { div: 4 } }) * 2);
+  });
+
+  it('lands on the chord the SESSION is on, and moves with it bar by bar', () => {
+    // The progression was promoted out of the weave's own state in 2c precisely
+    // so a third reader could ask one place. This is that third reader.
+    const gen = generating();
+    gen.generator.chord.conform = 'chord';
+    const s = session(gen);
+    s.musicality.chords = [{ degree: 0, bars: 1 }, { degree: 4, bars: 1 }];
+
+    const laneStates = new Map<string, LanePlayState>();
+    const w = wiring(s, laneStates);
+    const barOf = (loopCount: number) => {
+      laneStates.set('lane1', { loopCount } as unknown as LanePlayState);
+      return (w.notesFor('lane1')?.() ?? []).map((n) => ((n.midi % 12) + 12) % 12);
+    };
+
+    const key = s.musicality.key;
+    const scale = s.musicality.scale;
+    for (const pc of barOf(0)) expect(chordTonesOf(key, scale, 0)).toContain(pc);
+    for (const pc of barOf(1)) expect(chordTonesOf(key, scale, 4)).toContain(pc);
+    expect(barOf(0)).not.toEqual(barOf(1));
   });
 
   it('is beaten by FOLLOW, which answers the same question', () => {

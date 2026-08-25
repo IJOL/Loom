@@ -238,6 +238,9 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     melodic: melodicLane,
     clipBars: clipBarsFor,
     lap: (laneId) => deps.getLaneStates().get(laneId)?.loopCount ?? 0,
+    // Untravelled, like the one the follower is handed for a user gesture: the
+    // journey belongs to a weaving lane's laps, and a generating lane has none.
+    progression: () => activeProgression(musicality()),
   });
 
   const build = (laneId: string): LaneNoteSource | undefined => {
