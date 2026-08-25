@@ -10,7 +10,7 @@
 // ask time, because the clips are the session's and they move underneath.
 
 import { defaultWeaveState, type WeaveState, type LaneWeaveConfig } from '../weave/weave-state';
-import { createWeaveSource, createMacroSource, type WeaveSource } from '../weave/weave-runtime';
+import { createWeaveSource, createMacroSource, type LaneNoteSource } from '../weave/weave-runtime';
 import { resolveSelection } from '../weave/weave-selection';
 import { avoidClash } from '../weave/harmony-guard';
 import {
@@ -45,7 +45,7 @@ export interface WeaveWiring {
   /** Handed to the session host. Returns undefined for a lane WEAVE has nothing
    *  to say about, which is what keeps the whole feature additive: an untouched
    *  session schedules exactly as it did before. */
-  notesFor: (laneId: string) => WeaveSource | undefined;
+  notesFor: (laneId: string) => LaneNoteSource | undefined;
   /** Drop every cached source. Called when a macro moves, a loop is chosen or
    *  the topology changes, so the next tick rebuilds against the new value
    *  rather than answering from the old fold. */
@@ -97,11 +97,11 @@ export interface WeaveWiringDeps {
 
 export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
   const state = defaultWeaveState();
-  const sources = new Map<string, WeaveSource>();
+  const sources = new Map<string, LaneNoteSource>();
   /** The same sources with the leader rule wrapped round them — what the
    *  scheduler is handed. Two caches because the leader search reads the RAW
    *  ones, and reading a guarded one from inside the guard is a loop. */
-  const guarded = new Map<string, WeaveSource>();
+  const guarded = new Map<string, LaneNoteSource>();
 
   const macro = (id: string) => {
     const v = state.macros[id];
@@ -222,7 +222,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
   };
 
 
-  const build = (laneId: string): WeaveSource | undefined => {
+  const build = (laneId: string): LaneNoteSource | undefined => {
     const barTicks = ticksPerBar(deps.getMeter());
     // Follow is checked FIRST and returns outright. Both this and the weave
     // selection answer "what does this lane play", and the two cannot both be
@@ -385,7 +385,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *
    *  The phrase always arrives whole. Stretched, it simply needs more room than
    *  one bar, which is why the same gesture also grows the carrier clip. */
-  const withTimeScale = (laneId: string, source: WeaveSource): WeaveSource => () => {
+  const withTimeScale = (laneId: string, source: LaneNoteSource): LaneNoteSource => () => {
     const scale = state.lanes[laneId]?.timeScale ?? 1;
     if (!(scale > 0) || scale === 1) return source();
     const notes = source();
@@ -408,7 +408,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *  loses its lowest notes at the third press reads as a broken control, and
    *  the note still sounding an octave from where it was asked to be reads as
    *  what it is — the end of the keyboard. */
-  const withOctave = (laneId: string, source: WeaveSource): WeaveSource => () => {
+  const withOctave = (laneId: string, source: LaneNoteSource): LaneNoteSource => () => {
     const oct = state.lanes[laneId]?.octave ?? 0;
     const notes = source();
     if (!oct || !notes || notes.length === 0 || !melodicLane(laneId)) return notes;
@@ -418,7 +418,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
 
   /** The lane's own fold, before any lane hears any other. Cached because it is
    *  what the leader search reads for EVERY lane on every ask. */
-  const rawFor = (laneId: string): WeaveSource | undefined => {
+  const rawFor = (laneId: string): LaneNoteSource | undefined => {
     if (sources.has(laneId)) return sources.get(laneId);
     const built = build(laneId);
     // The lane's own tempo goes on FIRST, before the progression and before the
@@ -507,7 +507,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *  will actually sound, and a lane transposed afterwards would be measured in
    *  the wrong place. Percussion is skipped — a drum note picks a voice, not a
    *  pitch, so transposing one changes the instrument. */
-  const withProgression = (laneId: string, source: WeaveSource): WeaveSource => () => {
+  const withProgression = (laneId: string, source: LaneNoteSource): LaneNoteSource => () => {
     const notes = source();
     if (!notes || notes.length === 0 || !melodicLane(laneId)) return notes;
     // Through the ONE accessor: a progression the user WROTE wins over the
@@ -555,7 +555,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *  would make the rule chase its own tail — a lane adjusting to a root that
    *  adjusts to the lane. Percussion is skipped for the reason it always is: a
    *  drum note picks a voice, not a pitch, so there is no interval to forbid. */
-  const guardAgainstLeader = (laneId: string, source: WeaveSource): WeaveSource => () => {
+  const guardAgainstLeader = (laneId: string, source: LaneNoteSource): LaneNoteSource => () => {
     const notes = source();
     if (!notes || notes.length === 0 || !melodicLane(laneId)) return notes;
     const lead = leader();
@@ -615,7 +615,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *  because "nothing to say" is already this function's own answer — the
    *  additive path is the one that was always there. */
 
-  const foldFor = (laneId: string): WeaveSource | undefined => {
+  const foldFor = (laneId: string): LaneNoteSource | undefined => {
     if (state.bypass) return undefined;
     if (guarded.has(laneId)) return guarded.get(laneId);
     const source = rawFor(laneId);

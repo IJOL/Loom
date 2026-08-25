@@ -43,7 +43,7 @@ export interface SessionHostDeps {
   /** WEAVE's per-lane note gate, asked once per note at schedule time. Absent —
    *  or returning undefined for a lane — means every note fires exactly as it
    *  did before the panel existed, which is what keeps this additive. */
-  weaveNotesFor?: (laneId: string) => import('../weave/weave-runtime').WeaveSource | undefined;
+  weaveNotesFor?: (laneId: string) => import('../weave/weave-runtime').LaneNoteSource | undefined;
   // Phase G: drums removed — triggerForLane now routes drums-machine via
   // res.engine.createVoice() like every other engine.
   drumLanes: readonly DrumVoice[];

@@ -17,17 +17,11 @@ import { avoidClash } from './harmony-guard';
 import { applyNoteMacros } from './macro-notes';
 
 
-/** A note the weave produced. `layerIndex` names the loop it survived from,
- *  which a layered instrument reads as which of its slots should play it. */
-export type WovenNote = NoteEvent & { layerIndex?: number };
-
-/** What the lane should PLAY this bar, or undefined for "play your own clip".
- *
- *  A source, not a predicate. The first shape of this hook asked "does this
- *  clip note fire?", which can only ever take notes AWAY — so at the far end of
- *  a crossfade the lane fell silent instead of handing over to the other loop.
- *  A crossfade has to be able to let hits in. */
-export type WeaveSource = () => WovenNote[] | undefined;
+// The contract these produce lives in session/lane-note-source: it has three
+// producers now and only one of them is the weave. Re-exported because the
+// weave is still where most callers first meet it.
+export type { LaneNote, LaneNoteSource } from '../session/lane-note-source';
+import type { LaneNote, LaneNoteSource } from '../session/lane-note-source';
 
 /** The two macros that rewrite notes, read at ask time so a knob moved while the
  *  transport runs is heard on the next bar rather than the next launch. */
@@ -47,9 +41,9 @@ export function createWeaveSource(
    *  and what is playing here is the cross-fade — a lane that was weaving used
    *  to be the one lane the macros could not touch. */
   readMacros: ReadNoteMacros = NEUTRAL_NOTE_MACROS,
-): WeaveSource {
+): LaneNoteSource {
   let cacheKey = '';
-  let woven: WovenNote[] = [];
+  let woven: LaneNote[] = [];
 
   return () => {
     const weights = laneWeights(cfg);
@@ -72,7 +66,7 @@ export function createWeaveSource(
       // applyNoteMacros spreads each note, so a layerIndex survives it. Density
       // may drop or split a hit; a split inherits its parent's layer, which is
       // right — the extra hit belongs to the loop the note came from.
-      woven = applyNoteMacros(blended, m, o.barTicks) as WovenNote[];
+      woven = applyNoteMacros(blended, m, o.barTicks) as LaneNote[];
     }
     return woven;
   };
@@ -94,7 +88,7 @@ export function createMacroSource(
   getNotes: () => NoteEvent[],
   readMacros: ReadNoteMacros,
   barTicks: number,
-): WeaveSource {
+): LaneNoteSource {
   let cacheKey = '';
   let out: NoteEvent[] = [];
 

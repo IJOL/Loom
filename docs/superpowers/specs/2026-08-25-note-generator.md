@@ -112,46 +112,37 @@ Karst's, in full, with our reading of each.
 Plus each stream's own value: `cadence.amount`, `offset.amount`,
 `chord.pitch`, `length.length`.
 
-## 5. Decisions that need making, not assuming
+## 5. Decisions — settled 2026-08-25
 
-### ⛔ CONFIRMAR 1 — what does it read?
+All three as recommended.
 
-Karst's generator reads a `piano_roll` it owns. Ours has three options:
+### It reads the lane's own clip, as MATERIAL
 
-- **(a) The lane's own clip.** Coherent with the weave, and the generator
-  becomes "a read head over material you wrote". But CLAUDE.md already flags
-  "a weaving lane IGNORES its clip" as a known, undecided problem, and this
-  would be a second lane type with the same ambiguity.
-- **(b) Nothing — pitches from the chord and scale.** Truly generative; no
-  material to go stale. But then CHORD is doing all the melodic work and there
-  is no way to make it play *your* idea.
-- **(c) The weave's shelf.** The library of loops the weave already draws from.
+The clip's pitches are the pool; its rhythm is ignored, because CADENCE
+decides when. That makes the clip mean something — unlike a weaving lane,
+where it is inert — without pretending the generator is playing it.
 
-**Recommendation: (a), with the clip read as MATERIAL rather than as timing** —
-its pitches are the pool, its rhythm is ignored. That makes the clip meaningful
-(unlike a weaving lane, where it is inert) without pretending the generator is
-playing it.
+The cost, accepted: a second kind of lane whose clip is not played as
+written. The difference from the weave is that here the clip is READ rather
+than ignored, so an empty clip is a silent generator rather than a generator
+that sounds the same as every other.
 
-### ⛔ CONFIRMAR 2 — is CADENCE floored by metric weight?
+### CADENCE is a floor on metric weight
 
-`harmony/phrase` is deliberately expressed as a floor on metric weight rather
-than as patterns of its own, and says why: *"Inventing separate rhythms per bar
-would be a second rhythm system arguing with the first."*
+It raises and lowers a threshold: strong positions in the bar survive first,
+weak ones fall first. It thins and thickens a sense of the bar that already
+exists rather than inventing one that argues with it — the argument
+`harmony/phrase` already made and wrote down.
 
-The same argument applies here. **Recommendation: CADENCE is a floor on
-`metricWeight`,** so it thins and thickens an existing sense of the bar rather
-than inventing a rhythm that disagrees with the meter. The alternative — a free
-step sequencer — is piece 6, the arp pattern editor, and should stay there.
+A free per-step decision is piece 6, the arp pattern editor, and stays there.
+Two rhythm systems in one lane is the thing being avoided.
 
-### ⛔ CONFIRMAR 3 — one lane or the session?
+### The wheels are per lane, the structure is shared
 
-The generator is per lane (a `WeaveSource` is). But `Bar Mod`/`Loop Mod` and
-the phrase are arrangement-scale ideas. Two generating lanes with independent
-wheels will drift apart, which may be the point or may be chaos.
-
-**Recommendation: per lane, seeded from the session.** The wheels run per lane;
-the phrase and the progression come from the session, so lanes drift in texture
-while agreeing on where the music is.
+Each lane has its own wheels and its own phase, so textures drift apart. The
+phrase and the progression come from the session, so every lane agrees on
+WHERE the music is even while disagreeing about what to do there. Drift in
+texture, agreement in structure.
 
 ## 6. What it deliberately does not do
 

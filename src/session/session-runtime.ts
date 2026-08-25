@@ -4,7 +4,7 @@
 import type { SessionClip, SessionState, LaunchQuantize, SessionLane, ClipSample, SessionScene, ClipEnvelope } from './session';
 import { emptyScene, emptyClip, clipRowCount, cloneClipWithNewId } from './session';
 import { tickLane, noteTrigger } from '../core/lane-scheduler';
-import type { WeaveSource } from '../weave/weave-runtime';
+import type { LaneNoteSource } from '../weave/weave-runtime';
 import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
 import { DEFAULT_METER, type TimeSignature } from '../core/meter';
 import { envelopeSubIndex } from '../core/clip-envelope-length';
@@ -465,7 +465,7 @@ export function tickSession(
    *  the clip's notes can only take hits away, so the far end of a fade came out
    *  silent instead of handed over. Absent, or undefined for a lane, means the
    *  clip plays itself exactly as before. */
-  weaveNotesFor?: (laneId: string) => WeaveSource | undefined,
+  weaveNotesFor?: (laneId: string) => LaneNoteSource | undefined,
 ): void {
   // Resolve the active global loop once per tick (not per-lane).
   const globalLoop = activeScene ? effectiveGlobalLoop(activeScene) : undefined;

@@ -1,6 +1,6 @@
 // A follower lane's notes, as the same kind of source WEAVE hands the scheduler.
 //
-// Deliberately the shape of `WeaveSource` — a function of no arguments returning
+// Deliberately the shape of `LaneNoteSource` — a function of no arguments returning
 // what the lane plays this iteration — because that is the shape
 // `weave-wiring`'s notesFor already resolves and `ctx.notes` already accepts. A
 // second hook in lane-scheduler for the same job would be a second answer to
@@ -13,7 +13,7 @@ import type { NoteEvent } from '../core/notes';
 import type { LaneRole } from '@loom/plugin-sdk';
 import type { ScaleId, StyleId } from '../core/musicality';
 import type { Chord, Progression } from '../arranger/progression';
-import type { WeaveSource, ReadNoteMacros } from '../weave/weave-runtime';
+import type { LaneNoteSource, ReadNoteMacros } from '../weave/weave-runtime';
 import { applyNoteMacros } from '../weave/macro-notes';
 import { inferChords } from './infer-chords';
 import { renderPart } from './render-part';
@@ -199,7 +199,7 @@ export function progressionFor(deps: FollowDeps): Chord[] {
   });
 }
 
-export function createFollowSource(deps: FollowDeps): WeaveSource {
+export function createFollowSource(deps: FollowDeps): LaneNoteSource {
   let cacheKey = '';
   let out: NoteEvent[] = [];
   /** The travelled progression, LATCHED to the lane's own bar line.
