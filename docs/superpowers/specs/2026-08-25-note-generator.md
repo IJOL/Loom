@@ -1,6 +1,6 @@
 # The note generator — spec
 
-A third producer of `WeaveSource`: what a lane plays when it is neither reading
+A third producer of `LaneNoteSource`: what a lane plays when it is neither reading
 its clips nor following another lane, but generating.
 
 Comes out of the Karst research ([docs/research/karst/README.md](../../research/karst/README.md)
@@ -37,7 +37,9 @@ happening again.
 | PHRASE | where a bar sits in the phrase, as a FLOOR on metric weight | `harmony/phrase` |
 | CHORD → the note it lands on | chord tones + snapping | `chordTonesOf`, `snapToPitchClasses` (2b) |
 | which chord is sounding | one tonal authority | `musicality.progression` (2c) |
-| where the notes go | `SchedulerContext.notes` | `WeaveSource` |
+| the pattern's material | a weighted list of loops, and three topologies over it | `weave/blend-clip`, `weave/loop-ids`, `weave/topology-*` |
+| what may be drawn from | the shelf | `weave/weave-catalog` |
+| where the notes go | `SchedulerContext.notes` | `LaneNoteSource` |
 
 **Genuinely new: four things.** Pattern length (`REPEATS`, `^2`), the read head
 itself, `DIV` (the division a stream runs at), and `OFFSET` (step displacement).
@@ -114,18 +116,29 @@ Plus each stream's own value: `cadence.amount`, `offset.amount`,
 
 ## 5. Decisions — settled 2026-08-25
 
-All three as recommended.
+Two as recommended. The third — where the material comes from — was decided
+against the recommendation, and the answer taken is the better one.
 
-### It reads the lane's own clip, as MATERIAL
+### The material arrives as a LOOP SELECTION, the way the weave's does
 
-The clip's pitches are the pool; its rhythm is ignored, because CADENCE
-decides when. That makes the clip mean something — unlike a weaving lane,
-where it is inert — without pretending the generator is playing it.
+Not "the lane's own clip", which is what this spec first proposed. That would
+have been a fourth answer to a question that already has one. The generator
+draws from a weighted list of loops — exactly the shape `blendLoops` takes,
+`(loop, weight)[]`, addressed by the ids in `weave/loop-ids.ts`.
 
-The cost, accepted: a second kind of lane whose clip is not played as
-written. The difference from the weave is that here the clip is READ rather
-than ignored, so an empty clip is a silent generator rather than a generator
-that sounds the same as every other.
+Three things fall out of it for free:
+
+- **The three topologies come with it.** A→B, queue and cloud all reduce to
+  that same weighted list, which is why all three ship for the price of three
+  small files. The generator inherits them rather than picking one.
+- **"My own clip" stops being a rule** and becomes `clip:<id>` — one selection
+  among many. A lane pointed at its own clip behaves exactly as the first
+  proposal described, with no code anywhere that knows it is doing so.
+- **The shelf already exists.** `weave-catalog` decides what may be drawn, so
+  the generator never needs its own answer to "and if the clip is empty".
+
+The pitches are the pool; the loops' rhythm is not read, because CADENCE
+decides when. That much the first proposal had right.
 
 ### CADENCE is a floor on metric weight
 
@@ -147,7 +160,7 @@ texture, agreement in structure.
 ## 6. What it deliberately does not do
 
 - **It is not an engine.** An engine would have to invent notes inside the
-  worklet, which is the second "what does this lane play" hook that `WeaveSource`
+  worklet, which is the second "what does this lane play" hook that `LaneNoteSource`
   exists to prevent.
 - **It does not transcribe Karst's graph.** Their document is public and
   readable (research §4a) and copying it node by node would be derivative work
@@ -162,8 +175,9 @@ texture, agreement in structure.
 Each stage ends green and committed, and each is worth having on its own.
 
 1. **The grid and the read head.** `tick → position`, pattern length, no
-   displacement, no streams. A lane generates its clip's pitches on the beat.
-   Proves the `WeaveSource` seam end to end.
+   displacement, no streams. A lane generates, on the beat, the pitches of
+   whatever loops it has selected.
+   Proves the `LaneNoteSource` seam end to end.
 2. **The shared per-trigger formula.** Extract `frac(n × pattern + skew)` out of
    `plugins/pernote` into `src/generator/` (or `core/`) so both use one copy.
 3. **CADENCE + PHRASE.** The rhythm decision, floored by metric weight. This is
