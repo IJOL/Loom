@@ -973,7 +973,7 @@ describe('the master lock', () => {
     const h = harness();
     h.ctx.setLocked(true);
     h.ctx.setProgression('i-VI-III-VII');
-    expect(h.weave.progression).toBe('i-VI-III-VII');
+    expect(h.state.musicality.progression).toBe('i-VI-III-VII');
   });
 
   it('is not a mute', () => {

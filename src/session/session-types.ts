@@ -10,12 +10,34 @@ export interface MusicalityState {
   key: number;        // pitch class 0-11 (0 = Do … 9 = La)
   scale: ScaleId;
   style: StyleId;
+  /** Which chord progression the SONG is walking, by catalogue id.
+   *
+   *  'static' — the default — is Loom as it always was: one key, one chord,
+   *  for ever. It is an ENTRY in the catalogue rather than an absent field,
+   *  so standing still is something the user chose rather than something
+   *  nobody implemented.
+   *
+   *  It lived on the WEAVE state until 2026-08-25, where its own comment
+   *  said it was session harmony and would move if it outgrew WEAVE. It
+   *  did: the chord note-FX, the arp and the note generator all need to ask
+   *  what chord is sounding, and a panel is the wrong place for three
+   *  strangers to have to look. Here it sits beside the key and the scale,
+   *  which is the same question asked at a different rate. */
+  progression?: string;
+  /** A progression written by hand. Present, it WINS over `progression`
+   *  and the dropdown reads Custom. Absent means "the catalogue". */
+  chords?: import('../arranger/progression').Chord[];
   lock: boolean;      // candado de escala del piano-roll
 }
 export interface LaneMusicalityOverride { key?: number; scale?: ScaleId; }
 // Scale lock defaults OFF: a fresh session must never silently constrain which
 // notes the user can place. It's opt-in via the 🔒 toggle in the tonality bar.
-export const DEFAULT_MUSICALITY: MusicalityState = { key: 9, scale: 'minor', style: 'acid-techno', lock: false };
+export const DEFAULT_MUSICALITY: MusicalityState = {
+  key: 9, scale: 'minor', style: 'acid-techno', lock: false,
+  // 'static' rather than absent, so standing still on one chord is
+  // something the user chose rather than something nobody implemented.
+  progression: 'static',
+};
 
 export type LaunchQuantize =
   | 'immediate' | '1/4' | '1/2' | '1/1' | '2/1' | '4/1';

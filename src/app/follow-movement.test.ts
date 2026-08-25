@@ -71,9 +71,10 @@ describe('the complaint, pinned: a pad over one chord cannot move', () => {
     //
     // Taken directly, four chords are four chords: the pad is one stack per
     // chord and there are now four of them where there was one.
-    const w = wiring(session('pad'));
+    const s = session('pad');
+    const w = wiring(s);
     const flat = pitches(w);
-    w.state.progression = 'i-VI-III-VII';
+    s.musicality.progression = 'i-VI-III-VII';
     w.invalidate();
     const walked = pitches(w);
     expect(walked).not.toEqual(flat);
@@ -90,8 +91,9 @@ describe('the complaint, pinned: a pad over one chord cannot move', () => {
     // The original insight survives: a pad has one onset per chord, so nothing
     // shifts it inside a chord's own span. What was wrong was the number of
     // chords, not what the pad does with them.
-    const w = wiring(session('pad'));
-    w.state.progression = 'i-VI';
+    const s = session('pad');
+    const w = wiring(s);
+    s.musicality.progression = 'i-VI';
     w.invalidate();
     const firstChord = notesOf(w).filter((n) => n.start < BAR * 2);
     expect(new Set(firstChord.map((n) => n.start)).size).toBe(1);
@@ -100,9 +102,10 @@ describe('the complaint, pinned: a pad over one chord cannot move', () => {
 
 describe('a part with onsets DOES walk a progression', () => {
   it('a comp changes its notes while the leader does not change at all', () => {
-    const w = wiring(session('comp'));
+    const s = session('comp');
+    const w = wiring(s);
     const flat = pitches(w);
-    w.state.progression = 'i-VI-III-VII';
+    s.musicality.progression = 'i-VI-III-VII';
     w.invalidate();
     expect(pitches(w)).not.toEqual(flat);
   });
@@ -121,7 +124,8 @@ describe('the macros reach a follower', () => {
   });
 
   it('Energy moves the velocities', () => {
-    const w = wiring(session('comp'));
+    const s = session('comp');
+    const w = wiring(s);
     const soft = notesOf(w).map((n) => n.velocity);
     w.state.macros.energy = 1;
     w.invalidate();
@@ -129,7 +133,8 @@ describe('the macros reach a follower', () => {
   });
 
   it('at the neutrals the part is exactly as rendered — the layer costs nothing', () => {
-    const w = wiring(session('comp'));
+    const s = session('comp');
+    const w = wiring(s);
     const before = pitches(w);
     w.state.macros.density = 0.5;
     w.state.macros.energy = 0.5;

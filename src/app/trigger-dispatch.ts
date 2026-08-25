@@ -26,6 +26,15 @@ export interface TriggerDispatchDeps {
   /** Effective tonality for scale-aware note-FX. Falls back to A minor when
    *  omitted (e.g. tests or old callers). */
   getMusicality?: () => { key: number; scale: import('../core/musicality').ScaleId };
+  /** The scale degree of the chord sounding at `time`, from the session's
+   *  progression. Undefined when the song names none — which is the ordinary
+   *  case, so a note-FX must have an answer for undefined rather than a
+   *  default degree. A wrong chord is worse than no chord.
+   *
+   *  Takes the note's time rather than reading "now": notes are scheduled
+   *  ahead of the clock, so asking now would answer for the wrong bar at
+   *  every look-ahead boundary — audibly, on the chord change. */
+  getChordDegree?: (time: number) => number | undefined;
   /** Optional per-lane live-voice registry. When present, every voice the
    *  dispatch creates is recorded so the stop seams can release it immediately
    *  (the 'audio' channel clip otherwise plays to the end after any Stop). */
@@ -67,6 +76,7 @@ export function createTriggerForLane(deps: TriggerDispatchDeps): TriggerForLane 
         seed: deps.seq.playbackSeed,
         key: musicality.key,
         scale: musicality.scale,
+        chordDegree: deps.getChordDegree?.(time),
       });
       for (const e of events) fire(e.note, e.time, e.gate, e.accent, false);
       return;

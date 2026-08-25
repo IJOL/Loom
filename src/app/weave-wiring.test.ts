@@ -256,12 +256,15 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       drift: 'together' | 'offset' | 'free' = 'together',
       evolve = false,
     ) => {
-      const w = createWeaveWiring({
+      // ONE session, held: `() => session()` built a fresh one on every
+      // read, so anything a test wrote to it was thrown away by the next.
+      const s = session();
+      const w = Object.assign(createWeaveWiring({
         getLaneStates: () => new Map<string, LanePlayState>(),
         getMeter: () => DEFAULT_METER,
         getBpm: () => 120,
-        getState: () => session(),
-      });
+        getState: () => s,
+      }), { session: s });
       w.state.lanes.lane1 = {
         weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
         locked: false, harmonyLeader: false,
@@ -291,7 +294,7 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       // eventually disagrees with the music by one, which is the most confusing
       // thing a position display can do.
       const w = flowing(0);
-      w.state.progression = 'i-VI-III-VII';
+      w.session.musicality.progression = 'i-VI-III-VII';
       w.advance(BAR_SEC * 2);
       expect(w.chordNow()).toEqual({ bar: 2, bars: 4, degree: 2 });
       w.advance(BAR_SEC * 5);
@@ -301,7 +304,7 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
     it('keeps the chords walking under the master lock', () => {
       // The invariant: a lock freezes MATERIAL, never HARMONY.
       const w = flowing(8);
-      w.state.progression = 'i-VI-III-VII';
+      w.session.musicality.progression = 'i-VI-III-VII';
       w.state.locked = true;
       w.advance(BAR_SEC * 2);
       expect(posOf(w)).toBe(0);
@@ -321,7 +324,7 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       // quarter you happened to be on, so pressing the button twice gave two
       // different scenes.
       const w = flowing(0);
-      w.state.progression = 'i-VI-III-VII';
+      w.session.musicality.progression = 'i-VI-III-VII';
       expect(w.lapNotes().bars).toBe(4);
     });
 
@@ -335,7 +338,7 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       // hearing chords 1-2 and once 3-4. Stacked at the same offsets it would
       // be two bars of doubled notes rather than four bars of music.
       const w = flowing(0);
-      w.state.progression = 'i-VI-III-VII';
+      w.session.musicality.progression = 'i-VI-III-VII';
       const { bars, byLane } = w.lapNotes();
       const notes = byLane.get('lane1') ?? [];
       expect(notes.length).toBeGreaterThan(0);
@@ -356,7 +359,7 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       // a printed clip is ordinary notes you edit, and one still naming a rack
       // slot would go on routing itself after that rack was changed or emptied.
       const w = flowing(0);
-      w.state.progression = 'i-VI-III-VII';
+      w.session.musicality.progression = 'i-VI-III-VII';
       const { byLane } = w.lapNotes();
       const all = [...byLane.values()].flat();
       expect(all.length).toBeGreaterThan(0);
@@ -369,7 +372,7 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
       // Walking the lap moves the bar cursor. Left where the loop stopped, the
       // next scheduler tick would fold against the wrong chord.
       const w = flowing(0);
-      w.state.progression = 'i-VI-III-VII';
+      w.session.musicality.progression = 'i-VI-III-VII';
       w.advance(BAR_SEC * 1);
       const before = w.chordNow();
       w.lapNotes();
@@ -762,13 +765,16 @@ describe('the scene walks a chord progression', () => {
   } as unknown as SessionState);
 
   const woven = (progression: string, atBar: number): number => {
+    // ONE session, held: `getState: oneLane` built a fresh one on every read,
+    // so the progression set below never reached the wiring that read it.
+    const s = oneLane();
     const w = createWeaveWiring({
       getLaneStates: () => new Map<string, LanePlayState>(),
       getMeter: () => DEFAULT_METER,
       getBpm: () => 120,
-      getState: oneLane,
+      getState: () => s,
     });
-    w.state.progression = progression;
+    s.musicality.progression = progression;
     w.state.lanes.lane1 = {
       weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
       locked: false, harmonyLeader: false,

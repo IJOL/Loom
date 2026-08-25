@@ -299,24 +299,12 @@ export interface WeaveState {
    *  A lane's own `locked` says the same thing about one lane. Neither is a
    *  mute and neither touches the desk. */
   locked?: boolean;
-  /** Which chord progression the scene is walking, by catalogue id.
-   *
-   *  'static' — the default — is Loom as it always was: one key, one chord, for
-   *  ever. It is an ENTRY in the catalogue rather than an absent field, so
-   *  standing still is something the user chose rather than something nobody
-   *  implemented. */
-  progression?: string;
-  /** A progression written by hand. Present, it WINS over `progression` and the
-   *  dropdown reads Custom.
-   *
-   *  Absent by default and absent from `defaultWeaveState`: absent means "the
-   *  catalogue", which is what every existing session is, so nothing migrates.
-   *
-   *  Here rather than in the session because that is where it was born, not
-   *  because it belongs to the panel: it is session harmony, and if it outgrows
-   *  WEAVE it moves. Said out loud so nobody later mistakes the location for a
-   *  decision. */
-  chords?: Chord[];
+  // The progression MOVED to MusicalityState (session-types.ts) on
+  // 2026-08-25 — `progression` and `chords` used to live here. The comment
+  // that stood in their place said this was session harmony parked where it
+  // was born, and that it would move if it outgrew WEAVE. It outgrew WEAVE:
+  // the chord note-FX and the note generator ask the same question, and a
+  // panel is the wrong place for them to look.
 }
 
 export function defaultWeaveState(): WeaveState {
@@ -330,7 +318,6 @@ export function defaultWeaveState(): WeaveState {
     bypass: false,
     locked: false,
     steps: defaultWeaveStepRows(),
-    progression: 'static',
   };
 }
 

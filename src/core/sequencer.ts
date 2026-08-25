@@ -68,6 +68,17 @@ export class Sequencer {
    *  random processors are consistent within a run but differ between runs. */
   playbackSeed = 0;
 
+  /** AudioContext time of the last idle→playing transition, or null when the
+   *  transport has never run.
+   *
+   *  Here because the transport owns it. Two other places already derive
+   *  "how far in are we" from a start time of their own — the position
+   *  readout keeps a local copy — and a third copy is how two readouts end
+   *  up disagreeing by a bar. Anything that needs the musical position of a
+   *  SCHEDULED time (a note-FX asking which chord that note lands on) needs
+   *  this rather than "now": notes are scheduled ahead of the clock. */
+  startedAtSec: number | null = null;
+
   private playing = false;
   private timerId: number | null = null;   // main-thread fallback timer (when no Worker)
   private clock: Worker | null = null;     // background-safe tick source (lazy, reused)
@@ -86,6 +97,7 @@ export class Sequencer {
     if (this.ctx.state === 'suspended') void this.ctx.resume();
     this.playing = true;
     this.lastTickPerf = 0;
+    this.startedAtSec = this.ctx.currentTime;
     this.playbackSeed = Math.floor(Math.random() * 0x7fffffff);
     // Notify BEFORE the first tick so a live-take captures from the true downbeat.
     this.onStart?.();

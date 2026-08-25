@@ -1,3 +1,4 @@
+import { chordDegreeAtTime } from './arranger/chord-track';
 import { createPerfDiagnostics } from './perf/perf-diagnostics';
 import type { PerfVoiceTap } from './perf/perf-sources';
 import { bootstrapPlugins } from './app/plugin-bootstrap';
@@ -398,6 +399,13 @@ const perfVoiceTap: PerfVoiceTap = { fn: null };
 const triggerForLane = createTriggerForLane({
   ctx, laneResources, seq, liveVoices,
   getMusicality: () => sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
+  // The progression lives on the session tonality since 2026-08-25, so the
+  // chord a note lands on is answerable here for ANY lane rather than only
+  // inside the weave that used to own it.
+  getChordDegree: (time) => chordDegreeAtTime(
+    sessionHost.state.musicality ?? DEFAULT_MUSICALITY,
+    { time, startedAtSec: seq.startedAtSec, bpm: seq.bpm, meter: seq.meter },
+  ),
   onVoiceFired: (laneId, gateSec) => perfVoiceTap.fn?.(laneId, gateSec),
 });
 

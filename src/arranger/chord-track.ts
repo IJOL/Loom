@@ -10,7 +10,8 @@
 // from state it may have drawn a moment ago, and a stale click must be inert
 // rather than destructive.
 
-import { progressionById, type Chord, type Progression } from './progression';
+import { progressionById, chordAtBar, type Chord, type Progression } from './progression';
+import { stepsPerBar, type TimeSignature } from '../core/meter';
 
 const copy = (t: Progression): Chord[] => t.map((c) => ({ ...c }));
 const has = (t: Progression, i: number) => Number.isInteger(i) && i >= 0 && i < t.length;
@@ -70,4 +71,31 @@ export function activeProgression(
   if (state.chords && state.chords.length > 0) return state.chords;
   return progressionById(state.progression ?? 'static')?.chords
     ?? progressionById('static')!.chords;
+}
+
+/** Which chord is sounding at an absolute transport time, as a scale degree.
+ *
+ *  Undefined before the transport has ever run and when the song names no
+ *  progression at all. Callers must have an answer for undefined rather than
+ *  a default degree: a wrong chord is worse than no chord.
+ *
+ *  Takes a TIME rather than reading a clock, because the caller that needs it
+ *  most is asking about a note that has been SCHEDULED — the look-ahead runs
+ *  ahead of the transport, so "now" answers for the wrong bar exactly at a
+ *  chord change, which is the one place a listener would hear it.
+ *
+ *  The bar arithmetic is the position readout's, deliberately: a step is a
+ *  16th at 60/bpm/4, and two different derivations of "which bar" is how two
+ *  displays end up a bar apart. */
+export function chordDegreeAtTime(
+  tonality: { progression?: string; chords?: Progression },
+  at: { time: number; startedAtSec: number | null; bpm: number; meter: TimeSignature },
+): number | undefined {
+  if (at.startedAtSec === null || !(at.bpm > 0)) return undefined;
+  const prog = activeProgression(tonality);
+  if (prog.length === 0) return undefined;
+  const barSec = stepsPerBar(at.meter) * 60 / at.bpm / 4;
+  if (!(barSec > 0)) return undefined;
+  const bar = Math.floor(Math.max(0, at.time - at.startedAtSec) / barSec);
+  return chordAtBar(prog, bar)?.degree;
 }

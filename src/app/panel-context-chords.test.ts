@@ -46,7 +46,7 @@ function harness() {
 describe('the chord track, across the plugin boundary', () => {
   it('reads the catalogue entry until something is written', () => {
     const h = harness();
-    h.weave.progression = 'i-VI';
+    h.state.musicality.progression = 'i-VI';
     expect(h.ctx.isCustomProgression()).toBe(false);
     expect(h.ctx.chordTrack()).toEqual(progressionById('i-VI')!.chords);
   });
@@ -55,7 +55,7 @@ describe('the chord track, across the plugin boundary', () => {
     // The catalogue is a shelf of starting points. An edit that wrote back
     // would change every session that ever picks that entry.
     const h = harness();
-    h.weave.progression = 'i-VI';
+    h.state.musicality.progression = 'i-VI';
     const wasSecond = progressionById('i-VI')!.chords[1].degree;
 
     h.ctx.setChordDegree(1, 3);
@@ -80,7 +80,7 @@ describe('the chord track, across the plugin boundary', () => {
 
   it('adds and removes slots', () => {
     const h = harness();
-    h.weave.progression = 'i-VI';
+    h.state.musicality.progression = 'i-VI';
     const n = h.ctx.chordTrack().length;
     h.ctx.insertChordAfter(0);
     expect(h.ctx.chordTrack()).toHaveLength(n + 1);
@@ -90,14 +90,14 @@ describe('the chord track, across the plugin boundary', () => {
 
   it('refuses to remove the last slot, through the SDK too', () => {
     const h = harness();
-    h.weave.chords = [{ degree: 0, bars: 1 }];
+    h.state.musicality.chords = [{ degree: 0, bars: 1 }];
     h.ctx.removeChord(0);
     expect(h.ctx.chordTrack()).toHaveLength(1);
   });
 
   it('goes back to the catalogue when reset', () => {
     const h = harness();
-    h.weave.progression = 'i-VI';
+    h.state.musicality.progression = 'i-VI';
     h.ctx.setChordDegree(0, 4);
     h.ctx.resetChordTrack();
     expect(h.ctx.isCustomProgression()).toBe(false);

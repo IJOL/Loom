@@ -258,7 +258,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
         written: () => followerLane.follow?.chords,
         // The harmony the session CHOSE — untravelled, because the user
         // picking a progression is a gesture and lands at once.
-        sessionProgression: () => activeProgression(state),
+        sessionProgression: () => activeProgression(musicality()),
         // The journey, handed over separately so the follower can sample it
         // when its own bar comes round rather than when the leader's does.
         //
@@ -514,7 +514,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     // catalogue entry, and spelling that precedence out here and in chordNow
     // is two places to forget it — which reads as the panel naming one chord
     // while the music plays another.
-    const prog = activeProgression(state);
+    const prog = activeProgression(musicality());
     if (prog.length === 0) return notes;
     const m = musicality();
     const barTicks = ticksPerBar(deps.getMeter());
@@ -638,7 +638,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
      *  `bar` is 0-based within the lap and `bars` is the lap's length, so a
      *  caller shows `bar + 1` of `bars` without knowing anything else. */
     chordNow() {
-      const prog = activeProgression(state);
+      const prog = activeProgression(musicality());
       const bars = progressionBars(prog);
       if (bars <= 0) return null;
       const chord = chordAtBar(prog, barCursor);
@@ -803,7 +803,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
      *  The cursor is restored and every cache dropped afterwards, or the next
      *  scheduler tick would fold against whatever bar this loop stopped on. */
     lapNotes() {
-      const bars = Math.max(1, progressionBars(activeProgression(state)));
+      const bars = Math.max(1, progressionBars(activeProgression(musicality())));
       const barTicks = ticksPerBar(deps.getMeter());
       const lanes = deps.getState?.().lanes ?? [];
       const saved = barCursor;

@@ -277,8 +277,14 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
    *  sits on different chords, so every cached one is stale. And this is the
    *  only thing that tells the autosave the weave moved — a weave edit is
    *  deliberately not an undo entry, so nothing else would. */
+  /** The song's tonality, which is where the progression lives since
+   *  2026-08-25. Read through one accessor: seven call sites below reach for
+   *  it, and seven copies of the path is seven chances to read the weave's
+   *  old field back into existence. */
+  const tonality = () => deps.sessionHost.state.musicality;
+
   const editChords = (op: (t: Progression) => Chord[]): void => {
-    deps.weave.chords = op(activeProgression(deps.weave));
+    tonality().chords = op(activeProgression(tonality()));
     deps.onWeaveChanged?.('*');
     deps.refresh();
   };
@@ -763,18 +769,18 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       return PROGRESSIONS.map((p) => ({ id: p.id, name: p.name, group: p.feel }));
     },
 
-    progression() { return deps.weave.progression ?? 'static'; },
+    progression() { return tonality().progression ?? 'static'; },
 
     chordNow() {
       return deps.weaveChordNow?.() ?? null;
     },
 
     setProgression(id) {
-      deps.weave.progression = progressionById(id) ? id : 'static';
+      tonality().progression = progressionById(id) ? id : 'static';
       // Picking from the shelf throws away what was written, or the written one
       // would go on winning and the dropdown would be naming a progression
       // nobody is playing.
-      delete deps.weave.chords;
+      delete tonality().chords;
       // Every lane's fold moves onto different chords, so every cached one is
       // stale — this is material, not a param.
       deps.onWeaveChanged?.('*');
@@ -785,11 +791,11 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // A COPY. The array is the scene's harmony; handing the real one over
       // would let a panel edit it behind the host's back, which is the same
       // reason `lanes()` hands out a flat summary.
-      return activeProgression(deps.weave).map((c) => ({ ...c }));
+      return activeProgression(tonality()).map((c) => ({ ...c }));
     },
 
     isCustomProgression() {
-      return !!deps.weave.chords && deps.weave.chords.length > 0;
+      return !!tonality().chords && tonality().chords!.length > 0;
     },
 
     setChordDegree(index, degree) { editChords((t) => setDegree(t, index, degree)); },
@@ -798,7 +804,7 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     removeChord(index)            { editChords((t) => removeAt(t, index)); },
 
     resetChordTrack() {
-      delete deps.weave.chords;
+      delete tonality().chords;
       deps.onWeaveChanged?.('*');
       deps.refresh();
     },
