@@ -298,6 +298,9 @@ function typeOptionsFor(model) {
 var TYPE_OPTIONS_BY_MODE = Object.fromEntries(FILTER_MODES.map((_m, i) => [String(i), typeOptionsFor(i)]));
 var FILTER_MODE_OPTIONS = FILTER_MODES.map((m) => ({ value: m.value, label: m.label }));
 
+// packages/loom-plugin-sdk/src/dsp/pattern.ts
+var GOLDEN_PATTERN = (Math.sqrt(5) - 1) / 2;
+
 // plugins/tb303/dsp.ts
 var AMP_FLOOR = 1e-3 / 0.54;
 var Q_MIN = 1;

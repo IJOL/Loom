@@ -528,6 +528,9 @@ var FilterStack = class {
   }
 };
 
+// packages/loom-plugin-sdk/src/dsp/pattern.ts
+var GOLDEN_PATTERN = (Math.sqrt(5) - 1) / 2;
+
 // plugins/subtractive/dsp.ts
 var NO_SLOTS = new Float64Array(0);
 function subParamsInto(b, out) {

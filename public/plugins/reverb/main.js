@@ -143,6 +143,9 @@ function generateReverbIR(opts) {
   return { left, right };
 }
 
+// packages/loom-plugin-sdk/src/dsp/pattern.ts
+var GOLDEN_PATTERN = (Math.sqrt(5) - 1) / 2;
+
 // plugins/reverb/main.ts
 function makeImpulse(ctx, sec, decay, type) {
   const { left, right } = generateReverbIR({

@@ -31,6 +31,9 @@ function typeOptionsFor(model) {
 var TYPE_OPTIONS_BY_MODE = Object.fromEntries(FILTER_MODES.map((_m, i) => [String(i), typeOptionsFor(i)]));
 var FILTER_MODE_OPTIONS = FILTER_MODES.map((m) => ({ value: m.value, label: m.label }));
 
+// packages/loom-plugin-sdk/src/dsp/pattern.ts
+var GOLDEN_PATTERN = (Math.sqrt(5) - 1) / 2;
+
 // packages/loom-plugin-sdk/src/dsp/signal-max.ts
 function absCurve() {
   const n = 1025;

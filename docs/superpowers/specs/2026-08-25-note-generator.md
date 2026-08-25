@@ -178,8 +178,13 @@ Each stage ends green and committed, and each is worth having on its own.
    displacement, no streams. A lane generates, on the beat, the pitches of
    whatever loops it has selected.
    Proves the `LaneNoteSource` seam end to end.
-2. **The shared per-trigger formula.** Extract `frac(n × pattern + skew)` out of
-   `plugins/pernote` into `src/generator/` (or `core/`) so both use one copy.
+2. **The shared per-trigger formula.** `frac(n × pattern + skew)`, out of
+   `plugins/pernote` and into **the SDK** — `@loom/plugin-sdk`'s `dsp/pattern`
+   — not into `src/generator/`, which this spec first said and which cannot
+   work: `pernote` is an external plugin and compiles against the SDK alone. It
+   can no more import the host than the host can import it, so the SDK is the
+   only room they both stand in. The host reaches it through a one-line
+   re-export in `src/audio-dsp/`, the way it reaches every other SDK primitive.
 3. **CADENCE + PHRASE.** The rhythm decision, floored by metric weight. This is
    the stage where it starts sounding like music rather than a metronome.
 4. **CHORD.** Pitch through `chordTonesOf` + the progression.

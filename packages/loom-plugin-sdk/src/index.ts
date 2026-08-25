@@ -26,6 +26,11 @@ export * from './dsp/filter-stack';   // re-exports ./filter-kinds
 // arithmetic with no AudioContext. It is the reverb INSERT that feeds the result
 // to a ConvolverNode.
 export * from './dsp/reverb-ir';
+// Not synthesis at all: one knob from periodicity to apparent chaos, over an
+// ORDINAL rather than over time. Here because both realms need it and neither
+// can import the other — an external modulator plugin and the host's own note
+// generator, which would otherwise each keep a copy free to disagree.
+export * from './dsp/pattern';
 // ── Main-thread graph builders ─────────────────────────────────────────────
 // Everything above this line runs inside the AudioWorklet, per sample, with no
 // AudioContext. What follows BUILDS NATIVE WEB AUDIO NODES and can only run on
