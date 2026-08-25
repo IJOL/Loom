@@ -10,6 +10,7 @@ import type { LaneNote, LaneNoteSource } from '../session/lane-note-source';
 import { generateNotes } from './generate';
 import { pitchPool, type PoolNote } from './pool';
 import type { GridSpec } from './grid';
+import { DEFAULT_CADENCE, type CadenceSpec } from './cadence';
 
 export interface GeneratorDeps {
   /** The material: the lane's loop selection, already folded to one bar.
@@ -25,6 +26,12 @@ export interface GeneratorDeps {
   steps: () => number;
   /** The absolute step the next iteration begins on. */
   startStep: () => number;
+  /** Which steps fire. Absent ⇒ all of them. */
+  cadence?: () => CadenceSpec;
+  /** How long a bar is, from the METER. Not derivable from the division: `div`
+   *  says how many steps cut the bar, and the bar's own length is the session's
+   *  business. */
+  barTicks: () => number;
 }
 
 export function createGeneratorSource(deps: GeneratorDeps): LaneNoteSource {
@@ -59,15 +66,20 @@ export function createGeneratorSource(deps: GeneratorDeps): LaneNoteSource {
     const ticksPerStep = deps.ticksPerStep();
     const steps = deps.steps();
     const startStep = deps.startStep();
+    const cadence = deps.cadence?.() ?? DEFAULT_CADENCE;
+    const barTicks = deps.barTicks();
 
     // `startStep` is in the key, so the head genuinely moves from one iteration
     // to the next — a cache that ignored it would freeze the pattern on its
     // first bar, which is the mistake that would look most like "it works".
     const key = `${poolVersion}|${grid.repeats},${grid.pow2}`
-      + `|${stepsPerBar}|${ticksPerStep}|${steps}|${startStep}`;
+      + `|${stepsPerBar}|${ticksPerStep}|${steps}|${startStep}|${barTicks}`
+      + `|${cadence.amount},${cadence.pattern},${cadence.mod},${cadence.phrase}`;
     if (key !== cacheKey) {
       cacheKey = key;
-      out = generateNotes({ pool, grid, stepsPerBar, ticksPerStep, steps, startStep });
+      out = generateNotes({
+        pool, grid, stepsPerBar, ticksPerStep, steps, startStep, cadence, barTicks,
+      });
     }
     return out;
   };

@@ -13,7 +13,8 @@
 // one thing `harmony/cycle`'s comment already warns against.
 
 import type { LaneNote } from '../session/lane-note-source';
-import { readHead, type GridSpec } from './grid';
+import { readHead, patternBars, type GridSpec } from './grid';
+import { cadenceFires, DEFAULT_CADENCE, type CadenceSpec } from './cadence';
 import type { PoolNote } from './pool';
 
 export interface GenerateOptions {
@@ -28,6 +29,10 @@ export interface GenerateOptions {
   /** The ABSOLUTE step the iteration begins on, so bar 5 renders as bar 5
    *  whether it was played into or fast-forwarded to. */
   startStep: number;
+  /** Which steps fire. Absent ⇒ every one of them, which is what this did
+   *  before CADENCE existed. */
+  cadence?: CadenceSpec;
+  barTicks?: number;
 }
 
 /** One iteration's worth of notes.
@@ -40,9 +45,29 @@ export function generateNotes(o: GenerateOptions): LaneNote[] {
   if (!(o.ticksPerStep > 0)) return [];
   const steps = Math.max(0, Math.floor(o.steps));
 
+  const cadence = o.cadence ?? DEFAULT_CADENCE;
+  const barTicks = o.barTicks ?? o.stepsPerBar * o.ticksPerStep;
+  // The pattern IS the phrase, as far as this lane is concerned. Its length is
+  // a number the user set, which is a better answer than a fixed four: a
+  // three-bar pattern gets a three-bar phrase rather than a four-bar one it
+  // never finishes.
+  const bars = patternBars(o.grid);
+
   const out: LaneNote[] = [];
   for (let i = 0; i < steps; i++) {
     const head = readHead(o.startStep + i, o.grid, o.stepsPerBar);
+    const at = {
+      head,
+      stepsPerBar: o.stepsPerBar,
+      ticksPerStep: o.ticksPerStep,
+      barTicks,
+    };
+    if (!cadenceFires(cadence, at, bars)) continue;
+    // The pool is read at the head REGARDLESS of whether a step fired, so
+    // thinning the rhythm does not also transpose the melody: turn CADENCE down
+    // and you hear the same line with holes in it, not a different line. A pool
+    // cursor advanced only on surviving hits would have been the other reading,
+    // and it makes one knob do two jobs.
     const note = o.pool[head % o.pool.length];
     out.push({
       // Local to the iteration, never absolute: the scheduler loops this array

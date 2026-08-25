@@ -15,6 +15,7 @@
 
 import type { PanelWeave } from '@loom/plugin-sdk';
 import { clampGrid, DEFAULT_GRID, type GridSpec } from './grid';
+import { clampCadence, DEFAULT_CADENCE, type CadenceSpec } from './cadence';
 
 export interface GeneratorLaneState {
   /** The loops this lane generates FROM, in exactly the shape the weave stores.
@@ -26,12 +27,14 @@ export interface GeneratorLaneState {
    *  `clip:<id>`, one selection among many, with no code that knows it. */
   selection: PanelWeave | null;
   grid: GridSpec;
+  /** Which steps fire. The first of the spec's four streams. */
+  cadence: CadenceSpec;
 }
 
 export function defaultGeneratorState(): GeneratorLaneState {
   // Built fresh, never a shared literal handed out by reference: one lane's
   // grid edits leaking into the next is the bug that pattern prevents.
-  return { selection: null, grid: { ...DEFAULT_GRID } };
+  return { selection: null, grid: { ...DEFAULT_GRID }, cadence: { ...DEFAULT_CADENCE } };
 }
 
 /** Coerce a stored generator into a usable one. */
@@ -41,5 +44,6 @@ export function clampGeneratorState(
   return {
     selection: g?.selection ?? null,
     grid: clampGrid(g?.grid),
+    cadence: clampCadence(g?.cadence),
   };
 }

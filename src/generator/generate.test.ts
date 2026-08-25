@@ -6,7 +6,7 @@ import type { PoolNote } from './pool';
 const pool = (...midi: number[]): PoolNote[] => midi.map((m) => ({ midi: m, velocity: 100 }));
 
 const BASE = {
-  grid: { repeats: 1, pow2: 0 },
+  grid: { repeats: 1, div: 4, pow2: 0 },
   stepsPerBar: 4,
   ticksPerStep: 96,
   steps: 4,
@@ -43,7 +43,7 @@ describe('the read head over a pool', () => {
     // The pattern governs, and nothing else does yet. Reaching the tail of a
     // long pool is what displacement is for (stage 6) — asserting a co-prime
     // cycle here would be asserting a second modulus this does not have.
-    const grid = { repeats: 1, pow2: 0 };
+    const grid = { repeats: 1, div: 4, pow2: 0 };
     const len = patternSteps(grid, 4);
     const out = generateNotes({
       ...BASE, grid, pool: pool(60, 64, 67), steps: len * 3, startStep: 0,
@@ -55,7 +55,7 @@ describe('the read head over a pool', () => {
   it('leaves a pool longer than the pattern with a tail nobody hears', () => {
     // Stated as a fact rather than hidden: it is the gap stage 6 fills, and a
     // reader finding it by ear later would read it as a bug.
-    const grid = { repeats: 1, pow2: 0 };
+    const grid = { repeats: 1, div: 4, pow2: 0 };
     const len = patternSteps(grid, 4);
     const long = pool(60, 62, 64, 65, 67, 69, 71);
     const out = generateNotes({ ...BASE, grid, pool: long, steps: len * 2 });
@@ -66,7 +66,7 @@ describe('the read head over a pool', () => {
   it('renders bar 5 the same whether it was played into or jumped to', () => {
     // The determinism the offline export depends on. Not optional.
     const p = pool(60, 62, 64, 65, 67);
-    const grid = { repeats: 2, pow2: 1 };
+    const grid = { repeats: 2, div: 4, pow2: 1 };
     const long = generateNotes({ ...BASE, grid, pool: p, steps: 32, startStep: 0 });
     const jumped = generateNotes({ ...BASE, grid, pool: p, steps: 4, startStep: 20 });
     expect(jumped.map((n) => n.midi)).toEqual(long.slice(20, 24).map((n) => n.midi));

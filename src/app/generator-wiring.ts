@@ -20,6 +20,7 @@ import type { LaneNoteSource } from '../session/lane-note-source';
 import type { GeneratorLaneState } from '../generator/generator-state';
 import { createGeneratorSource } from '../generator/generator-source';
 import { clampGrid } from '../generator/grid';
+import { clampCadence } from '../generator/cadence';
 import { blendLoops, type BlendOptions } from '../weave/blend-clip';
 import { resolveSelection } from '../weave/weave-selection';
 import { laneWeights, type LaneWeaveConfig } from '../weave/weave-state';
@@ -88,16 +89,18 @@ export function createGeneratorWiring(deps: GeneratorWiringDeps) {
       octaveBase: 0,
     });
 
-    // The BEAT, which is the meter's numerator and NOT a quarter note. 6/8 has
-    // six of them, and a generator firing three times a bar there would be
-    // counting in a unit nobody is playing in.
-    const stepsPerBar = () => Math.max(1, deps.getMeter().num);
+    // The division is the GRID's, not the meter's. The meter still says how
+    // long a bar is; `div` says how many steps that bar is cut into, so the
+    // same knob serves 4/4 and 6/8 without either being special.
+    const stepsPerBar = () => clampGrid(gen.grid).div;
     const ticksPerStep = () => ticksPerBar(deps.getMeter()) / stepsPerBar();
     const steps = () => Math.max(1, deps.clipBars(laneId) ?? 1) * stepsPerBar();
 
     return createGeneratorSource({
       material,
       grid: () => clampGrid(gen.grid),
+      cadence: () => clampCadence(gen.cadence),
+      barTicks: () => ticksPerBar(deps.getMeter()),
       stepsPerBar,
       ticksPerStep,
       steps,

@@ -14,6 +14,24 @@
 export interface GridSpec {
   /** Bars before the pattern comes round again. 1..16. */
   repeats: number;
+  /** How many steps make a bar — the division the generator decides on. 1..16.
+   *
+   *  Brought forward from stage 5, and not for tidiness. Without it the lane
+   *  fires on the meter's beat and nothing finer, so every step weighs at least
+   *  0.72 by `metricWeight` — above `phraseFloor`'s 0.6, which means the PHRASE
+   *  knob could never remove a single hit. A control that does nothing is worse
+   *  than a missing one, so the division came forward to give it something to
+   *  decide.
+   *
+   *  The spec puts `div` on each STREAM, so four of them could each run at a
+   *  different division. This is one for the whole generator, which is the
+   *  honest subset until there are four streams to disagree.
+   *
+   *  4 is quarters in 4/4 and is what the generator did before this existed.
+   *  The METER still says how long a bar is, so 6/8 wants 6 here — explicit
+   *  rather than a sentinel meaning "whatever the meter's beat is", because a
+   *  magic zero is the kind of hidden rule nobody finds twice. */
+  div: number;
   /** A power-of-two multiplier ON that length: 0..3 ⇒ ×1, ×2, ×4, ×8.
    *
    *  A separate control rather than folding both into one 1..128 number,
@@ -24,9 +42,10 @@ export interface GridSpec {
   pow2: number;
 }
 
-export const DEFAULT_GRID: GridSpec = { repeats: 1, pow2: 0 };
+export const DEFAULT_GRID: GridSpec = { repeats: 1, div: 4, pow2: 0 };
 
 const MAX_REPEATS = 16;
+const MAX_DIV = 16;
 const MAX_POW2 = 3;
 
 /** Coerce anything — a save, a panel, a knob mid-drag — into a usable grid.
@@ -44,6 +63,7 @@ export function clampGrid(g: Partial<GridSpec> | null | undefined): GridSpec {
       : fallback;
   return {
     repeats: int(g.repeats, 1, MAX_REPEATS, DEFAULT_GRID.repeats),
+    div: int(g.div, 1, MAX_DIV, DEFAULT_GRID.div),
     pow2: int(g.pow2, 0, MAX_POW2, DEFAULT_GRID.pow2),
   };
 }

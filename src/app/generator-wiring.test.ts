@@ -8,6 +8,7 @@ import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { DEFAULT_METER, ticksPerBar } from '../core/meter';
 import { TICKS_PER_STEP, type NoteEvent } from '../core/notes';
 import { DEFAULT_GRID } from '../generator/grid';
+import { DEFAULT_CADENCE } from '../generator/cadence';
 import type { SessionState } from '../session/session';
 import type { LanePlayState } from '../session/session-runtime';
 
@@ -41,6 +42,7 @@ const generating = (x = 0) => ({
   generator: {
     selection: { kind: 'ab' as const, a: 'clip:clipA', b: 'clip:clipB', x },
     grid: { ...DEFAULT_GRID },
+    cadence: { ...DEFAULT_CADENCE },
   },
 });
 
@@ -81,12 +83,13 @@ describe('a generating lane', () => {
       generator: {
         selection: { kind: 'ab' as const, a: 'clip:gone', b: 'clip:alsoGone', x: 0 },
         grid: { ...DEFAULT_GRID },
+        cadence: { ...DEFAULT_CADENCE },
       },
     });
     expect(wiring(s).notesFor('lane1')).toBeUndefined();
   });
 
-  function lapping(grid: { repeats: number; pow2: number }) {
+  function lapping(grid: { repeats: number; div: number; pow2: number }) {
     const laneStates = new Map<string, LanePlayState>();
     const gen = generating();
     gen.generator.grid = grid;
@@ -102,7 +105,7 @@ describe('a generating lane', () => {
     // absolute: bar two of a two-bar pattern lives on the clip's second lap.
     // Read through the wiring, because a source counting laps of its own would
     // be the one thing an offline render could not reproduce.
-    const at = lapping({ repeats: 2, pow2: 0 });
+    const at = lapping({ repeats: 2, div: 4, pow2: 0 });
     expect(at(1)).not.toEqual(at(0));
   });
 
@@ -115,10 +118,41 @@ describe('a generating lane', () => {
   });
 
   it('comes back round after exactly one pattern, laps later', () => {
-    const at = lapping({ repeats: 2, pow2: 1 });   // four bars
+    const at = lapping({ repeats: 2, div: 4, pow2: 1 });   // four bars
     expect(at(4)).toEqual(at(0));
     expect(at(5)).toEqual(at(1));
     expect(at(1)).not.toEqual(at(0));
+  });
+
+  /** How many notes a lane produces with these generator settings. */
+  function count(over: { grid?: object; cadence?: object }): number {
+    const gen = generating();
+    Object.assign(gen.generator.grid, over.grid ?? {});
+    Object.assign(gen.generator.cadence, over.cadence ?? {});
+    return (wiring(session(gen)).notesFor('lane1')?.() ?? []).length;
+  }
+
+  it('reaches the scheduler with CADENCE down, as silence', () => {
+    // Not undefined — the lane IS generating, and what it generates is nothing.
+    // Undefined would send it back to playing its own clip, which is the
+    // opposite of what the knob was turned down for.
+    const notes = (() => {
+      const gen = generating();
+      gen.generator.cadence.amount = 0;
+      return wiring(session(gen)).notesFor('lane1')?.();
+    })();
+    expect(notes).toEqual([]);
+  });
+
+  it('thins rather than empties on the way down', () => {
+    const full = count({ grid: { div: 16 }, cadence: { amount: 1 } });
+    const half = count({ grid: { div: 16 }, cadence: { amount: 0.5 } });
+    expect(half).toBeGreaterThan(0);
+    expect(half).toBeLessThan(full);
+  });
+
+  it('cuts the bar into as many steps as DIV says', () => {
+    expect(count({ grid: { div: 8 } })).toBe(count({ grid: { div: 4 } }) * 2);
   });
 
   it('is beaten by FOLLOW, which answers the same question', () => {

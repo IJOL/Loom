@@ -18,6 +18,7 @@ function harness(over: Partial<GeneratorDeps> = {}) {
     ticksPerStep: () => 96,
     steps: () => 4,
     startStep: () => st.start,
+    barTicks: () => 384,
     ...over,
   });
   const midis = () => (source() ?? []).map((n) => n.midi);
@@ -33,7 +34,7 @@ describe('the generator as a lane note source', () => {
     // A cache keyed on everything BUT the start would freeze the pattern on its
     // first bar, which is the failure that would look most like working.
     const { st, midis } = harness();
-    st.grid = { repeats: 2, pow2: 0 };
+    st.grid = { repeats: 2, div: 4, pow2: 0 };
     const first = midis();
     st.start = 4;
     expect(midis()).not.toEqual(first);
@@ -47,7 +48,7 @@ describe('the generator as a lane note source', () => {
   it('hears a grid changed mid-flight on the next iteration', () => {
     const { st, midis } = harness({ steps: () => 8 });
     const tight = midis();
-    st.grid = { repeats: 2, pow2: 0 };
+    st.grid = { repeats: 2, div: 4, pow2: 0 };
     expect(midis()).not.toEqual(tight);
   });
 
