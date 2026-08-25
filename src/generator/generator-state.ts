@@ -17,6 +17,10 @@ import type { PanelWeave } from '@loom/plugin-sdk';
 import { clampGrid, DEFAULT_GRID, type GridSpec } from './grid';
 import { clampCadence, DEFAULT_CADENCE, type CadenceSpec } from './cadence';
 import { clampChord, DEFAULT_CHORD, type ChordSpec } from './chord';
+import {
+  clampOffset, clampLength, DEFAULT_OFFSET, DEFAULT_LENGTH,
+  type OffsetSpec, type LengthSpec,
+} from './note-timing';
 
 export interface GeneratorLaneState {
   /** The loops this lane generates FROM, in exactly the shape the weave stores.
@@ -32,12 +36,23 @@ export interface GeneratorLaneState {
   cadence: CadenceSpec;
   /** Which note each step lands on. The second. */
   chord: ChordSpec;
+  /** Where exactly the hit lands. The third. */
+  offset: OffsetSpec;
+  /** How long it holds. The fourth. */
+  length: LengthSpec;
 }
 
 export function defaultGeneratorState(): GeneratorLaneState {
   // Built fresh, never a shared literal handed out by reference: one lane's
   // grid edits leaking into the next is the bug that pattern prevents.
-  return { selection: null, grid: { ...DEFAULT_GRID }, cadence: { ...DEFAULT_CADENCE }, chord: { ...DEFAULT_CHORD } };
+  return {
+    selection: null,
+    grid: { ...DEFAULT_GRID },
+    cadence: { ...DEFAULT_CADENCE },
+    chord: { ...DEFAULT_CHORD },
+    offset: { ...DEFAULT_OFFSET },
+    length: { ...DEFAULT_LENGTH },
+  };
 }
 
 /** Coerce a stored generator into a usable one. */
@@ -49,5 +64,7 @@ export function clampGeneratorState(
     grid: clampGrid(g?.grid),
     cadence: clampCadence(g?.cadence),
     chord: clampChord(g?.chord),
+    offset: clampOffset(g?.offset),
+    length: clampLength(g?.length),
   };
 }

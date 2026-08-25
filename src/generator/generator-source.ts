@@ -12,6 +12,9 @@ import { pitchPool, type PoolNote } from './pool';
 import type { GridSpec } from './grid';
 import { DEFAULT_CADENCE, type CadenceSpec } from './cadence';
 import { DEFAULT_CHORD, type ChordSpec } from './chord';
+import {
+  DEFAULT_OFFSET, DEFAULT_LENGTH, type OffsetSpec, type LengthSpec,
+} from './note-timing';
 import type { ScaleId } from '../core/musicality';
 import type { Progression } from '../arranger/progression';
 
@@ -41,6 +44,10 @@ export interface GeneratorDeps {
   tonality?: () => { key: number; scale: ScaleId };
   /** The SONG's progression. */
   progression?: () => Progression;
+  /** Where exactly the hit lands. Absent ⇒ dead on its step. */
+  offset?: () => OffsetSpec;
+  /** How long it holds. Absent ⇒ exactly one step. */
+  length?: () => LengthSpec;
 }
 
 export function createGeneratorSource(deps: GeneratorDeps): LaneNoteSource {
@@ -80,25 +87,35 @@ export function createGeneratorSource(deps: GeneratorDeps): LaneNoteSource {
     const chord = deps.chord?.() ?? DEFAULT_CHORD;
     const tonality = deps.tonality?.() ?? { key: 0, scale: 'major' as ScaleId };
     const progression = deps.progression?.() ?? [];
+    const offset = deps.offset?.() ?? DEFAULT_OFFSET;
+    const length = deps.length?.() ?? DEFAULT_LENGTH;
 
-    // `startStep` is in the key, so the head genuinely moves from one iteration
-    // to the next — a cache that ignored it would freeze the pattern on its
-    // first bar, which is the mistake that would look most like "it works".
-    const key = `${poolVersion}|${grid.repeats},${grid.pow2}`
-      + `|${stepsPerBar}|${ticksPerStep}|${steps}|${startStep}|${barTicks}`
-      + `|${cadence.amount},${cadence.pattern},${cadence.mod},${cadence.phrase}`
-      // The progression is keyed by its SHAPE, not by identity: `activeProgression`
-      // builds a fresh array per call, so an identity check would miss every
-      // time and refold on every tick.
-      + `|${chord.conform},${chord.pitch},${chord.pattern},${chord.mod}`
-      + `|${tonality.key},${tonality.scale}`
-      + `|${progression.map((c) => `${c.degree}:${c.bars}`).join('-')}`;
+    const spec = {
+      grid, stepsPerBar, ticksPerStep, steps, startStep, barTicks,
+      cadence, chord, tonality, progression, offset, length,
+    };
+
+    // The key is the WHOLE input, serialised, rather than a hand-picked list of
+    // fields. That is deliberate and it is the second time this cache has been
+    // wrong: the first version described the pool by its length, so a crossfade
+    // that changed every pitch and kept the count went unnoticed. A hand-picked
+    // list has to be edited for every control the spec still has to add, and the
+    // failure it produces when someone forgets is silent — the lane plays on
+    // with the settings from before. This cannot be forgotten.
+    //
+    // `startStep` is in there, so the head genuinely moves from one iteration to
+    // the next. A cache that ignored it would freeze the pattern on its first
+    // bar, which is the mistake that would look most like working. And the
+    // progression is keyed by its SHAPE rather than its identity, because
+    // `activeProgression` builds a fresh array per call — an identity check
+    // would miss every time and refold on every tick.
+    //
+    // It runs once per look-ahead tick over a handful of small objects, not per
+    // sample.
+    const key = `${poolVersion}|${JSON.stringify(spec)}`;
     if (key !== cacheKey) {
       cacheKey = key;
-      out = generateNotes({
-        pool, grid, stepsPerBar, ticksPerStep, steps, startStep, cadence, barTicks,
-        chord, tonality, progression,
-      });
+      out = generateNotes({ ...spec, pool });
     }
     return out;
   };

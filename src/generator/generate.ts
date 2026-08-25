@@ -16,6 +16,10 @@ import type { LaneNote } from '../session/lane-note-source';
 import { readHead, patternBars, type GridSpec } from './grid';
 import { cadenceFires, DEFAULT_CADENCE, type CadenceSpec } from './cadence';
 import { chordPitch, DEFAULT_CHORD, type ChordSpec } from './chord';
+import {
+  offsetTicks, lengthTicks, DEFAULT_OFFSET, DEFAULT_LENGTH,
+  type OffsetSpec, type LengthSpec,
+} from './note-timing';
 import type { ScaleId } from '../core/musicality';
 import type { Progression } from '../arranger/progression';
 import type { PoolNote } from './pool';
@@ -41,6 +45,10 @@ export interface GenerateOptions {
   tonality?: { key: number; scale: ScaleId };
   /** The SONG's progression, promoted out of the weave in 2c. */
   progression?: Progression;
+  /** Where exactly the hit lands. Absent ⇒ dead on its step. */
+  offset?: OffsetSpec;
+  /** How long it holds. Absent ⇒ exactly one step. */
+  length?: LengthSpec;
 }
 
 /** One iteration's worth of notes.
@@ -63,6 +71,9 @@ export function generateNotes(o: GenerateOptions): LaneNote[] {
   const chord = o.chord ?? DEFAULT_CHORD;
   const tonality = o.tonality ?? { key: 0, scale: 'major' as ScaleId };
   const progression = o.progression ?? [];
+  const offset = o.offset ?? DEFAULT_OFFSET;
+  const len = o.length ?? DEFAULT_LENGTH;
+  const span = steps * o.ticksPerStep;
 
   const out: LaneNote[] = [];
   for (let i = 0; i < steps; i++) {
@@ -81,12 +92,25 @@ export function generateNotes(o: GenerateOptions): LaneNote[] {
     // cursor advanced only on surviving hits would have been the other reading,
     // and it makes one knob do two jobs.
     const note = o.pool[head % o.pool.length];
+    // Local to the iteration, never absolute: the scheduler loops this array and
+    // a start counted from the transport's zero would put every note beyond the
+    // clip's end on the second lap.
+    //
+    // Clamped INSIDE the iteration after the nudge. A hit nudged early off step
+    // 0 would start before the loop and a hit nudged late off the last step
+    // would start after its end; the scheduler drops both, so the groove would
+    // silently lose its first and last note rather than swing them.
+    const start = Math.max(0, Math.min(
+      span - 1,
+      i * o.ticksPerStep + offsetTicks(offset, head, o.ticksPerStep),
+    ));
     out.push({
-      // Local to the iteration, never absolute: the scheduler loops this array
-      // and a start counted from the transport's zero would put every note
-      // beyond the clip's end on the second lap.
-      start: i * o.ticksPerStep,
-      duration: o.ticksPerStep,
+      start,
+      // A note may run PAST the iteration on purpose. Length above one step is
+      // what makes consecutive notes overlap, and an overlap is how an engine
+      // that declares `"slide": "overlap"` knows to slide — so trimming it to
+      // the loop here would quietly remove the generator's portamento.
+      duration: lengthTicks(len, head, o.ticksPerStep),
       // The harmony walks the SONG's bars, not the pattern's. The rhythm
       // repeats with the pattern and the chords do not, which is what lets
       // every lane agree on where the music is while disagreeing about what to

@@ -89,6 +89,26 @@ const PARAMS: ParamSpec[] = [
     id: 'chordMod', name: 'VOICE MOD', min: 0, max: 1, step: 0,
     get: (g) => g.chord.mod, set: (g, v) => { g.chord.mod = v; },
   },
+  {
+    id: 'nudge', name: 'NUDGE', min: -1, max: 1, step: 0,
+    get: (g) => g.offset.amount, set: (g, v) => { g.offset.amount = v; },
+  },
+  {
+    id: 'nudgeMod', name: 'GROOVE', min: 0, max: 1, step: 0,
+    get: (g) => g.offset.mod, set: (g, v) => { g.offset.mod = v; },
+  },
+  // Named for what it does rather than for the field: past 1 the notes overlap,
+  // and an overlap is what makes an engine that declares `"slide": "overlap"`
+  // slide. "LENGTH" would have been the honest name for the number and the
+  // useless one for the control.
+  {
+    id: 'length', name: 'HOLD', min: 0.05, max: 4, step: 0,
+    get: (g) => g.length.length, set: (g, v) => { g.length.length = v; },
+  },
+  {
+    id: 'lengthMod', name: 'HOLD MOD', min: 0, max: 1, step: 0,
+    get: (g) => g.length.mod, set: (g, v) => { g.length.mod = v; },
+  },
 ];
 
 export function generatorMembers(d: GeneratorDepsUI):
