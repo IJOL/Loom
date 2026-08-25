@@ -113,6 +113,9 @@ export function wireSessionLifecycle(deps: SessionLifecycleDeps): SessionLifecyc
     { label: 'Acid Rain', path: `${import.meta.env.BASE_URL}demos/acid-rain.json` },
     { label: 'Cordillera', path: `${import.meta.env.BASE_URL}demos/cordillera.json` },
     { label: 'Neon Drive', path: `${import.meta.env.BASE_URL}demos/neon-drive.json` },
+    // Neither hand-built nor from Strudel's library: a REPL patch, committed at
+    // tools/patches/supersaw-mask.strudel and ported by the same extractor.
+    { label: 'Supersaw Mask', path: `${import.meta.env.BASE_URL}demos/supersaw-mask.json` },
     { label: 'Coastline', path: `${import.meta.env.BASE_URL}demos/coastline.json` },
     { label: 'Broken Cut', path: `${import.meta.env.BASE_URL}demos/broken-cut.json` },
     { label: 'Swimming', path: `${import.meta.env.BASE_URL}demos/swimming.json` },

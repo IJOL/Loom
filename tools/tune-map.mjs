@@ -55,7 +55,16 @@ export function buildTune(haps, spec) {
     if (midi == null || !Number.isFinite(midi)) continue;
     // Strudel's `gain` is linear amplitude; Loom's velocity curve is affine, so
     // the inverse is the only honest conversion.
-    const vel = v.velocity ?? (e.value.gain !== undefined ? velocityForGain(e.value.gain) : FULL_VELOCITY);
+    //
+    // `gainRef` is what a voice divides by first — the gain its OWN loudest note
+    // carries. Without it a patch whose sliders all sit above 1.2 arrives with
+    // every note clamped to full velocity and its balance flattened, because
+    // velocityForGain reads an absolute ratio and a live-coded patch writes an
+    // arbitrary one. With it, the loudest note is full and the rest keep their
+    // proportions; the voice's own loudness then lives on the lane's level,
+    // where a ratio above 1.2 can actually be expressed.
+    const gainRef = v.gainRef ?? 1;
+    const vel = v.velocity ?? (e.value.gain !== undefined ? velocityForGain(e.value.gain / gainRef) : FULL_VELOCITY);
     byVoice.get(v.id).push(note(start, v.pad ? Math.min(span, 24) : span, midi, vel));
   }
   for (const list of byVoice.values()) list.sort((a, b) => a.start - b.start || a.midi - b.midi);

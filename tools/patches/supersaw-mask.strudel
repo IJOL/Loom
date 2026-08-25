@@ -1,0 +1,19 @@
+setCpm(135/4)
+samples('github:bubobubobubobubo/dough-waveforms')
+let A = n("<3@3 4 5@3 6>*2".add("-14,-21")).scale("g:minor").s("supersaw").seg(16).lpf("<1000 200 500 400 600 110>").lpq("<10 0 20 0 10>").gain(slider(1.785,0,7)).degradeBy(slider(0,0,1)).color("red")
+let DRUM=s("bd bd bd bd").n(slider(2,0,8,1)).gain(slider(2.856,0,6))
+
+$: n("<3@3 4 5@3 6>*2".add("2,-5")).scale("g:major").s("supersaw").seg(16).lpf("<1000 200 500 400 600 110>").lpq("<10 0 20 0 20>").gain(slider(1.82,0,7)).degradeBy(slider(0,0,1)).color("red")
+
+let DRUM2 = s("bd sd bd sd").n(slider(1,0,8,1)).degradeBy(slider(0,0,1)).color("yellow").gain(slider(2.166,0,6)).lpf(tri.range(1000,2000).slow(7))
+$: s("hh:3*8").n(slider(3,0,8,1)).degradeBy(slider(0,0,1)).color("yellow").gain(slider(2.094,0,6)).lpf(tri.range(1000,2000).slow(7))
+
+$: note("<c2 d3 e1>*8").s("wt_dbass").n(run(7)).lpf(tri2.range(500,1000).slow(8)).lpenv(-3).lpa(.1).room(.5).fast(2).gain(slider(2.874,0,6)).lastOf(4, x=>x.rev()).color("blue").lpq(slider(1,1,20))
+$: s("- - - cp").gain(slider(2.262,0,6))
+
+all(x => x._pianoroll())
+
+$:     A.mask("< 1 0 1 0 1 1 0 1  >")
+        .gain("< 2 2 2 2 2 2 2 3.5>")
+$:  DRUM.mask("< 0 0 0 0 0 0 0 1  >")
+$: DRUM2.mask("< 1 1 1 1 1 1 0 0  >")

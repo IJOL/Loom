@@ -12,10 +12,14 @@
 // rather than transcribed here. Transcription is where a port silently drifts
 // from its original, and there are twenty of these.
 //
+// A patch that is NOT in the library — one somebody wrote in the REPL and asked
+// for as a demo — is committed verbatim under tools/patches/ and read from
+// there. Same rule: the file is the source, never a transcription of it.
+//
 // Packages are imported by ABSOLUTE FILE URL from that checkout, so nothing is
 // installed into this repo; their own deps resolve from its node_modules.
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -41,12 +45,40 @@ for (const pkg of ['xen', 'draw']) {
 }
 const { transpiler } = await import(pathToFileURL(join(STRUDEL, 'packages/transpiler/transpiler.mjs')).href);
 
+// TWO copies of @strudel/core end up loaded — the packages each resolve their
+// own through node_modules — and `core.Pattern` is NOT the class the patterns
+// are actually made of: `Object.getPrototypeOf(core.n('0')) === core.Pattern.prototype`
+// is FALSE. Every prototype shim below therefore has to land on the live one as
+// well, or it silently does nothing and the failure reads as "this tune needs a
+// browser".
+const PROTOS = [...new Set([Object.getPrototypeOf(core.n('0')), core.Pattern.prototype])];
+const onPattern = (name, fn) => { for (const proto of PROTOS) proto[name] = fn; };
+
 // A visualiser draws to a canvas and returns the pattern unchanged, so in Node
 // it is a no-op that must not break the chain. Half the library ends on one, and
 // without these `window is not defined` looks like the TUNE being browser-only.
 for (const v of ['pianoroll', '_pianoroll', 'punchcard', '_punchcard', 'spiral', 'wordfall', 'scope', '_scope', 'draw', 'onPaint']) {
-  core.Pattern.prototype[v] = function () { return this; };
+  onPattern(v, function () { return this; });
 }
+
+// `$:` transpiles to `.p('$')`, and `p` is defined by the REPL (core/repl.mjs),
+// not by any package — so in Node a patch written in `$:` lines throws
+// `.p is not a function` before a single note is queried. Collected here the
+// same way the REPL collects it, and STACKED below.
+//
+// Each line is also TAGGED with the id the REPL gives it (`$0`, `$1`, … in
+// source order). The REPL puts that id in the query state, where it never
+// reaches the hap; putting it in the VALUE is what lets a spec say "this lane is
+// that line" instead of guessing a voice apart by gain or by register.
+const pPatterns = {};
+let anonymousIndex = 0;
+onPattern('p', function (id) {
+  if (typeof id === 'string' && (id.startsWith('_') || id.endsWith('_'))) return core.silence;  // x_ / _x mutes
+  if (String(id).includes('$')) { id = `${id}${anonymousIndex}`; anonymousIndex++; }
+  pPatterns[id] = this;
+  return this;
+});
+onPattern('q', function () { return core.silence; });
 
 // `.piano()` is not in any package: the REPL defines it in prebake.mjs, so a
 // Node evaluation has to carry it. Replicated verbatim (prebake.mjs:53) because
@@ -69,12 +101,21 @@ core.Pattern.prototype.piano = function () {
 // is the exception: its value IS the tempo, so it is captured rather than
 // dropped.
 let capturedCps = null;
+let allTransforms = [];
 Object.assign(globalThis, {
   samples: () => Promise.resolve(),
   setcps: (v) => { capturedCps = v; }, setCps: (v) => { capturedCps = v; },
   setcpm: (v) => { capturedCps = v / 60; }, setCpm: (v) => { capturedCps = v / 60; },
   setVoicingRange: () => {}, registerSynthSounds: () => {}, initHydra: () => {},
-  hush: () => {}, all: () => {},
+  hush: () => {},
+  // A slider is a REPL widget bound to a number. The transpiler rewrites
+  // `slider(v, …)` into `sliderWithID('slider_123', v, …)`, so BOTH names are
+  // needed: the value it stands for is the default the patch was saved with.
+  slider: (v) => v, sliderWithID: (_id, v) => v,
+  // `all(f)` applies f to everything stacked, and every use of it in these
+  // patches is a visualiser — but it is collected and applied rather than
+  // dropped, so that a patch which uses it for something audible still works.
+  all: (transform) => { allTransforms.push(transform); return core.silence; },
 });
 
 const tunes = await import(pathToFileURL(join(STRUDEL, 'website/src/repl/tunes.mjs')).href);
@@ -103,7 +144,7 @@ function repairScales(code, name) {
   });
 }
 
-/** name -> { source, cycles? }. `cycles` is the window the demo freezes. It is
+/** name -> { source, cycles?, offset? }. `cycles` is the window the demo freezes. It is
  *  DETECTED — the smallest span whose events repeat — because guessing it cuts
  *  a tune in half: `swimming` closes at 51 and `zeldasRescue` at 48, not at any
  *  round number. `cycles` is only declared for the tunes whose randomness means
@@ -149,6 +190,16 @@ const PATCHES = {
   'festival-of-fingers':  { source: () => tunes.festivalOfFingers },
   'festival-of-fingers-3': { source: () => tunes.festivalOfFingers3 },
   'good-times':     { source: () => tunes.goodTimes },
+  // Not from the library: a patch written in the REPL, committed verbatim.
+  //
+  // `offset` exists for this one. `rand` is EXACTLY 0 at t=0 and `degradeBy`
+  // keeps a hap on a strict `>`, so `degradeBy(0)` — which means "degrade
+  // nothing" — still drops whichever hap starts precisely on cycle 0. Live that
+  // is one missing note in the first bar of the session and nobody hears it;
+  // frozen into a LOOPING window it is a downbeat that goes missing on four
+  // voices at once, every lap, forever. Starting the window a whole period
+  // later is the same music with the artefact behind it.
+  'supersaw-mask': { source: () => readFileSync(join(HERE, 'patches', 'supersaw-mask.strudel'), 'utf8'), offset: 24 },
 };
 
 const MAX_PERIOD = 128;
@@ -170,17 +221,17 @@ const stamp = (h, from) =>
  *  both. That is 128 candidates, so the pattern is queried ONCE over the whole
  *  range and the candidates compare slices of that one result — querying per
  *  candidate costs minutes across thirty tunes. */
-function detectPeriod(pattern) {
-  const haps = pattern.queryArc(0, 2 * MAX_PERIOD).filter((h) => h.hasOnset());
-  const at = new Map();   // floor(cycle) -> the onsets starting in it
+function detectPeriod(pattern, offset = 0) {
+  const haps = pattern.queryArc(offset, offset + 2 * MAX_PERIOD).filter((h) => h.hasOnset());
+  const at = new Map();   // floor(cycle), relative to `offset` -> the onsets starting in it
   for (const h of haps) {
-    const c = Math.floor(h.whole.begin.valueOf());
+    const c = Math.floor(h.whole.begin.valueOf() - offset);
     if (!at.has(c)) at.set(c, []);
     at.get(c).push(h);
   }
   const window = (from, span) => {
     const out = [];
-    for (let c = from; c < from + span; c++) for (const h of at.get(c) ?? []) out.push(stamp(h, from));
+    for (let c = from; c < from + span; c++) for (const h of at.get(c) ?? []) out.push(stamp(h, from + offset));
     return out.sort().join(';');
   };
   // Comparing a window only against the NEXT one accepts a coincidence:
@@ -203,8 +254,22 @@ for (const [name, spec] of Object.entries(PATCHES)) {
   if (ONLY && ONLY !== name) continue;
   capturedCps = null;
   const code = repairScales(spec.source(), name);
-  const { pattern } = await core.evaluate(code, transpiler);
-  const detected = detectPeriod(pattern);
+  for (const key of Object.keys(pPatterns)) delete pPatterns[key];
+  anonymousIndex = 0;
+  allTransforms = [];
+  let { pattern } = await core.evaluate(code, transpiler);
+  // What the REPL does with the lines it collected (core/repl.mjs:220): stack
+  // them, then hand the stack to every `all()` transform. `.stack` is called as
+  // a METHOD so the stack is built by whichever copy of core made the patterns.
+  const lines = Object.keys(pPatterns);
+  if (lines.length) {
+    pattern = lines
+      .map((key) => pPatterns[key].withHap((h) => h.withValue((v) => ({ ...v, id: key }))))
+      .reduce((a, b) => a.stack(b));
+  }
+  for (const transform of allTransforms) pattern = transform(pattern);
+  const offset = spec.offset ?? 0;
+  const detected = detectPeriod(pattern, offset);
   const cycles = spec.cycles ?? detected ?? 32;
   if (spec.cycles && detected && detected !== spec.cycles) {
     console.warn(`  ! ${name}: declared ${spec.cycles} cycles but it repeats at ${detected}`);
@@ -213,13 +278,13 @@ for (const [name, spec] of Object.entries(PATCHES)) {
   // hasOnset() is what separates a real trigger from a query fragment: `late`
   // with a pattern argument splits held notes into several parts, and only the
   // part whose start equals the note's own start actually fires.
-  const haps = pattern.queryArc(0, cycles).filter((h) => h.hasOnset());
+  const haps = pattern.queryArc(offset, offset + cycles).filter((h) => h.hasOnset());
   const events = haps.map((h) => {
     const value = { ...h.value };
     // Resolve note names to MIDI while Strudel is loaded, so the mappers stay
     // dependency-free.
     if (typeof value.note === 'string') value.note = core.noteToMidi(value.note);
-    return { begin: h.whole.begin.valueOf(), end: h.whole.end.valueOf(), value };
+    return { begin: h.whole.begin.valueOf() - offset, end: h.whole.end.valueOf() - offset, value };
   });
   events.sort((a, b) => a.begin - b.begin);
 

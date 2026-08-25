@@ -13,12 +13,14 @@
 // each seq element is four groups of three beats — and tune-map.test.mjs pins
 // that the guard does not claim otherwise.
 //
-// The descriptors themselves live in three modules, split by what plays them,
+// The descriptors themselves live in four modules, split by what plays them
+// (and, for tune-specs-patches, by where they came from),
 // so that adding a tune never pushes one file past the size target. This file
 // is only the join.
 
 import { SYNTH_TUNES } from './tune-specs-synth.mjs';
 import { PIANO_TUNES } from './tune-specs-piano.mjs';
 import { SAMPLE_TUNES } from './tune-specs-samples.mjs';
+import { PATCH_TUNES } from './tune-specs-patches.mjs';
 
-export const TUNE_SPECS = { ...SYNTH_TUNES, ...PIANO_TUNES, ...SAMPLE_TUNES };
+export const TUNE_SPECS = { ...SYNTH_TUNES, ...PIANO_TUNES, ...SAMPLE_TUNES, ...PATCH_TUNES };
