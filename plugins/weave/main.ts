@@ -65,7 +65,14 @@ const el = (tag: string, cls?: string) => {
 };
 
 /** One macro knob. The pointer lives INSIDE the hub, centre to rim, where it is
- *  readable — drawn out in the ring it disappears under the arc. */
+ *  readable — drawn out in the ring it disappears under the arc.
+ *
+ *  This is the panel's OWN drawing and it stays that way, while the generator's
+ *  controls use Loom's shared `createKnob` from the SDK. Not an oversight: the
+ *  two look different on purpose — a 58px arc opening at the bottom, against
+ *  the app's 40px knob — and unifying them would be a visual change to a
+ *  working control that nobody asked for. Worth doing one day, as a look
+ *  decision rather than as a side effect of adding a feature. */
 function macroKnob(spec: typeof MACROS[number], ctx: PanelContext): { el: HTMLElement; paint: () => void } {
   const wrap = el('div', 'weave-macro');
 

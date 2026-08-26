@@ -174,24 +174,23 @@ function readout(p, v) {
 }
 function control(ctx, laneId, p) {
   const wrap = el("div", "weave-gen-param");
-  const label = el("label", "weave-gen-label", p.name);
-  const out = el("span", "weave-gen-value", readout(p, p.value));
-  const input = document.createElement("input");
-  input.type = "range";
-  input.className = "weave-gen-range";
-  input.min = String(p.min);
-  input.max = String(p.max);
-  input.step = String(p.step > 0 ? p.step : 0.01);
-  input.value = String(p.value);
-  input.setAttribute("aria-label", p.name);
-  input.dataset.gen = p.id;
-  input.addEventListener("input", () => {
-    const v = Number(input.value);
-    out.textContent = readout(p, v);
-    ctx.setGeneratorParam(laneId, p.id, v);
+  wrap.dataset.gen = p.id;
+  const k = Loom.controls.knob({
+    min: p.min,
+    max: p.max,
+    value: p.value,
+    step: p.step > 0 ? p.step : void 0,
+    label: p.name,
+    size: 34,
+    format: (v) => readout(p, v),
+    // NOT followed by a refresh. `refresh()` remounts the whole panel, which
+    // destroys the element the pointer is holding: the click survives and the
+    // drag dies on the second event. That has shipped twice here as "the fader
+    // cannot be dragged", and the host's setter is deliberately silent for the
+    // same reason.
+    onChange: (v) => ctx.setGeneratorParam(laneId, p.id, v)
   });
-  label.appendChild(out);
-  wrap.append(label, input);
+  wrap.appendChild(k.el);
   return wrap;
 }
 function generatorCell(ctx, laneId) {

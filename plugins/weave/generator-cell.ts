@@ -30,7 +30,11 @@ export interface GeneratorCell {
 }
 
 /** How a value reads to a person: a label when the control is a choice wearing
- *  a number, an integer when it lands on whole values, two decimals otherwise. */
+ *  a number, an integer when it lands on whole values, two decimals otherwise.
+ *
+ *  The host will not guess this — a knob over three named choices and one over
+ *  a bar count are the same number and different words — so `Loom.controls.knob`
+ *  takes it as `format`. */
 function readout(p: PanelGeneratorParam, v: number): string {
   if (p.labels) return p.labels[Math.round(v)] ?? String(v);
   return p.step > 0 ? String(Math.round(v)) : v.toFixed(2);
@@ -40,34 +44,30 @@ function control(
   ctx: PanelContext, laneId: string, p: PanelGeneratorParam,
 ): HTMLElement {
   const wrap = el('div', 'weave-gen-param');
-  const label = el('label', 'weave-gen-label', p.name);
-  const out = el('span', 'weave-gen-value', readout(p, p.value));
+  wrap.dataset.gen = p.id;
 
-  const input = document.createElement('input');
-  input.type = 'range';
-  input.className = 'weave-gen-range';
-  input.min = String(p.min);
-  input.max = String(p.max);
-  // A continuous control still needs a step for the element, or the browser
-  // quantises it to 1 and a 0..1 knob becomes a switch.
-  input.step = String(p.step > 0 ? p.step : 0.01);
-  input.value = String(p.value);
-  input.setAttribute('aria-label', p.name);
-  input.dataset.gen = p.id;
-
-  input.addEventListener('input', () => {
-    const v = Number(input.value);
-    out.textContent = readout(p, v);
+  // The APP's knob, through the catalogue the host hands over for exactly this.
+  // Nineteen range inputs was the first shape and it read as a settings sheet
+  // rather than an instrument — and drawing an arc here instead would have put
+  // a THIRD knob in a panel that already has the macro dial and the endless
+  // dial. The host owns the drawing; this only places it.
+  const k = Loom.controls.knob({
+    min: p.min,
+    max: p.max,
+    value: p.value,
+    step: p.step > 0 ? p.step : undefined,
+    label: p.name,
+    size: 34,
+    format: (v) => readout(p, v),
     // NOT followed by a refresh. `refresh()` remounts the whole panel, which
     // destroys the element the pointer is holding: the click survives and the
     // drag dies on the second event. That has shipped twice here as "the fader
     // cannot be dragged", and the host's setter is deliberately silent for the
     // same reason.
-    ctx.setGeneratorParam(laneId, p.id, v);
+    onChange: (v) => ctx.setGeneratorParam(laneId, p.id, v),
   });
 
-  label.appendChild(out);
-  wrap.append(label, input);
+  wrap.appendChild(k.el);
   return wrap;
 }
 

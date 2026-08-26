@@ -873,6 +873,26 @@ export interface LoomApi {
    *  places them in its own zone. The host still owns the drawing, so a plugin
    *  can arrange these but cannot paint their internals. */
   readonly controls: {
+    /** The app's OWN rotary knob — `core/knob`, the one every engine parameter
+     *  in Loom is turned with, not a copy of it.
+     *
+     *  It is here because a panel needing a knob is the ordinary case, and the
+     *  alternative is what nearly happened: a plugin drawing its own arc,
+     *  landing a third knob in a panel that already had two. Drag to change,
+     *  Shift for fine, wheel, double-click back to `defaultValue` — a plugin
+     *  gets all of that without knowing any of it, and the app can change how a
+     *  knob feels in one place. */
+    knob(opts: {
+      min: number; max: number; value: number;
+      step?: number; defaultValue?: number; label?: string; color?: string;
+      /** SVG viewBox size in px. */
+      size?: number;
+      /** How the value READS. The host will not guess: a knob over three named
+       *  choices and one over a bar count are the same number and different
+       *  words. */
+      format?: (v: number) => string;
+      onChange(v: number): void;
+    }): { el: HTMLElement; set(v: number): void };
     pad2d(opts: {
       x: number; y: number; label?: string;
       onChange(x: number, y: number): void;

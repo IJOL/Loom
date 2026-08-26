@@ -279,30 +279,14 @@
   &:not(:empty) { padding: 2px 8px 6px; }
 }
 
+// Each control is the APP's knob — `core/knob`, placed here by the panel, not
+// drawn by it. It arrives with its own label and readout, so this only has to
+// give it room. Nineteen range inputs was the first shape and read as a
+// settings sheet rather than an instrument.
 .weave-gen-param {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 92px;
+  min-width: 46px;
 }
-
-.weave-gen-label {
-  display: flex;
-  justify-content: space-between;
-  gap: 6px;
-  font-size: 9px;
-  letter-spacing: .06em;
-  opacity: .62;
-}
-
-// The value in a fixed-width figure so a dragging slider does not make its own
-// label jitter left and right under the pointer.
-.weave-gen-value {
-  font-variant-numeric: tabular-nums;
-  opacity: .9;
-}
-
-.weave-gen-range { width: 100%; }
 
 // The cell that holds WHO IT FOLLOWS, how long it takes to repeat, and now the
 // GENERATE switch. A plain block until this third control arrived, which stacked

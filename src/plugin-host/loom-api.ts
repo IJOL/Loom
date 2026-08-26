@@ -7,10 +7,11 @@
 // global is the ONLY place both halves can meet.
 import {
   LOOM_API_VERSION, type ComponentManifest, type ModLiteLike, type RendererFactory,
-  type FxFactory, type PluginManifestFile,
+  type FxFactory, type PluginManifestFile, type LoomApi,
 } from '@loom/plugin-sdk';
 import { registerEngine, registerEngineFactory, unregisterEngine } from '../engines/registry';
 import { registerPanel, unregisterPanel, registerPanelMount, type PanelMount } from './panel-registry';
+import { createKnob } from '../core/knob';
 import { createPad2d } from '../core/controls/pad2d';
 import { createQueueControl } from '../core/controls/queue-control';
 import { createStepsControl } from '../core/controls/steps-control';
@@ -274,6 +275,15 @@ export function installMainThreadLoomApi(): void {
       // drawing, so a plugin can arrange these controls but cannot paint their
       // internals. The blast radius is its own zone, not the application.
       controls: {
+        // The app's own knob, narrowed to what a plugin may ask for. `createKnob`
+        // also takes an automation `id` and hands back a `setModulationOffset`;
+        // both are the HOST's business — a plugin registering automation
+        // destinations behind the registry's back is the parallel list
+        // `destination-registry` exists to prevent.
+        knob: (o: Parameters<LoomApi['controls']['knob']>[0]) => {
+          const h = createKnob({ ...o, onChange: o.onChange });
+          return { el: h.el, set: h.setValue };
+        },
         pad2d: createPad2d,
         queue: createQueueControl,
         steps: createStepsControl,
