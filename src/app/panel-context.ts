@@ -11,7 +11,10 @@ import { defaultLaneSelection, defaultWeaveSteps, finitePosition } from '../weav
 import {
   retopologise, positionOf, defaultSelection, selectionLoopIds, redrawQuietest,
 } from '../weave/weave-selection';
-import { applyFlow, asDrift } from '../weave/flow';
+import {
+  applyFlow, asDrift, alignPositions, placeAt as placeWeave, wrap01,
+  type PositionedWeave,
+} from '../weave/flow';
 import { stepPreset } from '../automation/automation-steps';
 import {
   weaveLoopChoices, weaveLoopEntry, weaveLoopContext, rehookOnArrival, rehookOnRewind, pushTrail,
@@ -976,6 +979,16 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         // by hand, so there is nothing older worth coming back to.
         delete cur.shelvedWeave;
       }
+      // A HAND has moved this lane, so this is where it stands from now on: its
+      // base moves by exactly what the hand moved, and the journey carries the
+      // new distance instead of undoing it on the next tick. Without this the
+      // flow kept recomputing the lane from a base captured before the gesture,
+      // and the gesture survived until the next tick and not one moment longer.
+      const moved = positionOf(weave) - positionOf(cur.weave);
+      if (weave && cur.weave && moved !== 0 && deps.weave.flow?.base) {
+        const base = deps.weave.flow.base;
+        base[laneId] = wrap01((base[laneId] ?? 0) + moved);
+      }
       deps.weave.lanes[laneId] = { ...cur, weave };
       // Choosing a weave by hand is a claim on the lane: it weaves again even
       // if a scene had handed it back to the grid. Turning it OFF is not, and
@@ -1020,20 +1033,66 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       const was = deps.weave.flow;
       const evolving = !!evolve;
 
-      // 'free' positions each lane relative to where it ALREADY was, so it needs
-      // a fixed starting line or every call compounds the last one. A slider
-      // sends its absolute value on every pointer move, so without this a single
-      // drag added the same amount dozens of times and the lanes ran away.
+      // Where each lane stands at flow 0 — its own place in the scene, which
+      // the journey carries and never replaces. Needed because a slider sends
+      // its ABSOLUTE value on every pointer move: counted from where the lanes
+      // are now, a single drag would add the same amount dozens of times and
+      // the scene would run away.
       //
-      // Captured when the mode is ENTERED and kept until it is left. The other
-      // two modes say where a lane IS, so they carry no base at all.
-      const base = mode !== 'free' ? undefined
-        : was?.drift === 'free' && was.base ? was.base
-          : Object.fromEntries(deps.sessionHost.state.lanes.map((l) =>
-            [l.id, positionOf(deps.weave.lanes[l.id]?.weave)]));
+      // Kept across calls, and rewritten in exactly two places: here, when the
+      // user PICKS a drift mode (which lays the lanes out once, below), and in
+      // setLaneWeave, when a hand moves one lane. Everything else travels.
+      const laneIds = deps.sessionHost.state.lanes.map((l) => l.id);
+      const held = () => Object.fromEntries(laneIds.map((id) =>
+        [id, positionOf(deps.weave.lanes[id]?.weave)]));
+
+      // A drift mode is a LAYOUT now, applied the moment it is chosen: together
+      // puts the lanes on one number, offset fans them across the journey. It
+      // used to be a law enforced on every tick, which is why moving a lane by
+      // hand did nothing that lasted — "si cambias un knob de lane debería
+      // conservar el cambio relativo a la posición de los demás loops".
+      const layout = mode !== was?.drift
+        ? alignPositions(mode, laneIds.length, position)
+        : null;
+      if (layout) {
+        laneIds.forEach((id, i) => {
+          const entry = deps.weave.lanes[id];
+          // Same two exemptions the journey itself honours: a lane with no
+          // weave is not in the scene, and a LOCKED one is sitting the journey
+          // out — laying it out would be the flow touching it after all.
+          if (!entry?.weave || entry.locked) return;
+          // The cast is the same one applyFlow makes internally: `placeAt`
+          // writes a POSITION into a selection and knows nothing else about it,
+          // which is why it is typed on the position rather than on the union.
+          deps.weave.lanes[id] = {
+            ...entry,
+            weave: placeWeave(entry.weave as unknown as PositionedWeave, layout[i]) as unknown as PanelWeave,
+          };
+        });
+      }
+
+      // base + pos = where a lane stands. Kept across gestures, and recomputed
+      // only for a lane that has just been laid out or that the journey has
+      // never seen — the latter from where the dial WAS, not where it is going,
+      // or the very first drag of a session would cancel itself.
+      const prev = was?.base ?? {};
+      // Where the dial stood before this gesture. Absent — no journey yet — it
+      // is what the panel was SHOWING, which is the leading lane's own place:
+      // the fader reads the scene when it is not driving it, so a drag that
+      // starts there must move the lanes by what the hand moved and no more.
+      // Zero instead would make the first drag of a session cancel itself on
+      // a scene that was not sitting at zero.
+      const wasPos = was?.pos ?? positionOf(leadWeave());
+      const now = held();
+      const base: Record<string, number> = {};
+      for (const id of laneIds) {
+        base[id] = layout ? wrap01(now[id] - position)
+          : prev[id] ?? wrap01(now[id] - wasPos);
+      }
 
       deps.weave.flow = {
-        drift: mode, speedBars: Math.max(0, speedBars || 0), base, evolve: evolving,
+        drift: mode, speedBars: Math.max(0, speedBars || 0), base, pos: position,
+        evolve: evolving,
         // Floored, not trusted: the count comes off a dropdown but reaches the
         // clock's arithmetic, and a fractional or negative one would turn round
         // in the middle of a lap for ever.
@@ -1108,8 +1167,7 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         deps.weave.lanes,
         deps.sessionHost.state.lanes.map((l) => l.id),
         position,
-        mode,
-        base && new Map(Object.entries(base)),
+        new Map(Object.entries(base)),
         evolving && advancing ? rehook : undefined,
         // Going back needs no EVOLVE. Handing over to a FRESH loop is what
         // EVOLVE decides; re-hearing one you already played is not evolution,

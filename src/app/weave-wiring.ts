@@ -12,7 +12,7 @@
 import { defaultWeaveState, type WeaveState, type LaneWeaveConfig } from '../weave/weave-state';
 import { createGeneratorWiring } from './generator-wiring';
 import { createWeaveSource, createMacroSource, type LaneNoteSource } from '../weave/weave-runtime';
-import { resolveSelection } from '../weave/weave-selection';
+import { resolveSelection, positionOf as positionOfLane } from '../weave/weave-selection';
 import { avoidClash } from '../weave/harmony-guard';
 import {
   applyProgression, progressionBars, chordAtBar,
@@ -32,7 +32,7 @@ import { macroNeutral } from '../weave/weave-catalog';
 import { isHarmonic } from '../plugins/capabilities';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { ticksPerBar, type TimeSignature } from '../core/meter';
-import { applyFlow, flowAt } from '../weave/flow';
+import { applyFlow, flowAt, wrap01 } from '../weave/flow';
 import { evolveCloudLanes } from './weave-cloud-evolve';
 import { retimeClip } from '../weave/clip-length';
 import { fillSteps } from '../automation/automation-steps';
@@ -747,9 +747,6 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       }
 
       const laneIds = (deps.getState?.().lanes ?? []).map((l) => l.id);
-      // The SAME starting line the panel's own gesture uses, out of the state
-      // both share. Only 'free' has one; the other two say where a lane IS.
-      const base = state.flow.base && new Map(Object.entries(state.flow.base));
 
       const pos = flowAt(nowSec / barSec, speed, state.flow.pingPongLaps ?? 0);
       // A lap of 64 bars moves the position by ~0.0005 per tick, which is below
@@ -758,6 +755,31 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       // cost one compare.
       if (Math.abs(pos - lastFlow) < 0.001) return;
       lastFlow = pos;
+
+      // The SAME starting line the panel's own gesture uses, out of the state
+      // both share: where each lane stands at flow 0. The journey is a DELTA
+      // over the scene the user arranged, never a position that replaces it —
+      // so it needs a line to count from, and counting from where the lanes are
+      // NOW would add the whole reading again on every tick.
+      //
+      // Taken here when the clock is the first thing to move — a speed set
+      // without ever touching the master dial — and PER LANE, because a lane
+      // added mid-journey has no line of its own. Without that, applyFlow falls
+      // back to where the lane stands now and adds the whole reading to it
+      // again on every tick: one lane sprinting while the scene walks.
+      //
+      // Never re-taken for a lane that has one: nothing may re-anchor a journey
+      // already under way.
+      const lines = (state.flow.base ??= {});
+      for (const id of laneIds) {
+        lines[id] ??= wrap01(positionOfLane(state.lanes[id]?.weave) - pos);
+      }
+      const base = new Map(Object.entries(state.flow.base));
+      // Where the journey stands, for whoever moves it next: a hand arriving
+      // mid-travel has to know how far the dial has already come, or it
+      // recomputes every lane's place from a reading that is not the one the
+      // lanes are standing on.
+      state.flow.pos = pos;
 
       // A lane that wrapped has finished a leg: A→B re-hooks onto a fresh loop
       // rather than crossing the same two again, which is the difference
@@ -818,7 +840,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
       // it, not of EVOLVE.
       const evolving = !!state.flow.evolve;
       const moved = applyFlow(
-        state.lanes, laneIds, pos, state.flow.drift, base,
+        state.lanes, laneIds, pos, base,
         evolving ? rehook : undefined,
         // Only on a THERE-AND-BACK journey. A plain one advances and nothing
         // else, so a backwards wrap from the clock could only be a bug

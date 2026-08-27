@@ -1,61 +1,75 @@
 import { describe, it, expect } from 'vitest';
-import { flowPositions, flowAt, applyFlow, asDrift } from './flow';
+import { flowPositions, alignPositions, flowAt, applyFlow, asDrift } from './flow';
 
-describe('flowPositions — together', () => {
-  it('puts every lane at the same place, which is what a section change is', () => {
-    expect(flowPositions(0.3, 3, 'together')).toEqual([0.3, 0.3, 0.3]);
-  });
-
-  it('wraps rather than clamping, so the journey goes round', () => {
-    expect(flowPositions(1.25, 2, 'together')).toEqual([0.25, 0.25]);
-  });
-
-  it('has nothing to say about a scene with no lanes', () => {
-    expect(flowPositions(0.5, 0, 'together')).toEqual([]);
-  });
-});
-
-describe('flowPositions — offset', () => {
-  it('fans the lanes evenly across the journey', () => {
-    const out = flowPositions(0, 4, 'offset');
-    expect(out).toEqual([0, 0.25, 0.5, 0.75]);
-  });
-
-  it('never lets the first and last lane coincide', () => {
-    // A full lap between them would make the fan read as 'together'.
-    const out = flowPositions(0, 4, 'offset');
-    expect(out[3]).toBeLessThan(1);
-    expect(new Set(out).size).toBe(4);
-  });
-
-  it('carries the whole fan as the flow moves', () => {
-    const a = flowPositions(0, 3, 'offset');
-    const b = flowPositions(0.1, 3, 'offset');
-    for (let i = 0; i < 3; i++) expect(b[i]).toBeCloseTo((a[i] + 0.1) % 1);
-  });
-
-  it('degenerates to a single position for one lane', () => {
-    expect(flowPositions(0.4, 1, 'offset')).toEqual([0.4]);
-  });
-});
-
-describe('flowPositions — free', () => {
+describe('flowPositions', () => {
   it('moves each lane BY the flow, keeping where the user put it', () => {
     // The master control still means something on a hand-placed scene. The
     // third lane wraps past the end, which is the one value that cannot come
     // back bit-exact.
-    const out = flowPositions(0.1, 3, 'free', [0, 0.5, 0.9]);
+    const out = flowPositions(0.1, [0, 0.5, 0.9]);
     expect(out[0]).toBe(0.1);
     expect(out[1]).toBeCloseTo(0.6, 10);
     expect(out[2]).toBeCloseTo(0, 10);
   });
 
-  it('leaves a scene alone at flow 0', () => {
-    expect(flowPositions(0, 2, 'free', [0.2, 0.8])).toEqual([0.2, 0.8]);
+  it('never changes the DISTANCE between two lanes', () => {
+    // The whole complaint in one assertion: whatever the user has arranged, the
+    // dial carries it rather than replacing it. Two of the three old modes
+    // wrote positions derived from the flow alone and flattened the scene on
+    // the next tick.
+    const placed = [0.1, 0.35, 0.9];
+    for (const f of [0, 0.2, 0.7, 1.4]) {
+      const out = flowPositions(f, placed);
+      const gap = (a: number, b: number) => ((b - a) % 1 + 1) % 1;
+      expect(gap(out[0], out[1])).toBeCloseTo(gap(placed[0], placed[1]), 10);
+      expect(gap(out[1], out[2])).toBeCloseTo(gap(placed[1], placed[2]), 10);
+    }
   });
 
-  it('treats a lane with no position yet as 0', () => {
-    expect(flowPositions(0.25, 2, 'free', [0.5])).toEqual([0.75, 0.25]);
+  it('leaves a scene alone at flow 0', () => {
+    expect(flowPositions(0, [0.2, 0.8])).toEqual([0.2, 0.8]);
+  });
+
+  it('wraps rather than clamping, so the journey goes round', () => {
+    expect(flowPositions(1.25, [0, 0])).toEqual([0.25, 0.25]);
+  });
+
+  it('has nothing to say about a scene with no lanes', () => {
+    expect(flowPositions(0.5, [])).toEqual([]);
+  });
+});
+
+describe('alignPositions — the drift modes, applied once', () => {
+  it('puts every lane at the same place, which is what a section change is', () => {
+    expect(alignPositions('together', 3, 0.3)).toEqual([0.3, 0.3, 0.3]);
+  });
+
+  it('fans the lanes evenly across the journey', () => {
+    expect(alignPositions('offset', 4, 0)).toEqual([0, 0.25, 0.5, 0.75]);
+  });
+
+  it('never lets the first and last lane coincide', () => {
+    // A full lap between them would make the fan read as 'together'.
+    const out = alignPositions('offset', 4, 0)!;
+    expect(out[3]).toBeLessThan(1);
+    expect(new Set(out).size).toBe(4);
+  });
+
+  it('lays the lanes out from where the dial already is, so nothing jumps', () => {
+    expect(alignPositions('offset', 2, 0.5)).toEqual([0.5, 0]);
+    expect(alignPositions('together', 2, 0.5)).toEqual([0.5, 0.5]);
+  });
+
+  it('degenerates to a single position for one lane', () => {
+    expect(alignPositions('offset', 1, 0.4)).toEqual([0.4]);
+  });
+
+  it('asks for NO layout in free, which is the mode that means leave them be', () => {
+    expect(alignPositions('free', 3, 0.4)).toBeNull();
+  });
+
+  it('has nothing to say about a scene with no lanes', () => {
+    expect(alignPositions('together', 0, 0.5)).toEqual([]);
   });
 });
 
@@ -110,33 +124,45 @@ describe('applyFlow', () => {
 
   it('moves every lane to where the flow puts it', () => {
     const lanes = lanesWith(0, 0);
-    expect(applyFlow(lanes, ids(2), 0.4, 'together')).toBe(true);
+    expect(applyFlow(lanes, ids(2), 0.4)).toBe(true);
     expect(lanes.l0.weave!.x).toBe(0.4);
     expect(lanes.l1.weave!.x).toBe(0.4);
+  });
+
+  it('carries a hand-placed scene instead of flattening it', () => {
+    // The reported complaint, at this level: two lanes a quarter of a lap apart
+    // are still a quarter of a lap apart after the dial moves. Under the old
+    // 'together' both would have landed on the same number.
+    const lanes = lanesWith(0.1, 0.35);
+    const base = new Map([['l0', 0.1], ['l1', 0.35]]);
+    applyFlow(lanes, ids(2), 0.2, base);
+    expect(lanes.l0.weave!.x).toBeCloseTo(0.3, 10);
+    expect(lanes.l1.weave!.x).toBeCloseTo(0.55, 10);
   });
 
   it('SKIPS a lane with no loops chosen', () => {
     // Giving it a position would silently start weaving a lane the user never
     // set up.
     const lanes = lanesWith(0.2, null);
-    applyFlow(lanes, ids(2), 0.7, 'together');
+    applyFlow(lanes, ids(2), 0.7);
     expect(lanes.l1.weave).toBe(null);
   });
 
   it('reports nothing moved when the flow did not change', () => {
     // A caller running per tick skips the source rebuild on this.
     const lanes = lanesWith(0.5, 0.5);
-    expect(applyFlow(lanes, ids(2), 0.5, 'together')).toBe(false);
+    const base = new Map([['l0', 0], ['l1', 0]]);
+    expect(applyFlow(lanes, ids(2), 0.5, base)).toBe(false);
   });
 
-  it('counts free drift from the BASE, so repeated calls travel steadily', () => {
+  it('counts from the BASE, so repeated calls travel steadily', () => {
     // Counting from the current position instead would compound: each call
     // would add the whole flow again and the journey would accelerate away.
     const lanes = lanesWith(0.1, 0.1);
     const base = new Map([['l0', 0.1], ['l1', 0.1]]);
-    applyFlow(lanes, ids(2), 0.2, 'free', base);
+    applyFlow(lanes, ids(2), 0.2, base);
     expect(lanes.l0.weave!.x).toBeCloseTo(0.3);
-    applyFlow(lanes, ids(2), 0.4, 'free', base);
+    applyFlow(lanes, ids(2), 0.4, base);
     expect(lanes.l0.weave!.x).toBeCloseTo(0.5);
   });
 
@@ -148,21 +174,22 @@ describe('applyFlow', () => {
       l0: { weave: { x: 0.2 }, locked: true },
       l1: { weave: { x: 0.2 } },
     };
-    applyFlow(lanes, ['l0', 'l1'], 0.9, 'together');
+    applyFlow(lanes, ['l0', 'l1'], 0.7, new Map([['l0', 0.2], ['l1', 0.2]]));
     expect(lanes.l0.weave!.x).toBe(0.2);
     expect(lanes.l1.weave!.x).toBeCloseTo(0.9);
   });
 
-  it('still counts a locked lane in the fan', () => {
+  it('moves the others exactly the same, locked neighbour or not', () => {
     // Locking one lane must not re-space the others under it: the lock is a lane
     // sitting out the journey, not a lane leaving the scene.
     const spaced = (locked: boolean) => {
       const lanes: Record<string, { weave?: { x: number } | null; locked?: boolean }> = {
         l0: { weave: { x: 0 }, locked },
-        l1: { weave: { x: 0 } },
-        l2: { weave: { x: 0 } },
+        l1: { weave: { x: 0.25 } },
+        l2: { weave: { x: 0.5 } },
       };
-      applyFlow(lanes, ['l0', 'l1', 'l2'], 0, 'offset');
+      applyFlow(lanes, ['l0', 'l1', 'l2'], 0.3,
+        new Map([['l0', 0], ['l1', 0.25], ['l2', 0.5]]));
       return [lanes.l1.weave!.x, lanes.l2.weave!.x];
     };
     expect(spaced(true)).toEqual(spaced(false));
@@ -174,7 +201,7 @@ describe('applyFlow', () => {
     // the position dropping from the far end to the near one.
     const lanes = lanesWith(0.97);
     const wrapped: string[] = [];
-    applyFlow(lanes, ids(1), 0.02, 'together', undefined, (id) => wrapped.push(id));
+    applyFlow(lanes, ids(1), 0.05, new Map([['l0', 0.97]]), (id) => wrapped.push(id));
     expect(wrapped).toEqual(['l0']);
   });
 
@@ -182,40 +209,41 @@ describe('applyFlow', () => {
     // Dragging the master fader back is a rewind, not an arrival.
     const lanes = lanesWith(0.6);
     const wrapped: string[] = [];
-    applyFlow(lanes, ids(1), 0.4, 'together', undefined, (id) => wrapped.push(id));
+    applyFlow(lanes, ids(1), -0.2, new Map([['l0', 0.6]]), (id) => wrapped.push(id));
+    expect(lanes.l0.weave!.x).toBeCloseTo(0.4, 10);
     expect(wrapped).toEqual([]);
   });
 
   it('leaves the rest of a selection alone — moving is travelling, not re-choosing', () => {
     const lanes: Record<string, { weave?: { x: number; a?: string } | null }> =
       { l0: { weave: { x: 0, a: 'lib:house:bass:2' } } };
-    applyFlow(lanes, ['l0'], 0.6, 'together');
+    applyFlow(lanes, ['l0'], 0.6);
     expect(lanes.l0.weave!.a).toBe('lib:house:bass:2');
   });
 });
 
 describe('with wrapping off, the journey has ends', () => {
   it('stops at 1 instead of folding back to 0', () => {
-    expect(flowPositions(1, 2, 'together', [], false)).toEqual([1, 1]);
+    expect(flowPositions(1, [0, 0], false)).toEqual([1, 1]);
   });
 
   it('still folds when wrapping is on — that is what a lap is', () => {
-    expect(flowPositions(1, 2, 'together')).toEqual([0, 0]);
+    expect(flowPositions(1, [0, 0])).toEqual([0, 0]);
   });
 
   it('clamps below zero too', () => {
-    expect(flowPositions(-0.25, 1, 'together', [], false)).toEqual([0]);
+    expect(flowPositions(-0.25, [0], false)).toEqual([0]);
   });
 
-  it('offset still fans, but each lane stops at its own end', () => {
+  it('a fan laid out with the ends on stops each lane at its own end', () => {
     // Two lanes half a lap apart: at flow 0.75 the second would be at 1.25.
-    const out = flowPositions(0.75, 2, 'offset', [], false);
+    const out = alignPositions('offset', 2, 0.75, false)!;
     expect(out[0]).toBeCloseTo(0.75, 6);
     expect(out[1]).toBe(1);
   });
 
-  it('free counts from the base and stops there too', () => {
-    expect(flowPositions(0.5, 1, 'free', [0.8], false)).toEqual([1]);
+  it('counts from the base and stops there too', () => {
+    expect(flowPositions(0.5, [0.8], false)).toEqual([1]);
   });
 
   it('applyFlow leaves a lane parked at the end without calling onWrap', () => {
@@ -223,7 +251,7 @@ describe('with wrapping off, the journey has ends', () => {
       l1: { weave: { x: 0.99 } },
     };
     const wrapped: string[] = [];
-    applyFlow(lanes, ['l1'], 1, 'together', undefined, (id) => wrapped.push(id), undefined, false);
+    applyFlow(lanes, ['l1'], 1, new Map([['l1', 0.99]]), (id) => wrapped.push(id), undefined, false);
     expect(lanes.l1.weave.x).toBe(1);
     expect(wrapped).toEqual([]);
   });

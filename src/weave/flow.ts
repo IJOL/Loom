@@ -30,7 +30,7 @@ export const asDrift = (v: string): DriftMode =>
  *  0.3 into 0.30000000000000004, which is harmless arithmetically and not
  *  harmless everywhere else: at flow 0 in 'free' mode a scene the user placed by
  *  hand must come back exactly as it was, not a float's width away from it. */
-const wrap01 = (v: number) => (v >= 0 && v < 1 ? v : ((v % 1) + 1) % 1);
+export const wrap01 = (v: number) => (v >= 0 && v < 1 ? v : ((v % 1) + 1) % 1);
 
 /** Hold a position inside 0..1 by STOPPING at the ends.
  *
@@ -56,40 +56,61 @@ const journeyOf = (sel: PositionedWeave): number =>
  *  four corners were unreachable. The path is what turns one number into two;
  *  the lap itself is kept in `t`, because `x` is now a coordinate and no longer
  *  says how far round the lane has been. */
-const place = (sel: PositionedWeave, t: number): PositionedWeave =>
+export const placeAt = (sel: PositionedWeave, t: number): PositionedWeave =>
   (sel.kind === 'cloud'
     ? { ...sel, t, ...cloudPathPoint(sel.path as CloudPath | undefined, t) }
     : { ...sel, x: t });
 
-/** Where each lane's cross-fade should sit for this flow position.
+/** Where each lane's cross-fade sits when the journey is at `flow`.
  *
- *  `current` is what the lanes hold now, and it only matters in 'free' — the
- *  other two modes derive every position from the flow alone, which is what
- *  makes them feel like one control rather than n. */
+ *  ONE rule, and it is the whole of the relationship between the master dial
+ *  and the lanes: `position = base + flow`. `base` is where the lane stands at
+ *  flow 0 — its own place in the scene — so the dial moves every lane by the
+ *  same amount and the distances BETWEEN them never change.
+ *
+ *  It used to be three rules, chosen by a `DriftMode`, and two of them wrote a
+ *  position derived from the flow alone: 'together' put every lane on the same
+ *  number and 'offset' fanned them by lane index. Both threw away whatever the
+ *  user had placed by hand, on the next tick, for ever — "si cambias un knob de
+ *  lane debería conservar el cambio relativo a la posición de los demás loops".
+ *  The modes survive as a one-shot LAYOUT ({@link alignPositions}): picking one
+ *  places the lanes now, and from then on they travel like everything else. */
 export function flowPositions(
-  flow: number, laneCount: number, drift: DriftMode, current: readonly number[] = [],
+  flow: number, current: readonly number[],
   /** True — the default — folds 1 back to 0, which is what a lap does. False
    *  stops at the ends, which is what a hand on the fader means. */
   wrap = true,
 ): number[] {
-  if (laneCount <= 0) return [];
   const fold = wrap ? wrap01 : clamp01;
   const f = fold(flow);
+  return current.map((c) => fold((c ?? 0) + f));
+}
 
-  if (drift === 'together') return Array.from({ length: laneCount }, () => f);
+/** The layout a drift mode asks for, applied ONCE — when the user picks it.
+ *
+ *  This is what is left of the three modes, and it is the half of them that was
+ *  worth keeping: "put the lanes together" and "fan the lanes out" are things
+ *  you want done, not laws you want enforced against your own hands afterwards.
+ *
+ *  Positioned from `flowNow` so the scene does not jump when the mode lands: the
+ *  lanes arrive where the dial already is. Returns null for 'free', which asks
+ *  for no layout at all — it is the mode that means "leave them where they are".
+ */
+export function alignPositions(
+  mode: DriftMode, laneCount: number, flowNow: number, wrap = true,
+): number[] | null {
+  if (mode === 'free') return null;
+  if (laneCount <= 0) return [];
+  const fold = wrap ? wrap01 : clamp01;
+  const f = fold(flowNow);
 
-  if (drift === 'offset') {
-    // Fanned evenly across the journey. Never a full lap between the first lane
-    // and the last, or the two would coincide and the fan would read as
-    // 'together' with extra steps.
-    const span = laneCount === 1 ? 0 : 1 / laneCount;
-    return Array.from({ length: laneCount }, (_, i) => fold(f + i * span));
-  }
+  if (mode === 'together') return Array.from({ length: laneCount }, () => f);
 
-  // 'free': the flow is a DELTA, not a position. Each lane keeps where it is and
-  // moves by the same amount, so a scene the user has hand-placed stays placed
-  // and the master control still means something.
-  return Array.from({ length: laneCount }, (_, i) => fold((current[i] ?? 0) + f));
+  // Fanned evenly across the journey. Never a full lap between the first lane
+  // and the last, or the two would coincide and the fan would read as
+  // 'together' with extra steps.
+  const span = laneCount === 1 ? 0 : 1 / laneCount;
+  return Array.from({ length: laneCount }, (_, i) => fold(f + i * span));
 }
 
 /** How far the flow has travelled after `bars`, given a journey of `barsPerLap`.
@@ -138,7 +159,13 @@ export function applyFlow(
   lanes: Record<string, { weave?: PositionedWeave | null; locked?: boolean } | undefined>,
   laneIds: readonly string[],
   flow: number,
-  drift: DriftMode,
+  /** Where each lane stands at flow 0 — its own place in the scene, which the
+   *  journey moves without ever changing the distances between lanes.
+   *
+   *  A lane missing from it is read from where it stands now, which is right
+   *  the first time and wrong on every repeat: the flow is an absolute dial
+   *  reading, so counting it from a moving position compounds. Both callers
+   *  keep the map; the fallback is for a lane that appeared mid-journey. */
   base?: ReadonlyMap<string, number>,
   /** Called for a lane whose position WRAPPED past the end of its journey.
    *
@@ -174,15 +201,16 @@ export function applyFlow(
     const stored = lanes[id]?.weave;
     return base?.get(id) ?? (stored ? journeyOf(stored) : 0);
   });
-  const next = flowPositions(flow, laneIds.length, drift, current, wrap);
+  const next = flowPositions(flow, current, wrap);
 
   let moved = false;
   laneIds.forEach((id, i) => {
     const entry = lanes[id];
     const sel = entry?.weave;
-    // A LOCKED lane holds where it is. It still counts in the fan above, so
-    // locking one lane does not re-space the others under it — the lock is a
-    // lane sitting out the journey, not a lane leaving the scene.
+    // A LOCKED lane holds where it is — a lane sitting out the journey, not a
+    // lane leaving the scene. Its base is untouched, so letting it go again
+    // puts it back on the journey exactly where its own place says, rather
+    // than wherever the others have travelled to meanwhile.
     if (entry?.locked) return;
     if (!entry || !sel || journeyOf(sel) === next[i]) return;
     // Backwards by more than half a lap is a WRAP, not a rewind: the journey
@@ -196,7 +224,7 @@ export function applyFlow(
     // tick can legitimately move a lane a long way; anything short of that is
     // just travelling, in whichever direction.
     const rewound = next[i] > at + 0.5;
-    lanes[id] = { ...entry, weave: place(sel, next[i]) };
+    lanes[id] = { ...entry, weave: placeAt(sel, next[i]) };
     moved = true;
     // AFTER the write, never before. Called first, whatever the handler put in
     // the map was immediately overwritten by the line above — which still held

@@ -105,12 +105,12 @@ describe('the flow actually moves a cloud in two dimensions', () => {
 
   it('writes BOTH coordinates, which is the bug', () => {
     const lanes = cloudLane();
-    applyFlow(lanes, ['lane1'], 0.25, 'together');
+    applyFlow(lanes, ['lane1'], 0.25, new Map([['lane1', 0]]));
     const w = lanes.lane1.weave as unknown as { x: number; y: number };
     expect(w.x).toBeCloseTo(1);
     expect(w.y).toBeCloseTo(0);
 
-    applyFlow(lanes, ['lane1'], 0.5, 'together');
+    applyFlow(lanes, ['lane1'], 0.5, new Map([['lane1', 0]]));
     expect((lanes.lane1.weave as unknown as { y: number }).y).toBeCloseTo(1);
   });
 
@@ -119,7 +119,7 @@ describe('the flow actually moves a cloud in two dimensions', () => {
     // corner", not "lap finished". Without a separate lap the next tick would
     // read that 1 as a completed journey.
     const lanes = cloudLane();
-    applyFlow(lanes, ['lane1'], 0.5, 'together');
+    applyFlow(lanes, ['lane1'], 0.5, new Map([['lane1', 0]]));
     expect((lanes.lane1.weave as unknown as { t: number }).t).toBeCloseTo(0.5);
   });
 
@@ -129,16 +129,16 @@ describe('the flow actually moves a cloud in two dimensions', () => {
     // onto fresh loops half way round.
     const wrapped: string[] = [];
     const lanes = cloudLane(0.6);
-    applyFlow(lanes, ['lane1'], 0.7, 'together', undefined, (id) => wrapped.push(id));
+    applyFlow(lanes, ['lane1'], 0.7, new Map([['lane1', 0]]), (id: string) => wrapped.push(id));
     expect(wrapped).toEqual([]);
 
-    applyFlow(lanes, ['lane1'], 0.05, 'together', undefined, (id) => wrapped.push(id));
+    applyFlow(lanes, ['lane1'], 0.05, new Map([['lane1', 0]]), (id: string) => wrapped.push(id));
     expect(wrapped).toEqual(['lane1']);
   });
 
   it('leaves every other topology writing exactly x', () => {
     const lanes: Lanes = { lane1: { weave: { kind: 'ab', a: 'x', b: 'y', x: 0 } } };
-    applyFlow(lanes, ['lane1'], 0.4, 'together');
+    applyFlow(lanes, ['lane1'], 0.4, new Map([['lane1', 0]]));
     expect(lanes.lane1.weave).toEqual({ kind: 'ab', a: 'x', b: 'y', x: 0.4 });
   });
 });

@@ -332,6 +332,12 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
         locked: false, harmonyLeader: false,
       };
       w.state.flow = { drift, speedBars, evolve };
+      // The journey's zero. A lane travels FROM where it stands — the flow is a
+      // delta over the scene, not a position that replaces it — so the clock
+      // takes a starting line on its first tick. Taking it here, at bar 0, is
+      // what makes a position read below the distance travelled rather than a
+      // distance measured from wherever the transport happened to be.
+      w.advance(0);
       return w;
     };
     const posOf = (w: ReturnType<typeof flowing>) => (w.state.lanes.lane1.weave as { x: number }).x;
@@ -915,13 +921,17 @@ describe('the fan keeps turning, whatever EVOLVE says', () => {
       getBpm: () => 120,
       getState: () => state,
     });
-    for (const l of state.lanes) {
+    // Laid out as a fan, which is what picking 'offset' in the panel now does
+    // ONCE. The clock's job is to carry that spacing, not to re-impose it: the
+    // modes stopped being laws enforced against the user's own hands.
+    state.lanes.forEach((l, i) => {
       w.state.lanes[l.id] = {
-        weave: { kind: 'ab', a: `clip:${l.id}A`, b: `clip:${l.id}B`, x: 0 },
+        weave: { kind: 'ab', a: `clip:${l.id}A`, b: `clip:${l.id}B`, x: i / state.lanes.length },
         locked: false, harmonyLeader: false,
       };
-    }
+    });
     w.state.flow = { drift: 'offset', speedBars: 4, evolve: false };
+    w.advance(0);                       // the journey's zero — see `flowing`
     return { w, ids: state.lanes.map((l) => l.id) };
   };
 

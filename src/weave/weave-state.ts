@@ -212,6 +212,16 @@ export interface FlowState {
    *  outside 'free', where the flow says where a lane IS rather than how far it
    *  has come. */
   base?: Record<string, number>;
+  /** Where the journey stands, 0..1 — the last position applied to the lanes.
+   *
+   *  The other half of `base`, and the pair is the whole model: a lane sits at
+   *  `base + pos`. Without it a gesture cannot tell how far the dial has ALREADY
+   *  travelled, and the first drag of a session cancelled itself — base captured
+   *  from the new reading put every lane back where it started.
+   *
+   *  Written by the two things that move the journey, the hand and the clock,
+   *  because they are one journey. */
+  pos?: number;
   /** OFF by default. On, arriving at the far end is a handover: the loop on the
    *  right becomes the left and new material arrives. Off, the pair you chose is
    *  the pair you keep and the fader simply has two ends. */

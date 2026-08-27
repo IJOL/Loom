@@ -541,31 +541,79 @@ describe('createPanelContext — the master flow', () => {
     expect(h.ctx.flow().drift).toBe('free');
   });
 
-  it('does not compound under a DRAG in free drift', () => {
-    // Reported as "en free hace cosas raras". A slider sends its absolute value
-    // on every pointer move, and 'free' positions each lane relative to where it
-    // already was — so with no fixed starting line every move added to the
-    // answer of the last and the lanes ran away. Dragging 0 -> 0.3 in ten steps
-    // has to land exactly where one step to 0.3 lands.
+  it('does not compound under a DRAG', () => {
+    // Reported as "en free hace cosas raras". A slider sends its ABSOLUTE value
+    // on every pointer move, and the lanes are positioned relative to where
+    // they already were — so with no fixed starting line every move added to
+    // the answer of the last and the lanes ran away. Dragging to 0.3 in ten
+    // steps has to land exactly where one step to 0.3 lands.
     const dragged = (steps: number) => {
       const h = harness(['lane1']);
       h.weave.lanes.lane1 = weaving(0.2);
-      for (let i = 1; i <= steps; i++) h.ctx.setFlow((0.3 * i) / steps, 'free', 0, false);
+      for (let i = 1; i <= steps; i++) h.ctx.setFlow((0.3 * i) / steps, 'together', 0, false);
       return h.weave.lanes.lane1.weave!.x;
     };
     expect(dragged(10)).toBeCloseTo(dragged(1), 6);
-    expect(dragged(10)).toBeCloseTo(0.5, 6);   // 0.2 where it was, plus 0.3
+    // The dial READS the leading lane, so dragging it to 0.3 puts that lane at
+    // 0.3 — the number under your finger is the number the scene is on.
+    expect(dragged(10)).toBeCloseTo(0.3, 6);
   });
 
-  it('re-draws the starting line when free drift is ENTERED', () => {
-    // Leaving and coming back has to count from where the lanes are now, or the
-    // second journey starts somewhere the user cannot see.
-    const h = harness(['lane1']);
+  it('carries the DISTANCE between lanes, whatever the dial does', () => {
+    // The complaint this whole model exists for: "los lanes siempre deberían
+    // conservar la posición relativa de los knobs de lane". Two lanes a quarter
+    // of a lap apart are still a quarter of a lap apart after the master moves.
+    const h = harness();
+    h.weave.lanes.lane1 = weaving(0.1);
+    h.weave.lanes.lane2 = weaving(0.35);
+    h.ctx.setFlow(0.5, 'together', 0, false);
+    const gap = (a: number, b: number) => ((b - a) % 1 + 1) % 1;
+    expect(gap(h.weave.lanes.lane1.weave!.x, h.weave.lanes.lane2.weave!.x))
+      .toBeCloseTo(0.25, 6);
+  });
+
+  it('lays the lanes out ONCE when the drift mode changes, then carries them', () => {
+    // What is left of the three modes: a layout you ask for, not a law enforced
+    // against your own hands on every tick.
+    const h = harness();
+    h.weave.lanes.lane1 = weaving(0.1);
+    h.weave.lanes.lane2 = weaving(0.35);
+    h.ctx.setFlow(0, 'offset', 0, false);
+    expect(h.weave.lanes.lane1.weave!.x).toBeCloseTo(0, 6);
+    expect(h.weave.lanes.lane2.weave!.x).toBeCloseTo(0.5, 6);
+
+    // …and from here the fan travels as one, spacing intact.
+    h.ctx.setFlow(0.25, 'offset', 0, false);
+    expect(h.weave.lanes.lane1.weave!.x).toBeCloseTo(0.25, 6);
+    expect(h.weave.lanes.lane2.weave!.x).toBeCloseTo(0.75, 6);
+  });
+
+  it('keeps a lane where a HAND put it, and moves it with the rest after', () => {
+    // The other half of the same sentence: "si cambias un knob de lane debería
+    // conservar el cambio relativo a la posición de los demás loops". Before
+    // this, the next thing the flow did wiped the gesture.
+    const h = harness();
+    h.weave.lanes.lane1 = weaving(0);
+    h.weave.lanes.lane2 = weaving(0);
+    h.ctx.setFlow(0.2, 'together', 0, false);        // both at 0.2
+
+    h.ctx.setLaneWeave('lane2', { ...h.weave.lanes.lane2.weave!, x: 0.45 });
+    h.ctx.setFlow(0.5, 'together', 0, false);        // the dial moves on
+
+    expect(h.weave.lanes.lane1.weave!.x).toBeCloseTo(0.5, 6);
+    // 0.25 ahead, exactly as the hand left it.
+    expect(h.weave.lanes.lane2.weave!.x).toBeCloseTo(0.75, 6);
+  });
+
+  it('asks for no layout at all in free — that is what the mode means', () => {
+    // 'free' is the one that says leave them where they are, so picking it must
+    // not move anything. It is also where a scene arranged by hand lives.
+    const h = harness();
     h.weave.lanes.lane1 = weaving(0.2);
-    h.ctx.setFlow(0.3, 'free', 0, false);            // -> 0.5
-    h.ctx.setFlow(0.5, 'together', 0, false);        // -> 0.5, and the line is dropped
-    h.ctx.setFlow(0.25, 'free', 0, false);           // counts from 0.5, not from 0.2
-    expect(h.weave.lanes.lane1.weave!.x).toBeCloseTo(0.75, 6);
+    h.weave.lanes.lane2 = weaving(0.7);
+    h.ctx.setFlow(0.2, 'free', 0, false);
+    expect(h.weave.lanes.lane1.weave!.x).toBeCloseTo(0.2, 6);
+    expect(h.weave.lanes.lane2.weave!.x).toBeCloseTo(0.7, 6);
   });
 
   it('refuses a nonsense speed rather than storing it', () => {

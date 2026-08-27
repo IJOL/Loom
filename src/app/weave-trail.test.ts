@@ -81,8 +81,8 @@ describe('which way the wheel turned', () => {
     // half a lap is just travelling, in whichever direction.
     const fwd: string[] = [];
     const back: string[] = [];
-    applyFlow(lanes(0.05), ['l1'], 0.95, 'together', undefined,
-      (id) => fwd.push(id), (id) => back.push(id));
+    applyFlow(lanes(0.05), ['l1'], 0.95, new Map([['l1', 0]]),
+      (id: string) => fwd.push(id), (id: string) => back.push(id));
     expect(back).toEqual(['l1']);
     expect(fwd).toEqual([]);
   });
@@ -90,8 +90,8 @@ describe('which way the wheel turned', () => {
   it('still reports an ARRIVAL the other way round', () => {
     const fwd: string[] = [];
     const back: string[] = [];
-    applyFlow(lanes(0.95), ['l1'], 0.05, 'together', undefined,
-      (id) => fwd.push(id), (id) => back.push(id));
+    applyFlow(lanes(0.95), ['l1'], 0.05, new Map([['l1', 0]]),
+      (id: string) => fwd.push(id), (id: string) => back.push(id));
     expect(fwd).toEqual(['l1']);
     expect(back).toEqual([]);
   });
@@ -99,8 +99,8 @@ describe('which way the wheel turned', () => {
   it('says nothing at all for ordinary travel', () => {
     const fwd: string[] = [];
     const back: string[] = [];
-    applyFlow(lanes(0.4), ['l1'], 0.6, 'together', undefined,
-      (id) => fwd.push(id), (id) => back.push(id));
+    applyFlow(lanes(0.4), ['l1'], 0.6, new Map([['l1', 0]]),
+      (id: string) => fwd.push(id), (id: string) => back.push(id));
     expect(fwd).toEqual([]);
     expect(back).toEqual([]);
   });
