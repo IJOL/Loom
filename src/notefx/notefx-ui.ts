@@ -5,12 +5,13 @@
 // state and sync WITHOUT a repaint — the control the user is holding already
 // shows the value they just picked.
 
-import { html, type TemplateResult } from 'lit-html';
+import { html, nothing, type TemplateResult } from 'lit-html';
 import { repeat } from 'lit-html/directives/repeat.js';
 import { mountPanel, type PanelHandle } from '../core/lit-panel';
 import { SCALE_CATALOG, type ScaleId } from '../core/musicality';
 import type { NoteFxChain } from './notefx-chain';
 import type { NoteFxState } from './notefx-types';
+import { DEFAULT_ARP_STEPS } from './arp-steps';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
 
 export interface NoteFxUIDeps {
@@ -30,7 +31,8 @@ function withMaybeUndo(deps: NoteFxUIDeps, fn: () => void): void {
   else fn();
 }
 
-const ARP_PATTERNS = ['up', 'down', 'updown', 'random', 'cosmic'];
+// 'steps' last: it is the one that replaces a shape with a pattern you write.
+const ARP_PATTERNS = ['up', 'down', 'updown', 'random', 'cosmic', 'steps'];
 const ARP_SCALES = ['global', 'major', 'minor', 'pentMinor', 'phrygian', 'chromatic'];
 const ARP_RATES = ['free', '1/4', '1/8', '1/8t', '1/16', '1/16t', '1/32'];
 // 'free' last: it is the one that replaces the named voicing with three numbers.
@@ -80,6 +82,15 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
   const set = (k: string, v: string | number | boolean) => {
     withMaybeUndo(deps, () => { fx.params[k] = v; sync(); });
   };
+  /** A write that changes which CONTROLS the card has, rather than only a
+   *  value. `set` alone leaves the card as it was — right for every knob on it,
+   *  and wrong for PATTERN, which decides whether the STEPS field exists at
+   *  all. It shipped that way for one browser check: the dropdown offered
+   *  `steps`, choosing it worked, and no field appeared. */
+  const setShape = (k: string, v: string | number | boolean) => {
+    set(k, v);
+    ctx.rerender();
+  };
   const octaveOn = fx.params.octaveOn === true;
   const chordFree = String(fx.params.chordType ?? 'maj') === 'free';
   // Three-way now: off / scale / chord. The middle one is what IN KEY used
@@ -100,7 +111,12 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
         }}>×</button>
       </div>
       ${fx.kind === 'arp' ? html`
-        ${selectField('PATTERN', ARP_PATTERNS, String(fx.params.pattern ?? 'up'), (v) => set('pattern', v))}
+        ${selectField('PATTERN', ARP_PATTERNS, String(fx.params.pattern ?? 'up'), (v) => setShape('pattern', v))}
+        ${fx.params.pattern === 'steps' ? textField(
+    'STEPS', String(fx.params.steps ?? DEFAULT_ARP_STEPS),
+    'Pool indices, . for a rest — 0 2 4 . 3',
+    (v) => set('steps', v),
+  ) : nothing}
         ${selectField('SCALE', ARP_SCALES, String(fx.params.scale ?? 'global'), (v) => set('scale', v))}
         ${selectField('RATE', ARP_RATES, String(fx.params.rate ?? '1/16'), (v) => set('rate', v))}
         ${numberField('OCT', 1, 4, 1, Number(fx.params.octaves ?? 2), (v) => set('octaves', v))}
@@ -135,10 +151,8 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
         ${numberField('DUR RND', 0, 1, 0.01, Number(fx.params.durRandom ?? 0.3), (v) => set('durRandom', v))}
         ${numberField('DROP', 0, 1, 0.01, Number(fx.params.dropChance ?? 0), (v) => set('dropChance', v))}
       ` : html`
-        ${selectField('CHORD', CHORD_TYPES, String(fx.params.chordType ?? 'maj'), (v) => {
-          set('chordType', v);
-          ctx.rerender();          // 'free' shows three more fields; the named types hide them
-        })}
+        ${/* 'free' shows three more fields; the named types hide them. */ ''}
+        ${selectField('CHORD', CHORD_TYPES, String(fx.params.chordType ?? 'maj'), (v) => setShape('chordType', v))}
         ${chordFree ? html`
           ${numberField('INT 1', -24, 24, 1, Number(fx.params.i1 ?? 4), (v) => set('i1', v))}
           ${numberField('INT 2', -24, 24, 1, Number(fx.params.i2 ?? 7), (v) => set('i2', v))}
@@ -166,6 +180,22 @@ function selectField(
   return html`<label class="notefx-field">${label}<select
     @change=${(e: Event) => onChange((e.target as HTMLSelectElement).value)}
   >${opts.map((o) => html`<option value=${o} ?selected=${o === value}>${o}</option>`)}</select></label>`;
+}
+
+/** A written pattern.
+ *
+ *  On `change`, not `input`: this is a field somebody types INTO, and a pattern
+ *  is mid-edit for most of the keystrokes it takes to write one. Committing per
+ *  keystroke would send "0 2 " and then "0 2 4" to the lane — audible, and it
+ *  would put an undo entry on every letter. `parseArpSteps` still forgives a
+ *  half-written token, because a blur can land on one. */
+function textField(
+  label: string, value: string, placeholder: string, onChange: (v: string) => void,
+): TemplateResult {
+  return html`<label class="notefx-field notefx-steps">${label}<input
+    type="text" .value=${value} placeholder=${placeholder} spellcheck="false"
+    @change=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
+  /></label>`;
 }
 
 function numberField(

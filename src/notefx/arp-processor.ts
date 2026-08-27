@@ -2,8 +2,15 @@
 import { type SyncDiv, syncDivToHz } from '../core/sync-div';
 import type { NoteFxEvent, NoteFxContext, NoteFxProcessor } from './notefx-types';
 import { inScale, type ScaleId } from '../core/musicality';
+import { arpStepSequence, parseArpSteps, DEFAULT_ARP_STEPS } from './arp-steps';
 
-export type ArpPattern = 'up' | 'down' | 'updown' | 'random' | 'cosmic';
+/** The five shapes, plus the one you WRITE.
+ *
+ *  `steps` is the only pattern that can rest, and the only one whose sequence
+ *  comes from a param rather than from the pool's order. Everything else about
+ *  it is the same walk — it draws from the same pool, in the same key, at the
+ *  same rate. */
+export type ArpPattern = 'up' | 'down' | 'updown' | 'random' | 'cosmic' | 'steps';
 /** The arp used to carry its own five-name scale list and its own interval
  *  table, both duplicates of the ones in core/musicality. It now names the
  *  session's tonality instead — 'global', the default — and keeps the fixed
@@ -24,12 +31,20 @@ export interface ArpProcessorParams {
   rateFreeHz: number;
   octaves: number;
   gate: number;        // fraction (0.05..1) of the arp interval the note holds
+  /** The written pattern, read only when `pattern` is 'steps'. Pool INDICES and
+   *  a dot for a rest — see ./arp-steps for why it is a string and why it is
+   *  indices. */
+  steps: string;
 }
 
 export const ARP_PROCESSOR_DEFAULTS: ArpProcessorParams = {
   // octaves: 1 by default — the arp walks the scale from the note you played and
   // never leaves its octave unless you ask for it. Climbing octaves is opt-in.
   pattern: 'up', scale: 'global', rate: '1/16', rateFreeHz: 8, octaves: 1, gate: 0.7,
+  // The upward walk, written out. Switching PATTERN to 'steps' then changes
+  // nothing until you edit it: you are handed what you already had rather than
+  // an empty box.
+  steps: DEFAULT_ARP_STEPS,
 };
 
 /** The fixed scales, rooted on the played note. Deliberately NOT reusing
@@ -74,11 +89,21 @@ function buildPool(
   return pool;
 }
 
+/** The notes an arp plays, `count` of them.
+ *
+ *  `null` is a REST, and only the written pattern can produce one — the five
+ *  shapes walk a pool and every position on a pool is a note. The type carries
+ *  it for all six rather than being special-cased, so the caller has one thing
+ *  to handle instead of a question about which pattern it asked for. */
 export function generateArpSequence(
   root: number, pattern: ArpPattern, octaves: number, scale: ArpScale, count: number,
   tonality?: { key: number; scale: ScaleId },
-): number[] {
+  steps?: string,
+): (number | null)[] {
   const pool = buildPool(root, scale, octaves, tonality);
+  if (pattern === 'steps') {
+    return arpStepSequence(parseArpSteps(steps ?? DEFAULT_ARP_STEPS), pool, count);
+  }
   const out: number[] = [];
   switch (pattern) {
     case 'up':
@@ -132,9 +157,15 @@ export class ArpProcessor implements NoteFxProcessor {
         ctx.key !== undefined && ctx.scale !== undefined
           ? { key: ctx.key, scale: ctx.scale }
           : undefined,
+        p.steps,
       );
       for (let i = 0; i < numNotes; i++) {
-        out.push({ note: notes[i], time: e.time + i * interval, gate: noteGate, accent: e.accent && i === 0 });
+        const note = notes[i];
+        // A REST emits nothing and does NOT shift what follows: the pattern is
+        // a grid, so a hole in it has to stay a hole. Splicing the rests out
+        // would turn a written rhythm into a faster run of the same notes.
+        if (note === null) continue;
+        out.push({ note, time: e.time + i * interval, gate: noteGate, accent: e.accent && i === 0 });
       }
     }
     return out;

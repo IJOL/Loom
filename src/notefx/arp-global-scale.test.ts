@@ -20,8 +20,11 @@ describe('scale: global', () => {
     const fixed = generateArpSequence(64, 'up', 1, 'major', 5);
     const global = generateArpSequence(64, 'up', 1, 'global', 5, C_MAJOR);
     expect(fixed).not.toEqual(global);
-    expect(fixed.every((n) => inScale(n, 0, 'major'))).toBe(false);
-    expect(global.every((n) => inScale(n, 0, 'major'))).toBe(true);
+    // `null` is a REST, and only the written pattern can produce one — an
+    // upward walk over a pool has a note at every position. Narrowed here
+    // rather than asserted, because the claim is about the notes.
+    expect(fixed.every((n) => n !== null && inScale(n, 0, 'major'))).toBe(false);
+    expect(global.every((n) => n !== null && inScale(n, 0, 'major'))).toBe(true);
   });
 
   it('keeps every note in key from any starting note', () => {
@@ -29,7 +32,7 @@ describe('scale: global', () => {
       const notes = generateArpSequence(played, 'up', 2, 'global', 8, C_MAJOR);
       // The played note itself is whatever you played — the arp does not move it.
       for (const n of notes.slice(1)) {
-        expect(inScale(n, 0, 'major'), `${n} (from ${played}) is out of key`).toBe(true);
+        expect(n !== null && inScale(n, 0, 'major'), `${n} (from ${played}) is out of key`).toBe(true);
       }
     }
   });

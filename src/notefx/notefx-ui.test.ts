@@ -41,6 +41,60 @@ describe('renderNoteFxPanel', () => {
     expect(container.querySelectorAll('.notefx-panel')).toHaveLength(1);
   });
 
+  // A control that APPEARS needs the card repainted; one that only changes a
+  // value does not. `set` alone was right for every knob on the card and wrong
+  // for PATTERN — which shipped, briefly, as a dropdown that offered `steps`,
+  // accepted it, and showed no field. Caught in the browser, not by the suite;
+  // these two are why the suite would catch it next time.
+  const patternSelect = (c: HTMLElement) =>
+    [...c.querySelectorAll<HTMLSelectElement>('.notefx-arp select')]
+      .find((s) => [...s.options].some((o) => o.value === 'steps'))!;
+
+  const choose = (sel: HTMLSelectElement, value: string) => {
+    sel.value = value;
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  it('choosing the written PATTERN reveals its field, on the spot', () => {
+    const { container, chain } = mount();
+    headerButtons(container)[0].click(); // + Arp
+    expect(container.querySelectorAll('.notefx-steps')).toHaveLength(0);
+
+    choose(patternSelect(container), 'steps');
+    expect(chain.noteFx[0].params.pattern).toBe('steps');
+
+    const field = container.querySelector<HTMLInputElement>('.notefx-steps input')!;
+    expect(field).toBeTruthy();
+    // Opening on the upward walk it already played, written out: switching
+    // pattern changes nothing until you edit it.
+    expect(field.value).toBe('0 1 2 3');
+  });
+
+  it('choosing a shape again takes the field away', () => {
+    const { container } = mount();
+    headerButtons(container)[0].click();
+    choose(patternSelect(container), 'steps');
+    expect(container.querySelectorAll('.notefx-steps')).toHaveLength(1);
+    choose(patternSelect(container), 'up');
+    expect(container.querySelectorAll('.notefx-steps')).toHaveLength(0);
+  });
+
+  it('the written pattern reaches the chain when the field is committed', () => {
+    const { container, chain, onChange } = mount();
+    headerButtons(container)[0].click();
+    choose(patternSelect(container), 'steps');
+
+    const field = container.querySelector<HTMLInputElement>('.notefx-steps input')!;
+    field.value = '0 . 2 4';
+    // `change`, not `input`: a pattern is mid-edit for most of the keystrokes
+    // it takes to write one, and committing per keystroke would send "0 ." to
+    // the lane and put an undo entry on every letter.
+    field.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(chain.noteFx[0].params.steps).toBe('0 . 2 4');
+    expect(onChange).toHaveBeenCalledWith(chain.serialize());
+  });
+
   it('the enable button toggles state and its own label', () => {
     const { container, chain } = mount();
     headerButtons(container)[1].click(); // + Chord
