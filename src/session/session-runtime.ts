@@ -170,14 +170,27 @@ export function printScene(
 
 // ── Quantize ───────────────────────────────────────────────────────────────
 
-export function nextBoundary(q: LaunchQuantize, now: number, bpm: number): number {
+/** The next launch boundary at or after `now`.
+ *
+ *  `anchorSec` is where the song's bar lines actually are — the AudioContext
+ *  time the transport started. It matters because the grid is otherwise counted
+ *  from the AudioContext's own zero, which is PAGE LOAD, and nothing puts the
+ *  music there: the first clip of a session starts the clock and begins at the
+ *  instant of the click. Measured from zero, a clip launched afterwards lands
+ *  wherever the two unrelated grids happen to fall — 0.29 s inside the bar at
+ *  130 BPM in the case that was reported, which is a late entry you can hear.
+ *
+ *  Defaults to 0, which is the old behaviour and the right answer before
+ *  anything has played: with no material there is nothing to be in phase with.
+ */
+export function nextBoundary(q: LaunchQuantize, now: number, bpm: number, anchorSec = 0): number {
   if (q === 'immediate') return now;
   const beatDur = 60 / bpm;
   const beats: Record<Exclude<LaunchQuantize, 'immediate'>, number> = {
     '1/4': 1, '1/2': 2, '1/1': 4, '2/1': 8, '4/1': 16,
   };
   const quantDur = beats[q] * beatDur;
-  return Math.ceil(now / quantDur) * quantDur;
+  return anchorSec + Math.ceil((now - anchorSec) / quantDur) * quantDur;
 }
 
 export function effectiveQuantize(
@@ -199,6 +212,10 @@ export function launchClip(
   bpm: number,
   meter: TimeSignature = DEFAULT_METER,
   _hooks?: RecHooks,
+  /** Where the song's bar lines are — the ctx time the transport started. See
+   *  {@link nextBoundary}: without it the grid is counted from page load and a
+   *  clip launched into a running session enters a fraction of a bar late. */
+  anchorSec = 0,
 ): void {
   let lp = laneStates.get(lane.id);
   if (!lp) { lp = emptyLanePlayState(lane.id); laneStates.set(lane.id, lp); }
@@ -210,9 +227,11 @@ export function launchClip(
     const loopSec = clipLoopSec(lp.playing, bpm, meter);
     lp.queuedBoundary = nextLoopEnd(lp.loopStartedAt, loopSec, now);
   } else {
-    // Cold start: nothing to sync to → the quantize grid governs.
+    // Cold start: this lane has no loop of its own to finish, so the quantize
+    // grid governs — anchored to the transport, which is where the rest of the
+    // music's bar lines are.
     const q = effectiveQuantize(state, lane, clip);
-    lp.queuedBoundary = nextBoundary(q, now, bpm);
+    lp.queuedBoundary = nextBoundary(q, now, bpm, anchorSec);
   }
 }
 
@@ -242,6 +261,10 @@ export function launchScene(
   now: number,
   bpm: number,
   meter: TimeSignature = DEFAULT_METER,
+  /** The transport's own zero, for the cold-start grid below — the same anchor
+   *  {@link launchClip} uses, so a scene and a clip launched into silence agree
+   *  about where the next bar is. */
+  anchorSec = 0,
 ): void {
   // Resolve every lane's target (explicit mapping wins, else the row index).
   // null target = "this lane plays nothing in this scene".
@@ -277,7 +300,7 @@ export function launchScene(
     let b = -1;
     for (const { lane } of starts) {
       const q = lane.launchQuantize ?? state.globalQuantize;
-      const bb = nextBoundary(q, now, bpm);
+      const bb = nextBoundary(q, now, bpm, anchorSec);
       if (bb > b) b = bb;
     }
     T = b < 0 ? now : b;

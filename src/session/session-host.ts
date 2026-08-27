@@ -215,7 +215,10 @@ export class SessionHost {
       this.deps.seq.start();
     } else {
       launchClip(this.laneStates, this.state, lane, clip,
-        this.deps.ctx.currentTime, this.deps.seq.bpm, this.deps.seq.meter, this.deps.recHooks);
+        this.deps.ctx.currentTime, this.deps.seq.bpm, this.deps.seq.meter, this.deps.recHooks,
+        // The transport's own zero, so this lane enters on the bar line of the
+        // music already playing rather than on a grid counted from page load.
+        this.deps.seq.startedAtSec ?? 0);
       this.markQueued(clip.name ?? lane.name ?? lane.id);
     }
     this.renderWithMixer();
@@ -234,7 +237,8 @@ export class SessionHost {
     this.deps.onGridLaunch?.(null);
     this.activeSceneIdx = sceneIdx;
     this.glState = { anchorSec: this.deps.ctx.currentTime, lastIter: 0 };
-    launchScene(this.laneStates, this.state, scene, sceneIdx, this.deps.ctx.currentTime, this.deps.seq.bpm, this.deps.seq.meter);
+    launchScene(this.laneStates, this.state, scene, sceneIdx, this.deps.ctx.currentTime,
+      this.deps.seq.bpm, this.deps.seq.meter, this.deps.seq.startedAtSec ?? 0);
     this.markQueued(scene.name ?? `Scene ${sceneIdx + 1}`);
     if (!this.deps.seq.isPlaying()) { this.deps.resetAutomationPosition?.(); this.deps.seq.start(); }
     this.renderWithMixer();

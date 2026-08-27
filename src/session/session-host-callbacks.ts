@@ -89,7 +89,9 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
         playBtn.classList.add('is-playing');
       } else {
         launchClip(self.laneStates, self.state, lane, clip, ctx.currentTime, seq.bpm,
-          seq.meter, self.deps.recHooks);
+          // Anchored to the transport, like every other launch: a clip clicked
+          // in the grid has to enter on the bar line the music is already on.
+          seq.meter, self.deps.recHooks, seq.startedAtSec ?? 0);
         self.markQueued(clip.name ?? lane.name ?? lane.id);
       }
       self.renderWithMixer();
