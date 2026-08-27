@@ -15,6 +15,14 @@ export interface PanelViewHandle {
   /** Show one panel's root and hide the rest. Pass a non-panel mode (session,
    *  performance) to hide them all. */
   show(mode: string): void;
+  /** Rebuild the panel currently on screen, if any.
+   *
+   *  For the session being REPLACED under it — New, a save, a demo. Entering a
+   *  panel already remounts it; the one you were looking at when the swap
+   *  happened had nothing to tell it. A demo loaded with WEAVE open went on
+   *  listing the previous session's lanes, with their old topologies, and every
+   *  control on it wrote to a lane id that no longer existed. */
+  refreshVisible(): void;
   /** Tear every mounted panel down. */
   dispose(): void;
 }
@@ -84,9 +92,14 @@ export function wirePanelViews(
     }
   }
 
+  // Which mode is on screen, so a session swap can rebuild that panel and only
+  // that one. Undefined until the first `show`: at boot every root is hidden.
+  let current: string | undefined;
+
   return {
     ids: panels.map((p) => p.id),
     show(mode) {
+      current = mode;
       for (const p of panels) {
         const root = document.getElementById(rootIdFor(p.id));
         if (root) root.hidden = mode !== p.id;
@@ -96,6 +109,11 @@ export function wirePanelViews(
       // — a lane added, an engine swapped — has to be picked up here or it
       // stays invisible until the app restarts.
       remounts.get(mode)?.();
+    },
+    refreshVisible() {
+      // Only the visible one. Rebuilding a hidden panel would throw away live
+      // state nobody asked to lose, for a redraw `show` performs on entry.
+      if (current) remounts.get(current)?.();
     },
     dispose() {
       while (teardowns.length) {

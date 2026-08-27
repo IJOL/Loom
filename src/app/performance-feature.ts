@@ -431,7 +431,17 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   // function runs, so a registry read now would find nothing and the tabs would
   // be built from an empty list. main.ts calls mountPanels() once the plugins
   // are in — the same two-step every other plugin-fed surface uses.
-  let panelViews: PanelViewHandle = { ids: [], show: () => {}, dispose: () => {} };
+  let panelViews: PanelViewHandle = {
+    ids: [], show: () => {}, refreshVisible: () => {}, dispose: () => {},
+  };
+
+  // A panel renders the session as it stands, and New / a save / a demo replace
+  // that session wholesale. Entering a panel already rebuilds it; the one on
+  // SCREEN when the swap lands is the one nothing would have told.
+  // Optional call because the fixtures here hand in a hand-built session host
+  // with only the members their subject touches; a panel repaint is not one of
+  // the things any of them is testing.
+  sessionHost.onStateApplied?.(() => panelViews.refreshVisible());
 
   function mountPanels(): void {
     panelViews.dispose();
