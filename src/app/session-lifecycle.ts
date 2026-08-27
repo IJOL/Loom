@@ -32,7 +32,7 @@ import type { DemoItem } from './menu-actions';
 import { emptySessionState } from '../session/session';
 import { fetchDemoSession } from '../demo/demo-loader';
 import type { TimeSignature } from '../core/meter';
-import { wireDemoPicker } from '../demo/demo-picker';
+import { wireDemoPicker, loadDemoSession } from '../demo/demo-picker';
 import { confirmDialog } from '../core/dialog';
 
 export interface SessionLifecycleDeps {
@@ -74,6 +74,14 @@ export interface SessionLifecycle {
   /** Wipe to a fresh empty session. The toolbar button is bound to it here and
    *  the menu bar calls this same function — never a synthetic click. */
   newSession(): Promise<void>;
+  /** Load a demo by path — the SAME call the toolbar picker makes, handed to
+   *  the File > Open Demo menu so there is one route rather than two.
+   *
+   *  There were two, and the menu's was the shorter: it applied the tempo and
+   *  nothing else, so a demo in 6/8 opened in 4/4 and the weave was left alive
+   *  over the new session's lanes. A second copy of "load a demo" is exactly
+   *  the kind of drift this file exists to prevent. */
+  loadDemo(path: string): Promise<void>;
 }
 
 export function wireSessionLifecycle(deps: SessionLifecycleDeps): SessionLifecycle {
@@ -95,6 +103,11 @@ export function wireSessionLifecycle(deps: SessionLifecycleDeps): SessionLifecyc
     .then(() => fetchDemoSession(`${import.meta.env.BASE_URL}demos/minimal-techno.json`))
     .then((state) => {
       sessionHost.replaceSession(state);
+      // The weave is not in the session file and replaceSession cannot know
+      // about it. Boot restores a recovery session before this lands, weave and
+      // all, so without this the demo opens with the previous session's loops
+      // still weaving on the lane ids it happens to share.
+      deps.resetWeave?.();
       if (state.timeSignature) setTransportMeter(state.timeSignature);
       if (typeof state.bpm === 'number') setTransportBpm(state.bpm);
       markClean();
@@ -149,6 +162,14 @@ export function wireSessionLifecycle(deps: SessionLifecycleDeps): SessionLifecyc
     { label: 'Delay', path: `${import.meta.env.BASE_URL}demos/delay-tune.json` },
     { label: 'Sample Drums', path: `${import.meta.env.BASE_URL}demos/sample-drums.json` },
   ];
+  // The ONE demo load. Everything a demo can carry lands here — the state, the
+  // meter, the tempo, the weave wipe, the clean undo stack — so the picker and
+  // the menu cannot drift apart on what "load a demo" means.
+  const loadDemo = (path: string): Promise<void> => loadDemoSession(path, {
+    sessionHost, applyBpm: setTransportBpm, applyMeter: setTransportMeter,
+    resetWeave: () => deps.resetWeave?.(), onLoaded: () => markClean(),
+  });
+
   const demoPicker = document.getElementById('demo-picker') as HTMLSelectElement | null;
   if (demoPicker) {
     // Wire the picker only after the worklet module is registered: picking a demo
@@ -162,6 +183,7 @@ export function wireSessionLifecycle(deps: SessionLifecycleDeps): SessionLifecyc
         demos: DEMOS,
         applyBpm: setTransportBpm,
         applyMeter: setTransportMeter,
+        resetWeave: () => deps.resetWeave?.(),
         onLoaded: () => markClean(),
       });
     });
@@ -195,5 +217,5 @@ export function wireSessionLifecycle(deps: SessionLifecycleDeps): SessionLifecyc
   }
   document.getElementById('new-session')?.addEventListener('click', () => { void newSession(); });
 
-  return { demos: DEMOS, newSession };
+  return { demos: DEMOS, newSession, loadDemo };
 }

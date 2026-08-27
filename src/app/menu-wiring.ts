@@ -23,7 +23,6 @@ import type { PerformanceFeature } from './performance-feature';
 import type { PerfDiagnostics } from '../perf/perf-diagnostics';
 import type { AutoHistory } from '../save/auto-history';
 import type { DemoItem, MenuActions } from './menu-actions';
-import { loadDemoSession } from '../demo/demo-picker';
 import { createMenuBar } from './menu-bar';
 import { buildMenus } from './menu-spec';
 import { registerMenuShortcuts } from './menu-shortcuts';
@@ -48,16 +47,17 @@ export interface MenuBarWiringDeps {
   demos: DemoItem[];
   /** The same wipe the toolbar's New button runs — the function, not a click. */
   newSession(): Promise<void>;
-  /** A demo may carry its own tempo; it has to reach the scheduler, the BPM
-   *  input, every insert chain and every tempo-locked engine. */
-  setTransportBpm(bpm: number): void;
+  /** The same demo load the toolbar picker runs (session-lifecycle's `loadDemo`).
+   *  This menu used to build its own, which applied the tempo and nothing else:
+   *  no meter, and no weave wipe. One route, one meaning. */
+  loadDemo(path: string): Promise<void>;
 }
 
 export function wireMenuBar(deps: MenuBarWiringDeps): void {
   const {
     sessionHost, saveManager, projectOptions, autoHistory, performanceFeature,
     perfDiagnostics, midiImportDialog, midiControlDialog, stemDialog, aboutDialog,
-    demos: DEMOS, newSession, setTransportBpm,
+    demos: DEMOS, newSession, loadDemo,
   } = deps;
 
   // ── Desktop menu bar (chrome) ──────────────────────────────────────────────
@@ -71,7 +71,7 @@ export function wireMenuBar(deps: MenuBarWiringDeps): void {
     openSaveForLoad: () => saveManager.openForLoad(),
     openProjectOptions: () => projectOptions.open(),
     listDemos: () => DEMOS,
-    loadDemo: (path) => { void loadDemoSession(path, { sessionHost, applyBpm: setTransportBpm, onLoaded: () => autoHistory.markClean() }); },
+    loadDemo: (path) => { void loadDemo(path); },
     openImportMidi: () => midiImportDialog.open(),
     openStems: () => stemDialog.open(),
     undo: () => autoHistory.undo(),

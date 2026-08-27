@@ -53,6 +53,38 @@ describe('wireDemoPicker', () => {
   });
 });
 
+describe('wireDemoPicker — the weave', () => {
+  it('replaces the weave, because a demo brings none of its own', async () => {
+    // WEAVE lives beside the session, keyed by lane id — and every demo reuses
+    // the same generic ids (`drums-1`, `subtractive-2`). Loading one without
+    // replacing the weave left the PREVIOUS session's loops tejiendo on the new
+    // session's lanes: a scene launch then started a lane the scene maps to
+    // null, at its first non-empty clip. Reported as "escena 2 suena raro y hace
+    // play del primer clip de sub2".
+    const order: string[] = [];
+    const selectEl = document.createElement('select');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ lanes: [], scenes: [], globalQuantize: '1/1' }),
+    }));
+
+    wireDemoPicker({
+      sessionHost: { replaceSession: () => order.push('replaceSession') } as unknown as SessionHost,
+      selectEl,
+      resetWeave: () => order.push('resetWeave'),
+      demos: [{ label: 'T', path: '/demos/t.json' }],
+    });
+    selectEl.value = '/demos/t.json';
+    selectEl.dispatchEvent(new Event('change'));
+    await flush();
+
+    // AFTER the session lands, the same order New uses: the weave names lanes,
+    // so it is wiped once the lanes it may name are the new ones.
+    expect(order).toEqual(['replaceSession', 'resetWeave']);
+    vi.unstubAllGlobals();
+  });
+});
+
 describe('wireDemoPicker — time signature', () => {
   const load = async (payload: Record<string, unknown>) => {
     const replaceSession = vi.fn();

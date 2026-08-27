@@ -1004,7 +1004,7 @@ sessionHost.onStateApplied(() => {
 // worklet gate, and the New wipe. It runs HERE, after the onStateApplied
 // registrations above, so those fire on the demo's first apply. `markClean` is a
 // thunk because AutoHistory is only built further down.
-const { demos: DEMOS, newSession } = wireSessionLifecycle({
+const { demos: DEMOS, newSession, loadDemo } = wireSessionLifecycle({
   sessionHost, presetsLoaded, workletReady, setTransportBpm,
   setTransportMeter: transportControls.setTransportMeter,
   markClean: () => autoHistory.markClean(),
@@ -1088,7 +1088,7 @@ void workletReady.then(() => bootRecoveryLoad(saveWiringDeps));
 wireMenuBar({
   sessionHost, saveManager, projectOptions, autoHistory, performanceFeature,
   perfDiagnostics, midiImportDialog, midiControlDialog, stemDialog, aboutDialog,
-  demos: DEMOS, newSession, setTransportBpm,
+  demos: DEMOS, newSession, loadDemo,
 });
 
 // App always boots in Session mode (see fetchDemoSession call above).
