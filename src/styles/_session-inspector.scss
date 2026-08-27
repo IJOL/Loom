@@ -505,6 +505,18 @@
   color: var(--text-dim);
   margin-top: 4px;
 }
+// The arp's PATTERN is the one field that is not "label left, control right":
+// a row of ten bars squeezed into the right-hand slot is unreadable and
+// unpaintable. It takes the whole width, with its label above it.
+.notefx-field.notefx-steps {
+  display: block;
+
+  > span {
+    display: block;
+    margin-bottom: 3px;
+  }
+}
+
 .notefx-field select {
   background: var(--surface-3);
   color: var(--text);

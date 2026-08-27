@@ -63,11 +63,15 @@ describe('renderNoteFxPanel', () => {
     choose(patternSelect(container), 'steps');
     expect(chain.noteFx[0].params.pattern).toBe('steps');
 
-    const field = container.querySelector<HTMLInputElement>('.notefx-steps input')!;
-    expect(field).toBeTruthy();
-    // Opening on the upward walk it already played, written out: switching
-    // pattern changes nothing until you edit it.
-    expect(field.value).toBe('0 1 2 3');
+    // A ROW OF BARS, not a text box: this shipped as a text field first, which
+    // was the encoding solved and the editor not built.
+    const row = container.querySelector('.notefx-steps .steps-control')!;
+    expect(row).toBeTruthy();
+    // Opening on the upward walk it already played: switching pattern changes
+    // nothing until you edit it. Four steps, none of them a rest.
+    const bars = [...row.querySelectorAll('.step-bar')];
+    expect(bars).toHaveLength(4);
+    expect(bars.filter((b) => b.classList.contains('rest'))).toHaveLength(0);
   });
 
   it('choosing a shape again takes the field away', () => {
@@ -79,20 +83,30 @@ describe('renderNoteFxPanel', () => {
     expect(container.querySelectorAll('.notefx-steps')).toHaveLength(0);
   });
 
-  it('the written pattern reaches the chain when the field is committed', () => {
+  it('the edited pattern reaches the chain', () => {
     const { container, chain, onChange } = mount();
     headerButtons(container)[0].click();
     choose(patternSelect(container), 'steps');
 
-    const field = container.querySelector<HTMLInputElement>('.notefx-steps input')!;
-    field.value = '0 . 2 4';
-    // `change`, not `input`: a pattern is mid-edit for most of the keystrokes
-    // it takes to write one, and committing per keystroke would send "0 ." to
-    // the lane and put an undo entry on every letter.
-    field.dispatchEvent(new Event('change', { bubbles: true }));
+    // Lengthen it: the cheapest edit to drive from a test, and it exercises the
+    // same road a painted bar takes — editor → written form → chain.
+    container.querySelector<HTMLButtonElement>('.arp-steps-len button:last-child')!.click();
 
-    expect(chain.noteFx[0].params.steps).toBe('0 . 2 4');
+    expect(String(chain.noteFx[0].params.steps).split(/\s+/)).toHaveLength(5);
     expect(onChange).toHaveBeenCalledWith(chain.serialize());
+  });
+
+  it('keeps the SAME editor across a repaint, so a stroke is not interrupted', () => {
+    // Rebuilding it per paint would destroy the row a pointer is painting on —
+    // the fault the WEAVE panel shipped twice as "the fader cannot be dragged".
+    const { container } = mount();
+    headerButtons(container)[0].click();
+    choose(patternSelect(container), 'steps');
+    const before = container.querySelector('.notefx-steps .steps-control');
+
+    // Any repaint of the card.
+    container.querySelector<HTMLButtonElement>('.notefx-card-row button')!.click();
+    expect(container.querySelector('.notefx-steps .steps-control')).toBe(before);
   });
 
   it('the enable button toggles state and its own label', () => {

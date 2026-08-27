@@ -12,6 +12,7 @@ import { SCALE_CATALOG, type ScaleId } from '../core/musicality';
 import type { NoteFxChain } from './notefx-chain';
 import type { NoteFxState } from './notefx-types';
 import { DEFAULT_ARP_STEPS } from './arp-steps';
+import { createArpStepsEditor, type ArpStepsEditor } from './arp-steps-editor';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
 
 export interface NoteFxUIDeps {
@@ -112,11 +113,7 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
       </div>
       ${fx.kind === 'arp' ? html`
         ${selectField('PATTERN', ARP_PATTERNS, String(fx.params.pattern ?? 'up'), (v) => setShape('pattern', v))}
-        ${fx.params.pattern === 'steps' ? textField(
-    'STEPS', String(fx.params.steps ?? DEFAULT_ARP_STEPS),
-    'Pool indices, . for a rest — 0 2 4 . 3',
-    (v) => set('steps', v),
-  ) : nothing}
+        ${fx.params.pattern === 'steps' ? stepsField(fx, set) : nothing}
         ${selectField('SCALE', ARP_SCALES, String(fx.params.scale ?? 'global'), (v) => set('scale', v))}
         ${selectField('RATE', ARP_RATES, String(fx.params.rate ?? '1/16'), (v) => set('rate', v))}
         ${numberField('OCT', 1, 4, 1, Number(fx.params.octaves ?? 2), (v) => set('octaves', v))}
@@ -182,20 +179,40 @@ function selectField(
   >${opts.map((o) => html`<option value=${o} ?selected=${o === value}>${o}</option>`)}</select></label>`;
 }
 
-/** A written pattern.
+/** The arp's pattern editor, kept ALIVE across repaints.
  *
- *  On `change`, not `input`: this is a field somebody types INTO, and a pattern
- *  is mid-edit for most of the keystrokes it takes to write one. Committing per
- *  keystroke would send "0 2 " and then "0 2 4" to the lane — audible, and it
- *  would put an undo entry on every letter. `parseArpSteps` still forgives a
- *  half-written token, because a blur can land on one. */
-function textField(
-  label: string, value: string, placeholder: string, onChange: (v: string) => void,
+ *  Weak, keyed on the FX state object, so an editor dies with the card it
+ *  belongs to and no bookkeeping is needed to remove it. Rebuilding one per
+ *  paint would be wasteful and, worse, would destroy the row a pointer is
+ *  painting on — the same fault the WEAVE panel shipped twice as "the fader
+ *  cannot be dragged". */
+const stepsEditors = new WeakMap<NoteFxState, { ed: ArpStepsEditor; emitted: string }>();
+
+function stepsField(
+  fx: NoteFxState, set: (k: string, v: string | number | boolean) => void,
 ): TemplateResult {
-  return html`<label class="notefx-field notefx-steps">${label}<input
-    type="text" .value=${value} placeholder=${placeholder} spellcheck="false"
-    @change=${(e: Event) => onChange((e.target as HTMLInputElement).value)}
-  /></label>`;
+  const value = String(fx.params.steps ?? DEFAULT_ARP_STEPS);
+  let entry = stepsEditors.get(fx);
+  if (!entry) {
+    const ed = createArpStepsEditor({
+      value,
+      label: `${fx.id} pattern`,
+      onChange: (src) => {
+        const e = stepsEditors.get(fx);
+        if (e) e.emitted = src;
+        set('steps', src);
+      },
+    });
+    entry = { ed, emitted: value };
+    stepsEditors.set(fx, entry);
+  } else if (value !== entry.emitted) {
+    // Something OTHER than this editor moved the pattern — an undo, a preset,
+    // a session load. Repaint from it. Skipped when the value is the editor's
+    // own last word, so a paint never fights the hand that is painting.
+    entry.ed.set(value);
+    entry.emitted = value;
+  }
+  return html`<div class="notefx-field notefx-steps"><span>STEPS</span>${entry.ed.el}</div>`;
 }
 
 function numberField(

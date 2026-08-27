@@ -116,3 +116,44 @@
   // Every fourth step, so bars can be counted without drawing a ruler.
   &.accent { background: var(--knob-cyan); }
 }
+
+// A row that can REST needs the empty slot to be visible and grabbable: the
+// bar goes, a faint floor stays. Without it a rest is a gap you cannot aim at,
+// which is the failure `MIN_BAR` exists to prevent for ordinary values.
+.steps-control.has-rests {
+  .step-bar { min-height: 0; }
+
+  // A STUB, not nothing. The first attempt drew the rest with an inset shadow
+  // on a zero-height element, which paints no pixels at all — so the slot was
+  // invisible and read as "there is no step here" instead of "this step is
+  // silent". The column is clickable either way (the row picks the step from
+  // the pointer's X, not from the bar), but a control you can only aim at by
+  // counting is the failure MIN_BAR exists to prevent, arriving by another road.
+  .step-bar.rest {
+    min-height: 3px;
+    background: var(--border);
+    opacity: 0.9;
+  }
+}
+
+// The arp's pattern: the row, and the two buttons that change how long it is.
+.arp-steps-editor {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px;
+  align-items: stretch;
+  min-width: 0;
+
+  .steps-control { height: 64px; }
+}
+
+.arp-steps-len {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  button {
+    padding: 0 6px;
+    line-height: 1.4;
+  }
+}
