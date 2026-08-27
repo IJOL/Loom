@@ -113,6 +113,29 @@ export function alignPositions(
   return Array.from({ length: laneCount }, (_, i) => fold(f + i * span));
 }
 
+/** How many laps the journey runs before it turns round — 0 when it never does.
+ *
+ *  The two questions the journey used to answer with ONE number: whether it
+ *  comes back, and how far it goes first. Zero laps meant one-way, so saying
+ *  "go one way" threw away how long you had said the journey was, and getting
+ *  it back meant typing the number again.
+ *
+ *  They are separate fields now and this is where they meet, at the one place
+ *  that needs them as a single figure: `flowAt`'s `laps`. A state with no
+ *  `thereAndBack` is read the old way — laps above zero WAS a there-and-back —
+ *  so a session saved before the split travels exactly as it did.
+ *
+ *  A journey that comes back but never said how far defaults to two laps, which
+ *  is the shortest round trip that is not a single lap turning on itself. */
+export function journeyLaps(
+  flow: { pingPongLaps?: number; thereAndBack?: boolean } | undefined,
+): number {
+  const laps = Math.max(0, Math.floor(flow?.pingPongLaps ?? 0));
+  const back = flow?.thereAndBack ?? laps > 0;
+  if (!back) return 0;
+  return laps > 0 ? laps : 2;
+}
+
 /** How far the flow has travelled after `bars`, given a journey of `barsPerLap`.
  *
  *  Returns 0..1 and wraps, so a scene left running keeps going round rather than

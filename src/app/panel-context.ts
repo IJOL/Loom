@@ -1025,10 +1025,13 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         speedBars: f?.speedBars ?? 0,
         evolve: !!f?.evolve,
         pingPongLaps: f?.pingPongLaps ?? 0,
+        // Read off the number when a saved session predates the split, which is
+        // exactly what that number used to mean.
+        thereAndBack: f?.thereAndBack ?? (f?.pingPongLaps ?? 0) > 0,
       };
     },
 
-    setFlow(position, drift, speedBars, evolve, pingPongLaps) {
+    setFlow(position, drift, speedBars, evolve, pingPongLaps, thereAndBack) {
       const mode = asDrift(drift);
       const was = deps.weave.flow;
       const evolving = !!evolve;
@@ -1096,7 +1099,13 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         // Floored, not trusted: the count comes off a dropdown but reaches the
         // clock's arithmetic, and a fractional or negative one would turn round
         // in the middle of a lap for ever.
+        // The journey's LENGTH, kept whichever way it is going: turning round
+        // and back again must not cost the number. Floored and never negative
+        // — it comes off a dropdown but reaches the clock's arithmetic.
         pingPongLaps: Math.max(0, Math.floor(pingPongLaps || 0)),
+        // …and its SENSE, which is a different question. Absent from an older
+        // panel, it is read off the number the way it always was.
+        thereAndBack: thereAndBack ?? (Math.max(0, Math.floor(pingPongLaps || 0)) > 0),
       };
       // The SAME writer the auto-advance uses, with the SAME starting line. A
       // hand on the fader and a clock driving it are one journey; two answers

@@ -324,12 +324,15 @@ export interface PanelFlow {
   speedBars: number;
   /** Whether arriving at the far end hands over to new material. */
   evolve: boolean;
-  /** THERE AND BACK: how many laps out before the journey turns round. 0 is the
-   *  plain journey, which only ever goes forward.
+  /** How many laps the journey runs — its LENGTH. Kept whichever way it is
+   *  going, so turning round and back again does not cost you the number. */
+  pingPongLaps?: number;
+  /** THERE AND BACK: whether the journey turns round and retraces its steps,
+   *  which is its SENSE and not its length.
    *
    *  It does not replace EVOLVE, it gives it a way home: going out a lane that
    *  arrives draws a fresh loop, coming back it retraces the ones it played. */
-  pingPongLaps?: number;
+  thereAndBack?: boolean;
 }
 
 /** Which loops a lane is weaving, and where between them it sits.
@@ -702,8 +705,16 @@ export interface PanelContext {
    *  scene keeps moving instead of crossing the same two loops for ever. */
   setFlow(
     position: number, drift: string, speedBars: number, evolve: boolean,
-    /** Laps out before the journey turns round; 0 or absent keeps it one-way. */
+    /** How many laps the journey runs — its LENGTH, and nothing else.
+     *
+     *  It used to carry the sense as well: 0 meant one-way, so choosing to go
+     *  one way threw the length away and there was no way to say how long a
+     *  one-way journey was. `thereAndBack` is the sense now, and the two keep
+     *  their own values. Absent still reads the old way for a saved session. */
     pingPongLaps?: number,
+    /** Whether the journey comes back over the loops it drew, or only ever goes
+     *  forward. Absent ⇒ read off `pingPongLaps`, as before the split. */
+    thereAndBack?: boolean,
   ): void;
   /** Where the master flow stands. Read it per frame: with a speed set, the host
    *  is moving it and the panel is following, not driving. */

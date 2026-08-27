@@ -32,7 +32,7 @@ import { macroNeutral } from '../weave/weave-catalog';
 import { isHarmonic } from '../plugins/capabilities';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { ticksPerBar, type TimeSignature } from '../core/meter';
-import { applyFlow, flowAt, wrap01 } from '../weave/flow';
+import { applyFlow, flowAt, wrap01, journeyLaps } from '../weave/flow';
 import { evolveCloudLanes } from './weave-cloud-evolve';
 import { retimeClip } from '../weave/clip-length';
 import { fillSteps } from '../automation/automation-steps';
@@ -748,7 +748,9 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
 
       const laneIds = (deps.getState?.().lanes ?? []).map((l) => l.id);
 
-      const pos = flowAt(nowSec / barSec, speed, state.flow.pingPongLaps ?? 0);
+      // Length and sense meet here and nowhere else — `flowAt` wants them as
+      // one figure, and journeyLaps is the one place that makes it.
+      const pos = flowAt(nowSec / barSec, speed, journeyLaps(state.flow));
       // A lap of 64 bars moves the position by ~0.0005 per tick, which is below
       // what any topology can act on and still costs a full source rebuild. The
       // journey is quantised to a thousandth so the ticks that change nothing
@@ -850,7 +852,7 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
         // And unlike the draw, it does NOT ask EVOLVE: re-hearing a loop you
         // already played is not new material, and a scene that could travel out
         // but not home would be a stranger control than either.
-        state.flow.pingPongLaps ? rewind : undefined,
+        journeyLaps(state.flow) ? rewind : undefined,
         true,
       );
 

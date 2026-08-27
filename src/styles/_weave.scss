@@ -48,7 +48,7 @@
 .weave-scale,
 .weave-role,
 .weave-style,
-.weave-pingpong,
+.weave-laps,
 .weave-add-engine {
   background: var(--surface-2);
   color: var(--text);
@@ -212,6 +212,34 @@
     box-shadow: 0 0 10px var(--amber-soft);
   }
 }
+
+// The journey's SENSE — does it come back — beside the laps that say how far.
+// Shaped like EVOLVE because it is the same kind of decision, taken at the same
+// moment: both answer what happens at the end of a lap.
+.weave-pingpong {
+  flex: 0 0 auto;
+  background: transparent;
+  color: var(--text-dim, #9a9aa2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover { color: var(--amber); border-color: var(--amber-soft); }
+
+  &[data-on='1'] {
+    color: var(--amber);
+    border-color: var(--amber);
+    box-shadow: 0 0 10px var(--amber-soft);
+  }
+}
+
+// A length that decides nothing yet: the journey is one-way, so it says so
+// rather than sitting there live with nothing to move.
+.weave-laps:disabled { opacity: 0.4; cursor: default; }
 
 // ── lanes ──────────────────────────────────────────────────────────────────
 .weave-lanes { display: flex; flex-direction: column; gap: 5px; }

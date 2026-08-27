@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { flowPositions, alignPositions, flowAt, applyFlow, asDrift } from './flow';
+import {
+  flowPositions, alignPositions, flowAt, applyFlow, asDrift, journeyLaps,
+} from './flow';
 
 describe('flowPositions', () => {
   it('moves each lane BY the flow, keeping where the user put it', () => {
@@ -254,6 +256,39 @@ describe('with wrapping off, the journey has ends', () => {
     applyFlow(lanes, ['l1'], 1, new Map([['l1', 0.99]]), (id) => wrapped.push(id), undefined, false);
     expect(lanes.l1.weave.x).toBe(1);
     expect(wrapped).toEqual([]);
+  });
+});
+
+describe('journeyLaps — how far, and whether it comes back', () => {
+  it('is one way when the journey does not turn round', () => {
+    expect(journeyLaps({ thereAndBack: false, pingPongLaps: 4 })).toBe(0);
+  });
+
+  it('KEEPS the length while it goes one way, ready for the way back', () => {
+    // The whole point of the split: saying "one way" must not throw away how
+    // long you said the journey was. The number is still in the state; it is
+    // simply not in force.
+    const flow = { thereAndBack: false, pingPongLaps: 4 };
+    expect(journeyLaps(flow)).toBe(0);
+    expect(journeyLaps({ ...flow, thereAndBack: true })).toBe(4);
+  });
+
+  it('reads an old session the way it was written', () => {
+    // Before the split, laps above zero WAS a there-and-back and zero was one
+    // way. A save from then must travel exactly as it did.
+    expect(journeyLaps({ pingPongLaps: 8 })).toBe(8);
+    expect(journeyLaps({ pingPongLaps: 0 })).toBe(0);
+    expect(journeyLaps(undefined)).toBe(0);
+  });
+
+  it('gives a round trip with no length the shortest one that means anything', () => {
+    expect(journeyLaps({ thereAndBack: true })).toBe(2);
+    expect(journeyLaps({ thereAndBack: true, pingPongLaps: 0 })).toBe(2);
+  });
+
+  it('refuses a nonsense length rather than travelling by it', () => {
+    expect(journeyLaps({ thereAndBack: true, pingPongLaps: -3 })).toBe(2);
+    expect(journeyLaps({ thereAndBack: true, pingPongLaps: 2.7 })).toBe(2);
   });
 });
 

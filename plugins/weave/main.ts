@@ -490,22 +490,47 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   // arrives draws a fresh loop, coming back it walks the ones it already
   // played. Which is why this reads in LAPS and not in bars — the number of
   // loops you travel out before turning is the musical decision.
-  const pingPong = document.createElement('select');
-  pingPong.className = 'weave-pingpong';
-  pingPong.setAttribute('aria-label', 'Laps out before the journey turns round');
-  for (const laps of [0, 2, 4, 8]) {
+  // TWO controls, because they are two decisions. One number used to carry
+  // both: 0 meant one-way, anything above it meant there-and-back that many
+  // laps — so choosing to go one way threw the length away, and there was no
+  // way at all to say how long a one-way journey was.
+  //
+  // The SENSE: does it come back.
+  const backBtn = document.createElement('button');
+  backBtn.className = 'weave-pingpong';
+  backBtn.type = 'button';
+  let goingBack = !!flowNow.thereAndBack;
+  const paintBack = () => {
+    backBtn.dataset.on = goingBack ? '1' : '';
+    backBtn.textContent = goingBack ? '⇄ There and back' : '→ One way';
+    backBtn.title = goingBack
+      ? 'Out and then home over the same loops — EVOLVE draws on the way out, and this is the way back for it.'
+      : 'The journey only ever goes forward.';
+  };
+  paintBack();
+
+  // The LENGTH: how many laps it runs. Kept whichever way it is going, so
+  // turning round and back again does not cost you the number.
+  const laps = document.createElement('select');
+  laps.className = 'weave-laps';
+  laps.setAttribute('aria-label', 'How many laps the journey runs');
+  for (const n of [2, 4, 8]) {
     const o = document.createElement('option');
-    o.value = String(laps);
-    o.textContent = laps === 0 ? 'One way' : `⇄ ${laps} laps`;
-    o.title = laps === 0
-      ? 'The journey only ever goes forward'
-      : `${laps} laps out, then back over the same loops`;
-    pingPong.appendChild(o);
+    o.value = String(n);
+    o.textContent = `${n} laps`;
+    o.title = `${n} laps before the journey turns round`;
+    laps.appendChild(o);
   }
 
   drift.value = flowNow.drift;
   speed.value = String(flowNow.speedBars);
-  pingPong.value = String(flowNow.pingPongLaps ?? 0);
+  // A session saved before the split carries the length in the old number, and
+  // zero there meant one-way rather than a length of none.
+  laps.value = String(flowNow.pingPongLaps && flowNow.pingPongLaps > 0 ? flowNow.pingPongLaps : 2);
+  // The length only decides anything on the way back, so it says so rather than
+  // sitting there live and doing nothing.
+  const paintLaps = () => { laps.disabled = !goingBack; };
+  paintLaps();
 
   // Two jobs, one switch. STATIC is a scene you place by hand and it stays
   // placed; EVOLVE is a scene that keeps finding new material. Default is
@@ -524,7 +549,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   };
   paintEvolve();
   evolve.addEventListener('click', () => {
-    ctx.setFlow(flowWound, drift.value, Number(speed.value), !ctx.flow().evolve, Number(pingPong.value));
+    ctx.setFlow(flowWound, drift.value, Number(speed.value), !ctx.flow().evolve, Number(laps.value), goingBack);
     paintEvolve();
   });
 
@@ -532,7 +557,7 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   // so the host can tell a completed lap from a hand turning back. The other two
   // controls re-send wherever the dial currently stands.
   function pushFlow(wound: number) {
-    ctx.setFlow(wound, drift.value, Number(speed.value), !!ctx.flow().evolve, Number(pingPong.value));
+    ctx.setFlow(wound, drift.value, Number(speed.value), !!ctx.flow().evolve, Number(laps.value), goingBack);
     // Travelling on its own, the dial is a readout and not a handle. Left live
     // it would fight the host for the position every frame.
     following = Number(speed.value) > 0;
@@ -544,14 +569,20 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
   const resend = () => pushFlow(flowWound);
   drift.addEventListener('change', resend);
   speed.addEventListener('change', resend);
-  pingPong.addEventListener('change', resend);
+  laps.addEventListener('change', resend);
+  backBtn.addEventListener('click', () => {
+    goingBack = !goingBack;
+    paintBack();
+    paintLaps();
+    resend();
+  });
 
   const driftLabel = el('span', 'weave-label');
   driftLabel.textContent = 'Drift';
   const speedLabel = el('span', 'weave-label');
   speedLabel.textContent = 'Speed';
-  const pingPongLabel = el('span', 'weave-label');
-  pingPongLabel.textContent = 'Journey';
+  const lapsLabel = el('span', 'weave-label');
+  lapsLabel.textContent = 'Journey';
 
   // Where the chord walk is, as a bar that fills across the lap and the current
   // chord beside it.
@@ -593,7 +624,9 @@ export function mountWeave(host: HTMLElement, ctx: PanelContext): () => void {
     // Its real neighbour is EVOLVE, because both answer what happens at the END
     // of a lap — one draws something new, the other decides whether the lane
     // ever comes back for it.
-    evolve, pingPongLabel, pingPong, chordWrap,
+    // The sense and then the length, in that order: whether it comes back is
+    // the decision, and how far is only a question once it does.
+    evolve, lapsLabel, backBtn, laps, chordWrap,
   );
 
   // ── the progression, written by hand ─────────────────────────────────────

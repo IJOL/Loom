@@ -199,6 +199,16 @@ export interface FlowState {
    *  retraced. Counting handovers instead would make the control read "3" for
    *  a journey that plainly goes round four times. */
   pingPongLaps?: number;
+  /** Whether the journey comes BACK — its sense, which is not its length.
+   *
+   *  The two used to be one number: 0 meant one-way and anything above it meant
+   *  "there and back, that many laps". So choosing to go one way threw the lap
+   *  count away, and the only way to say how long a one-way journey was, was
+   *  not to say it. "Journey mezcla longitud con sentido."
+   *
+   *  Absent means "read it off the number", which is exactly what a session
+   *  saved before this split says: laps above zero was a there-and-back. */
+  thereAndBack?: boolean;
   /** Where the lanes were when the current journey began, per lane id.
    *
    *  Only 'free' needs it, and it needs it badly: that mode positions each lane

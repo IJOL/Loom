@@ -1232,19 +1232,33 @@ function mountWeave(host, ctx) {
     o.textContent = bars2 === 0 ? "Off" : `${bars2} bars`;
     speed.appendChild(o);
   }
-  const pingPong = document.createElement("select");
-  pingPong.className = "weave-pingpong";
-  pingPong.setAttribute("aria-label", "Laps out before the journey turns round");
-  for (const laps of [0, 2, 4, 8]) {
+  const backBtn = document.createElement("button");
+  backBtn.className = "weave-pingpong";
+  backBtn.type = "button";
+  let goingBack = !!flowNow.thereAndBack;
+  const paintBack = () => {
+    backBtn.dataset.on = goingBack ? "1" : "";
+    backBtn.textContent = goingBack ? "\u21C4 There and back" : "\u2192 One way";
+    backBtn.title = goingBack ? "Out and then home over the same loops \u2014 EVOLVE draws on the way out, and this is the way back for it." : "The journey only ever goes forward.";
+  };
+  paintBack();
+  const laps = document.createElement("select");
+  laps.className = "weave-laps";
+  laps.setAttribute("aria-label", "How many laps the journey runs");
+  for (const n of [2, 4, 8]) {
     const o = document.createElement("option");
-    o.value = String(laps);
-    o.textContent = laps === 0 ? "One way" : `\u21C4 ${laps} laps`;
-    o.title = laps === 0 ? "The journey only ever goes forward" : `${laps} laps out, then back over the same loops`;
-    pingPong.appendChild(o);
+    o.value = String(n);
+    o.textContent = `${n} laps`;
+    o.title = `${n} laps before the journey turns round`;
+    laps.appendChild(o);
   }
   drift.value = flowNow.drift;
   speed.value = String(flowNow.speedBars);
-  pingPong.value = String(flowNow.pingPongLaps ?? 0);
+  laps.value = String(flowNow.pingPongLaps && flowNow.pingPongLaps > 0 ? flowNow.pingPongLaps : 2);
+  const paintLaps = () => {
+    laps.disabled = !goingBack;
+  };
+  paintLaps();
   const evolve = document.createElement("button");
   evolve.className = "weave-evolve";
   evolve.id = "weave-evolve";
@@ -1256,11 +1270,11 @@ function mountWeave(host, ctx) {
   };
   paintEvolve();
   evolve.addEventListener("click", () => {
-    ctx.setFlow(flowWound, drift.value, Number(speed.value), !ctx.flow().evolve, Number(pingPong.value));
+    ctx.setFlow(flowWound, drift.value, Number(speed.value), !ctx.flow().evolve, Number(laps.value), goingBack);
     paintEvolve();
   });
   function pushFlow(wound) {
-    ctx.setFlow(wound, drift.value, Number(speed.value), !!ctx.flow().evolve, Number(pingPong.value));
+    ctx.setFlow(wound, drift.value, Number(speed.value), !!ctx.flow().evolve, Number(laps.value), goingBack);
     following = Number(speed.value) > 0;
     flowDial.el.classList.toggle("following", following);
     showFlow();
@@ -1270,13 +1284,19 @@ function mountWeave(host, ctx) {
   const resend = () => pushFlow(flowWound);
   drift.addEventListener("change", resend);
   speed.addEventListener("change", resend);
-  pingPong.addEventListener("change", resend);
+  laps.addEventListener("change", resend);
+  backBtn.addEventListener("click", () => {
+    goingBack = !goingBack;
+    paintBack();
+    paintLaps();
+    resend();
+  });
   const driftLabel = el4("span", "weave-label");
   driftLabel.textContent = "Drift";
   const speedLabel = el4("span", "weave-label");
   speedLabel.textContent = "Speed";
-  const pingPongLabel = el4("span", "weave-label");
-  pingPongLabel.textContent = "Journey";
+  const lapsLabel = el4("span", "weave-label");
+  lapsLabel.textContent = "Journey";
   const ROMAN = ["i", "II", "III", "iv", "v", "VI", "VII"];
   const chordWrap = el4("div", "weave-chordbar");
   const chordFill = el4("span", "weave-chordbar-fill");
@@ -1311,9 +1331,12 @@ function mountWeave(host, ctx) {
     // Its real neighbour is EVOLVE, because both answer what happens at the END
     // of a lap — one draws something new, the other decides whether the lane
     // ever comes back for it.
+    // The sense and then the length, in that order: whether it comes back is
+    // the decision, and how far is only a question once it does.
     evolve,
-    pingPongLabel,
-    pingPong,
+    lapsLabel,
+    backBtn,
+    laps,
     chordWrap
   );
   const chordStrip = el4("div", "weave-chords");
