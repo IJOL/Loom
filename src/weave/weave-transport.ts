@@ -62,6 +62,12 @@ export interface WeaveLaunchDeps {
   /** The host's own launch, so a lane started by Play is queued and quantised
    *  exactly like one started by clicking its clip. */
   launchClipAt(laneId: string, row: number): void;
+  /** Whether the GRID currently holds this lane — a scene, or its own clip,
+   *  was launched and the lane plays that instead of weaving until the panel
+   *  takes it back. Play must skip those: starting them here would launch a
+   *  lane the scene deliberately left empty, which is the exact bug the
+   *  suspension exists to end. Absent ⇒ nothing is suspended. */
+  isSuspended?(laneId: string): boolean;
 }
 
 /** Launch the carrier clip of every weaving lane — what Play does before it
@@ -79,6 +85,8 @@ export function launchWeavingLanes(state: WeaveState, deps: WeaveLaunchDeps): vo
   const weaving = new Set(weavingLaneIds(state, deps.lanes.map((l) => l.id)));
   for (const lane of deps.lanes) {
     if (!weaving.has(lane.id) && !lane.follow) continue;
+    // A lane the grid has spoken for is the grid's to start, not this panel's.
+    if (deps.isSuspended?.(lane.id)) continue;
     const row = clipRowForLane(lane.clips, deps.activeSceneIdx);
     // No clip anywhere ⇒ nothing to carry the lane, and it stays silent. That
     // is the same answer the scheduler gives: derived notes replace what a

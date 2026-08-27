@@ -500,6 +500,9 @@ const sessionHost = new SessionHost({
   // sits at its neutral, so a session nobody has woven schedules exactly as it
   // did before this feature existed.
   weaveNotesFor: (laneId) => weaveWiring.notesFor(laneId),
+  // The grid wins: a clip or a scene launched from it hands those lanes back
+  // from the weave until the panel takes them again.
+  onGridLaunch: (laneId) => weaveWiring.suspendForGrid(laneId),
   applyPresetForLane: (laneId, presetName) => {
     // presetName is a prefixed value in the unified dropdown vocabulary
     // (engine: / user: / sampler:). See src/presets/preset-apply.ts.
@@ -666,6 +669,8 @@ const performanceFeature = createPerformanceFeature({
   // THIS fold — the one the scheduler reads — so the picture and the sound
   // cannot tell different stories.
   weaveNotesFor: (laneId) => weaveWiring.notesFor(laneId),
+  // …and the way back from a scene launch: the panel claiming a lane again.
+  resumeWeaving: (laneId) => weaveWiring.resumeWeaving(laneId),
   onWeaveChanged: () => {
     // Two halves, because the six macros reach the sound two different ways.
     // Density and Energy rewrite NOTES, so dropping the cached weave source is
@@ -795,7 +800,8 @@ const weaveTransport = createWeaveTransport({
     launchWeavingLanes(weaveWiring.state, {
       lanes: sessionHost.state.lanes,
       activeSceneIdx: sessionHost.activeSceneIdx,
-      launchClipAt: (laneId, row) => sessionHost.launchClipAt(laneId, row),
+      launchClipAt: (laneId, row) => sessionHost.launchClipAt(laneId, row, 'panel'),
+      isSuspended: (laneId) => weaveWiring.isSuspended(laneId),
     });
   },
   start: () => { performanceFeature.onPlay(); _origStart(); },

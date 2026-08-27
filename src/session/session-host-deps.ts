@@ -44,6 +44,11 @@ export interface SessionHostDeps {
    *  or returning undefined for a lane — means every note fires exactly as it
    *  did before the panel existed, which is what keeps this additive. */
   weaveNotesFor?: (laneId: string) => import('../weave/weave-runtime').LaneNoteSource | undefined;
+  /** The GRID launched something: one lane's clip (its id) or a whole scene
+   *  (`null`, which speaks for every lane). WEAVE hands those lanes back — they
+   *  play what the grid says until the panel takes them again. Absent in
+   *  fixtures with no panel, where a launch is only ever a launch. */
+  onGridLaunch?: (laneId: string | null) => void;
   // Phase G: drums removed — triggerForLane now routes drums-machine via
   // res.engine.createVoice() like every other engine.
   drumLanes: readonly DrumVoice[];

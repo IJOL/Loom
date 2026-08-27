@@ -70,6 +70,14 @@ export interface PanelContextDeps {
    *  the fader moved. The host drops its cached gate so the next tick folds the
    *  new selection. */
   onWeaveChanged?: (laneId: string) => void;
+  /** The panel takes a lane back from the grid.
+   *
+   *  Launching a scene — or a clip from the grid — hands its lanes over: they
+   *  play what the grid says and weave nothing. This is the way back, and it
+   *  belongs to the gestures that mean "weave this lane": its own ▶ in the
+   *  panel, choosing a topology, choosing a loop. Absent in fixtures with no
+   *  weave runtime. */
+  resumeWeaving?: (laneId: string) => void;
   /** Re-render the panel. Supplied by whoever mounted it. */
   refresh: () => void;
   /** Swap a lane's instrument. main hands in its own undoable wrapper, so a
@@ -579,7 +587,12 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // with the ones started from the grid — and the rule lives in ONE place,
       // because the transport's Play now starts weaving lanes by the same one.
       const row = clipRowForLane(lane.clips, deps.sessionHost.activeSceneIdx);
-      if (row >= 0) deps.sessionHost.launchClipAt(laneId, row);
+      // The panel starting a lane is the panel claiming it: it weaves again,
+      // whatever the grid last said. Launched with origin 'panel' for the same
+      // reason — the grid's launch is what hands a lane OVER, and this one
+      // must not undo the claim it just made.
+      deps.resumeWeaving?.(laneId);
+      if (row >= 0) deps.sessionHost.launchClipAt(laneId, row, 'panel');
     },
 
     laneLevelRange() {
@@ -964,6 +977,10 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
         delete cur.shelvedWeave;
       }
       deps.weave.lanes[laneId] = { ...cur, weave };
+      // Choosing a weave by hand is a claim on the lane: it weaves again even
+      // if a scene had handed it back to the grid. Turning it OFF is not, and
+      // does not need to be — a lane with no weave has nothing to suspend.
+      if (weave) deps.resumeWeaving?.(laneId);
       deps.onWeaveChanged?.(laneId);
     },
 
@@ -1370,6 +1387,9 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // Only when the control is actually on. Building a rack for a lane that is
       // not morphing would swap its instrument for a reason it never asked for.
       if (cur.sound !== undefined) ensureSoundRack(laneId);
+      // Picking a topology is the gesture that means "weave this lane", so it
+      // takes the lane back from the grid — see setLaneWeave.
+      deps.resumeWeaving?.(laneId);
       deps.onWeaveChanged?.(laneId);
       deps.refresh();
     },

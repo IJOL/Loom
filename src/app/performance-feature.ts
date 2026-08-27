@@ -109,6 +109,9 @@ export interface PerformanceFeatureDeps {
   /** Called after a macro moves: drops the cached gates so the next tick folds
    *  against the new value instead of answering from the old one. */
   onWeaveChanged?: () => void;
+  /** The panel taking a lane back from the grid — the way out of the suspension
+   *  a scene launch puts a weaving lane into. */
+  resumeWeaving?: (laneId: string) => void;
 }
 
 export interface PerformanceFeature {
@@ -456,6 +459,9 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         // The weave source, so the panel can DRAW the bar it is about to play
         // from the same fold the scheduler reads.
         weaveNotesFor: deps.weaveNotesFor,
+        // …and the way back: the panel's own gestures take a lane back from a
+        // scene that spoke for it.
+        resumeWeaving: deps.resumeWeaving,
         // The ONE catalogue, already here for the timeline's own automation
         // picker. The step row asks the same list, so it can move anything a
         // knob can and nothing it cannot.

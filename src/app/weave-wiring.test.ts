@@ -136,6 +136,68 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
     expect(w.notesFor('lane1')!()!.map((n) => n.midi)).toEqual([40]);
   });
 
+  it('says nothing for a lane the GRID has spoken for', () => {
+    // The rule the panel and the grid needed between them: a scene says what
+    // every lane plays, and a weaving lane used to ignore it — same sound in
+    // every scene, a scene of empty clips included. Suspended, the lane plays
+    // its clip exactly as it would with the panel closed.
+    const w = wiring(session());
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
+      locked: false, harmonyLeader: false,
+    };
+    expect(typeof w.notesFor('lane1')).toBe('function');
+
+    w.suspendForGrid(null);            // null = a scene: it speaks for every lane
+    expect(w.notesFor('lane1')).toBeUndefined();
+  });
+
+  it('weaves again the moment the panel takes the lane back', () => {
+    // Suspension is not an off switch: the selection is untouched and the lane
+    // resumes exactly where it was. Nothing else could lift it, or the panel's
+    // own Play would look broken.
+    const w = wiring(session());
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
+      locked: false, harmonyLeader: false,
+    };
+    w.suspendForGrid(null);
+    w.resumeWeaving('lane1');
+    expect(w.notesFor('lane1')!()!.map((n) => n.midi)).toEqual([36]);
+  });
+
+  it('suspends ONE lane when one clip was launched', () => {
+    // A clip launched on lane A is the grid speaking for lane A alone. Every
+    // other weaving lane carries on.
+    const w = wiring(session());
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
+      locked: false, harmonyLeader: false,
+    };
+    w.suspendForGrid('other-lane');
+    expect(typeof w.notesFor('lane1')).toBe('function');
+    w.suspendForGrid('lane1');
+    expect(w.notesFor('lane1')).toBeUndefined();
+  });
+
+  it('reports which lanes the grid holds, for whoever launches them', () => {
+    // Play launches the lanes WEAVE drives; a suspended one is not one of
+    // those any more, or Play would quietly undo the scene you just launched.
+    const w = wiring(session());
+    // A scene names the lanes the WEAVE knows. One it has never heard of is not
+    // weaving in the first place, and a lane that starts weaving after the
+    // launch weaves — the panel spoke last.
+    w.state.lanes.lane1 = {
+      weave: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
+      locked: false, harmonyLeader: false,
+    };
+    expect(w.isSuspended('lane1')).toBe(false);
+    w.suspendForGrid(null);
+    expect(w.isSuspended('lane1')).toBe(true);
+    w.resumeWeaving('lane1');
+    expect(w.isSuspended('lane1')).toBe(false);
+  });
+
   it('names the loop on EVERY lane, layered or not', () => {
     // This used to assert the opposite, and asking the engine was the wrong
     // question. The tag is one field that every engine but LAYERS ignores; what

@@ -189,11 +189,17 @@ export class SessionHost {
 
   /** Launch (or restart) a clip by lane id + clip index. Used by the MIDI mediator
    *  and any non-UI launcher. Mirrors onClipPlayPause's transport idle/running logic. */
-  launchClipAt(laneId: string, clipIdx: number): void {
+  launchClipAt(laneId: string, clipIdx: number, origin: 'grid' | 'panel' = 'grid'): void {
     this.paused = null;                 // a manual launch discards a pending Space-pause
     const lane = this.state.lanes.find((l) => l.id === laneId);
     const clip = lane?.clips[clipIdx];
     if (!lane || !clip) return;
+    // Launching a clip from the GRID is the grid speaking for that lane: a
+    // weaving lane stops weaving and plays the clip you pointed at. From the
+    // WEAVE panel it is the panel speaking, and the lane keeps weaving — the
+    // panel's own ▶ launching a lane and then silencing its weave would be a
+    // button that undoes itself.
+    if (origin === 'grid') this.deps.onGridLaunch?.(laneId);
     void this.deps.ctx.resume();
     if (!this.deps.seq.isPlaying()) {
       let next = this.laneStates.get(lane.id);
@@ -221,6 +227,11 @@ export class SessionHost {
     const scene = this.state.scenes[sceneIdx];
     if (!scene) return;
     void this.deps.ctx.resume();
+    // A scene says what EVERY lane plays, empty slots included, so it speaks
+    // for all of them: a weaving lane hands back to the grid until the panel
+    // takes it again. Without this a scene launch decided only WHETHER a
+    // weaving lane played, never what — every scene sounded the same on it.
+    this.deps.onGridLaunch?.(null);
     this.activeSceneIdx = sceneIdx;
     this.glState = { anchorSec: this.deps.ctx.currentTime, lastIter: 0 };
     launchScene(this.laneStates, this.state, scene, sceneIdx, this.deps.ctx.currentTime, this.deps.seq.bpm, this.deps.seq.meter);

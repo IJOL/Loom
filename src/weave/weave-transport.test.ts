@@ -108,6 +108,17 @@ describe('launchWeavingLanes', () => {
     expect(launchClipAt).not.toHaveBeenCalled();
   });
 
+  it('leaves alone a lane the GRID has taken', () => {
+    // After a scene launch the weaving lanes play what the scene says. Play
+    // must not put them back: it would start a lane the scene maps to null, at
+    // its first non-empty clip, which is the bug the suspension ends.
+    const launchClipAt = vi.fn();
+    launchWeavingLanes(stateWith({ a: woven, b: woven }), {
+      lanes, activeSceneIdx: 1, launchClipAt, isSuspended: (id) => id === 'b',
+    });
+    expect(launchClipAt.mock.calls).toEqual([['a', 1]]);
+  });
+
   it('does nothing at all when nothing is weaving', () => {
     const launchClipAt = vi.fn();
     launchWeavingLanes(defaultWeaveState(), { lanes, activeSceneIdx: 0, launchClipAt });

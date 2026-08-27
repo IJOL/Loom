@@ -68,6 +68,22 @@ export interface WeaveWiring {
    *  scene is the whole harmonic journey rather than the bar you happened to be
    *  standing on. */
   lapNotes: () => { bars: number; byLane: Map<string, NoteEvent[]> };
+  /** The GRID has spoken for a lane — or, with `null`, for every lane at once,
+   *  which is what launching a SCENE means. Those lanes stop weaving and play
+   *  what the grid says: their clip, or silence where the scene leaves them
+   *  empty. Their selection is kept, and {@link resumeWeaving} gives it back.
+   *
+   *  A weaving lane used to ignore the grid completely — every scene sounded
+   *  the same on it, and launching a scene that maps it to null started it
+   *  anyway, at its first non-empty clip. */
+  suspendForGrid: (laneId: string | null) => void;
+  /** The panel takes a lane back: it weaves again, from where it left off.
+   *  The lane's own ▶ and any edit to its weave do this — nothing else can, or
+   *  the grid's word would not last past the next tick. */
+  resumeWeaving: (laneId: string) => void;
+  /** Whether the grid currently holds this lane. Read by Play, which launches
+   *  the lanes WEAVE drives and must not count one the grid has taken. */
+  isSuspended: (laneId: string) => boolean;
   /** Adopt a loaded weave, IN PLACE.
    *
    *  The state object is shared by reference with the panel and with the session
@@ -103,6 +119,14 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
    *  scheduler is handed. Two caches because the leader search reads the RAW
    *  ones, and reading a guarded one from inside the guard is a loop. */
   const guarded = new Map<string, LaneNoteSource>();
+  /** The lanes the GRID has spoken for, which weave nothing until the panel
+   *  takes them back.
+   *
+   *  Runtime only, and deliberately not in `WeaveState`: the state is saved, and
+   *  a session that loaded already suspended would open with a panel full of
+   *  loops and no sound, which is indistinguishable from broken. What the grid
+   *  said last is a fact about this performance, not about the piece. */
+  const suspended = new Set<string>();
 
   const macro = (id: string) => {
     const v = state.macros[id];
@@ -649,6 +673,12 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
 
   const foldFor = (laneId: string): LaneNoteSource | undefined => {
     if (state.bypass) return undefined;
+    // The grid wins. A scene names a clip for every lane — including no clip at
+    // all — and a weaving lane used to ignore that entirely: the same sound in
+    // every scene, and a scene written by PRINT playing the weave rather than
+    // the print. Suspended, the lane plays its clip exactly as it would with
+    // this panel closed, and its selection is untouched underneath.
+    if (suspended.has(laneId)) return undefined;
     if (guarded.has(laneId)) return guarded.get(laneId);
     const source = rawFor(laneId);
     if (!source) return undefined;
@@ -878,6 +908,22 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     invalidate() {
       sources.clear();
       guarded.clear();
+    },
+
+    suspendForGrid(laneId) {
+      // A scene speaks for every lane at once; a clip, for its own. Only the
+      // lanes the weave already knows are named, so a lane that starts weaving
+      // AFTER the launch weaves — the panel spoke last.
+      if (laneId === null) for (const id of Object.keys(state.lanes)) suspended.add(id);
+      else suspended.add(laneId);
+    },
+
+    resumeWeaving(laneId) {
+      suspended.delete(laneId);
+    },
+
+    isSuspended(laneId) {
+      return suspended.has(laneId);
     },
 
     replace(next) {
