@@ -14,6 +14,15 @@ export interface TransportDeps {
   onStop: () => void;
   /** Called just after the transport starts (Play) — begins an armed live-take. */
   onStart?: () => void;
+  /** What the Play BUTTON does, when pressing Play means more than starting the
+   *  clock. WEAVE passes its `play` here: a weaving lane plays a carrier clip,
+   *  so Play has to launch those lanes before the clock moves.
+   *
+   *  Absent ⇒ `seq.start()`, which is what every other caller uses. Keeping the
+   *  two apart is deliberate: the weave's launch used to ride on `seq.start`
+   *  itself, which turned every clip and scene launched from the GRID into a
+   *  Play of everything the panel drives. */
+  play?: () => void;
 }
 
 /** Reflect "transport is running" on the Play button via a CSS class. Play and
@@ -36,7 +45,7 @@ export function wireTransport(deps: TransportDeps): () => void {
     void ctx.resume();
     if (seq.isPlaying()) return;               // Play never stops
     deps.resetAutomationPosition();
-    seq.start();
+    (deps.play ?? (() => seq.start()))();
     setPlaying(playBtn, true);
     deps.onStart?.();
   }, { signal });

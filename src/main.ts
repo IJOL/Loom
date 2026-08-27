@@ -17,7 +17,7 @@ import { createKnobMounter } from './app/knob-mounting';
 import { createLaneHost } from './app/lane-host-wiring';
 import { createPerformanceFeature } from './app/performance-feature';
 import { createWeaveWiring } from './app/weave-wiring';
-import { launchWeavingLanes, createWeaveAwareStart } from './weave/weave-transport';
+import { launchWeavingLanes, createWeaveTransport } from './weave/weave-transport';
 import { getStripParam, setStripParam } from './core/channel-strip-params';
 import { defaultWeaveState } from './weave/weave-state';
 import { createWeaveSound } from './app/weave-sound';
@@ -777,12 +777,17 @@ wireKnobAutomationMenu({ onRegisterKnob, destinations, sessionHost, seq, perform
 // nothing — while Stop already stopped everything, which is why the asymmetry
 // read as a bug rather than as a missing step.
 //
-// Through createWeaveAwareStart because launching a clip on a STOPPED transport
-// presses Play itself: without the guard that is start → launch → start → …
-// until the stack gives out, and Play stayed dead for the rest of the session.
-// See that function for why the guard is also what makes the lanes start
-// together rather than a bar apart.
-seq.start = createWeaveAwareStart({
+// Only the Play BUTTON launches them, though. `seq.start` is the clock and
+// nothing else: `launchClipAt` and `launchSceneAt` press it themselves while
+// the transport is stopped, so a weave launch riding on `seq.start` made every
+// launch from the GRID a Play of everything the panel drives — one clip click
+// started three lanes, and a scene started a lane it maps to null.
+//
+// The guard lives on `start` for the nested case: launching a lane from inside
+// `play` calls it back, and without it that is start → launch → start → … until
+// the stack gives out. See createWeaveTransport for why the guard is also what
+// makes the lanes start together rather than a bar apart.
+const weaveTransport = createWeaveTransport({
   // Session only. Performance REPLAYS recorded launches, and launching over
   // them would fight the take it is in the middle of reproducing.
   launchWeaving: () => {
@@ -795,6 +800,7 @@ seq.start = createWeaveAwareStart({
   },
   start: () => { performanceFeature.onPlay(); _origStart(); },
 });
+seq.start = weaveTransport.start;
 seq.stop = () => { performanceFeature.onStop(); _origStop(); };
 
 const copyBtn = document.getElementById('copy-to-performance');
@@ -945,6 +951,9 @@ const transportDeps: TransportDeps = {
   seq, ctx, playBtn, stopBtn,
   resetAutomationPosition,
   onStop: stopTransport,
+  // Play means "play what the panel drives, then start the clock". Every other
+  // caller of seq.start only wants the clock.
+  play: () => weaveTransport.play(),
 };
 wireTransport(transportDeps);
 

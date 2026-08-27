@@ -87,8 +87,13 @@ export function launchWeavingLanes(state: WeaveState, deps: WeaveLaunchDeps): vo
   }
 }
 
-/** Play: launch what WEAVE is weaving, THEN start the clock — and survive the
- *  fact that launching a clip starts the clock too.
+/** The transport, split in two: PLAY, and merely starting the clock.
+ *
+ *  Play launches what WEAVE is weaving and then starts the clock. Everything
+ *  else that starts the clock — a clip launched from the grid, a scene, an
+ *  import — takes `start` and launches nothing: the grid speaks for itself.
+ *
+ *  It has to survive the fact that launching a clip starts the clock too.
  *
  *  `launchClipAt` on a stopped transport arranges the lane and then presses
  *  Play itself, which is this very function. With even one weaving lane that is
@@ -103,27 +108,55 @@ export function launchWeavingLanes(state: WeaveState, deps: WeaveLaunchDeps): vo
  *  after it would be quantised to the next boundary instead, so the first lane
  *  would begin a bar before the rest. Arrange everything, then start once — the
  *  same order `launchSceneAt` follows, for the same reason. */
-export function createWeaveAwareStart(deps: {
+export function createWeaveTransport(deps: {
   /** Launch every weaving lane's carrier clip. */
   launchWeaving(): void;
   /** The real transport start, called exactly once per outermost press. */
   start(): void;
-}): () => void {
+}): {
+  /** The PLAY gesture: launch what the panel drives, then start the clock. */
+  play(): void;
+  /** Start the clock and nothing else — what `seq.start` becomes.
+   *
+   *  The two used to be one function, and that was the bug: `launchClipAt` and
+   *  `launchSceneAt` press Play themselves when the transport is stopped, so
+   *  hanging the weave's launch on `seq.start` turned every launch from the
+   *  GRID into a Play. Clicking one clip started every weaving lane; launching
+   *  a scene started a lane that scene leaves empty.
+   *
+   *  It still carries the guard, because it is what a lane's own launch calls
+   *  from inside `play` — see below. */
+  start(): void;
+} {
   let launching = false;
-  return () => {
+  const start = () => {
     // A start that arrives from INSIDE the launch is that launch's own doing.
-    // Returning is safe because the outer call has not reached `start()` yet
+    // Returning is safe because the outer `play` has not reached `start()` yet
     // and always will.
+    //
+    // That is not merely damage control — it is what makes the lanes start
+    // TOGETHER. While the clock is still stopped every lane takes
+    // `launchClipAt`'s idle branch and is queued at the same instant; let one
+    // nested call start the clock early and the lanes after it would be
+    // quantised to the next boundary instead, so the first lane would begin a
+    // bar before the rest.
     if (launching) return;
-    launching = true;
-    try {
-      deps.launchWeaving();
-    } finally {
-      // Restored even if a lane's launch throws: one bad lane must not leave
-      // the transport permanently unable to start, which is the failure this
-      // whole function exists to end.
-      launching = false;
-    }
     deps.start();
+  };
+  return {
+    play() {
+      if (launching) return;
+      launching = true;
+      try {
+        deps.launchWeaving();
+      } finally {
+        // Restored even if a lane's launch throws: one bad lane must not leave
+        // the transport permanently unable to start, which is the failure this
+        // whole function exists to end.
+        launching = false;
+      }
+      deps.start();
+    },
+    start,
   };
 }
