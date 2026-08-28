@@ -32,6 +32,14 @@ export interface GeneratorDepsUI {
   /** Read at call time, not captured: history is wired in AFTER this context is
    *  built, so a captured one would be undefined for the whole run. */
   history: () => HistoryDeps | undefined;
+  /** Every loop this lane may draw from — the SAME shelf the weave offers it,
+   *  clips and library together.
+   *
+   *  The fallback when the lane has nothing of its own. "+ Weaving track" makes
+   *  a lane with one EMPTY clip, so the first GEN anyone presses had no
+   *  material and the switch refused in silence. Optional: a fixture without
+   *  one is a lane with only its own clips to read. */
+  shelfIds?: (laneId: string) => string[];
 }
 
 /** One control: where it reads from the state, and where it writes back.
@@ -190,12 +198,26 @@ export function setGeneratorOn(d: GeneratorDepsUI, laneId: string, on: boolean):
       // rather than opening an empty picker. It is the ordinary A→B selection
       // every other loop control uses — "my own clip" as one selection among
       // many, which is exactly what the material decision settled on.
-      const ids = lane.clips
+      const own = lane.clips
         .filter((c): c is NonNullable<typeof c> => !!c && c.notes.length > 0)
         .map((c) => formatLoopId({ source: 'clip', clipId: c.id }));
-      state.selection = defaultSelection('ab', ids);
-      // No clips with notes in them: there is nothing to generate FROM, so the
-      // switch stays off rather than turning on and playing silence.
+      // What you wrote beats what the library offers — but a lane with nothing
+      // written in it falls back to the SHELF rather than refusing.
+      //
+      // "+ Weaving track" makes a lane with one EMPTY clip, so the first GEN
+      // anyone ever presses had no material of its own: the switch returned
+      // here without turning on and without saying anything, which reads as a
+      // dead button. Reported as "no funciona el botón gen".
+      //
+      // The shelf is the library entries, never the lane's own clips again:
+      // those were already offered above and the empty ones are exactly what
+      // this branch exists to survive.
+      const shelf = own.length > 0 ? own
+        : (d.shelfIds?.(laneId) ?? []).filter((id) => !id.startsWith('clip:'));
+      state.selection = defaultSelection('ab', shelf);
+      // Nothing anywhere — no clips with notes and no library. There is
+      // genuinely nothing to generate FROM, so the switch stays off rather than
+      // turning on and playing silence.
       if (!state.selection) return;
     }
     lane.generator = state;

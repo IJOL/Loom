@@ -50,8 +50,30 @@ describe('the generator switch', () => {
     expect(h.lane().generator?.selection).toMatchObject({ kind: 'ab', a: 'clip:clipA' });
   });
 
-  it('refuses to switch on when there is nothing to generate FROM', () => {
-    // Turning on and playing silence is worse than not turning on.
+  it('falls back to the SHELF when the lane has no notes of its own', () => {
+    // "+ Weaving track" makes a lane with one EMPTY clip, so the first thing
+    // anyone presses GEN on has nothing of its own to read. It used to refuse,
+    // silently, and read as a dead button — reported as "no funciona el botón
+    // gen". The library is material too: the same shelf the weave draws from.
+    const h = harness(false);
+    h.deps.shelfIds = () => ['lib:acid-techno:bass:0', 'lib:acid-techno:bass:1'];
+    setGeneratorOn(h.deps, 'lane1', true);
+    expect(h.lane().generator?.selection)
+      .toMatchObject({ kind: 'ab', a: 'lib:acid-techno:bass:0' });
+  });
+
+  it('prefers the lane s OWN clips over the shelf', () => {
+    // What you wrote beats what the library offers: pressing GEN on a lane you
+    // have filled must read what is in it.
+    const h = harness();
+    h.deps.shelfIds = () => ['lib:acid-techno:bass:0'];
+    setGeneratorOn(h.deps, 'lane1', true);
+    expect(h.lane().generator?.selection).toMatchObject({ kind: 'ab', a: 'clip:clipA' });
+  });
+
+  it('refuses to switch on when there is nothing to generate FROM anywhere', () => {
+    // Turning on and playing silence is worse than not turning on. With no
+    // clips AND no shelf there is genuinely nothing to read.
     const h = harness(false);
     setGeneratorOn(h.deps, 'lane1', true);
     expect(h.lane().generator?.selection ?? null).toBeNull();

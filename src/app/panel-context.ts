@@ -449,6 +449,11 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     // reason: it wins while it lasts, and does not get to destroy one.
     ...generatorMembers({
       getState: () => deps.sessionHost.state,
+      // The SAME list the lane's own loop dropdown offers — one shelf, so what
+      // the generator falls back to is what the panel says the lane may draw.
+      // A second answer here would be a lane offered loops it cannot generate
+      // from, or generating from loops it was never offered.
+      shelfIds: (laneId) => weaveLoopChoices(loopContext(laneId)).map((c) => c.id),
       clearWeave: (laneId) => {
         const cur = deps.weave.lanes[laneId];
         if (cur && cur.shelvedWeave === undefined) cur.shelvedWeave = cur.weave;
