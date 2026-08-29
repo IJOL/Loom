@@ -53,7 +53,7 @@ Sessions are stored in your browser, not as files on disk: "Open" and "Save" mea
 
 Loom organises music in three nested concepts:
 
-- A **lane** is an instrument track. Each lane runs one engine — six melodic ones (TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast), the Sampler, the Drum Machine, or an Audio channel for playing a recording — and has its own mixer strip with EQ, sends, pan, and fader.
+- A **lane** is an instrument track. Each lane runs one engine — six melodic ones (TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast), the Sampler, the Drum Machine, Layers (up to four melodic engines in one lane), or an Audio channel for playing a recording — and has its own mixer strip with EQ, sends, pan, and fader.
 - A **clip** is a pattern of notes that lives in a lane. A lane can hold multiple clips — one per scene row.
 - A **scene** is a horizontal row across all lanes. Launching a scene fires the clip in each lane at that row simultaneously, so scenes work like song sections or loop variations.
 

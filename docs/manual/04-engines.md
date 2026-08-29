@@ -8,15 +8,17 @@ engines only, so a lane can be moved between them freely but not turned into a
 Drum Machine, which edits on the drum grid. Changing the engine replaces the
 sound source while preserving the lane's clips and modulation routing.
 
-This chapter covers eight engines: six melodic synthesisers (TB-303,
-Subtractive, FM, Wavetable, Karplus-Strong, West Coast), a Sampler, and a Drum
-Machine. A ninth choice, the **Audio channel**, plays a recording rather than
+This chapter covers nine engines: six melodic synthesisers (TB-303,
+Subtractive, FM, Wavetable, Karplus-Strong, West Coast), a Sampler, a Drum
+Machine, and **Layers** — a lane that holds up to four of the others at once. A
+tenth choice, the **Audio channel**, plays a recording rather than
 synthesising one and is covered in
 [MIDI & Samples](08-midi-and-samples.md#audio-channel).
 
 Each engine exposes a PRESET dropdown with **Load**, **Save As…** and **Delete**
 beside it, and a **🎲 Sound** button that randomises the patch and sets the
-preset name to "Custom". See
+preset name to "Custom". (Layers has neither a dice nor factory presets: what a
+rack sounds like is which instruments you put in it.) See
 [Sessions, Lanes, Clips & Scenes](03-sessions-lanes-clips-scenes.md) for how to
 add and configure lanes.
 
@@ -44,6 +46,15 @@ sound exactly as it stands on that lane. Two things about it are worth knowing:
 
 **Delete** removes a user preset; factory presets cannot be deleted, and the
 button says so if you try.
+
+**Changing a lane's engine forgets the preset it was on.** Swap FM for Wavetable,
+or convert a lane to a rack, and the dropdown reads **(custom — no preset)**
+rather than going on naming a sound that is no longer loaded. Nothing is lost:
+the parameters are still whatever the swap left them.
+
+The same dropdown is what WEAVE offers on a track row, and it is now the same
+list — a Sampler track in WEAVE finally sees its bundled instruments and its
+loops, which it did not before.
 
 Your saved presets live in the browser, not in the session file. That cuts both
 ways: they follow you from one song to the next, and they are **not** included
@@ -89,6 +100,33 @@ changing mid-note would produce a click rather than a sweep:
 Those apply from the next note you play. Everything else is immediate. (The Drum
 Machine is the exception to the whole section: its parameters are read when the
 hit fires.)
+
+---
+
+## Voices, and what happens when you run out
+
+Every melodic engine has a **Voices** control: the most notes that lane will
+sound at once. The range is **1 to 64**, and the default is 32 on Subtractive,
+Wavetable, Karplus and West Coast, and 24 on FM.
+
+It is worth knowing that this is a real limit, because it did not use to be —
+the number was read as a mono switch, so anything above 1 meant "no limit at
+all". A pad with a three-second release, played in 16ths, settles at around 28
+notes sounding simultaneously; a Layers rack multiplies that by however many
+slots it holds. That is the cost this control exists to bound, and the symptom
+of exceeding it is not a warning but the audio thread missing its deadline while
+everything on screen still looks right.
+
+**When the lane is full, the oldest note goes.** It is not cut off: it is faded
+out over 8 ms and only then let go, so there is no step in the waveform to hear.
+Notes that are already releasing do not count against the cap, so a fast run
+cannot steal the same voice twice and thin the part out.
+
+Set it by ear. Lower it on a lane you want to sound monophonic (1 is a genuine
+mono lane), and lower it on a dense pad if the mix is straining; leave it alone
+otherwise. The TB-303 has no such control — it is monophonic by declaration, not
+by a number — and **the Sampler's is inert**: it runs its own voice pool and
+takes no cap.
 
 ---
 
@@ -174,8 +212,8 @@ the largest library of any engine here.
   Built-in Env).
 - **MASTER** — global Tune in semitones, plus **Unison**, **Detune** and
   **Drift**. See [Unison](#unison-detune-and-drift).
-- **POLY** — voice count (1–16), poly/mono mode, and legato/retrig behaviour
-  in mono mode.
+- **POLY** — the voice count (1–64, default 32). See
+  [Voices](#voices-and-what-happens-when-you-run-out).
 
 ### Mode and Type
 
@@ -357,7 +395,7 @@ level; operators are wired together according to one of four algorithms.
 | Op 1–4: Level | Carrier output level or modulation index (modulators) |
 | Op 1–4: ADSR | Per-operator amplitude envelope |
 | Mix | Final output level (0–1) |
-| Voices | Polyphony cap (1–16; default 6) |
+| Voices | Polyphony cap (1–64; default 24). See [Voices](#voices-and-what-happens-when-you-run-out) |
 
 FM suits metallic tones, electric pianos, bells, and evolving textures. Small
 ratio changes yield very different timbres; the preset library covers bells,
@@ -387,7 +425,7 @@ Square, PWM 25%, Organ, Brass, and Vocal.
 | Cutoff / Res | Resonant low-pass filter |
 | Built-in Env | Toggle the built-in amp ADSR on/off |
 | Attack / Decay / Sustain / Release | Amplitude envelope |
-| Voices | Polyphony cap (1–16; default 8) |
+| Voices | Polyphony cap (1–64; default 32). See [Voices](#voices-and-what-happens-when-you-run-out) |
 
 Animating Morph with an LFO is the signature technique — sweeping from Sine to
 Sawtooth or Brass to Vocal while a note sustains produces evolving, living
@@ -418,7 +456,7 @@ at every frequency, natural high-harmonic roll-off, and no feedback runaway.
 | Built-in Env | Toggle the built-in amp envelope on/off |
 | Attack / Release | Amp envelope on buffer playback |
 | Level | Output amplitude |
-| Voices | Polyphony cap (1–16; default 8) |
+| Voices | Polyphony cap (1–64; default 32). See [Voices](#voices-and-what-happens-when-you-run-out) |
 
 Damping and Brightness are set per-note at the moment of the pluck (baked into
 the buffer). Level and its envelope stay live and can be modulated.
@@ -434,7 +472,7 @@ Karplus suits acoustic bass, guitar, harp, and marimba-style sounds.
 
 The West Coast engine takes a fundamentally different approach to synthesis from the filter-based ("East Coast") engines above. Instead of shaping a harmonically-rich waveform by subtracting frequencies with a filter, it **adds** harmonics by routing an oscillator through a **wavefolder** and then taming the result with a **low-pass gate**. The result is highly percussive and organic — metallic plucks, woody tones, evolving bell-like pads, and abstract textures that are difficult to achieve with conventional subtractive synthesis.
 
-The engine is **polyphonic** — up to 16 voices, 8 by default — with a Poly/Mono switch in the AMP section if you want the classic one-voice-at-a-time behaviour. FM here is native-linear, not through-zero.
+The engine is **polyphonic** — up to 64 voices, 32 by default; set Voices to 1 in the AMP section for the classic one-voice-at-a-time behaviour. FM here is native-linear, not through-zero.
 
 The signal chain is: **Complex Oscillator** → **Timbre (Wavefolder)** → **Low-Pass Gate (LPG)** driven by an **AD Contour**.
 
@@ -490,8 +528,7 @@ A single AD (attack–decay) envelope generator, similar to the contour generato
 | --- | --- |
 | Level | Master output gain (0–1) |
 | Tune | Global pitch offset in semitones (±12 st) |
-| Voices | Polyphony, 1–16 (default 8) |
-| Mode | Poly or Mono |
+| Voices | Polyphony, 1–64 (default 32). See [Voices](#voices-and-what-happens-when-you-run-out) |
 
 The engine ships with **24 presets** — spanning percussive bass plucks (BASS Fold Sub, BASS Growl FM), bells (BELL Metallic, BELL Crystal Ring), pads (PAD Fold Drone, PAD Glass Air), keys (KEYS Fold E-Piano, KEYS Marimba Fold), and abstract textures (FX Cycle Burst, FX Sci-Fi Cycle) — selectable from the lane's preset dropdown. Per-section knob accent colours group the COMPLEX OSCILLATOR, TIMBRE, LOW-PASS GATE, and CONTOUR sections visually.
 
@@ -513,7 +550,7 @@ it possible to tune, filter, and pan individual pads independently.
 | Parameter | Description |
 | --- | --- |
 | Gain | Master output gain for the lane |
-| Voices | Polyphony cap (1–16; default 8) |
+| Voices | 1–16, default 8 — but **the Sampler does not honour it**. It runs in a voice pool of its own with no cap; the control is there and does nothing. Every other engine's Voices knob is a real limit |
 
 ### Per-pad parameters
 
@@ -557,7 +594,7 @@ The per-voice rack exposes the key parameters for each voice:
 
 | Voice | Key parameters |
 | --- | --- |
-| Kick | Tune, Attack (click), Decay, Start/End Freq, Sweep, Wave |
+| Kick | Tune, Attack (click), Decay, Tone, Snap, Thud, Boom, Body — plus Start/End Freq, Sweep, Wave, Drive and the three shape controls under **▸ advanced**. See [Building a kick](#building-a-kick) |
 | Snare | Tune, Tone body, Snap (noise), Body Decay, Noise Decay, Noise Tone |
 | Rimshot | Tune, Decay, Freq |
 | Closed Hat | Tune, Decay, Filter |
@@ -571,6 +608,35 @@ The per-voice rack exposes the key parameters for each voice:
 Each voice also has its own mixer row — **Level, A, B, Pan, Lo, Mid, Hi** — where
 **A** and **B** are that voice's send amounts to Send A (a Delay by default) and
 Send B (a Reverb by default).
+
+### Building a kick
+
+The kick used to be a pitch sweep with a 15 ms click on top, and the click had
+to fight its way out from under the body's own envelope — which meant no layer
+could outlast it. It now carries **four layers with lives of their own**, plus a
+filter and a saturator across the sum of them. Everything here is **off by
+default**, so no kit you already have sounds any different.
+
+| Control | Range | Default | What it adds |
+| --- | --- | --- | --- |
+| SNAP | 0–1 | 0 | A noise transient at the very front — the beater. Unlike the old click it has its own decay, so it can die instantly or ring on past the body |
+| SDEC | 2–150 ms | 20 ms | How long that transient lasts *(advanced)* |
+| THUD | 0–1 | 0 | A sine an octave **above** where the sweep lands — the knock, the part you hear on a laptop speaker |
+| BOOM | 0–1 | 0 | A sine an octave **below** it, on a tail one and a half times the kick's own decay — the weight. It grows with the kick rather than sitting at a fixed length |
+| BODY | 0–1 | 0 | The resonant shell: noise through a bandpass, the sound of the drum rather than of the beater |
+| BCTR | 80–1200 Hz | 220 Hz | Where that shell resonates *(advanced)* |
+| BLEN | 10–600 ms | 120 ms | How long it rings *(advanced)* |
+| TONE | 200–12 000 Hz | 12 000 (open) | A 24 dB/oct lowpass across the whole kick. At the top it is an exact bypass |
+| DRIVE | 0–1 | 0 | Saturation after the filter, normalised so the **peak stays where it was** — it changes the shape, not the level *(advanced)* |
+
+TONE, SNAP, THUD, BOOM and BODY sit in the kick's front row; the four marked
+*(advanced)* are in its collapsed **▸ advanced** block, along with Start/End
+Freq, Sweep and Wave.
+
+A practical order: set the pitch and length first (Tune, Decay, Sweep), then
+**THUD** until it speaks through the mix, then **BOOM** for weight, then **SNAP**
+for attack, and only then **BODY** if the drum should sound like a drum rather
+than a tone. **TONE** and **DRIVE** are the finish, not the start.
 
 ### Drum preset dropdown — synth kits and sample kits
 
@@ -590,7 +656,7 @@ The preset dropdown for any drum lane lists kits from five groups:
 
 The sample WAVs are curated one-shots from the Dirt-Samples collection (used by TidalCycles), classic TR-808 recordings, and — for the **Drum Machines** group — the [tidal-drum-machines](https://github.com/ritchse/tidal-drum-machines) library. Full credits are in the repo `README.md` under "Credits — sample sources".
 
-> Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler's own PRESET dropdown (grouped Presets / Drumkit / Loop) and per-pad parameters, see [MIDI & Samples](08-midi-and-samples.md).
+> Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler's own PRESET dropdown — two groups now, **Melodic** and **Loops**, each sorted by name — and its per-pad parameters, see [MIDI & Samples](08-midi-and-samples.md). Drum kits are no longer offered there: they are this page's shelf, and a Sampler lane already on one keeps playing it.
 
 ### Bus controls
 
@@ -608,15 +674,94 @@ The default configuration is **closed hat and open hat both in group 1**, which 
 
 ---
 
+## Layers
+
+![The Layers rack — four slots, the MIX control, and the open slot's own instrument below](images/engine-layers.png)
+
+A **Layers** lane does not synthesise anything itself. It holds **up to four
+other instruments** and plays them together, from one set of clips, through one
+mixer channel. A piano with a pad under it, a bass whose top octave is a
+different synth, a lead that is three detuned engines at once: all of it without
+spending four lanes and four channel strips on one part.
+
+**Three ways in.** Pick *Layers* from the **+** menu when you add a lane, pick it
+from the **ENGINE** selector on a lane you already have, or — the useful one —
+right-click a lane header and choose **Convert to layered**. Converting keeps
+the lane's current sound, patch and modulators and puts it in the first slot,
+with the second slot holding the same instrument at zero gain: the lane sounds
+exactly as it did a moment ago, and you have somewhere to build.
+
+**The rack.** Four numbered tabs, `1 2 3 4`, sit above the ordinary parameter
+grid. Click one and the panel below shows **that slot's own instrument** — its
+real page, its real sections, the same knobs you would see on a lane of its own.
+Under the tabs is the **Instrument** dropdown for the open slot (`— empty —`
+clears it) and its **Preset** dropdown.
+
+**What a slot may hold** is narrower than what a lane may be: the six melodic
+engines only. The Sampler, the Drum Machine, the Audio channel and Layers itself
+are not offered — the first three run in machinery of their own that a rack
+cannot reach into, and a rack inside a rack has no bottom. This is a real
+restriction rather than an oversight: it exists because a slot naming the
+Sampler played silence.
+
+**Each slot has three controls of its own**, in the LAYER section:
+
+| Control | Range | Default | What it does |
+| --- | --- | --- | --- |
+| Gain | 0–2 | 1 | That slot's level within the rack. It goes above 1 on purpose — a quiet instrument used to sit at the top of its fader with nowhere left to go |
+| Low / High | 0–127 | 0 / 127 | The range of notes that reach this slot. Leave them alone and every note does |
+
+Overlapping ranges are the point: two slots that both cover the middle both
+sound there. Set them to meet rather than overlap and you have a split keyboard
+instead of a stack.
+
+**The MIX control** sits between the tabs and the slot pickers, and its shape
+follows how many slots are loaded. With **two or three**, it is a horizontal
+fader with the loaded slots numbered underneath as stops: it crosses between
+them at constant power, only ever two at a time, and parking it on a stop plays
+that instrument alone. With **four**, it becomes a square with a slot in each
+corner — the same square the WEAVE cloud and the WEAVE sound control use. With
+fewer than two slots loaded there is nothing to balance, so nothing is drawn.
+
+It is a gesture over the ordinary Gain params rather than a control of its own:
+it writes them, reads its position back from them, and so a rack balance
+automates, undoes and saves like any other knob. Empty slots take no share.
+
+**Level the slots** is a checkbox, on by default. Loom's presets span some 46 dB
+end to end, so a rack of four sounds picked for their character will usually be
+badly out of balance before you touch anything. With this on, each slot is
+corrected toward a common loudness — by measurement, not guesswork, and never by
+more than ±12 dB — so the faders start meaning *balance* rather than
+*compensation*. Turn it off when the difference between two instruments **is**
+the arrangement.
+
+**Saving a rack.** *Save As…* on a Layers lane stores which instrument is in each
+slot as well as all four sets of knobs, so recalling it rebuilds the rack rather
+than dropping four sets of values onto whatever happened to be loaded. Presets
+saved before this still load; they simply carry knobs alone.
+
+**Which slot plays a note** is normally decided by the note's pitch and the
+slots' ranges. There is a second way, and WEAVE uses it: a note can carry the
+slot it belongs to, in which case it goes there whatever its pitch. That is what
+lets one part be played by several instruments — see
+[WEAVE](11-weave.md#playing-one-part-on-several-instruments).
+
+**Changing which engine sits in a slot rebuilds the lane**, which takes a
+moment and resets that slot's parameters to the new engine's defaults. Moving a
+gain or a range does not.
+
+---
+
 ## Summary table
 
 | Engine | Best for | Standout parameters |
 | --- | --- | --- |
 | TB-303 | Acid bass lines, resonant leads | Slide, Accent, Env |
-| Subtractive | Pads, leads, basses, general-purpose | Dual OSC detune, Filter Drive, Key Track, POLY mode |
+| Subtractive | Pads, leads, basses, general-purpose | Dual OSC detune, Filter Drive, Key Track, Unison |
 | FM | Bells, electric pianos, metallic textures | Algorithm, per-operator Ratio, FB feedback |
 | Wavetable | Evolving tones, digital leads, pads | Morph (A→B crossfade), 8-waveform bank |
 | Karplus-Strong | Plucked strings, guitar, harp | Damping (sustain), Brightness, Excitation |
 | West Coast | Percussive plucks, metallic tones, evolving textures | Wavefolder (Fold), LPG Mode, Contour Cycle |
 | Sampler | Any audio, drum kits with per-pad control | Per-pad Tune/Filter/Envelope, Loop mode |
-| Drums | Synthesised drum machine, percussion | 10-voice synth rack, kits-as-presets, bus EQ, Choke groups |
+| Drums | Synthesised drum machine, percussion | 10-voice synth rack, the kick's four layers, kits-as-presets, bus EQ, Choke groups |
+| Layers | One part on up to four instruments at once | Four slots, per-slot Gain and key range, the MIX gesture, Level the slots |

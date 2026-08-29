@@ -8,7 +8,7 @@ Both drift. Where a document and the code disagree, **the code is right**: every
 
 Three structures hold everything together:
 
-1. **A plugin registry** — engines, FX and modulators are all plugins, and most of them are no longer in this repository's source at all. A plugin is a directory under `plugins/`, compiled into `public/plugins/<id>/`, and loaded by the browser **at runtime** off a JSON manifest; it compiles against `@loom/plugin-sdk` and talks to the host through one small runtime ABI, `globalThis.Loom`. Six engines, fifteen inserts and one modulator ship that way today. A shrinking in-tree SPI, discovered by a Vite `import.meta.glob` scan, still carries the LFO/ADSR modulators and the note-FX.
+1. **A plugin registry** — engines, FX and modulators are all plugins, and most of them are no longer in this repository's source at all. A plugin is a directory under `plugins/`, compiled into `public/plugins/<id>/`, and loaded by the browser **at runtime** off a JSON manifest; it compiles against `@loom/plugin-sdk` and talks to the host through one small runtime ABI, `globalThis.Loom`. Six engines, fifteen inserts, two modulators and one whole VIEW (the WEAVE panel) ship that way today. A shrinking in-tree SPI, discovered by a Vite `import.meta.glob` scan, still carries the LFO/ADSR modulators and the note-FX.
 
 2. **`SessionState`** — the pure data model: lanes contain clips, scenes reference which clip each lane plays. No audio side-effects live here.
 
@@ -297,11 +297,18 @@ src/
                       declared ONCE: engine params, automation targets,
                       modulation targets and mixer knob ids all read this
   engines/        SynthEngine abstraction, registry, and the HOST side of an
-                  instrument. Only THREE engines still have a file here —
-                  sampler, audio (the dedicated audio channel) and drums-engine
-                  — because each owns browser resources a plugin cannot hold.
-                  The other six arrive from plugins/ and register the same
-                  descriptor shape from their manifest. Nine in total.
+                  instrument. Only FOUR engines still have a file here —
+                  sampler, audio (the dedicated audio channel), drums-engine
+                  and layers — because each reaches for something a plugin
+                  cannot: the first three own browser resources, and layers
+                  builds OTHER engines through the renderer registry, which the
+                  plugin ABI deliberately forbids. The other six arrive from
+                  plugins/ and register the same descriptor shape from their
+                  manifest. Ten in total.
+                  layers-engine.ts + layers-rack-ui.ts — the host half of the
+                    rack; it carries itself on three declared hooks
+                    (dynamicParamsFor, structuralFor, extraUI) rather than an
+                    engineId === … anywhere in the core
                   Also: the lane engine wrappers (worklet-lane-engine,
                   sampler-/drums-/audio-worklet-engine), engine-selector UI,
                   engine-param-commit (the one write path for a param edit) and
@@ -358,6 +365,12 @@ src/
                     note already sounding
                   duck-detector.ts — the sidechain envelope follower (one-pole,
                     asymmetric attack/release), run by the duck worklet
+                  layers/ — LAYERS: a voice made of other voices. layer-spec
+                    (the rack, and the TWO ways a note picks a slot — by
+                    keyboard ZONE when a person plays, by an INDEX the note
+                    carries when something upstream already knows) and
+                    layers-renderer, which builds sub-renderers through the
+                    registry and sums them
   audio-worklet/  The processors + typed node wrappers: loom-processor/loom-node
                   (melodic), drums-*, sampler-*, duck-* (the sidechain
                   follower). A processor is referenced ONLY via ?worker&url and
@@ -371,10 +384,14 @@ src/
                   the preset dropdown + Randomize, apply, store, templates and
                   the param id list (poly-params). Was src/polysynth/ before the
                   poly → instrument rename; the PolySynth class it was named
-                  after went with the worklet cutover. The `poly` names INSIDE
-                  it are load-bearing and must not be renamed: the localStorage
-                  key 'tb303-poly-presets-v1' and the JSON shape stored under
-                  it. There are no migrations in this project
+                  after went with the worklet cutover. User presets are keyed
+                  BY ENGINE under 'loom-user-presets-v1'; the old
+                  'tb303-poly-presets-v1' key is gone, and nothing reads it,
+                  because no released build ever wrote one. There are no
+                  migrations in this project. The `poly` names that ARE
+                  load-bearing live elsewhere: polyBlep in the SDK DSP, the
+                  manifest's polyphony field, and the poly group / poly.voices
+                  param id carried by five plugin manifests
   app/            Boot wiring, one module per concern (37 files). main.ts calls
                   into these; it does not contain them — see "Boot" above
                   audio spine  — audio-graph, lane-allocator, engine-swap,
@@ -402,7 +419,31 @@ src/
                   attachKnobUndo + the undo keyboard — LIVE and load-bearing:
                   withUndo wraps mutation sites across the app)
   notefx/         Note-FX processors (arpeggiator, chord spread, random) —
-                  per-lane, applied to notes before they reach the engine
+                  per-lane, applied to notes before they reach the engine.
+                  The arp's `steps` pattern is written in POSITIONS rather than
+                  notes (arp-steps.ts), so it survives a transpose or a change
+                  of key, scale or octave
+  weave/          WEAVE's pure core — no DOM, no AudioContext, no module state.
+                  The blend (blend-rhythm / blend-melody / blend-clip), the
+                  three topologies, the master flow, the macros, the loop ids,
+                  loop-pool (the list a lane draws from, walked with wrap) and
+                  weave-runtime, which answers the scheduler's "what does this
+                  lane play" through SchedulerContext.notes
+  harmony/        The DERIVED accompaniment: what a lane plays when it FOLLOWS
+                  another rather than reading clips. follow-source is the door,
+                  shaped as the same WeaveSource the weave hands the scheduler;
+                  render-part picks between parts/ (bass, comp, pad, arp);
+                  cycle is the arrangement ladder that buys LENGTH, not density
+  generator/      GEN — a read head over a lane's own material rather than a
+                  producer of new notes. grid (how a bar is cut), pool (the
+                  blended bar's pitches, ordered), cadence (a floor on metric
+                  weight), chord (conform + voicing), note-timing (nudge and
+                  hold), displace (the two wheels) and generate, which walks
+                  the head. The panel row is data — src/app/panel-context-
+                  generator.ts declares the params and the plugin draws them
+  arranger/       The chord progression as session data: progression.ts and
+                  chord-track (chordDegreeAtTime — what chord is sounding at a
+                  given moment, read by the note-FX and by the generator)
   automation/     Clip envelope recording + read-back, the automation painter
                   and its LFO, the knob right-click menu — and the
                   DestinationRegistry, the ONE catalogue every parameter
@@ -412,15 +453,17 @@ src/
   demo/           Baked MIDI demos + demo picker
   styles/         SCSS
 
-plugins/          PLUGIN SOURCE — 22 shipped directories, each a plugin.json
+plugins/          PLUGIN SOURCE — 24 shipped directories, each a plugin.json
                   plus its code: six engines (tb303, subtractive, fm, wavetable,
                   karplus, westcoast), fifteen inserts (autowah, bitcrusher,
                   chorus, compressor, delay, distortion, flanger, gate, limiter,
-                  multifilter, phaser, reverb, ringmod, tremolo, width) and one
-                  modulator (sh). A component that synthesises ships dsp.ts; an
-                  insert ships main.ts and builds native nodes on the main
-                  thread. Its tests live beside it. audio-probe is private:true
-                  — a fixture for the host's own tests, never shipped
+                  multifilter, phaser, reverb, ringmod, tremolo, width), two
+                  modulators (sh, pernote) and one PANEL (weave — a whole view,
+                  handed a DOM root and a PanelContext). A component that
+                  synthesises ships dsp.ts; an insert ships main.ts and builds
+                  native nodes on the main thread. Its tests live beside it.
+                  audio-probe is private:true — a fixture for the host's own
+                  tests, never shipped
 
 packages/
   loom-plugin-sdk/  @loom/plugin-sdk — the surface a plugin author compiles

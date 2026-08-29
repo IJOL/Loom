@@ -6,7 +6,7 @@ The session view is the main workspace in Loom. It organises everything you hear
 
 ## The model
 
-**Lane** — one instrument track. Each lane runs one engine — six melodic ones (TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast), the Sampler, the Drum Machine, or an Audio channel — with its own mixer strip and insert chain. Lanes appear as columns in the grid.
+**Lane** — one instrument track. Each lane runs one engine — six melodic ones (TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast), the Sampler, the Drum Machine, Layers, or an Audio channel — with its own mixer strip and insert chain. Lanes appear as columns in the grid.
 
 **Clip** — a pattern of notes that lives at one lane × scene cell. Every clip stores a list of note events, an optional name, a colour, and a length in bars. A cell is either filled (it holds a clip) or empty.
 

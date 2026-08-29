@@ -313,6 +313,23 @@ export const SHOTS = [
     },
   },
   {
+    // The LAYERS rack. Reached by CONVERTING a lane rather than adding an empty
+    // Layers lane: converting fills slots 1 and 2 with the lane's own
+    // instrument, and the MIX control is only drawn once two slots are loaded.
+    name: 'engine-layers',
+    selector: '.page[data-page="instrument"]',
+    setup: async (page) => {
+      await loadDemo(page, 'Minimal Techno');
+      await page.locator('.session-lane-header', { hasText: 'Sub 1' }).first()
+        .click({ button: 'right' });
+      await page.locator('.context-menu-item', { hasText: 'Convert to layered' })
+        .first().click();
+      await page.locator('.page[data-page="instrument"]')
+        .waitFor({ state: 'visible', timeout: 10_000 });
+      await page.waitForTimeout(600); // the rack rebuilds the lane's engine
+    },
+  },
+  {
     name: 'musicality-bar',
     selector: '#project-options-dialog',
     setup: async (page) => {
@@ -475,6 +492,27 @@ export const SHOTS = [
       await cell.click();
       await page.locator('#session-inspector').waitFor({ state: 'visible' });
       // Give the drum-grid canvas time to render.
+      await page.waitForTimeout(300);
+    },
+  },
+
+  {
+    // The Arp's painted pattern. PATTERN is the card's FIRST select, and
+    // choosing 'steps' is what makes the STEPS row exist at all.
+    name: 'notefx-arp-steps',
+    selector: '.notefx-card.notefx-arp',
+    setup: async (page) => {
+      await loadDemo(page, 'Minimal Techno');
+      await clickLaneTab(page, 'Sub 1');
+      await page.locator('.notefx-panel button', { hasText: '+ Arp' }).first().click();
+      const card = page.locator('.notefx-card.notefx-arp').last();
+      await card.locator('select').first().selectOption('steps');
+      await card.locator('.notefx-steps').waitFor({ state: 'visible' });
+      // Two steps longer than the default four, so the − + buttons have
+      // something to have done.
+      for (let i = 0; i < 2; i++) {
+        await card.locator('.notefx-steps button[title="One step longer"]').click();
+      }
       await page.waitForTimeout(300);
     },
   },
