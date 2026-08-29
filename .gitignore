@@ -52,3 +52,6 @@ loops/
 !test/fixtures/loops/**
 music/**
 ccmixter_dub.json
+
+# One-off debug captures of the save store (IndexedDB dumps) at the repo root.
+/*-session.json

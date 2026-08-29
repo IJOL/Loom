@@ -1,0 +1,1041 @@
+{
+  "path": "PATH",
+  "info": {
+    "type": "structure",
+    "path": "module_1455",
+    "modules": "52",
+    "connections": "76"
+  },
+  "tree": [
+    "event_core:▸◇event_core",
+    "structure:▸△Chord engine",
+    "template_1:▸▢template_1"
+  ],
+  "total": 52,
+  "nodes": [
+    {
+      "label": null,
+      "text": "Pitch",
+      "x": -656,
+      "y": 128,
+      "in": [],
+      "out": [
+        {
+          "name": "Pitch",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": null,
+      "text": "Gate",
+      "x": -572,
+      "y": 684,
+      "in": [],
+      "out": [
+        {
+          "name": "Gate",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": null,
+      "text": "TC",
+      "x": -640,
+      "y": 276,
+      "in": [],
+      "out": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": null,
+      "text": "L",
+      "x": 1056,
+      "y": 84,
+      "in": [
+        {
+          "name": "L",
+          "sig": "audio"
+        }
+      ],
+      "out": []
+    },
+    {
+      "label": null,
+      "text": "R",
+      "x": 944,
+      "y": 240,
+      "in": [
+        {
+          "name": "R",
+          "sig": "audio"
+        }
+      ],
+      "out": []
+    },
+    {
+      "label": "Sine Oscillator",
+      "text": "freqphasetriggeroutSine Oscillator",
+      "x": 8,
+      "y": 592,
+      "in": [
+        {
+          "name": "freq",
+          "sig": "audio"
+        },
+        {
+          "name": "phase",
+          "sig": "event"
+        },
+        {
+          "name": "trigger",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Add",
+      "text": "Add",
+      "x": 124,
+      "y": 188,
+      "in": [
+        {
+          "name": "",
+          "sig": "event"
+        },
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Multiply",
+      "text": "Multiply",
+      "x": 272,
+      "y": 576,
+      "in": [
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Add",
+      "text": "Add",
+      "x": 472,
+      "y": 536,
+      "in": [
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": null,
+      "text": "0.5",
+      "x": 344,
+      "y": 532,
+      "in": [],
+      "out": [
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Chord Oscillator",
+      "text": "PPWUse ScaleOutChord Oscillator",
+      "x": 464,
+      "y": 60,
+      "in": [
+        {
+          "name": "P",
+          "sig": "event"
+        },
+        {
+          "name": "PW",
+          "sig": "audio"
+        },
+        {
+          "name": "Use Scale",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "Out",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Add",
+      "text": "Add",
+      "x": 656,
+      "y": 176,
+      "in": [
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Chord Oscillator",
+      "text": "PPWUse ScaleOutChord Oscillator",
+      "x": 464,
+      "y": 140,
+      "in": [
+        {
+          "name": "P",
+          "sig": "event"
+        },
+        {
+          "name": "PW",
+          "sig": "audio"
+        },
+        {
+          "name": "Use Scale",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "Out",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Add",
+      "text": "Add",
+      "x": 124,
+      "y": 248,
+      "in": [
+        {
+          "name": "",
+          "sig": "event"
+        },
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Chord Oscillator",
+      "text": "PPWUse ScaleOutChord Oscillator",
+      "x": 464,
+      "y": 224,
+      "in": [
+        {
+          "name": "P",
+          "sig": "event"
+        },
+        {
+          "name": "PW",
+          "sig": "audio"
+        },
+        {
+          "name": "Use Scale",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "Out",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Add",
+      "text": "Add",
+      "x": 124,
+      "y": 308,
+      "in": [
+        {
+          "name": "",
+          "sig": "event"
+        },
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Chord Oscillator",
+      "text": "PPWUse ScaleOutChord Oscillator",
+      "x": 468,
+      "y": 356,
+      "in": [
+        {
+          "name": "P",
+          "sig": "event"
+        },
+        {
+          "name": "PW",
+          "sig": "audio"
+        },
+        {
+          "name": "Use Scale",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "Out",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Add",
+      "text": "Add",
+      "x": 656,
+      "y": 292,
+      "in": [
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Ladder Filter",
+      "text": "incutoffresonancefilter_ladderlpLadder F",
+      "x": 752,
+      "y": 48,
+      "in": [
+        {
+          "name": "in",
+          "sig": "audio"
+        },
+        {
+          "name": "cutoff",
+          "sig": "audio"
+        },
+        {
+          "name": "resonance",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "lp",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Multiply",
+      "text": "Multiply",
+      "x": 388,
+      "y": 700,
+      "in": [
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Add",
+      "text": "Add",
+      "x": 540,
+      "y": 684,
+      "in": [
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "MIDI to Hz",
+      "text": "PHzFMIDI to Hz",
+      "x": 672,
+      "y": 712,
+      "in": [
+        {
+          "name": "P",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "F",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Ladder Filter",
+      "text": "incutoffresonancefilter_ladderlpLadder F",
+      "x": 776,
+      "y": 400,
+      "in": [
+        {
+          "name": "in",
+          "sig": "audio"
+        },
+        {
+          "name": "cutoff",
+          "sig": "audio"
+        },
+        {
+          "name": "resonance",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "lp",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Base (Mod)",
+      "text": "TCoutBase (Mod)",
+      "x": -284,
+      "y": 128,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Interval 1 (Mod)",
+      "text": "TCoutInterval 1 (Mod)",
+      "x": -232,
+      "y": 204,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Interval 2 (Mod)",
+      "text": "TCoutInterval 2 (Mod)",
+      "x": -232,
+      "y": 264,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Interval 3 (Mod)",
+      "text": "TCoutInterval 3 (Mod)",
+      "x": -232,
+      "y": 324,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Modulo",
+      "text": "AB%divModulo",
+      "x": -420,
+      "y": 128,
+      "in": [
+        {
+          "name": "A",
+          "sig": "event"
+        },
+        {
+          "name": "B",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "div",
+          "sig": "event"
+        },
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": null,
+      "text": "1",
+      "x": -536,
+      "y": 144,
+      "in": [],
+      "out": [
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "ADSR Envelope",
+      "text": "adsrgenv_adsroutADSR Envelope",
+      "x": -372,
+      "y": 620,
+      "in": [
+        {
+          "name": "a",
+          "sig": "event"
+        },
+        {
+          "name": "d",
+          "sig": "event"
+        },
+        {
+          "name": "s",
+          "sig": "event"
+        },
+        {
+          "name": "r",
+          "sig": "event"
+        },
+        {
+          "name": "g",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Multiply",
+      "text": "Multiply",
+      "x": 960,
+      "y": 84,
+      "in": [
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Multiply",
+      "text": "Multiply",
+      "x": 824,
+      "y": 240,
+      "in": [
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Scale Sequence",
+      "text": "scale_sequencepositionrootScale Sequence",
+      "x": -372,
+      "y": -4,
+      "in": [],
+      "out": [
+        {
+          "name": "position",
+          "sig": "event"
+        },
+        {
+          "name": "root",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Add",
+      "text": "Add",
+      "x": 32,
+      "y": -4,
+      "in": [
+        {
+          "name": "",
+          "sig": "event"
+        },
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Transpose",
+      "text": "Transpose",
+      "x": -252,
+      "y": -68,
+      "in": [],
+      "out": [
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Multiply",
+      "text": "Multiply",
+      "x": -104,
+      "y": -4,
+      "in": [
+        {
+          "name": "",
+          "sig": "event"
+        },
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Use Scale",
+      "text": "Use Scale",
+      "x": 148,
+      "y": -64,
+      "in": [],
+      "out": [
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Attack (Mod)",
+      "text": "TCoutAttack (Mod)",
+      "x": -516,
+      "y": 272,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Decay (Mod)",
+      "text": "TCoutDecay (Mod)",
+      "x": -520,
+      "y": 360,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Sustain (Mod)",
+      "text": "TCoutSustain (Mod)",
+      "x": -520,
+      "y": 444,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Release (Mod)",
+      "text": "TCoutRelease (Mod)",
+      "x": -524,
+      "y": 520,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Multiply",
+      "text": "Multiply",
+      "x": -212,
+      "y": 436,
+      "in": [
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": null,
+      "text": "1",
+      "x": -324,
+      "y": 436,
+      "in": [],
+      "out": [
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "MIDI to Hz",
+      "text": "PHzFMIDI to Hz",
+      "x": -108,
+      "y": 592,
+      "in": [
+        {
+          "name": "P",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "F",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": null,
+      "text": "0.45",
+      "x": 156,
+      "y": 560,
+      "in": [],
+      "out": [
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Selector",
+      "text": "posin0in1selectoroutSelector",
+      "x": 312,
+      "y": 440,
+      "in": [
+        {
+          "name": "pos",
+          "sig": "audio"
+        },
+        {
+          "name": "in0",
+          "sig": "audio"
+        },
+        {
+          "name": "in1",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "PW (Mod)",
+      "text": "TCoutPW (Mod)",
+      "x": 168,
+      "y": 476,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "LFO>PW (Mod)",
+      "text": "TCoutLFO>PW (Mod)",
+      "x": 168,
+      "y": 420,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "LFO Speed (Mod)",
+      "text": "TCoutLFO Speed (Mod)",
+      "x": -236,
+      "y": 592,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Envelope (Mod)",
+      "text": "TCoutEnvelope (Mod)",
+      "x": 248,
+      "y": 716,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Cutoff (Mod)",
+      "text": "TCoutCutoff (Mod)",
+      "x": 252,
+      "y": 640,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Resonance (Mod)",
+      "text": "TCoutResonance (Mod)",
+      "x": 620,
+      "y": 432,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "event"
+        }
+      ]
+    }
+  ]
+}

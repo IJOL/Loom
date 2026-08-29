@@ -1,0 +1,226 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic "Library" [ref=e8] [cursor=pointer]: KARST
+        - generic [ref=e13]:
+          - generic "Library" [ref=e14] [cursor=pointer]
+          - generic [ref=e282]: ›
+          - generic [ref=e283]: No System
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - generic "Undo randomise" [ref=e23]
+          - generic "Randomise — global (drag down for strength)" [ref=e26]:
+            - generic [ref=e27] [cursor=pointer]
+          - generic "Redo randomise" [ref=e30]
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - generic [ref=e35] [cursor=pointer]
+            - generic [ref=e39] [cursor=pointer]: ▶
+          - generic "Drag ↕ to adjust · double-click to type · click for feel controls" [ref=e40]:
+            - slider "Tempo (BPM)" [ref=e41]: —
+            - generic [ref=e42]: BPM
+        - button "— · —" [ref=e43] [cursor=pointer]:
+          - generic [ref=e44]: —
+          - generic [ref=e45]: ·
+          - generic [ref=e46]: —
+        - button "Lock transport / groove / scale from recall + randomise" [ref=e47] [cursor=pointer]
+      - generic [ref=e51]:
+        - generic "Show / hide controller workspace" [ref=e53] [cursor=pointer]
+        - button "Report a bug" [ref=e62] [cursor=pointer]
+        - generic [ref=e68]: CPU 0%
+        - generic "Account" [ref=e78] [cursor=pointer]:
+          - generic [ref=e79]: IL
+          - generic [ref=e81]: Ignacio J. Ortega Lopera
+          - generic [ref=e82]: ▾
+    - generic [ref=e87]:
+      - generic [ref=e88]:
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e92]: Pattern
+            - generic "Randomise — Pattern (drag down for strength)" [ref=e93]:
+              - generic [ref=e94] [cursor=pointer]
+          - generic [ref=e98]:
+            - generic [ref=e100]:
+              - generic [ref=e101]: Pitch
+              - generic [ref=e105]: Range
+            - generic [ref=e109]:
+              - generic [ref=e110]: Short
+              - generic [ref=e111]:
+                - generic [ref=e112]: Intense
+                - generic [ref=e116]: Complex
+            - generic [ref=e120]:
+              - generic [ref=e121]: Medium
+              - generic [ref=e122]:
+                - generic [ref=e123]: Intense
+                - generic [ref=e127]: Complex
+            - generic [ref=e131]:
+              - generic [ref=e132]: Long
+              - generic [ref=e133]:
+                - generic [ref=e134]: Intense
+                - generic [ref=e138]: Complex
+        - generic [ref=e142]:
+          - generic [ref=e143]:
+            - generic [ref=e145]: Shapes
+            - generic "Randomise — Shapes (drag down for strength)" [ref=e146]:
+              - generic [ref=e147] [cursor=pointer]
+          - generic [ref=e151]:
+            - generic [ref=e153]:
+              - generic [ref=e154]: Modulate
+              - generic [ref=e158]: Complex
+            - generic [ref=e163]:
+              - generic [ref=e164]: Attack
+              - generic [ref=e168]: Decay
+            - generic [ref=e173]:
+              - generic [ref=e174]: Accent
+              - generic [ref=e178]: Speed
+            - generic [ref=e183]:
+              - generic [ref=e184]: Intensity
+              - generic [ref=e188]: Feel
+        - generic [ref=e192]:
+          - generic [ref=e193]:
+            - generic [ref=e195]: Sound
+            - generic "Randomise — Sound (drag down for strength)" [ref=e196]:
+              - generic [ref=e197] [cursor=pointer]
+          - generic [ref=e201]:
+            - generic [ref=e203]:
+              - generic [ref=e204]: Tone
+              - generic [ref=e208]: Reson
+            - generic [ref=e213]:
+              - generic [ref=e214]: Feel
+              - generic [ref=e218]: Noise
+            - generic [ref=e223]:
+              - generic [ref=e224]: Overtone
+              - generic [ref=e228]: Unstable
+            - generic [ref=e233]:
+              - generic [ref=e234]: Thick
+              - generic [ref=e238]: Space
+        - generic [ref=e242]: REL
+      - generic [ref=e244]:
+        - generic [ref=e245]:
+          - button "Motion" [disabled] [ref=e246]
+          - generic [ref=e247]:
+            - generic "SPD" [ref=e248]
+            - generic [ref=e249]: SPD
+        - generic [ref=e251]:
+          - generic [ref=e252]:
+            - button "Scene" [ref=e253] [cursor=pointer]
+            - generic "Expand scenes" [ref=e256] [cursor=pointer]
+          - generic [ref=e259]: No scenes
+    - generic [ref=e285]:
+      - generic [ref=e286]:
+        - generic "Show / hide mixer strips" [ref=e287] [cursor=pointer]
+        - generic [ref=e292]:
+          - generic "Rack" [ref=e293] [cursor=pointer]
+          - generic "Mixer" [ref=e294] [cursor=pointer]
+          - generic "Scale" [ref=e295] [cursor=pointer]
+      - generic "Show / hide instrument browser" [ref=e297] [cursor=pointer]
+  - generic [ref=e301]:
+    - generic [ref=e304]:
+      - strong [ref=e305]: Building is free — and always will be
+      - text: — £69 once adds the premium content pack today, plus the app and plugin when they ship £69 £99
+    - button "Unlock" [ref=e306] [cursor=pointer]
+  - generic [ref=e264]:
+    - generic [ref=e308]:
+      - generic [ref=e309]: This System has no slots.
+      - generic [ref=e312]:
+        - generic [ref=e313]:
+          - generic [ref=e314]:
+            - generic [ref=e315]: Instruments
+            - generic [ref=e316]: "19"
+          - generic [ref=e317]:
+            - button "Built-in" [ref=e318] [cursor=pointer]
+            - button "Mine" [ref=e319] [cursor=pointer]
+          - textbox "Search…" [ref=e323]
+        - generic [ref=e324]:
+          - generic [ref=e336]:
+            - generic [ref=e337]: "FX: ED MULTIBAND"
+            - generic [ref=e339]: Dynamic
+          - generic [ref=e351]:
+            - generic [ref=e352]: "FX: MOD REVERB"
+            - generic [ref=e354]: Reverb
+          - generic [ref=e366]:
+            - generic [ref=e367]: "FX: RESONATOR"
+            - generic [ref=e369]: instrument
+          - generic [ref=e381]:
+            - generic [ref=e382]: "GEN: ACID MACHINE"
+            - generic [ref=e384]: instrument
+          - generic [ref=e396]:
+            - generic [ref=e397]: "GEN: CHORD MACHINE"
+            - generic [ref=e399]: instrument
+          - generic [ref=e411]:
+            - generic [ref=e412]: "GEN: HAT MACHINE"
+            - generic [ref=e414]: Drum
+          - generic [ref=e426]:
+            - generic [ref=e427]: "GEN: KICK MACHINE"
+            - generic [ref=e429]: Drum
+          - generic [ref=e441]:
+            - generic [ref=e442]: "GEN: SNARE MACHINE"
+            - generic [ref=e444]: Drum
+          - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=e445]:
+            - generic [ref=e456]:
+              - generic [ref=e457]:
+                - generic [ref=e458]: "INST: KICK"
+                - generic "Locked (Karst Fundamentals)" [ref=e459]
+              - generic [ref=e463]: instrument
+          - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=e464]:
+            - generic [ref=e475]:
+              - generic [ref=e476]:
+                - generic [ref=e477]: "INST: SNARE"
+                - generic "Locked (Karst Fundamentals)" [ref=e478]
+              - generic [ref=e482]: instrument
+          - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=e483]:
+            - generic [ref=e494]:
+              - generic [ref=e495]:
+                - generic [ref=e496]: "INST: HATS"
+                - generic "Locked (Karst Fundamentals)" [ref=e497]
+              - generic [ref=e501]: instrument
+          - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=e502]:
+            - generic [ref=e513]:
+              - generic [ref=e514]:
+                - generic [ref=e515]: "INST: 2-OP"
+                - generic "Locked (Karst Fundamentals)" [ref=e516]
+              - generic [ref=e520]: instrument
+          - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=e521]:
+            - generic [ref=e532]:
+              - generic [ref=e533]:
+                - generic [ref=e534]: "FX: MOD DELAY"
+                - generic "Locked (Karst Fundamentals)" [ref=e535]
+              - generic [ref=e539]: instrument
+          - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=e540]:
+            - generic [ref=e551]:
+              - generic [ref=e552]:
+                - generic [ref=e553]: "FX: MOD FILTER"
+                - generic "Locked (Karst Fundamentals)" [ref=e554]
+              - generic [ref=e558]: instrument
+          - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=e559]:
+            - generic [ref=e570]:
+              - generic [ref=e571]:
+                - generic [ref=e572]: "SC: PUMP"
+                - generic "Locked (Karst Fundamentals)" [ref=e573]
+              - generic [ref=e577]: instrument
+          - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=e578]:
+            - generic [ref=e589]:
+              - generic [ref=e590]:
+                - generic [ref=e591]: "SEQ: EUCLOID"
+                - generic "Locked (Karst Fundamentals)" [ref=e592]
+              - generic [ref=e596]: instrument
+          - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=e597]:
+            - generic [ref=e608]:
+              - generic [ref=e609]:
+                - generic [ref=e610]: "SEQ: FLEXSTEP"
+                - generic "Locked (Karst Fundamentals)" [ref=e611]
+              - generic [ref=e615]: instrument
+          - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=e616]:
+            - generic [ref=e627]:
+              - generic [ref=e628]:
+                - generic [ref=e629]: "TRG: BOUNCER"
+                - generic "Locked (Karst Fundamentals)" [ref=e630]
+              - generic [ref=e634]: instrument
+          - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=e635]:
+            - generic [ref=e646]:
+              - generic [ref=e647]:
+                - generic [ref=e648]: "TRN: SUBDIVIDE"
+                - generic "Locked (Karst Fundamentals)" [ref=e649]
+              - generic [ref=e653]: instrument
+    - generic [ref=e654]: Preparing your system…

@@ -1,0 +1,399 @@
+{
+  "info": {
+    "type": "instrument",
+    "path": "root",
+    "modules": "14",
+    "connections": "24"
+  },
+  "tree": [
+    {
+      "handle": "event_core",
+      "kind": "system-container",
+      "type": "event_core",
+      "text": "▸◇event_core"
+    },
+    {
+      "handle": "module_1455",
+      "kind": "structure",
+      "type": "structure",
+      "text": "▸△Chord engine"
+    },
+    {
+      "handle": "module_1552",
+      "kind": "template-instance",
+      "type": "template_1",
+      "text": "▸▢template_1"
+    }
+  ],
+  "total": 14,
+  "nodes": [
+    {
+      "label": "audio_inputs",
+      "text": "mainLmainRscLscRSC Connectedaudio_inputs",
+      "x": 80,
+      "y": 200,
+      "in": [],
+      "out": [
+        {
+          "name": "mainL",
+          "sig": "audio"
+        },
+        {
+          "name": "mainR",
+          "sig": "audio"
+        },
+        {
+          "name": "scL",
+          "sig": "audio"
+        },
+        {
+          "name": "scR",
+          "sig": "audio"
+        },
+        {
+          "name": "SC Connected",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "audio_outputs",
+      "text": "LRaudio_outputs",
+      "x": 700,
+      "y": 200,
+      "in": [
+        {
+          "name": "L",
+          "sig": "audio"
+        },
+        {
+          "name": "R",
+          "sig": "audio"
+        }
+      ],
+      "out": []
+    },
+    {
+      "label": "event_core",
+      "text": "▾event_coretickbpsplayStateinterticknote",
+      "x": -8,
+      "y": 640,
+      "in": [],
+      "out": [
+        {
+          "name": "tick",
+          "sig": "event"
+        },
+        {
+          "name": "bps",
+          "sig": "event"
+        },
+        {
+          "name": "playState",
+          "sig": "event"
+        },
+        {
+          "name": "intertick",
+          "sig": "audio"
+        },
+        {
+          "name": "note.voiceID",
+          "sig": "event"
+        },
+        {
+          "name": "Pitch",
+          "sig": "event"
+        },
+        {
+          "name": "note.triggerCount",
+          "sig": "event"
+        },
+        {
+          "name": "note.gateOn",
+          "sig": "event"
+        },
+        {
+          "name": "note.gateOff",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "add_main_l",
+      "text": "add_main_l",
+      "x": 400,
+      "y": 150,
+      "in": [
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "add_main_r",
+      "text": "add_main_r",
+      "x": 400,
+      "y": 250,
+      "in": [
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Chord engine",
+      "text": "PitchGateTCLRChord engine",
+      "x": 432,
+      "y": 344,
+      "in": [
+        {
+          "name": "Pitch",
+          "sig": "event"
+        },
+        {
+          "name": "Gate",
+          "sig": "event"
+        },
+        {
+          "name": "TC",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "L",
+          "sig": "audio"
+        },
+        {
+          "name": "R",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Multiply",
+      "text": "Multiply",
+      "x": 624,
+      "y": 440,
+      "in": [
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Multiply",
+      "text": "Multiply",
+      "x": 624,
+      "y": 336,
+      "in": [
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        },
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "audio"
+        }
+      ]
+    },
+    {
+      "label": "Parameter Modulation",
+      "text": "T▾TCCtemplate_1~*SParameter Modulation",
+      "x": 1040,
+      "y": 392,
+      "in": [
+        {
+          "name": "TC",
+          "sig": "event"
+        },
+        {
+          "name": "C",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "~",
+          "sig": "event"
+        },
+        {
+          "name": "*",
+          "sig": "event"
+        },
+        {
+          "name": "S",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Mono Gate",
+      "text": "note.voiceIDnote.pitchnote.gateOnnote.ga",
+      "x": 288,
+      "y": 716,
+      "in": [
+        {
+          "name": "note.voiceID",
+          "sig": "event"
+        },
+        {
+          "name": "note.pitch",
+          "sig": "event"
+        },
+        {
+          "name": "note.gateOn",
+          "sig": "event"
+        },
+        {
+          "name": "note.gateOff",
+          "sig": "event"
+        },
+        {
+          "name": "retrig",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "pitch",
+          "sig": "event"
+        },
+        {
+          "name": "gate",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Value",
+      "text": "Value",
+      "x": 300,
+      "y": 388,
+      "in": [
+        {
+          "name": "",
+          "sig": "event"
+        },
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Header",
+      "text": "headeronOffamountHeader",
+      "x": 76,
+      "y": 448,
+      "in": [],
+      "out": [
+        {
+          "name": "onOff",
+          "sig": "event"
+        },
+        {
+          "name": "amount",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Multiply",
+      "text": "Multiply",
+      "x": 192,
+      "y": 448,
+      "in": [
+        {
+          "name": "",
+          "sig": "event"
+        },
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "",
+          "sig": "event"
+        }
+      ]
+    },
+    {
+      "label": "Smoother",
+      "text": "intimesmootheroutSmoother",
+      "x": 288,
+      "y": 448,
+      "in": [
+        {
+          "name": "in",
+          "sig": "audio"
+        },
+        {
+          "name": "time",
+          "sig": "event"
+        }
+      ],
+      "out": [
+        {
+          "name": "out",
+          "sig": "audio"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,398 @@
+{
+  "grupos": [
+    {
+      "grupo": "KARST",
+      "campos": [
+        "›",
+        "Get Started",
+        "DUPLICATE",
+        "▶",
+        "120.0",
+        "BPM",
+        "C",
+        "·",
+        "major",
+        "CPU 34%",
+        "IL",
+        "Ignacio J. Ortega Lopera",
+        "▾",
+        "Pattern",
+        "PITCH",
+        "RANGE",
+        "SHORT",
+        "INTENSE",
+        "COMPLEX",
+        "MEDIUM",
+        "INTENSE",
+        "COMPLEX",
+        "LONG",
+        "INTENSE",
+        "COMPLEX",
+        "Shapes",
+        "MODULATE",
+        "COMPLEX",
+        "ATTACK",
+        "DECAY",
+        "ACCENT",
+        "SPEED",
+        "INTENSITY",
+        "FEEL",
+        "Sound",
+        "TONE",
+        "RESON",
+        "FEEL",
+        "NOISE",
+        "OVERTONE",
+        "UNSTABLE",
+        "THICK",
+        "SPACE",
+        "REL",
+        "Motion",
+        "SPD",
+        "Scene",
+        "Rack",
+        "Mixer",
+        "Scale",
+        "Chord Machine",
+        "Mini Panel",
+        "Full Panel",
+        "Structure",
+        "Save"
+      ]
+    },
+    {
+      "grupo": "IL",
+      "campos": [
+        "Ignacio J. Ortega Lopera",
+        "▾"
+      ]
+    },
+    {
+      "grupo": "PITCH",
+      "campos": [
+        "RANGE",
+        "SHORT",
+        "INTENSE",
+        "COMPLEX",
+        "MEDIUM",
+        "INTENSE",
+        "COMPLEX",
+        "LONG",
+        "INTENSE",
+        "COMPLEX"
+      ]
+    },
+    {
+      "grupo": "SHORT",
+      "campos": [
+        "INTENSE",
+        "COMPLEX"
+      ]
+    },
+    {
+      "grupo": "MEDIUM",
+      "campos": [
+        "INTENSE",
+        "COMPLEX"
+      ]
+    },
+    {
+      "grupo": "LONG",
+      "campos": [
+        "INTENSE",
+        "COMPLEX"
+      ]
+    },
+    {
+      "grupo": "MODULATE",
+      "campos": [
+        "COMPLEX",
+        "ATTACK",
+        "DECAY",
+        "ACCENT",
+        "SPEED",
+        "INTENSITY",
+        "FEEL"
+      ]
+    },
+    {
+      "grupo": "TONE",
+      "campos": [
+        "RESON",
+        "FEEL",
+        "NOISE",
+        "OVERTONE",
+        "UNSTABLE",
+        "THICK",
+        "SPACE"
+      ]
+    },
+    {
+      "grupo": "MODULATION",
+      "campos": [
+        "PATTERN",
+        "SKEW",
+        "AMOUNT"
+      ]
+    },
+    {
+      "grupo": "PATTERN",
+      "campos": [
+        "SKEW",
+        "AMOUNT"
+      ]
+    },
+    {
+      "grupo": "PATTERN LENGTH",
+      "campos": [
+        "4",
+        "METER",
+        "2",
+        "REPEATS",
+        "2",
+        "^2"
+      ]
+    },
+    {
+      "grupo": "CADENCE",
+      "campos": [
+        "0.571",
+        "PATTERN",
+        "1",
+        "CADENCE",
+        "0.179",
+        "MOD",
+        "2",
+        "OFFSET"
+      ]
+    },
+    {
+      "grupo": "OFFSET",
+      "campos": [
+        "0.353",
+        "PATTERN",
+        "0",
+        "OFFSET",
+        "0",
+        "MOD",
+        "0",
+        "OFFSET"
+      ]
+    },
+    {
+      "grupo": "CHORD",
+      "campos": [
+        "0.364",
+        "PATTERN",
+        "0.385",
+        "MOD",
+        "0",
+        "PITCH",
+        "8",
+        "DIV",
+        "0.734",
+        "PATTERN",
+        "0",
+        "PHRASE",
+        "4",
+        "OFFSET"
+      ]
+    },
+    {
+      "grupo": "LENGTH",
+      "campos": [
+        "0.412",
+        "PATTERN",
+        "0.25",
+        "MOD",
+        "1.05",
+        "LENGTH",
+        "8",
+        "DIV",
+        "0.385",
+        "PATTERN",
+        "0.378",
+        "PHRASE",
+        "6",
+        "OFFSET"
+      ]
+    },
+    {
+      "grupo": "INTERVALS",
+      "campos": [
+        "+ PAGE",
+        "BASE",
+        "INT 1",
+        "INT 2",
+        "INT 3"
+      ]
+    },
+    {
+      "grupo": "BASE",
+      "campos": [
+        "INT 1",
+        "INT 2",
+        "INT 3"
+      ]
+    },
+    {
+      "grupo": "ENVELOPE",
+      "campos": [
+        "+ PAGE",
+        "ATTACK",
+        "DECAY",
+        "SUSTAIN",
+        "RELEASE"
+      ]
+    },
+    {
+      "grupo": "ATTACK",
+      "campos": [
+        "DECAY",
+        "SUSTAIN",
+        "RELEASE"
+      ]
+    },
+    {
+      "grupo": "FILTER",
+      "campos": [
+        "+ PAGE",
+        "CUTOFF",
+        "RESON",
+        "ENVELOPE"
+      ]
+    },
+    {
+      "grupo": "CUTOFF",
+      "campos": [
+        "RESON",
+        "ENVELOPE"
+      ]
+    },
+    {
+      "grupo": "OSCILLATORS",
+      "campos": [
+        "+ PAGE",
+        "PW",
+        "LFO",
+        "SPEED"
+      ]
+    },
+    {
+      "grupo": "PW",
+      "campos": [
+        "LFO",
+        "SPEED"
+      ]
+    },
+    {
+      "grupo": "ELEMENT BROWSER",
+      "campos": [
+        "STRUCTURE",
+        "OTHER",
+        "▸",
+        "◇",
+        "event_core",
+        "▸",
+        "△",
+        "Chord engine",
+        "▸",
+        "▢",
+        "template_1"
+      ]
+    }
+  ],
+  "knobsDetectados": 0,
+  "textoPanel": [
+    "Bar Mod",
+    "Loop Mod",
+    "4",
+    "MULTIPLE",
+    "12",
+    "CYCLE",
+    "0.429",
+    "%",
+    "CADENCE",
+    "0.571",
+    "PATTERN",
+    "1",
+    "CADENCE",
+    "0.179",
+    "MOD",
+    "2",
+    "OFFSET",
+    "OFFSET",
+    "0.353",
+    "PATTERN",
+    "0",
+    "OFFSET",
+    "0",
+    "MOD",
+    "0",
+    "OFFSET",
+    "CHORD",
+    "0.364",
+    "PATTERN",
+    "0.385",
+    "MOD",
+    "0",
+    "PITCH",
+    "8",
+    "DIV",
+    "0.734",
+    "PATTERN",
+    "0",
+    "PHRASE",
+    "4",
+    "OFFSET",
+    "LENGTH",
+    "0.412",
+    "PATTERN",
+    "0.25",
+    "MOD",
+    "1.05",
+    "LENGTH",
+    "8",
+    "DIV",
+    "0.385",
+    "PATTERN",
+    "0.378",
+    "PHRASE",
+    "6",
+    "OFFSET",
+    "INTERVALS",
+    "+ PAGE",
+    "BASE",
+    "INT 1",
+    "INT 2",
+    "INT 3",
+    "ENVELOPE",
+    "+ PAGE",
+    "ATTACK",
+    "DECAY",
+    "SUSTAIN",
+    "RELEASE",
+    "FILTER",
+    "+ PAGE",
+    "CUTOFF",
+    "RESON",
+    "ENVELOPE",
+    "OSCILLATORS",
+    "+ PAGE",
+    "PW",
+    "LFO",
+    "SPEED",
+    "ELEMENT BROWSER",
+    "STRUCTURE",
+    "OTHER",
+    "▸",
+    "◇",
+    "event_core",
+    "▸",
+    "△",
+    "Chord engine",
+    "▸",
+    "▢",
+    "template_1"
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "breadcrumb": [
+    "Chord Machine",
+    "▸",
+    "Chord engine",
+    "▸",
+    "Chord engine",
+    "▸"
+  ],
+  "total": 12,
+  "inventario": [
+    [
+      "«*»",
+      1
+    ],
+    [
+      "«~»",
+      1
+    ],
+    [
+      "«1»",
+      1
+    ],
+    [
+      "«TC»",
+      1
+    ],
+    [
+      "Add",
+      1
+    ],
+    [
+      "Amount",
+      1
+    ],
+    [
+      "Modulo",
+      1
+    ],
+    [
+      "Multiply",
+      1
+    ],
+    [
+      "Order",
+      1
+    ],
+    [
+      "Pattern",
+      1
+    ],
+    [
+      "Skew",
+      1
+    ],
+    [
+      "Value",
+      1
+    ]
+  ],
+  "nodes": [
+    "@72,244 «TC» IN[] OUT[TC]",
+    "@188,244 Order IN[·] OUT[·,·,·]",
+    "@212,148 Skew IN[~,*,S] OUT[·,C]",
+    "@360,128 Pattern IN[~,*,S] OUT[·,C]",
+    "@388,228 Add IN[·,·] OUT[·]",
+    "@484,212 Multiply IN[·,·] OUT[·]",
+    "@572,228 «1» IN[] OUT[·]",
+    "@680,212 Modulo IN[A,B] OUT[div,·]",
+    "@804,280 Amount IN[~,*,S] OUT[·,C]",
+    "@820,212 Value IN[·,·] OUT[·]",
+    "@948,212 «~» IN[~] OUT[]",
+    "@948,280 «*» IN[*] OUT[]"
+  ]
+}

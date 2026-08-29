@@ -1,0 +1,665 @@
+- generic [ref=f7e4]:
+  - generic [ref=f7e5]:
+    - generic [ref=f7e6]:
+      - generic [ref=f7e7]:
+        - generic "Library" [ref=f7e8] [cursor=pointer]: KARST
+        - generic [ref=f7e13]:
+          - generic "Library" [ref=f7e14] [cursor=pointer]
+          - generic [ref=f7e320]: ›
+          - generic [ref=f7e321]:
+            - generic [ref=f7e322]: Get Started
+            - button "Duplicate" [ref=f7e323] [cursor=pointer]
+      - generic [ref=f7e21]:
+        - generic [ref=f7e22]:
+          - generic "Undo randomise" [ref=f7e23]
+          - generic "Randomise — global (drag down for strength)" [ref=f7e26]:
+            - generic [ref=f7e27] [cursor=pointer]
+          - generic "Redo randomise" [ref=f7e30]
+        - generic [ref=f7e33]:
+          - generic [ref=f7e34]:
+            - generic [ref=f7e35] [cursor=pointer]
+            - generic [ref=f7e39] [cursor=pointer]: ▶
+          - generic "Drag ↕ to adjust · double-click to type · click for feel controls" [ref=f7e40]:
+            - slider "Tempo (BPM)" [ref=f7e41]: "120.0"
+            - generic [ref=f7e42]: BPM
+        - button "C · major" [ref=f7e324] [cursor=pointer]:
+          - generic [ref=f7e44]: C
+          - generic [ref=f7e45]: ·
+          - generic [ref=f7e46]: major
+        - button "Lock transport / groove / scale from recall + randomise" [ref=f7e47] [cursor=pointer]
+      - generic [ref=f7e51]:
+        - generic "Show / hide controller workspace" [ref=f7e53] [cursor=pointer]
+        - button "Report a bug" [ref=f7e62] [cursor=pointer]
+        - generic [ref=f7e68]: CPU 27%
+        - generic "Account" [ref=f7e78] [cursor=pointer]:
+          - generic [ref=f7e79]: IL
+          - generic [ref=f7e81]: Ignacio J. Ortega Lopera
+          - generic [ref=f7e82]: ▾
+    - generic [ref=f7e87]:
+      - generic [ref=f7e88]:
+        - generic [ref=f7e89]:
+          - generic [ref=f7e90]:
+            - generic [ref=f7e92]: Pattern
+            - generic "Randomise — Pattern (drag down for strength)" [ref=f7e93]:
+              - generic [ref=f7e94] [cursor=pointer]
+          - generic [ref=f7e98]:
+            - generic [ref=f7e100]:
+              - generic [ref=f7e101]: Pitch
+              - generic [ref=f7e105]: Range
+            - generic [ref=f7e109]:
+              - generic [ref=f7e110]: Short
+              - generic [ref=f7e111]:
+                - generic [ref=f7e112]: Intense
+                - generic [ref=f7e116]: Complex
+            - generic [ref=f7e120]:
+              - generic [ref=f7e121]: Medium
+              - generic [ref=f7e122]:
+                - generic [ref=f7e123]: Intense
+                - generic [ref=f7e127]: Complex
+            - generic [ref=f7e131]:
+              - generic [ref=f7e132]: Long
+              - generic [ref=f7e133]:
+                - generic [ref=f7e134]: Intense
+                - generic [ref=f7e138]: Complex
+        - generic [ref=f7e142]:
+          - generic [ref=f7e143]:
+            - generic [ref=f7e145]: Shapes
+            - generic "Randomise — Shapes (drag down for strength)" [ref=f7e146]:
+              - generic [ref=f7e147] [cursor=pointer]
+          - generic [ref=f7e151]:
+            - generic [ref=f7e153]:
+              - generic [ref=f7e154]: Modulate
+              - generic [ref=f7e158]: Complex
+            - generic [ref=f7e163]:
+              - generic [ref=f7e164]: Attack
+              - generic [ref=f7e168]: Decay
+            - generic [ref=f7e173]:
+              - generic [ref=f7e174]: Accent
+              - generic [ref=f7e178]: Speed
+            - generic [ref=f7e183]:
+              - generic [ref=f7e184]: Intensity
+              - generic [ref=f7e188]: Feel
+        - generic [ref=f7e192]:
+          - generic [ref=f7e193]:
+            - generic [ref=f7e195]: Sound
+            - generic "Randomise — Sound (drag down for strength)" [ref=f7e196]:
+              - generic [ref=f7e197] [cursor=pointer]
+          - generic [ref=f7e201]:
+            - generic [ref=f7e203]:
+              - generic [ref=f7e204]: Tone
+              - generic [ref=f7e208]: Reson
+            - generic [ref=f7e213]:
+              - generic [ref=f7e214]: Feel
+              - generic [ref=f7e218]: Noise
+            - generic [ref=f7e223]:
+              - generic [ref=f7e224]: Overtone
+              - generic [ref=f7e228]: Unstable
+            - generic [ref=f7e233]:
+              - generic [ref=f7e234]: Thick
+              - generic [ref=f7e238]: Space
+        - generic [ref=f7e242]: REL
+      - generic [ref=f7e244]:
+        - generic [ref=f7e245]:
+          - button "Motion" [ref=f7e246] [cursor=pointer]
+          - generic [ref=f7e247]:
+            - generic "SPD" [ref=f7e248]
+            - generic [ref=f7e249]: SPD
+        - generic [ref=f7e251]:
+          - generic [ref=f7e252]:
+            - button "Scene" [ref=f7e253] [cursor=pointer]
+            - generic "Expand scenes" [ref=f7e256] [cursor=pointer]
+          - generic [ref=f7e260]:
+            - generic "Scene 1" [ref=f7e703] [cursor=pointer]
+            - generic "Scene 2" [ref=f7e708] [cursor=pointer]
+            - generic "Scene 3" [ref=f7e713] [cursor=pointer]
+            - generic "Scene 4" [ref=f7e718] [cursor=pointer]
+            - generic "Scene 5" [ref=f7e723] [cursor=pointer]
+            - generic "Scene 6" [ref=f7e728] [cursor=pointer]
+            - generic "Scene 7" [ref=f7e733] [cursor=pointer]
+            - generic "Scene 8" [ref=f7e738] [cursor=pointer]
+            - generic "Scene 9" [ref=f7e743] [cursor=pointer]
+            - generic "Scene 10" [ref=f7e748] [cursor=pointer]
+            - generic "Scene 11" [ref=f7e753] [cursor=pointer]
+            - generic "Scene 12" [ref=f7e758] [cursor=pointer]
+            - generic "Scene 13" [ref=f7e763] [cursor=pointer]
+            - generic "Scene 14" [ref=f7e768] [cursor=pointer]
+            - generic "Scene 15" [ref=f7e773] [cursor=pointer]
+            - generic "Scene 16" [ref=f7e778] [cursor=pointer]
+            - generic "Scene 17" [ref=f7e783] [cursor=pointer]
+            - generic "Scene 18" [ref=f7e788] [cursor=pointer]
+            - generic "Scene 19" [ref=f7e793] [cursor=pointer]
+            - generic "Scene 20" [ref=f7e798] [cursor=pointer]
+            - generic "Scene 21" [ref=f7e803] [cursor=pointer]
+            - generic "Scene 22" [ref=f7e808] [cursor=pointer]
+            - generic "Scene 23" [ref=f7e813] [cursor=pointer]
+            - generic "Scene 24" [ref=f7e818] [cursor=pointer]
+            - generic "Scene 25" [ref=f7e823] [cursor=pointer]
+            - generic "Scene 26" [ref=f7e828] [cursor=pointer]
+            - generic "Scene 27" [ref=f7e833] [cursor=pointer]
+            - generic "Scene 28" [ref=f7e838] [cursor=pointer]
+            - generic "Scene 29" [ref=f7e843] [cursor=pointer]
+            - generic "Scene 30" [ref=f7e848] [cursor=pointer]
+            - generic "Scene 31" [ref=f7e853] [cursor=pointer]
+            - generic "Scene 32" [ref=f7e858] [cursor=pointer]
+            - generic "Scene 33" [ref=f7e863] [cursor=pointer]
+            - generic "Scene 34" [ref=f7e868] [cursor=pointer]
+            - generic "Scene 35" [ref=f7e873] [cursor=pointer]
+            - generic "Scene 36" [ref=f7e878] [cursor=pointer]
+            - generic "Scene 37" [ref=f7e883] [cursor=pointer]
+            - generic "Scene 38" [ref=f7e888] [cursor=pointer]
+            - generic "Scene 39" [ref=f7e893] [cursor=pointer]
+            - generic "Scene 40" [ref=f7e898] [cursor=pointer]
+            - generic "Scene 41" [ref=f7e903] [cursor=pointer]
+            - generic "Scene 42" [ref=f7e908] [cursor=pointer]
+            - generic "Scene 43" [ref=f7e913] [cursor=pointer]
+            - generic "Scene 44" [ref=f7e918] [cursor=pointer]
+            - generic "Scene 45" [ref=f7e923] [cursor=pointer]
+            - generic "Scene 46" [ref=f7e928] [cursor=pointer]
+            - generic "Scene 47" [ref=f7e933] [cursor=pointer]
+            - generic "Scene 48" [ref=f7e938] [cursor=pointer]
+            - generic "Scene 49" [ref=f7e943] [cursor=pointer]
+            - generic "Scene 50" [ref=f7e948] [cursor=pointer]
+            - generic "Scene 51" [ref=f7e953] [cursor=pointer]
+            - generic "Scene 52" [ref=f7e958] [cursor=pointer]
+            - generic "Scene 53" [ref=f7e963] [cursor=pointer]
+    - generic [ref=f7e325]:
+      - generic [ref=f7e326]:
+        - generic "Show / hide mixer strips" [ref=f7e327] [cursor=pointer]
+        - generic [ref=f7e332]:
+          - generic "Rack" [ref=f7e333] [cursor=pointer]
+          - generic "Mixer" [ref=f7e334] [cursor=pointer]
+          - generic "Scale" [ref=f7e335] [cursor=pointer]
+      - generic "Show / hide instrument browser" [ref=f7e337] [cursor=pointer]
+  - generic [ref=f7e262]:
+    - generic [ref=f7e265]:
+      - strong [ref=f7e266]: Building is free — and always will be
+      - text: — £69 once adds the premium content pack today, plus the app and plugin when they ship £69 £99
+    - button "Unlock" [ref=f7e267] [cursor=pointer]
+  - generic [ref=f7e342]:
+    - generic [ref=f7e344]:
+      - generic:
+        - generic "Drag to link →" [ref=f7e968]
+        - generic "Link input" [ref=f7e969]
+        - generic "Drag to link →" [ref=f7e970]
+        - generic "Link input" [ref=f7e971]
+        - generic "Drag to link →" [ref=f7e972]
+        - generic "Link input" [ref=f7e973]
+        - generic "Drag to link →" [ref=f7e974]
+        - generic "Link input" [ref=f7e975]
+        - generic "Drag to link →" [ref=f7e976]
+        - generic "Link input" [ref=f7e977]
+        - generic "Drag to link →" [ref=f7e978]
+        - generic "Link input" [ref=f7e979]
+        - generic "Drag to link →" [ref=f7e980]
+        - generic "Link input" [ref=f7e981]
+        - generic "Drag to link →" [ref=f7e982]
+        - generic "Link input" [ref=f7e983]
+        - generic "Drag to link →" [ref=f7e984]
+        - generic "Link input" [ref=f7e985]
+        - generic "Drag to link →" [ref=f7e986]
+        - generic "Link input" [ref=f7e987]
+        - generic "Drag to link →" [ref=f7e988]
+        - generic "Link input" [ref=f7e989]
+        - generic "Drag to link →" [ref=f7e990]
+        - generic "Link input" [ref=f7e991]
+      - generic [ref=f7e992]:
+        - generic [ref=f7e993]:
+          - generic [ref=f7e994]: "1"
+          - generic [ref=f7e995]:
+            - generic [ref=f7e997]:
+              - slider "Slot 1 channel level" [ref=f7e998]
+              - generic [ref=f7e999]:
+                - meter "channel level L" [ref=f7e1000]
+                - meter "channel level R" [ref=f7e1001]
+            - generic [ref=f7e1003]:
+              - button "channel solo (group) for slot 1" [ref=f7e1004] [cursor=pointer]: S
+              - button "channel power for slot 1" [pressed] [ref=f7e1005] [cursor=pointer]
+        - generic [ref=f7e1009]:
+          - generic [ref=f7e1011]:
+            - generic [ref=f7e1012]: KICK Machine
+            - generic [ref=f7e1015]:
+              - generic "Solo" [ref=f7e1016] [cursor=pointer]
+              - generic "Lock" [ref=f7e1021] [cursor=pointer]
+              - slider "Amount" [ref=f7e1025]
+              - meter "Instrument level" [ref=f7e1030]
+              - generic "Power" [ref=f7e1031] [cursor=pointer]
+          - generic [ref=f7e1035]:
+            - generic [ref=f7e1038]: Pattern
+            - generic [ref=f7e1043]: Shapes
+            - generic [ref=f7e1048]: Sound
+            - generic [ref=f7e1055]:
+              - generic:
+                - generic "Drag · double-click to enter" [ref=f7e1057]: "5"
+                - generic: Meter
+            - generic [ref=f7e1060]:
+              - generic:
+                - generic "Drag · double-click to enter" [ref=f7e1062]: "2"
+                - generic: Repeats
+        - generic [ref=f7e1063] [cursor=pointer]: +
+        - generic:
+          - generic:
+            - generic: →
+            - generic: MAIN
+      - generic [ref=f7e1064]:
+        - generic [ref=f7e1065]:
+          - generic [ref=f7e1066]: "2"
+          - generic [ref=f7e1067]:
+            - generic [ref=f7e1069]:
+              - slider "Slot 2 channel level" [ref=f7e1070]
+              - generic [ref=f7e1071]:
+                - meter "channel level L" [ref=f7e1072]
+                - meter "channel level R" [ref=f7e1073]
+            - generic [ref=f7e1075]:
+              - button "channel solo (group) for slot 2" [ref=f7e1076] [cursor=pointer]: S
+              - button "channel power for slot 2" [pressed] [ref=f7e1077] [cursor=pointer]
+        - generic [ref=f7e1081]:
+          - generic [ref=f7e1083]:
+            - generic [ref=f7e1084]: Chord Machine
+            - generic [ref=f7e1087]:
+              - generic "Solo" [ref=f7e1088] [cursor=pointer]
+              - generic "Lock" [ref=f7e1093] [cursor=pointer]
+              - slider "Amount" [ref=f7e1097]
+              - meter "Instrument level" [ref=f7e1102]
+              - generic "Power" [ref=f7e1103] [cursor=pointer]
+          - generic [ref=f7e1107]:
+            - generic [ref=f7e1110]: Pattern
+            - generic [ref=f7e1115]: Shapes
+            - generic [ref=f7e1120]: Sound
+            - generic "Drag · double-click to enter" [ref=f7e1129]: "5"
+            - generic "Drag · double-click to enter" [ref=f7e1134]: "1"
+            - generic "Drag · double-click to enter" [ref=f7e1139]: "4"
+            - generic [ref=f7e1140]: Cutoff
+            - generic [ref=f7e1149]: Envelope
+            - generic [ref=f7e1158]: Length
+        - generic [ref=f7e1168]:
+          - generic [ref=f7e1170]:
+            - generic [ref=f7e1171]: Mod Reverb
+            - generic [ref=f7e1174]:
+              - generic "Solo" [ref=f7e1175] [cursor=pointer]
+              - generic "Lock" [ref=f7e1180] [cursor=pointer]
+              - slider "Amount" [ref=f7e1184]
+              - meter "Instrument level" [ref=f7e1189]
+              - generic "Power" [ref=f7e1190] [cursor=pointer]
+          - generic [ref=f7e1194]:
+            - generic [ref=f7e1195]: Size
+            - generic [ref=f7e1203]: Decay
+            - generic [ref=f7e1211]: Low
+            - generic [ref=f7e1219]: Hi
+            - generic [ref=f7e1227]: Mod
+            - generic [ref=f7e1235]: LFO
+            - generic [ref=f7e1243]: Phase
+            - generic [ref=f7e1251]: Speed
+            - generic [ref=f7e1259]: Mod
+        - generic [ref=f7e1267] [cursor=pointer]: +
+        - generic:
+          - generic:
+            - generic: →
+            - generic: MAIN
+      - generic [ref=f7e1268]:
+        - generic [ref=f7e1269]:
+          - generic [ref=f7e1270]: "3"
+          - generic [ref=f7e1271]:
+            - generic [ref=f7e1273]:
+              - slider "Slot 3 channel level" [ref=f7e1274]
+              - generic [ref=f7e1275]:
+                - meter "channel level L" [ref=f7e1276]
+                - meter "channel level R" [ref=f7e1278]
+            - generic [ref=f7e1281]:
+              - button "channel solo (group) for slot 3" [ref=f7e1282] [cursor=pointer]: S
+              - button "channel power for slot 3" [pressed] [ref=f7e1283] [cursor=pointer]
+        - generic [ref=f7e1287]:
+          - generic [ref=f7e1289]:
+            - generic [ref=f7e1290]: HAT Machine
+            - generic [ref=f7e1293]:
+              - generic "Solo" [ref=f7e1294] [cursor=pointer]
+              - generic "Lock" [ref=f7e1299] [cursor=pointer]
+              - slider "Amount" [ref=f7e1303]
+              - meter "Instrument level" [ref=f7e1308]
+              - generic "Power" [ref=f7e1309] [cursor=pointer]
+          - generic [ref=f7e1313]:
+            - generic [ref=f7e1316]: Pattern
+            - generic [ref=f7e1321]: Shapes
+            - generic [ref=f7e1326]: Sound
+            - generic [ref=f7e1333]:
+              - generic:
+                - generic "Drag · double-click to enter" [ref=f7e1335]: "4"
+                - generic: Meter
+            - generic [ref=f7e1338]:
+              - generic:
+                - generic "Drag · double-click to enter" [ref=f7e1340]: "2"
+                - generic: Repeats
+        - generic [ref=f7e1342]:
+          - generic [ref=f7e1344]:
+            - generic [ref=f7e1345]: Resonator
+            - generic [ref=f7e1348]:
+              - generic "Solo" [ref=f7e1349] [cursor=pointer]
+              - generic "Lock" [ref=f7e1354] [cursor=pointer]
+              - slider "Amount" [ref=f7e1358]
+              - meter "Instrument level" [ref=f7e1363]
+              - generic "Power" [ref=f7e1365] [cursor=pointer]
+          - generic [ref=f7e1369]:
+            - generic [ref=f7e1370]: Mod
+            - generic [ref=f7e1377]: Pitch
+            - generic [ref=f7e1386]: Decay
+            - generic [ref=f7e1395]: Damp
+            - generic [ref=f7e1405]: FM
+            - generic [ref=f7e1415]: Interval
+            - generic [ref=f7e1424]: Width
+            - generic [ref=f7e1433]: Speed
+            - generic [ref=f7e1442]: Glide
+        - generic [ref=f7e1452] [cursor=pointer]: +
+        - generic:
+          - generic:
+            - generic: →
+            - generic: MAIN
+      - generic [ref=f7e1453]:
+        - generic [ref=f7e1454]:
+          - generic [ref=f7e1455]: "4"
+          - generic [ref=f7e1456]:
+            - generic [ref=f7e1458]:
+              - slider "Slot 4 channel level" [ref=f7e1459]
+              - generic [ref=f7e1460]:
+                - meter "channel level L" [ref=f7e1461]
+                - meter "channel level R" [ref=f7e1462]
+            - generic [ref=f7e1464]:
+              - button "channel solo (group) for slot 4" [ref=f7e1465] [cursor=pointer]: S
+              - button "channel power for slot 4" [pressed] [ref=f7e1466] [cursor=pointer]
+        - generic [ref=f7e1470]:
+          - generic [ref=f7e1472]:
+            - generic [ref=f7e1473]: ACID Machine
+            - generic [ref=f7e1476]:
+              - generic "Solo" [ref=f7e1477] [cursor=pointer]
+              - generic "Lock" [ref=f7e1482] [cursor=pointer]
+              - slider "Amount" [ref=f7e1486]
+              - meter "Instrument level" [ref=f7e1491]
+              - generic "Power" [ref=f7e1492] [cursor=pointer]
+          - generic [ref=f7e1496]:
+            - generic [ref=f7e1499]: Pattern
+            - generic [ref=f7e1504]: Shapes
+            - generic [ref=f7e1509]: Sound
+            - generic [ref=f7e1514]: Pitch
+            - generic [ref=f7e1525]:
+              - generic:
+                - generic "Drag · double-click to enter" [ref=f7e1527]: "3"
+                - generic: Meter
+            - generic [ref=f7e1530]:
+              - generic:
+                - generic "Drag · double-click to enter" [ref=f7e1532]: "1"
+                - generic: Repeats
+            - generic [ref=f7e1535]:
+              - generic:
+                - generic "Drag · double-click to enter" [ref=f7e1537]: "2"
+                - generic: ^2
+            - generic [ref=f7e1538]: F Env
+            - generic [ref=f7e1547]: Cutoff
+        - generic [ref=f7e1555] [cursor=pointer]: +
+        - generic:
+          - generic:
+            - generic: →
+            - generic: MAIN
+      - generic [ref=f7e1556]:
+        - generic [ref=f7e1557]:
+          - generic [ref=f7e1558]: "5"
+          - generic [ref=f7e1559]:
+            - generic [ref=f7e1561]:
+              - slider "Slot 5 channel level" [ref=f7e1562]
+              - generic [ref=f7e1563]:
+                - meter "channel level L" [ref=f7e1564]
+                - meter "channel level R" [ref=f7e1565]
+            - generic [ref=f7e1567]:
+              - button "channel solo (group) for slot 5" [ref=f7e1568] [cursor=pointer]: S
+              - button "channel power for slot 5" [pressed] [ref=f7e1569] [cursor=pointer]
+        - generic [ref=f7e1573]:
+          - generic [ref=f7e1575]:
+            - generic [ref=f7e1576]: ACID Machine
+            - generic [ref=f7e1579]:
+              - generic "Solo" [ref=f7e1580] [cursor=pointer]
+              - generic "Lock" [ref=f7e1585] [cursor=pointer]
+              - slider "Amount" [ref=f7e1589]
+              - meter "Instrument level" [ref=f7e1594]
+              - generic "Power" [ref=f7e1595] [cursor=pointer]
+          - generic [ref=f7e1599]:
+            - generic [ref=f7e1602]: Pattern
+            - generic [ref=f7e1607]: Shapes
+            - generic [ref=f7e1612]: Sound
+            - generic [ref=f7e1617]: Pitch
+            - generic [ref=f7e1628]:
+              - generic:
+                - generic "Drag · double-click to enter" [ref=f7e1630]: "4"
+                - generic: Meter
+            - generic [ref=f7e1633]:
+              - generic:
+                - generic "Drag · double-click to enter" [ref=f7e1635]: "1"
+                - generic: Repeats
+            - generic [ref=f7e1638]:
+              - generic:
+                - generic "Drag · double-click to enter" [ref=f7e1640]: "2"
+                - generic: ^2
+            - generic [ref=f7e1641]: F Env
+            - generic [ref=f7e1650]: Cutoff
+        - generic [ref=f7e1660]:
+          - generic [ref=f7e1662]:
+            - generic [ref=f7e1663]: Resonator
+            - generic [ref=f7e1666]:
+              - generic "Solo" [ref=f7e1667] [cursor=pointer]
+              - generic "Lock" [ref=f7e1672] [cursor=pointer]
+              - slider "Amount" [ref=f7e1676]
+              - meter "Instrument level" [ref=f7e1681]
+              - generic "Power" [ref=f7e1682] [cursor=pointer]
+          - generic [ref=f7e1686]:
+            - generic [ref=f7e1687]: Mod
+            - generic [ref=f7e1694]: Pitch
+            - generic [ref=f7e1703]: Decay
+            - generic [ref=f7e1713]: Damp
+            - generic [ref=f7e1723]: FM
+            - generic [ref=f7e1732]: Interval
+            - generic [ref=f7e1742]: Width
+            - generic [ref=f7e1751]: Speed
+            - generic [ref=f7e1760]: Glide
+        - generic [ref=f7e1770]:
+          - generic [ref=f7e1772]:
+            - generic [ref=f7e1773]: Mod Reverb
+            - generic [ref=f7e1776]:
+              - generic "Solo" [ref=f7e1777] [cursor=pointer]
+              - generic "Lock" [ref=f7e1782] [cursor=pointer]
+              - slider "Amount" [ref=f7e1786]
+              - meter "Instrument level" [ref=f7e1791]
+              - generic "Power" [ref=f7e1792] [cursor=pointer]
+          - generic [ref=f7e1796]:
+            - generic [ref=f7e1797]: Size
+            - generic [ref=f7e1805]: Decay
+            - generic [ref=f7e1813]: Low
+            - generic [ref=f7e1821]: Hi
+            - generic [ref=f7e1829]: Mod
+            - generic [ref=f7e1837]: LFO
+            - generic [ref=f7e1845]: Phase
+            - generic [ref=f7e1853]: Speed
+            - generic [ref=f7e1861]: Mod
+        - generic [ref=f7e1870]:
+          - generic [ref=f7e1872]:
+            - generic [ref=f7e1873]: Ed Multiband
+            - generic [ref=f7e1876]:
+              - generic "Solo" [ref=f7e1877] [cursor=pointer]
+              - generic "Lock" [ref=f7e1882] [cursor=pointer]
+              - slider "Amount" [ref=f7e1886]
+              - meter "Instrument level" [ref=f7e1891]
+              - generic "Power" [ref=f7e1892] [cursor=pointer]
+          - generic [ref=f7e1896]:
+            - generic [ref=f7e1897]: Amount
+            - generic [ref=f7e1905]: Squash
+            - generic [ref=f7e1913]: Transients
+        - generic:
+          - generic:
+            - generic: →
+            - generic: MAIN
+      - generic [ref=f7e1921]:
+        - generic [ref=f7e1922]:
+          - generic [ref=f7e1923]: "6"
+          - generic [ref=f7e1924]:
+            - generic [ref=f7e1926]:
+              - slider "Slot 6 channel level" [ref=f7e1927]
+              - generic [ref=f7e1928]:
+                - meter "channel level L" [ref=f7e1929]
+                - meter "channel level R" [ref=f7e1930]
+            - generic [ref=f7e1932]:
+              - button "channel solo (group) for slot 6" [ref=f7e1933] [cursor=pointer]: S
+              - button "channel power for slot 6" [pressed] [ref=f7e1934] [cursor=pointer]
+        - generic [ref=f7e1938]:
+          - generic [ref=f7e1940]:
+            - generic [ref=f7e1941]: SNARE Machine
+            - generic [ref=f7e1944]:
+              - generic "Solo" [ref=f7e1945] [cursor=pointer]
+              - generic "Lock" [ref=f7e1950] [cursor=pointer]
+              - slider "Amount" [ref=f7e1954]
+              - meter "Instrument level" [ref=f7e1959]
+              - generic "Power" [ref=f7e1960] [cursor=pointer]
+          - generic [ref=f7e1964]:
+            - generic [ref=f7e1967]: Pattern
+            - generic [ref=f7e1972]: Shapes
+            - generic [ref=f7e1977]: Sound
+            - generic [ref=f7e1984]:
+              - generic:
+                - generic "Drag · double-click to enter" [ref=f7e1986]: "5"
+                - generic: Meter
+            - generic [ref=f7e1989]:
+              - generic:
+                - generic "Drag · double-click to enter" [ref=f7e1991]: "2"
+                - generic: Repeats
+        - generic [ref=f7e1992] [cursor=pointer]: +
+        - generic:
+          - generic:
+            - generic: →
+            - generic: MAIN
+      - generic [ref=f7e1993]:
+        - generic [ref=f7e1994]:
+          - generic [ref=f7e1995]: "7"
+          - generic [ref=f7e1999]: —
+        - generic [ref=f7e2000]:
+          - generic [ref=f7e2001]: Drop an Instrument here
+          - button "Create a new instrument" [ref=f7e2002] [cursor=pointer]
+      - generic [ref=f7e345]:
+        - generic [ref=f7e346]:
+          - generic [ref=f7e347]: Main
+          - generic [ref=f7e350]:
+            - slider "Main channel level" [ref=f7e351]
+            - generic [ref=f7e352]:
+              - meter "channel level L" [ref=f7e353]
+              - meter "channel level R" [ref=f7e354]
+        - generic [ref=f7e2006]:
+          - generic [ref=f7e2008]:
+            - generic [ref=f7e2009]: Ed Multiband
+            - generic [ref=f7e2012]:
+              - generic "Solo" [ref=f7e2013] [cursor=pointer]
+              - generic "Lock" [ref=f7e2018] [cursor=pointer]
+              - slider "Amount" [ref=f7e2022]
+              - meter "Instrument level" [ref=f7e2027]
+              - generic "Power" [ref=f7e2029] [cursor=pointer]
+          - generic [ref=f7e2033]:
+            - generic [ref=f7e2034]: Amount
+            - generic [ref=f7e2042]: Squash
+            - generic [ref=f7e2050]: Transients
+        - generic [ref=f7e2058] [cursor=pointer]: +
+        - generic:
+          - generic:
+            - generic: →
+            - generic: OUTPUT
+    - generic [ref=f7e359]:
+      - generic [ref=f7e360]:
+        - generic [ref=f7e361]:
+          - generic [ref=f7e362]: Instruments
+          - generic [ref=f7e363]: "19"
+        - generic [ref=f7e364]:
+          - button "Built-in" [ref=f7e365] [cursor=pointer]
+          - button "Mine" [ref=f7e366] [cursor=pointer]
+        - textbox "Search…" [ref=f7e370]
+      - generic [ref=f7e371]:
+        - generic [ref=f7e383]:
+          - generic [ref=f7e384]: "FX: ED MULTIBAND"
+          - generic [ref=f7e386]: Dynamic
+        - generic [ref=f7e398]:
+          - generic [ref=f7e399]: "FX: MOD REVERB"
+          - generic [ref=f7e401]: Reverb
+        - generic [ref=f7e413]:
+          - generic [ref=f7e414]: "FX: RESONATOR"
+          - generic [ref=f7e416]: instrument
+        - generic [ref=f7e428]:
+          - generic [ref=f7e429]: "GEN: ACID MACHINE"
+          - generic [ref=f7e431]: instrument
+        - generic [ref=f7e443]:
+          - generic [ref=f7e444]: "GEN: CHORD MACHINE"
+          - generic [ref=f7e446]: instrument
+        - generic [ref=f7e458]:
+          - generic [ref=f7e459]: "GEN: HAT MACHINE"
+          - generic [ref=f7e461]: Drum
+        - generic [ref=f7e473]:
+          - generic [ref=f7e474]: "GEN: KICK MACHINE"
+          - generic [ref=f7e476]: Drum
+        - generic [ref=f7e488]:
+          - generic [ref=f7e489]: "GEN: SNARE MACHINE"
+          - generic [ref=f7e491]: Drum
+        - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=f7e492]:
+          - generic [ref=f7e503]:
+            - generic [ref=f7e504]:
+              - generic [ref=f7e505]: "INST: KICK"
+              - generic "Locked (Karst Fundamentals)" [ref=f7e506]
+            - generic [ref=f7e510]: instrument
+        - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=f7e511]:
+          - generic [ref=f7e522]:
+            - generic [ref=f7e523]:
+              - generic [ref=f7e524]: "INST: SNARE"
+              - generic "Locked (Karst Fundamentals)" [ref=f7e525]
+            - generic [ref=f7e529]: instrument
+        - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=f7e530]:
+          - generic [ref=f7e541]:
+            - generic [ref=f7e542]:
+              - generic [ref=f7e543]: "INST: HATS"
+              - generic "Locked (Karst Fundamentals)" [ref=f7e544]
+            - generic [ref=f7e548]: instrument
+        - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=f7e549]:
+          - generic [ref=f7e560]:
+            - generic [ref=f7e561]:
+              - generic [ref=f7e562]: "INST: 2-OP"
+              - generic "Locked (Karst Fundamentals)" [ref=f7e563]
+            - generic [ref=f7e567]: instrument
+        - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=f7e568]:
+          - generic [ref=f7e579]:
+            - generic [ref=f7e580]:
+              - generic [ref=f7e581]: "FX: MOD DELAY"
+              - generic "Locked (Karst Fundamentals)" [ref=f7e582]
+            - generic [ref=f7e586]: instrument
+        - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=f7e587]:
+          - generic [ref=f7e598]:
+            - generic [ref=f7e599]:
+              - generic [ref=f7e600]: "FX: MOD FILTER"
+              - generic "Locked (Karst Fundamentals)" [ref=f7e601]
+            - generic [ref=f7e605]: instrument
+        - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=f7e606]:
+          - generic [ref=f7e617]:
+            - generic [ref=f7e618]:
+              - generic [ref=f7e619]: "SC: PUMP"
+              - generic "Locked (Karst Fundamentals)" [ref=f7e620]
+            - generic [ref=f7e624]: instrument
+        - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=f7e625]:
+          - generic [ref=f7e636]:
+            - generic [ref=f7e637]:
+              - generic [ref=f7e638]: "SEQ: EUCLOID"
+              - generic "Locked (Karst Fundamentals)" [ref=f7e639]
+            - generic [ref=f7e643]: instrument
+        - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=f7e644]:
+          - generic [ref=f7e655]:
+            - generic [ref=f7e656]:
+              - generic [ref=f7e657]: "SEQ: FLEXSTEP"
+              - generic "Locked (Karst Fundamentals)" [ref=f7e658]
+            - generic [ref=f7e662]: instrument
+        - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=f7e663]:
+          - generic [ref=f7e674]:
+            - generic [ref=f7e675]:
+              - generic [ref=f7e676]: "TRG: BOUNCER"
+              - generic "Locked (Karst Fundamentals)" [ref=f7e677]
+            - generic [ref=f7e681]: instrument
+        - generic "Locked — unlock with the full version (Karst Fundamentals)" [ref=f7e682]:
+          - generic [ref=f7e693]:
+            - generic [ref=f7e694]:
+              - generic [ref=f7e695]: "TRN: SUBDIVIDE"
+              - generic "Locked (Karst Fundamentals)" [ref=f7e696]
+            - generic [ref=f7e700]: instrument
