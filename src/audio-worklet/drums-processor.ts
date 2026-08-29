@@ -22,7 +22,13 @@ class DrumsProcessor extends AudioWorkletProcessor {
   static get parameterDescriptors() { return []; }
   private vm = new DrumVoiceManager(sampleRate);
   private queue = new SchedulerQueue<DrumHit>();
+  // Bound once — drums drain per block (cheap), but the same shape as the other
+  // two processors keeps the no-closure-in-process() rule uniform.
+  private readonly spawnHit = (hit: DrumHit): void => { this.vm.spawn(hit); };
   private frame = Math.floor(currentTime * sampleRate);
+  // Reused per block (filled from `outputs` each call — the engine may hand
+  // different buffers per call, but the holder array need not be reallocated).
+  private mono: Float32Array[] = new Array(DRUM_VOICE_IDS.length);
   // Set by `kill` (lane disposed): process() then returns false so the audio engine
   // reclaims this processor instead of running it forever (see loom-processor.ts).
   private dead = false;
@@ -49,9 +55,9 @@ class DrumsProcessor extends AudioWorkletProcessor {
     const n = outputs[0][0].length;
     // Fire every hit due within this block (block granularity — sub-sample drum
     // timing is inaudible). The manager renders each live voice into its output.
-    this.queue.drainDue(this.frame + n - 1, (hit) => this.vm.spawn(hit));
-    const mono = DRUM_VOICE_IDS.map((_, v) => outputs[v][0]);
-    this.vm.renderInto(mono, this.frame);
+    this.queue.drainDue(this.frame + n - 1, this.spawnHit);
+    for (let v = 0; v < this.mono.length; v++) this.mono[v] = outputs[v][0];
+    this.vm.renderInto(this.mono, this.frame);
     this.frame += n;
     return true;
   }

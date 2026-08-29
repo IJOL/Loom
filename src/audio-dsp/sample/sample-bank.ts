@@ -64,18 +64,28 @@ export class BufferPlayer {
     const i = Math.floor(this.pos);
     const f = this.pos - i;
     const ch = this.data.channels;
-    const read = (c: Float32Array): number => {
-      const a = c[i] ?? 0;
-      const b = c[i + 1] ?? a;
-      return a * (1 - f) + b * f;
-    };
-    this.lastL = read(ch[0]);
-    this.lastR = ch.length > 1 ? read(ch[1]) : this.lastL;
+    this.lastL = this.readCh(ch[0], i, f);
+    this.lastR = ch.length > 1 ? this.readCh(ch[1], i, f) : this.lastL;
     // mono mix is the mean across all channels (so a 2-channel read = (L+R)/2).
-    let s = 0;
-    for (const c of ch) s += read(c);
-    s /= ch.length;
+    // Mono/stereo (the only cases the samplers ship) reuse lastL/lastR instead
+    // of re-interpolating every channel — this runs per voice per sample.
+    let s: number;
+    if (ch.length === 1) s = this.lastL;
+    else if (ch.length === 2) s = (this.lastL + this.lastR) * 0.5;
+    else {
+      s = this.lastL + this.lastR;
+      for (let c = 2; c < ch.length; c++) s += this.readCh(ch[c], i, f);
+      s /= ch.length;
+    }
     this.pos += rate * this.step;
     return s;
+  }
+
+  /** Linear-interpolated read at index i + f. A method, not a closure in
+   *  update(): that closure was allocated per voice per sample. */
+  private readCh(c: Float32Array, i: number, f: number): number {
+    const a = c[i] ?? 0;
+    const b = c[i + 1] ?? a;
+    return a * (1 - f) + b * f;
   }
 }

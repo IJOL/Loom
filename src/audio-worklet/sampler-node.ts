@@ -25,6 +25,11 @@ export type SamplerMsg =
   // updates the pad table the SOUNDING voices read, so a knob turn is audible on
   // a note already playing.
   | { type: 'padParams'; padNote: number; params: LivePadParams }
+  // Voice budget for this processor (poly.voices). The melodic lanes cap in
+  // VoiceManager; the sampler pools voices in its own processor, which had NO
+  // cap of any kind — a looping clip or a long pad at 16ths accumulated without
+  // limit ("same lie, different room").
+  | { type: 'config'; maxVoices: number }
   | { type: 'silence'; atSec?: number }
   // Dispose: stop the processor (its process() returns false on `kill`).
   | { type: 'kill' };
@@ -114,6 +119,12 @@ export class SamplerWorkletNode {
   /** Update one pad's live knob values — heard by the voices already sounding. */
   setPadParams(padNote: number, params: LivePadParams): void {
     this.node.port.postMessage(...samplerPadParamsMessage(padNote, params));
+  }
+
+  /** Set the processor's voice budget (poly.voices). Overflow steals the OLDEST
+   *  voices via their own click-free fades (choke / noteOff). */
+  setMaxVoices(n: number): void {
+    this.node.port.postMessage({ type: 'config', maxVoices: n } satisfies SamplerMsg);
   }
 
   /** Release every live voice (transport Stop / scene-launch boundary) so a long

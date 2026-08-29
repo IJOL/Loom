@@ -137,11 +137,12 @@ export class SamplerRenderer implements VoiceRenderer {
     return this.outL + this.outR;
   }
 
-  /** Render one stereo sample and report the post-pan L/R. The processor uses
-   *  this for the dry bus + (via the send getters) the per-pad FX sends. */
-  renderStereoInto(t: number): { l: number; r: number } {
+  /** Render one stereo sample into outL/outR (post-pan L/R). The processor reads
+   *  the fields for the dry bus + (via the send getters) the per-pad FX sends.
+   *  Returns void on purpose: a `{l, r}` return object here was allocated per
+   *  voice per sample — pure garbage on the audio thread. */
+  renderStereoInto(t: number): void {
     this.renderStereo(t);
-    return { l: this.outL, r: this.outR };
   }
 
   /** Per-pad reverb send (stereo, post-pan dry × the pad's reverb level). */

@@ -12,7 +12,13 @@ import { DRUM_VOICE_IDS } from './types';
 import { DRUM_RENDERERS } from './voices';
 import type { ParamBag } from '../types';
 
-interface Slot { voice: DrumVoiceId; r: DrumRenderer; }
+interface Slot {
+  voice: DrumVoiceId;
+  r: DrumRenderer;
+  /** DRUM_VOICE_IDS index, resolved once at spawn — renderInto runs per voice
+   *  per sample and a string indexOf there was a linear scan each time. */
+  out: number;
+}
 
 export class DrumVoiceManager {
   private params = new Map<DrumVoiceId, ParamBag>();
@@ -44,7 +50,11 @@ export class DrumVoiceManager {
       for (const slot of this.live) if (mates.has(slot.voice)) slot.r.choke(t);
     }
     const ctor = DRUM_RENDERERS[hit.voice];
-    this.live.push({ voice: hit.voice, r: ctor(hit, this.params.get(hit.voice) ?? {}, this.sr) });
+    this.live.push({
+      voice: hit.voice,
+      r: ctor(hit, this.params.get(hit.voice) ?? {}, this.sr),
+      out: DRUM_VOICE_IDS.indexOf(hit.voice),
+    });
   }
 
   /** Fill `outputs[v]` (one mono buffer per DRUM_VOICE_IDS index) for this block,
@@ -56,7 +66,7 @@ export class DrumVoiceManager {
       const t = (frame0 + i) / this.sr;
       for (let s = this.live.length - 1; s >= 0; s--) {
         const slot = this.live[s];
-        outputs[DRUM_VOICE_IDS.indexOf(slot.voice)][i] += slot.r.renderSample(t);
+        outputs[slot.out][i] += slot.r.renderSample(t);
         if (slot.r.done) this.live.splice(s, 1);
       }
     }

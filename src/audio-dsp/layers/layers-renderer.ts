@@ -16,7 +16,7 @@ import type {
 } from '@loom/plugin-sdk';
 import { slotOf } from '@loom/plugin-sdk';
 import { createRenderer, hasRenderer } from '../renderer-registry';
-import { pickLayers, subBag, subIndex, subMods, layerPrefix, type LayerSpec } from './layer-spec';
+import { pickLayers, subBags, subIndex, subMods, layerPrefix, type LayerSpec } from './layer-spec';
 
 /** The two per-voice envelope hooks. Neither is on VoiceRenderer — the
  *  VoiceManager reaches them by cast too, for the same reason: a renderer with
@@ -64,6 +64,9 @@ export class LayersRenderer implements VoiceRenderer {
      *  the zones decide. */
     layerIndex?: number,
   ) {
+    // ONE walk of the lane bag for all four layers (this constructor runs per
+    // note on the audio thread); values are still a fresh trigger-time copy.
+    const bags = subBags(params);
     for (const i of pickLayers(layers, note.midi, layerIndex)) {
       const engineId = layers[i].engineId;
       // A layer naming an engine that is not installed is SKIPPED, not fatal:
@@ -71,7 +74,7 @@ export class LayersRenderer implements VoiceRenderer {
       // throw here would take the whole lane down over one absent plugin.
       if (!hasRenderer(engineId)) continue;
       this.live.push({
-        render: createRenderer(engineId, note, subBag(params, i), sampleRate),
+        render: createRenderer(engineId, note, bags[i], sampleRate),
         gain: layers[i].gain,
         // This slot's ENGINE's own output balance, folded in once. An ordinary
         // lane gets its engine's trim from the allocator; a slot's engine had no

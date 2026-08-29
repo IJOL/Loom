@@ -207,11 +207,16 @@ const currentEngineId = 'subtractive';
 // Phase G: LaneAllocatorDeps is master-only; all per-lane strip/engine deps
 // removed. Lanes are allocated lazily via ensureLaneResource() triggered by
 // applyLoadedSessionState when the boot session JSON is applied.
-// Global simultaneous-voice budget across all worklet lanes. Set UNCAPPED: the
-// AudioWorklet handles dense polyphony, and any finite ceiling stole voices
-// audibly (clicks). Mono lanes still cap themselves at 1 in VoiceManager.
-// (User: "sin limitaciones, no las necesitamos" — click-free, 2026-06-24.)
-const globalVoiceCap = new GlobalVoiceCap(Number.POSITIVE_INFINITY);
+// Global simultaneous-voice budget across all worklet lanes — a SAFETY NET, not
+// a musical constraint. It was Infinity from 2026-06-24 ("any finite ceiling
+// stole voices audibly"), but that justification predates the click-free steal
+// paths: GlobalVoiceCap.steal routes to VoiceManager.steal → noteOff on the
+// oldest voices (a natural RELEASE, not a cut), and the per-lane cap ramps a
+// stolen voice out over STEAL_FADE_SEC — there is no instant drop left to hear.
+// 256 is far above any musical peak (dense 16-lane "Children" stays well under
+// it) and below the ~500 a pad-heavy session can leak into, which is how the
+// worklet misses its deadline while every light on screen stays right.
+const globalVoiceCap = new GlobalVoiceCap(256);
 const lanes = createLaneAllocator({
   ctx, master, fx, sidechainBus,
   getBpm: () => seq.bpm,

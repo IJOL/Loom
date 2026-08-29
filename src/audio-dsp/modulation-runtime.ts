@@ -150,6 +150,10 @@ export class ModulationRuntime {
   constructor(_sr: number) {}
   setMods(mods: ModLite[]): void {
     this.mods = mods;
+    // Recomputed here, not per call: getAdsrMods() is asked on EVERY spawn, and
+    // a fresh filtered array per note is both an allocation on the audio thread
+    // and what defeated the per-mods-reference caching downstream (subMods).
+    this.adsrMods = mods.filter((m) => m.driver === 'gate' && m.enabled);
     this.active = [];
     for (const m of mods) {
       if (!m.enabled) continue;
@@ -245,8 +249,9 @@ export class ModulationRuntime {
    *  same per-voice envelope road, unmoved — only how the runtime recognises
    *  a mod belongs on it. */
   getAdsrMods(): ModLite[] {
-    return this.mods.filter((m) => m.driver === 'gate' && m.enabled);
+    return this.adsrMods;
   }
+  private adsrMods: ModLite[] = [];
   /** Normalised additive offset (Σ wave×depth over enabled LFOs) for a
    *  modulation target at absolute time t. The renderer scales it to the
    *  target's native units. */

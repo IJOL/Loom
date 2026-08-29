@@ -70,7 +70,7 @@ describe('AudioClipRenderer', () => {
     bank.set('st', { channels: [l, r], sampleRate: SR });
     const v = new AudioClipRenderer(spawn({ sampleId: 'st', gateSec: 0.1 }), bank, SR);
     let maxL = 0, maxR = 0;
-    for (let i = SR * 0.02; i < SR * 0.08; i++) { const { l: ll, r: rr } = v.renderStereoInto(i / SR); maxL = Math.max(maxL, Math.abs(ll)); maxR = Math.max(maxR, Math.abs(rr)); }
+    for (let i = SR * 0.02; i < SR * 0.08; i++) { v.renderStereoInto(i / SR); maxL = Math.max(maxL, Math.abs(v.outL)); maxR = Math.max(maxR, Math.abs(v.outR)); }
     expect(maxL).toBeGreaterThan(0.05);
     expect(maxR).toBeLessThan(maxL * 0.05);   // right channel stays silent → not mono-summed
   });

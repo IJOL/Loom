@@ -132,8 +132,8 @@ export function renderSampleLane(
         : new SamplerRenderer(s.spawn, bank, sampleRate), chokeGroup, padNote });
     }
     for (let k = live.length - 1; k >= 0; k--) {
-      const { l: vl, r: vr } = live[k].r.renderStereoInto(t);
-      l[i] += vl; r[i] += vr;
+      live[k].r.renderStereoInto(t);
+      l[i] += live[k].r.outL; r[i] += live[k].r.outR;
       if (live[k].r.done) live.splice(k, 1);
     }
   }

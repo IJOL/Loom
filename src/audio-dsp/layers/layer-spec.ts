@@ -128,6 +128,32 @@ export function subBag(bag: ParamBag, i: number): ParamBag {
   return out;
 }
 
+/** True when `k` wears a layer prefix (`l<digit>.`), with the digit in range.
+ *  Char-code checks, no string allocation — the callers below run per NOTE on
+ *  the audio thread. */
+const layerOf = (k: string): number => {
+  if (k.charCodeAt(0) !== 108 /* 'l' */ || k.charCodeAt(2) !== 46 /* '.' */) return -1;
+  const d = k.charCodeAt(1) - 48;
+  return d >= 0 && d < MAX_LAYERS ? d : -1;
+};
+
+/** Every layer's sub-bag in ONE walk of the lane bag.
+ *
+ *  subBag() above walks the whole bag once per layer — four full scans with a
+ *  `startsWith` per key, and it runs in the LayersRenderer CONSTRUCTOR, i.e.
+ *  per note inside the audio callback. The values are still copied (they are
+ *  the trigger-time snapshot and the lane bag mutates underneath), so this
+ *  cannot be cached across notes — but one walk instead of four can. */
+export function subBags(bag: ParamBag): ParamBag[] {
+  const out: ParamBag[] = [];
+  for (let d = 0; d < MAX_LAYERS; d++) out.push({});
+  for (const k in bag) {
+    const d = layerOf(k);
+    if (d >= 0) out[d][k.slice(3)] = bag[k];
+  }
+  return out;
+}
+
 /** The modulation targets a LAYERS lane declares beyond its params: each slot's
  *  copy of the synthetic three.
  *
@@ -161,20 +187,29 @@ export function layerModTargets(): string[] {
 export function subMods<M extends { depthByParam: Record<string, number> }>(
   mods: readonly M[], i: number,
 ): M[] {
-  const pre = layerPrefix(i);
-  const out: M[] = [];
-  for (const m of mods) {
-    const depthByParam: Record<string, number> = {};
-    let any = false;
-    for (const k in m.depthByParam) {
-      if (!k.startsWith(pre)) continue;
-      depthByParam[k.slice(pre.length)] = m.depthByParam[k];
-      any = true;
+  // Cached per mods ARRAY: the runtime rebuilds that array only when the mods
+  // message changes (getAdsrMods caches it), while this is asked per layer per
+  // NOTE — a pure function of a reference that outlives thousands of spawns.
+  let all = subModsCache.get(mods) as M[][] | undefined;
+  if (!all) {
+    all = [];
+    for (let d = 0; d < MAX_LAYERS; d++) all.push([]);
+    for (const m of mods) {
+      const perLayer: (Record<string, number> | undefined)[] = [];
+      for (const k in m.depthByParam) {
+        const d = layerOf(k);
+        if (d < 0) continue;
+        (perLayer[d] ??= {})[k.slice(3)] = m.depthByParam[k];
+      }
+      for (let d = 0; d < MAX_LAYERS; d++) {
+        if (perLayer[d]) all[d].push({ ...m, depthByParam: perLayer[d]! });
+      }
     }
-    if (any) out.push({ ...m, depthByParam });
+    subModsCache.set(mods, all);
   }
-  return out;
+  return all[i];
 }
+const subModsCache = new WeakMap<object, { depthByParam: Record<string, number> }[][]>();
 
 /** The lane's slot numbering as one layer's engine expects to resolve it.
  *
@@ -182,10 +217,21 @@ export function subMods<M extends { depthByParam: Record<string, number> }>(
  *  knobs move. Only the naming is translated, which is what keeps a layer's
  *  knobs live on a note that is already sounding. */
 export function subIndex(index: ParamIndex, i: number): ParamIndex {
-  const pre = layerPrefix(i);
-  const slot: Record<string, number> = {};
-  for (const k in index.slot) {
-    if (k.startsWith(pre)) slot[k.slice(pre.length)] = index.slot[k];
+  // Cached per INDEX object: the worklet numbers a lane's params once for its
+  // lifetime (changing a slot's engine rebuilds the lane), so the translation
+  // is a pure function of a reference that never mutates — while this used to
+  // walk the whole ~175-key slot record per layer per NOTE.
+  let all = subIndexCache.get(index);
+  if (!all) {
+    const slots: Record<string, number>[] = [];
+    for (let d = 0; d < MAX_LAYERS; d++) slots.push({});
+    for (const k in index.slot) {
+      const d = layerOf(k);
+      if (d >= 0) slots[d][k.slice(3)] = index.slot[k];
+    }
+    all = slots.map((slot) => ({ slot, length: index.length }));
+    subIndexCache.set(index, all);
   }
-  return { slot, length: index.length };
+  return all[i];
 }
+const subIndexCache = new WeakMap<ParamIndex, ParamIndex[]>();

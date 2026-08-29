@@ -339,6 +339,11 @@ export class WorkletLaneEngine implements SynthEngine {
       if (this.busStrip) setStripParam(this.busStrip, id, v);
       return;
     }
+    // Unchanged value ⇒ nothing to do. Clip envelopes land every rAF frame per
+    // curve per lane and mostly carry the number already set — without this
+    // compare each landing allocated a one-key object and structured-cloned it
+    // across the thread boundary (thousands of messages/second at rest).
+    if (this.state[id] === v) return;
     this.state[id] = v;
     this.worklet.setParams({ [id]: v });   // dot-id straight through to the renderer's ParamBag
   }

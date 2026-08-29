@@ -152,6 +152,9 @@ export class SamplerWorkletEngine implements SynthEngine {
     if (this.node && this.ctx === ctx) return this.node;
     this.ctx = ctx;
     this.node = new SamplerWorkletNode(ctx);
+    // A (re)built node starts with an uncapped pool — hand it the lane's
+    // current budget, the same way the connect targets are re-applied.
+    this.node.setMaxVoices(Math.max(1, Math.min(16, Math.round(this.paramValues['poly.voices'] ?? 8))));
     if (this.dryTarget) this.node.connectDry(this.dryTarget);
     if (this.fx) this.node.connectSend(this.fx.delayInput, this.fx.reverbInput);
     // Any buffers already in the cache for the current keymap get pushed now.
@@ -307,6 +310,15 @@ export class SamplerWorkletEngine implements SynthEngine {
   setBaseValue(id: string, v: number): void {
     if (isStripParamId(id)) {
       if (this.busStrip) setStripParam(this.busStrip, id, v);
+      return;
+    }
+    // poly.voices reaches the PROCESSOR, not just the param bag: the sampler
+    // pools its voices in its own worklet, so a value that stayed main-thread
+    // was a knob that did nothing (the audit's "same lie, different room").
+    if (id === 'poly.voices') {
+      const n = Math.max(1, Math.min(16, Math.round(v)));
+      this.paramValues[id] = n;
+      this.node?.setMaxVoices(n);
       return;
     }
     if (id in this.paramValues || SAMPLER_PARAMS.some((p) => p.id === id)) {

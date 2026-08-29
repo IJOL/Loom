@@ -60,6 +60,10 @@ class LoomProcessor extends AudioWorkletProcessor {
   // returns false so the audio engine stops scheduling this processor and reclaims
   // it — otherwise the always-true return below keeps it (and its CPU cost) alive.
   private dead = false;
+  // Bound once: an inline arrow in the per-sample loop below would allocate a
+  // fresh closure every sample (128/block/lane) — pure GC pressure on the
+  // audio thread even while the queue is empty.
+  private readonly spawnNote = (note: NoteSpec): void => { this.vm.spawn(note); };
 
   constructor(options?: unknown) {
     super(options);
@@ -106,7 +110,7 @@ class LoomProcessor extends AudioWorkletProcessor {
     }
     const out = outputs[0];
     for (let i = 0; i < out[0].length; i++) {
-      this.queue.drainDue(this.frame, (note) => this.vm.spawn(note));
+      this.queue.drainDue(this.frame, this.spawnNote);
       const s = this.vm.renderSample(this.frame / sampleRate);
       for (let c = 0; c < out.length; c++) out[c][i] = s;
       this.frame++;

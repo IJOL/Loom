@@ -20,6 +20,7 @@ vi.mock('../audio-worklet/sampler-node', () => ({
     hasSample(id: string) { return this.sent.has(id); }
     spawn(kind: 'sampler' | 'audio', spawn: SampleSpawn) { spawns.push({ kind, spawn }); }
     setPadParams(padNote: number, params: Record<string, number>) { padParamPosts.push({ padNote, params }); }
+    setMaxVoices() {}
     silenceAll() { silenceAllCalls++; }
     connectDry() {}
     connectSend() {}

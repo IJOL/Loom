@@ -24,8 +24,22 @@ function racksOf(structural: unknown): LayerSpec[] {
   // readRack is the ONE reading of a stored rack, shared with the host. A second
   // one here would be a second answer to "what is slot 3 when nobody set it",
   // across a thread boundary where the disagreement is silent.
-  return readRack((structural as LayersStructural | undefined)?.layers);
+  //
+  // Cached per structural OBJECT: this used to run on every spawn (4 objects +
+  // 8 spreads per note, on the audio thread) for a value that is constant until
+  // the next `structural` message — which arrives as a fresh structured-clone
+  // object, so the WeakMap key rolls over exactly when the rack changes. The
+  // shared rack is read-only downstream (LayersRenderer copies what it keeps).
+  if (typeof structural !== 'object' || structural === null) return EMPTY_RACK;
+  let rack = rackCache.get(structural);
+  if (!rack) {
+    rack = readRack((structural as LayersStructural).layers);
+    rackCache.set(structural, rack);
+  }
+  return rack;
 }
+const rackCache = new WeakMap<object, LayerSpec[]>();
+const EMPTY_RACK = readRack(undefined);
 
 export const LAYERS_ENGINE_ID = 'layers';
 

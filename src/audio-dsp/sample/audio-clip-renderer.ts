@@ -44,20 +44,21 @@ export class AudioClipRenderer implements VoiceRenderer {
     return 1;
   }
 
-  /** Render one stereo sample into outL/outR (native channels preserved). */
-  renderStereoInto(t: number): { l: number; r: number } {
-    if (!this.player || t < this.begin) { this.outL = 0; this.outR = 0; return { l: 0, r: 0 }; }
+  /** Render one stereo sample into outL/outR (native channels preserved).
+   *  Returns void on purpose: a `{l, r}` return object here was allocated per
+   *  voice per sample — on all three paths, the early-outs included. */
+  renderStereoInto(t: number): void {
+    if (!this.player || t < this.begin) { this.outL = 0; this.outR = 0; return; }
     const dt = t - this.begin;
-    if (dt > this.gate) { this.done = true; this.outL = 0; this.outR = 0; return { l: 0, r: 0 }; }
+    if (dt > this.gate) { this.done = true; this.outL = 0; this.outR = 0; return; }
     this.player.update(this.rate);   // advances + fills lastL/lastR
     const g = Math.max(0, this.envAt(dt)) * this.gain;
     this.outL = this.player.lastL * g;
     this.outR = this.player.lastR * g;
-    return { l: this.outL, r: this.outR };
   }
 
   renderSample(t: number): number {
-    const { l, r } = this.renderStereoInto(t);
-    return (l + r) * 0.5;
+    this.renderStereoInto(t);
+    return (this.outL + this.outR) * 0.5;
   }
 }

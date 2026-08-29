@@ -103,7 +103,7 @@ describe('SamplerRenderer', () => {
     bank.set('s', tone(SR));
     const r = new SamplerRenderer(spawn({ pan: 0 }), bank, SR);
     let maxL = 0, maxR = 0;
-    for (let i = 0; i < SR * 0.02; i++) { const { l, r: rr } = r.renderStereoInto(i / SR); maxL = Math.max(maxL, Math.abs(l)); maxR = Math.max(maxR, Math.abs(rr)); }
+    for (let i = 0; i < SR * 0.02; i++) { r.renderStereoInto(i / SR); maxL = Math.max(maxL, Math.abs(r.outL)); maxR = Math.max(maxR, Math.abs(r.outR)); }
     expect(maxL).toBeCloseTo(maxR, 3);
     expect(maxL).toBeGreaterThan(0);
   });
@@ -118,7 +118,7 @@ describe('SamplerRenderer', () => {
     // pan=0 (identity for a stereo source): left channel has the tone, right is silent.
     const r = new SamplerRenderer(spawn({ sampleId: 'st', pan: 0 }), bank, SR);
     let maxL = 0, maxR = 0;
-    for (let i = 0; i < SR * 0.02; i++) { const { l: ll, r: rr } = r.renderStereoInto(i / SR); maxL = Math.max(maxL, Math.abs(ll)); maxR = Math.max(maxR, Math.abs(rr)); }
+    for (let i = 0; i < SR * 0.02; i++) { r.renderStereoInto(i / SR); maxL = Math.max(maxL, Math.abs(r.outL)); maxR = Math.max(maxR, Math.abs(r.outR)); }
     expect(maxL).toBeGreaterThan(0.05);
     expect(maxR).toBeLessThan(maxL * 0.05);   // right stays near-silent → image preserved
   });
