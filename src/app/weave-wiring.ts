@@ -356,7 +356,19 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     const generated = generatorFor(laneId, followerLane?.generator);
     if (generated) return generated;
 
-    const sel = state.lanes[laneId]?.weave;
+    // The grid wins — over the PANEL, and here is where the panel begins.
+    //
+    // A scene names a clip for every lane, including no clip at all, and a
+    // weaving lane used to ignore that entirely: the same sound in every scene,
+    // a scene of empty clips included. Suspended, it plays its clip exactly as
+    // it would with this panel closed, and its selection is untouched.
+    //
+    // Read HERE and not in `foldFor`, which is where it was and where it was
+    // wrong: everything above this line — following a leader, generating — is
+    // saved on the LANE and is the song rather than the panel. Gating the whole
+    // fold silenced those too, so switching GEN on while a scene played made no
+    // sound at all. Reported as "gen en sub1 no hace nada".
+    const sel = suspended.has(laneId) ? null : state.lanes[laneId]?.weave;
 
     if (sel) {
       const weave = resolveSelection(sel, notesOf(laneId));
@@ -673,12 +685,6 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
 
   const foldFor = (laneId: string): LaneNoteSource | undefined => {
     if (state.bypass) return undefined;
-    // The grid wins. A scene names a clip for every lane — including no clip at
-    // all — and a weaving lane used to ignore that entirely: the same sound in
-    // every scene, and a scene written by PRINT playing the weave rather than
-    // the print. Suspended, the lane plays its clip exactly as it would with
-    // this panel closed, and its selection is untouched underneath.
-    if (suspended.has(laneId)) return undefined;
     if (guarded.has(laneId)) return guarded.get(laneId);
     const source = rawFor(laneId);
     if (!source) return undefined;
@@ -937,6 +943,15 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
     },
 
     suspendForGrid(laneId) {
+      // Drop what those lanes had BUILT, or nothing changes: `foldFor` answers
+      // from the cache before it reads anything else, so a lane that was
+      // weaving would go on handing out the fold it was holding. The gate used
+      // to sit in front of the cache, which hid this — and cost the generator
+      // and the follow their voice, since it gated the whole fold rather than
+      // the weave alone.
+      const drop = (id: string) => { sources.delete(id); guarded.delete(id); };
+      if (laneId === null) Object.keys(state.lanes).forEach(drop);
+      else drop(laneId);
       // A scene speaks for every lane at once; a clip, for its own. Only the
       // lanes the weave already knows are named, so a lane that starts weaving
       // AFTER the launch weaves — the panel spoke last.
@@ -946,6 +961,10 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
 
     resumeWeaving(laneId) {
       suspended.delete(laneId);
+      // Same reason as suspending: what the lane was handing out while the grid
+      // held it is not what it plays now that the panel has it back.
+      sources.delete(laneId);
+      guarded.delete(laneId);
     },
 
     isSuspended(laneId) {

@@ -4,6 +4,7 @@
 import { describe, it, expect } from 'vitest';
 import { createWeaveWiring } from './weave-wiring';
 import { defaultWeaveState } from '../weave/weave-state';
+import { defaultGeneratorState } from '../generator/generator-state';
 import { setLibrary } from '../patterns/pattern-library';
 import { DEFAULT_MUSICALITY } from '../session/session-types';
 import { DEFAULT_METER, ticksPerBar } from '../core/meter';
@@ -150,6 +151,26 @@ describe('createWeaveWiring — the weave actually reaches the scheduler', () =>
 
     w.suspendForGrid(null);            // null = a scene: it speaks for every lane
     expect(w.notesFor('lane1')).toBeUndefined();
+  });
+
+  it('a lane the grid holds still GENERATES — that is the song, not the panel', () => {
+    // The grid wins over the PANEL's crossfade, which is a property of an open
+    // panel. A generator is a property of the SONG, saved on the lane, and the
+    // suspension used to silence it too: switch GEN on while a scene is playing
+    // and the lane made no sound at all. Reported as "gen en sub1 no hace nada".
+    const s = session();
+    (s.lanes[0] as unknown as { generator: unknown }).generator = {
+      ...defaultGeneratorState(),
+      selection: { kind: 'ab', a: 'clip:clipA', b: 'clip:clipB', x: 0 },
+    };
+    const w = wiring(s);
+    // The lane is KNOWN to the weave without weaving anything — which is the
+    // ordinary state of a generating lane, because switching GEN on clears the
+    // weave and writing it a loop list creates the entry. A scene names every
+    // lane the weave knows, so this one is suspended along with the rest.
+    w.state.lanes.lane1 = { weave: null, locked: false, harmonyLeader: false };
+    w.suspendForGrid(null);
+    expect(typeof w.notesFor('lane1')).toBe('function');
   });
 
   it('weaves again the moment the panel takes the lane back', () => {
