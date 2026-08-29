@@ -241,6 +241,68 @@
 // rather than sitting there live with nothing to move.
 .weave-laps:disabled { opacity: 0.4; cursor: default; }
 
+// The list a lane draws from: its entries in order, then the picker that adds
+// to it. Wraps rather than scrolling — a list long enough to need a scrollbar
+// is a list you can no longer read at a glance, and the line may grow.
+.weave-pool {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0 2px 6px;
+}
+
+.weave-pool-label {
+  color: var(--text-dim, #9a9aa2);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.weave-pool-empty {
+  color: var(--text-dim, #9a9aa2);
+  font-size: 10px;
+  font-style: italic;
+}
+
+.weave-pool-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 4px;
+  font-size: 10px;
+}
+
+.weave-pool-name {
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.weave-pool-btn {
+  background: transparent;
+  border: 0;
+  color: var(--text-dim, #9a9aa2);
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 10px;
+
+  &:hover { color: var(--amber); }
+}
+
+.weave-pool-add {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 3px;
+  font-size: 10px;
+  max-width: 12ch;
+}
+
 // ── lanes ──────────────────────────────────────────────────────────────────
 .weave-lanes { display: flex; flex-direction: column; gap: 5px; }
 

@@ -284,6 +284,59 @@ function picker(cls, label, choices, current, onPick) {
   });
   return sel;
 }
+function poolEditor(laneId, ctx, repaint) {
+  const wrap = el2("div", "weave-pool");
+  const loops = ctx.loops(laneId);
+  const ids = ctx.lanePool(laneId);
+  const nameOf = (id) => loops.find((l) => l.id === id)?.name ?? id;
+  const write = (next) => {
+    ctx.setLanePool(laneId, next);
+    repaint();
+  };
+  wrap.appendChild(el2("span", "weave-pool-label", "PLAYS"));
+  if (ids.length === 0) {
+    wrap.appendChild(el2("span", "weave-pool-empty", "everything it may"));
+  }
+  ids.forEach((id, i) => {
+    const item = el2("span", "weave-pool-item");
+    item.appendChild(el2("span", "weave-pool-name", `${i + 1}. ${nameOf(id)}`));
+    const btn = (cls, text, title, on) => {
+      const b = el2("button", `weave-pool-btn ${cls}`, text);
+      b.type = "button";
+      b.title = title;
+      b.addEventListener("click", on);
+      item.appendChild(b);
+    };
+    if (i > 0) {
+      btn("up", "\u2191", "Play this one earlier", () => {
+        const next = [...ids];
+        [next[i - 1], next[i]] = [next[i], next[i - 1]];
+        write(next);
+      });
+    }
+    if (i < ids.length - 1) {
+      btn("down", "\u2193", "Play this one later", () => {
+        const next = [...ids];
+        [next[i], next[i + 1]] = [next[i + 1], next[i]];
+        write(next);
+      });
+    }
+    btn("kill", "\u2715", "Take it out of the list", () => {
+      write(ids.filter((_, k) => k !== i));
+    });
+    wrap.appendChild(item);
+  });
+  wrap.appendChild(picker(
+    "weave-pool-add",
+    `Add a loop to what ${laneId} plays`,
+    loops,
+    "",
+    (id) => {
+      write([...ids, id]);
+    }
+  ));
+  return wrap;
+}
 function weaveCell(laneId, ctx, loops, onChanged) {
   const cell = el2("div", "weave-cell");
   const sel = ctx.laneWeave(laneId);
@@ -780,7 +833,12 @@ function buildLaneRow(lane, ctx, engines) {
     octave
   );
   const wrap = el2("div", "weave-lane-wrap");
-  wrap.append(row, setup, gen.line);
+  const pool = el2("div", "weave-pool-line");
+  const repaintPool = () => {
+    pool.replaceChildren(poolEditor(lane.id, ctx, repaintPool));
+  };
+  repaintPool();
+  wrap.append(row, setup, gen.line, pool);
   return {
     laneId: lane.id,
     el: wrap,

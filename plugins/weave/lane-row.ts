@@ -161,6 +161,78 @@ export function picker(
   return sel;
 }
 
+/** The loops this lane draws from, in order — the list itself, editable.
+ *
+ *  What the lane hands over TO used to be dealt: a seeded draw over everything
+ *  its role allowed. This is the user writing that list instead, and the order
+ *  is the point — the hand-over walks it, so what plays next is what you put
+ *  next.
+ *
+ *  Buttons and not drag-and-drop. Every write ends in a repaint, and a drag
+ *  dies on its second event when the element under the pointer is replaced —
+ *  that has shipped as a bug twice on this very row.
+ *
+ *  On a LINE of its own rather than in the settings row, for the reason the
+ *  generator's controls are: the row's grid declares its columns, and a control
+ *  appended without one slides everything after it out of place.
+ *
+ *  Empty is a real state and says so out loud: a lane with no list draws from
+ *  everything, which is what every lane did before lists existed. */
+function poolEditor(
+  laneId: string, ctx: PanelContext, repaint: () => void,
+): HTMLElement {
+  const wrap = el('div', 'weave-pool');
+  // Re-read rather than captured, exactly as the cell does: the style picker
+  // changes which shelf this lane draws from, and a captured list would offer
+  // the loops of a style the user has left.
+  const loops = ctx.loops(laneId);
+  const ids = ctx.lanePool(laneId);
+  const nameOf = (id: string) => loops.find((l) => l.id === id)?.name ?? id;
+  const write = (next: string[]) => { ctx.setLanePool(laneId, next); repaint(); };
+
+  wrap.appendChild(el('span', 'weave-pool-label', 'PLAYS'));
+
+  if (ids.length === 0) {
+    wrap.appendChild(el('span', 'weave-pool-empty', 'everything it may'));
+  }
+
+  ids.forEach((id, i) => {
+    const item = el('span', 'weave-pool-item');
+    item.appendChild(el('span', 'weave-pool-name', `${i + 1}. ${nameOf(id)}`));
+    const btn = (cls: string, text: string, title: string, on: () => void) => {
+      const b = el('button', `weave-pool-btn ${cls}`, text) as HTMLButtonElement;
+      b.type = 'button';
+      b.title = title;
+      b.addEventListener('click', on);
+      item.appendChild(b);
+    };
+    if (i > 0) {
+      btn('up', '↑', 'Play this one earlier', () => {
+        const next = [...ids];
+        [next[i - 1], next[i]] = [next[i], next[i - 1]];
+        write(next);
+      });
+    }
+    if (i < ids.length - 1) {
+      btn('down', '↓', 'Play this one later', () => {
+        const next = [...ids];
+        [next[i], next[i + 1]] = [next[i + 1], next[i]];
+        write(next);
+      });
+    }
+    btn('kill', '✕', 'Take it out of the list', () => {
+      write(ids.filter((_, k) => k !== i));
+    });
+    wrap.appendChild(item);
+  });
+
+  // Adding goes through the same picker the cell's slots use, so a list can
+  // only ever name material this lane is actually offered.
+  wrap.appendChild(picker('weave-pool-add', `Add a loop to what ${laneId} plays`,
+    loops, '', (id) => { write([...ids, id]); }));
+  return wrap;
+}
+
 /** The fader, the queue or the pad — whichever this lane's topology calls for.
  *
  *  Rebuilt rather than mutated when the topology changes: three controls with
@@ -940,7 +1012,15 @@ export function buildLaneRow(
     style, length, octave);
 
   const wrap = el('div', 'weave-lane-wrap');
-  wrap.append(row, setup, gen.line);
+  // The list on its own line, under the settings and beside the generator's:
+  // both are lines of controls rather than cells in the row's grid, and adding
+  // a column to that grid has broken this row once already.
+  const pool = el('div', 'weave-pool-line');
+  const repaintPool = () => {
+    pool.replaceChildren(poolEditor(lane.id, ctx, repaintPool));
+  };
+  repaintPool();
+  wrap.append(row, setup, gen.line, pool);
 
   return {
     laneId: lane.id, el: wrap, meter, ring, syncTransport,

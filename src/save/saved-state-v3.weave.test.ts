@@ -46,6 +46,22 @@ describe('the weave, across a save', () => {
     expect(s.weave?.seed).toBe(7);
   });
 
+  it('carries the LIST a lane draws from, in order', () => {
+    // The list is a decision about material, so it belongs to the piece rather
+    // than to the session that happened to be open — and its order is the whole
+    // of it, so a round trip that kept the ids and lost the order would be a
+    // different arrangement wearing the same name.
+    const live = woven();
+    live.lanes.lane1.pool = ['lib:acid-techno:bass:2', 'clip:c1'];
+    const s = buildSavedStateV3(deps({ getWeave: () => live }));
+    expect(s.weave?.lanes.lane1.pool).toEqual(['lib:acid-techno:bass:2', 'clip:c1']);
+
+    const setWeave = vi.fn();
+    applyLoadedStateV3(s, deps({ setWeave }));
+    expect(setWeave.mock.calls[0][0].lanes.lane1.pool)
+      .toEqual(['lib:acid-techno:bass:2', 'clip:c1']);
+  });
+
   it('COPIES it, because the live weave keeps moving', () => {
     // A save holding the panel's own object would go on changing after it was
     // written, and what landed on disk would be wherever the fader stopped.
