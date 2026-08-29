@@ -1,4 +1,11 @@
 :root {
+  /* The whole app is dark, and telling the BROWSER so is not decoration. The
+   * widgets it paints itself — the <select> dropdown above all — fall back to
+   * the light canvas whenever nothing in them is hovered, so the popup flashed
+   * WHITE the moment the pointer left the list. A background on the <select>
+   * never reaches that popup; `color-scheme` is the only thing that does. */
+  color-scheme: dark;
+
   /* Industrial techno controller — design tokens */
   --bg:           #0e0c0a;
   --surface:      #161310;
