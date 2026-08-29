@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   weaveLoopContext, weaveLoopNotes, rehookOnArrival, evolveCloudOnLeg, pushTrail, nearestOffset,
+  weaveLoopChoices, weaveLoopChoicesAll,
 } from './weave-loops';
 import { setLibrary } from '../patterns/pattern-library';
 import { cloudPathPoint } from '../weave/topology-cloud';
@@ -86,6 +87,58 @@ describe('Mood reaches a loop the weave DRAWS, not only one it blends', () => {
     const bright = weaveLoopNotes(ID, ctxAt(0))!;
     expect(bright.map((n) => n.start)).toEqual(plain.map((n) => n.start));
     expect(bright.map((n) => n.duration)).toEqual(plain.map((n) => n.duration));
+  });
+});
+
+describe('everything a lane may be given, not only its own shelf', () => {
+  // What the lane DRAWS from on its own is its role's kind in the session's
+  // style — that is the shelf, and it is the right default. But a list is
+  // written by hand, and a hand may reach outside it: "permitir seleccionar
+  // fuera del estilo de la lane".
+  const laneNoClips = { id: 'l1', engineId: 'subtractive', name: 'l1', clips: [], inserts: [] } as unknown as SessionLane;
+  const ctx = () => weaveLoopContext(
+    laneNoClips, { ...DEFAULT_MUSICALITY, lock: false }, undefined,
+    { styleMix: 0, darkness: 0.5, laneIndex: 0, seed: 1 },
+  );
+
+  it('offers a style the lane would never draw from', () => {
+    setLibrary({
+      synth: {}, drums: {},
+      bass: { [STYLE]: [OFF_SCALE], house: [OFF_SCALE] },
+      catalog: {},
+    } as never);
+    const all = weaveLoopChoicesAll(ctx()).map((c) => c.id);
+    expect(all).toContain(`lib:${STYLE}:bass:0`);
+    expect(all).toContain('lib:house:bass:0');
+  });
+
+  it('offers a KIND the lane s role would never draw from', () => {
+    setLibrary({
+      synth: { [STYLE]: [OFF_SCALE] }, drums: { [STYLE]: [OFF_SCALE] },
+      bass: { [STYLE]: [OFF_SCALE] }, catalog: {},
+    } as never);
+    const all = weaveLoopChoicesAll(ctx()).map((c) => c.id);
+    expect(all).toContain(`lib:${STYLE}:drums:0`);
+    expect(all).toContain(`lib:${STYLE}:synth:0`);
+  });
+
+  it('keeps the lane s OWN shelf first — the default is still the answer', () => {
+    setLibrary({
+      synth: {}, drums: {},
+      bass: { [STYLE]: [OFF_SCALE], house: [OFF_SCALE] },
+      catalog: {},
+    } as never);
+    const all = weaveLoopChoicesAll(ctx()).map((c) => c.id);
+    const own = weaveLoopChoices(ctx()).map((c) => c.id);
+    expect(all.slice(0, own.length)).toEqual(own);
+  });
+
+  it('never offers the same loop twice', () => {
+    setLibrary({
+      synth: {}, drums: {}, bass: { [STYLE]: [OFF_SCALE] }, catalog: {},
+    } as never);
+    const all = weaveLoopChoicesAll(ctx()).map((c) => c.id);
+    expect(new Set(all).size).toBe(all.length);
   });
 });
 

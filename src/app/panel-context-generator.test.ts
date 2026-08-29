@@ -62,6 +62,30 @@ describe('the generator switch', () => {
       .toMatchObject({ kind: 'ab', a: 'lib:acid-techno:bass:0' });
   });
 
+  it('STOPS the lane following when it is switched on', () => {
+    // Follow is resolved before the generator and returns outright, so a lane
+    // that was following ignored its generator completely: the switch lit, its
+    // nine controls appeared, and the lane went on playing the leader's
+    // accompaniment. Reported as "he puesto gen en sub2 y no lo he visto
+    // funcionar después de haber pasado por follow".
+    //
+    // The same hole `setLaneWeave` closed for the weave, and closed the same
+    // way: choosing to generate is a claim on what this lane plays.
+    const h = harness();
+    (h.lane() as { follow?: unknown }).follow = { leaderId: 'lane2' };
+    setGeneratorOn(h.deps, 'lane1', true);
+    expect((h.lane() as { follow?: unknown }).follow).toBeUndefined();
+  });
+
+  it('leaves the follow alone when the generator is switched OFF', () => {
+    // Switching off is not a claim on anything: the lane goes back to whatever
+    // it was doing, and deciding that for it would be a second surprise.
+    const h = harness();
+    (h.lane() as { follow?: unknown }).follow = { leaderId: 'lane2' };
+    setGeneratorOn(h.deps, 'lane1', false);
+    expect((h.lane() as { follow?: unknown }).follow).toEqual({ leaderId: 'lane2' });
+  });
+
   it('seeds from the lane s LIST before anything else', () => {
     // The list is the user's own answer to "what may this lane play", so it
     // outranks both the clips it happens to hold and the shelf its role allows.

@@ -680,6 +680,14 @@ export interface PanelContext {
    *  Empty means no list: the lane draws from the whole shelf its role allows,
    *  which is what every lane did before lists existed. A copy, so editing what
    *  comes back changes nothing — write through `setLanePool`. */
+  /** Everything this lane may be GIVEN — every style and every kind the library
+   *  has, with the lane's own shelf first.
+   *
+   *  `loops` is what the lane DRAWS from on its own, and that is the right
+   *  default for a draw. This is the wider list a hand may reach into when it
+   *  writes a list itself: a house bassline under a techno scene, a drum
+   *  pattern on a synth lane. */
+  allLoops(laneId: string): PanelChoice[];
   lanePool(laneId: string): string[];
   /** Write that list. Ids the lane is not offered are dropped, and so are
    *  duplicates — a list is an order, and the same loop twice makes "the next

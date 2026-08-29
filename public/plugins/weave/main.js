@@ -286,7 +286,7 @@ function picker(cls, label, choices, current, onPick) {
 }
 function poolEditor(laneId, ctx, repaint) {
   const wrap = el2("div", "weave-pool");
-  const loops = ctx.loops(laneId);
+  const loops = ctx.allLoops(laneId);
   const ids = ctx.lanePool(laneId);
   const nameOf = (id) => loops.find((l) => l.id === id)?.name ?? id;
   const write = (next) => {

@@ -17,7 +17,8 @@ import {
 } from '../weave/flow';
 import { stepPreset } from '../automation/automation-steps';
 import {
-  weaveLoopChoices, weaveLoopEntry, weaveLoopContext, rehookOnArrival, rehookOnRewind, pushTrail,
+  weaveLoopChoices, weaveLoopChoicesAll, weaveLoopEntry, weaveLoopContext,
+  rehookOnArrival, rehookOnRewind, pushTrail,
   type WeaveLoopContext,
 } from './weave-loops';
 import { evolveCloudLanes } from './weave-cloud-evolve';
@@ -1004,6 +1005,11 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       deps.onWeaveChanged?.(laneId);
     },
 
+    allLoops(laneId) {
+      // The wide list, for a hand writing a list rather than a draw taking one.
+      return weaveLoopChoicesAll(loopContext(laneId));
+    },
+
     lanePool(laneId) {
       // A COPY: the array lives in the weave state, which the host writes and
       // saves, and a plugin holding the real one could edit a lane's material
@@ -1017,7 +1023,11 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // does not exist. Deduped keeping the first place each loop was given,
       // because the list is an ORDER and the same loop twice makes "the next
       // one" ambiguous exactly when the hand-over asks.
-      const offered = new Set(weaveLoopChoices(loopContext(laneId)).map((c) => c.id));
+      // Validated against the WIDE list, the same one the editor offers: a list
+      // is written by hand and a hand may reach outside the lane's own shelf,
+      // so validating against the shelf would refuse exactly the choice the
+      // editor just made — "permitir seleccionar fuera del estilo de la lane".
+      const offered = new Set(weaveLoopChoicesAll(loopContext(laneId)).map((c) => c.id));
       const seen = new Set<string>();
       const clean = ids.filter((id) => {
         if (!offered.has(id) || seen.has(id)) return false;

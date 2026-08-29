@@ -14,7 +14,7 @@ import type { PanelChoice, PanelWeave } from '@loom/plugin-sdk';
 import { abAdvance } from '../weave/topology-ab';
 import { nextFromPool } from '../weave/loop-pool';
 import type { NoteEvent } from '../core/notes';
-import type { ScaleId, StyleId } from '../core/musicality';
+import { STYLE_CATALOG, type ScaleId, type StyleId } from '../core/musicality';
 import type { SessionLane } from '../session/session';
 import type { LaneRole } from '../session/session-types';
 import { isHarmonic } from '../plugins/capabilities';
@@ -336,6 +336,40 @@ export function weaveLoopChoices(c: WeaveLoopContext): PanelChoice[] {
         name: s.id === own ? `${s.label} · this style` : s.label,
         group: 'Chords',
       });
+    }
+  }
+  return out;
+}
+
+/** Everything a lane may be GIVEN, which is more than it would ever draw.
+ *
+ *  `weaveLoopChoices` above is the lane's shelf: the kinds its role reads, in
+ *  the session's style. That is the right default for a draw, because a bass
+ *  lane dealt a drum loop is a mistake nobody asked for.
+ *
+ *  A LIST is written by hand, though, and a hand may reach outside it — a house
+ *  bassline under a techno scene, a drum pattern on a synth lane. Refusing that
+ *  would be the shelf deciding what the user is allowed to want.
+ *
+ *  The lane's own shelf comes FIRST and unchanged, so the default is still the
+ *  answer and the rest is there for when it is not. */
+/** Every kind the library HAS, not the ones a role reads. `sourcesFor` answers
+ *  the second question and is right to; this list is for the hand that reaches
+ *  past it. */
+const ALL_KINDS: PatternKind[] = ['drums', 'bass', 'synth'];
+
+export function weaveLoopChoicesAll(c: WeaveLoopContext): PanelChoice[] {
+  const out = weaveLoopChoices(c);
+  const seen = new Set(out.map((ch) => ch.id));
+
+  for (const style of STYLE_CATALOG) {
+    for (const kind of ALL_KINDS) {
+      for (const p of patternsFor(style.id, kind)) {
+        const id = formatLoopId({ source: 'pattern', style: style.id, kind, index: p.index });
+        if (seen.has(id)) continue;
+        seen.add(id);
+        out.push({ id, name: p.name, group: `${KIND_LABEL[kind]} · ${style.label}` });
+      }
     }
   }
   return out;

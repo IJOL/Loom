@@ -182,10 +182,11 @@ function poolEditor(
   laneId: string, ctx: PanelContext, repaint: () => void,
 ): HTMLElement {
   const wrap = el('div', 'weave-pool');
-  // Re-read rather than captured, exactly as the cell does: the style picker
-  // changes which shelf this lane draws from, and a captured list would offer
-  // the loops of a style the user has left.
-  const loops = ctx.loops(laneId);
+  // The WIDE list, not the lane's own shelf: a list is written by hand, and a
+  // hand may reach outside the role and style this lane happens to draw from —
+  // a house bassline under a techno scene. Re-read rather than captured,
+  // exactly as the cell does.
+  const loops = ctx.allLoops(laneId);
   const ids = ctx.lanePool(laneId);
   const nameOf = (id: string) => loops.find((l) => l.id === id)?.name ?? id;
   const write = (next: string[]) => { ctx.setLanePool(laneId, next); repaint(); };

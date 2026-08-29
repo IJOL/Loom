@@ -234,6 +234,17 @@ export function setGeneratorOn(d: GeneratorDepsUI, laneId: string, on: boolean):
     }
     lane.generator = state;
     d.clearWeave(laneId);
+    // …and it stops FOLLOWING, for the same reason and with the same gesture.
+    //
+    // The host resolves follow first and returns outright, so a lane that was
+    // following ignored its generator entirely: the switch lit, its nine
+    // controls appeared, and the lane went on playing the leader's
+    // accompaniment. Reported as "he puesto gen en sub2 y no lo he visto
+    // funcionar después de haber pasado por follow".
+    //
+    // Only on the way ON. Switching off is not a claim on anything, and
+    // deciding what the lane does next would be a second surprise.
+    if (lane.follow) delete lane.follow;
   }
   d.onWeaveChanged?.(laneId);
   d.refresh();
