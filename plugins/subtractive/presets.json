@@ -1582,6 +1582,7 @@
         89
       ],
       "params": {
+        "output.trim": 0.35,
         "master.tune": 0,
         "osc1.wave": 0,
         "osc1.level": 0.45,
@@ -1686,6 +1687,7 @@
         92
       ],
       "params": {
+        "output.trim": 0.45,
         "master.tune": 0,
         "osc1.wave": 0,
         "osc1.level": 0.5,
@@ -1783,6 +1785,7 @@
         93
       ],
       "params": {
+        "output.trim": 0.44,
         "master.tune": 0,
         "osc1.wave": 3,
         "osc1.level": 0.5,
@@ -1879,6 +1882,7 @@
         91
       ],
       "params": {
+        "output.trim": 0.31,
         "master.tune": 0,
         "osc1.wave": 0,
         "osc1.level": 0.5,
@@ -1978,6 +1982,7 @@
         95
       ],
       "params": {
+        "output.trim": 0.3,
         "master.tune": 0,
         "osc1.wave": 0,
         "osc1.level": 0.5,
@@ -2081,6 +2086,7 @@
         23
       ],
       "params": {
+        "output.trim": 0.31,
         "master.tune": 0,
         "osc1.wave": 1,
         "osc1.level": 0.6,
@@ -3369,6 +3375,7 @@
         94
       ],
       "params": {
+        "output.trim": 0.31,
         "osc1.wave": 0,
         "osc1.level": 0.5,
         "osc1.detune": -10,
@@ -5186,6 +5193,7 @@
       "name": "PAD Dark Drone",
       "gm": [],
       "params": {
+        "output.trim": 0.31,
         "master.tune": 0,
         "osc1.wave": 0,
         "osc1.level": 0.5,
@@ -5280,6 +5288,7 @@
       "name": "PAD Dub Chord",
       "gm": [],
       "params": {
+        "output.trim": 0.39,
         "master.tune": 0,
         "osc1.wave": 2,
         "osc1.level": 0.5,
@@ -5374,6 +5383,7 @@
       "name": "PAD Pulse",
       "gm": [],
       "params": {
+        "output.trim": 0.31,
         "master.tune": 0,
         "osc1.wave": 1,
         "osc1.level": 0.5,
@@ -7164,6 +7174,7 @@
         90
       ],
       "params": {
+        "output.trim": 0.26,
         "osc1.wave": 2,
         "osc1.level": 0.8,
         "osc2.wave": 2,
@@ -7210,6 +7221,7 @@
         91
       ],
       "params": {
+        "output.trim": 0.21,
         "osc1.wave": 3,
         "osc1.level": 0.8,
         "osc2.wave": 3,
@@ -7889,6 +7901,7 @@
       "name": "PAD Glass Air",
       "gm": [],
       "params": {
+        "output.trim": 0.17,
         "master.tune": 0,
         "osc1.wave": 0,
         "osc1.level": 0.5,
@@ -7988,6 +8001,7 @@
       "name": "PAD Hollow Band",
       "gm": [],
       "params": {
+        "output.trim": 0.18,
         "master.tune": 0,
         "osc1.wave": 0,
         "osc1.level": 0.55,
@@ -8707,6 +8721,7 @@
       "name": "PAD Phase Ghost",
       "gm": [],
       "params": {
+        "output.trim": 0.32,
         "master.tune": 0,
         "osc1.wave": 0,
         "osc1.level": 0.55,
@@ -8956,6 +8971,7 @@
       "name": "PAD Clarinet Comb",
       "gm": [],
       "params": {
+        "output.trim": 0.59,
         "master.tune": 0,
         "osc1.wave": 0,
         "osc1.level": 0.55,
@@ -9213,6 +9229,7 @@
       "name": "PAD PWM Breather",
       "gm": [],
       "params": {
+        "output.trim": 0.36,
         "master.tune": 0,
         "osc1.wave": 1,
         "osc1.level": 0.6,

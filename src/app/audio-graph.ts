@@ -30,10 +30,20 @@ export interface AudioGraph {
  *  then a smooth tanh knee that maps everything above — including overs beyond
  *  ±1 (which clamp to the curve endpoints) — to ≤ ~0.95. Guarantees the master
  *  output can never reach 0 dBFS, so it cannot digitally clip. */
+/** Where the master soft-clip stops being transparent. Below it the curve is the
+ *  identity; above it every level — including overs beyond ±1, which the
+ *  WaveShaper clamps to the curve's endpoints — is squeezed into the last 0.2.
+ *
+ *  Exported because it is the number a SOUND has to stay under to reach the
+ *  listener as it was designed: a preset that peaks above this is not louder,
+ *  it is distorted, and its release does not fade until it drops back below.
+ *  `plugins/subtractive/preset-levels.dsp.test.ts` holds the pads to it. */
+export const MASTER_SOFTCLIP_KNEE = 0.8;
+
 export function makeMasterSoftClipCurve(): Float32Array {
   const N = 2048;
   const curve = new Float32Array(N);
-  const T = 0.8;
+  const T = MASTER_SOFTCLIP_KNEE;
   for (let i = 0; i < N; i++) {
     const x = (i / (N - 1)) * 2 - 1;
     const ax = Math.abs(x);
