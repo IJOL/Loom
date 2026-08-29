@@ -62,6 +62,23 @@ describe('the generator switch', () => {
       .toMatchObject({ kind: 'ab', a: 'lib:acid-techno:bass:0' });
   });
 
+  it('seeds from the lane s LIST before anything else', () => {
+    // The list is the user's own answer to "what may this lane play", so it
+    // outranks both the clips it happens to hold and the shelf its role allows.
+    const h = harness();                       // this lane HAS a clip with notes
+    h.deps.poolIds = () => ['lib:acid-techno:bass:2', 'lib:acid-techno:bass:3'];
+    setGeneratorOn(h.deps, 'lane1', true);
+    expect(h.lane().generator?.selection)
+      .toMatchObject({ kind: 'ab', a: 'lib:acid-techno:bass:2' });
+  });
+
+  it('ignores an EMPTY list — that is a lane with no list at all', () => {
+    const h = harness();
+    h.deps.poolIds = () => [];
+    setGeneratorOn(h.deps, 'lane1', true);
+    expect(h.lane().generator?.selection).toMatchObject({ kind: 'ab', a: 'clip:clipA' });
+  });
+
   it('prefers the lane s OWN clips over the shelf', () => {
     // What you wrote beats what the library offers: pressing GEN on a lane you
     // have filled must read what is in it.

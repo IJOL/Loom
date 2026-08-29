@@ -454,6 +454,8 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       // A second answer here would be a lane offered loops it cannot generate
       // from, or generating from loops it was never offered.
       shelfIds: (laneId) => weaveLoopChoices(loopContext(laneId)).map((c) => c.id),
+      // …and the list the user wrote for this lane, which outranks it.
+      poolIds: (laneId) => deps.weave.lanes[laneId]?.pool ?? [],
       clearWeave: (laneId) => {
         const cur = deps.weave.lanes[laneId];
         if (cur && cur.shelvedWeave === undefined) cur.shelvedWeave = cur.weave;

@@ -40,6 +40,13 @@ export interface GeneratorDepsUI {
    *  material and the switch refused in silence. Optional: a fixture without
    *  one is a lane with only its own clips to read. */
   shelfIds?: (laneId: string) => string[];
+  /** The loops this lane draws from, in the order the user wrote them —
+   *  `LaneSelection.pool`, handed in by the host.
+   *
+   *  It outranks both sources below it: a list is the user's own answer to what
+   *  this lane may play, and seeding past it would generate from material they
+   *  excluded. Empty or absent ⇒ the clips, then the shelf. */
+  poolIds?: (laneId: string) => string[];
 }
 
 /** One control: where it reads from the state, and where it writes back.
@@ -212,8 +219,13 @@ export function setGeneratorOn(d: GeneratorDepsUI, laneId: string, on: boolean):
       // The shelf is the library entries, never the lane's own clips again:
       // those were already offered above and the empty ones are exactly what
       // this branch exists to survive.
-      const shelf = own.length > 0 ? own
-        : (d.shelfIds?.(laneId) ?? []).filter((id) => !id.startsWith('clip:'));
+      // The WRITTEN list first, when there is one: it is the user's own answer
+      // to what this lane may play, and seeding past it would generate from
+      // material they took out on purpose.
+      const written = (d.poolIds?.(laneId) ?? []).filter((id) => id.length > 0);
+      const shelf = written.length > 0 ? written
+        : own.length > 0 ? own
+          : (d.shelfIds?.(laneId) ?? []).filter((id) => !id.startsWith('clip:'));
       state.selection = defaultSelection('ab', shelf);
       // Nothing anywhere — no clips with notes and no library. There is
       // genuinely nothing to generate FROM, so the switch stays off rather than
