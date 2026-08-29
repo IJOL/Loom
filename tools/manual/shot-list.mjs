@@ -112,6 +112,17 @@ const addAudioChannel = async (page) => {
   await page.waitForTimeout(300); // let the waveform canvas paint
 };
 
+/** Switch to the WEAVE view and wait for the panel to be on screen. */
+const openWeave = async (page) => {
+  await page.locator('.mode-btn[data-mode="weave"]').click();
+  await page.locator('#panel-view-weave').waitFor({ state: 'visible' });
+  await page.waitForFunction(
+    () => !document.getElementById('panel-view-weave')?.hidden,
+    null, { timeout: 5_000 },
+  );
+  await page.waitForTimeout(300);
+};
+
 // ── FX insert helpers ────────────────────────────────────────────────────────
 
 /** Open the Master FX panel (the FX button on the master strip). */
@@ -381,14 +392,43 @@ export const SHOTS = [
   {
     name: 'weave-view',
     selector: '#panel-view-weave',
+    setup: openWeave,
+  },
+  {
+    // The generator's controls. Framed with ':not(:empty)' because EVERY lane
+    // row carries a '.weave-lane-gen' — it is empty and zero-height until that
+    // lane generates, so a bare selector would frame a 0px box and still
+    // "succeed". The generating lane is the only non-empty one.
+    name: 'weave-gen',
+    selector: '.weave-lane-gen:not(:empty)',
     setup: async (page) => {
-      await page.locator('.mode-btn[data-mode="weave"]').click();
-      await page.locator('#panel-view-weave').waitFor({ state: 'visible' });
-      await page.waitForFunction(
-        () => !document.getElementById('panel-view-weave')?.hidden,
-        null, { timeout: 5_000 },
-      );
-      await page.waitForTimeout(300);
+      await openWeave(page);
+      await page.locator('.weave-lane-wrap').first()
+        .locator('button.weave-gen-on').click();
+      await page.locator('.weave-lane-gen:not(:empty)')
+        .waitFor({ state: 'visible', timeout: 10_000 });
+      await page.waitForTimeout(500); // nineteen knob canvases
+    },
+  },
+  {
+    // The PLAYS list. Two entries, so the shot shows the numbering and the
+    // ↑ ↓ ✕ an entry carries — an empty list is just the words "everything it
+    // may". Each pick repaints the list, so the picker is re-located per pick.
+    //
+    // The whole lane ROW, not '.weave-pool-line' alone: that line is a
+    // full-width block holding one short strip of controls, so framing it
+    // gives a 57:1 sliver that the PDF scales to nothing. The row shows the
+    // same list where it actually sits.
+    name: 'weave-pool',
+    selector: '.weave-lane-wrap',
+    setup: async (page) => {
+      await openWeave(page);
+      for (const index of [1, 2]) {
+        await page.locator('.weave-lane-wrap').first()
+          .locator('select.weave-pool-add').selectOption({ index });
+        await page.waitForTimeout(250);
+      }
+      await page.locator('.weave-pool-item').first().waitFor({ state: 'visible' });
     },
   },
 

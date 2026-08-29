@@ -18,7 +18,7 @@ You are never editing the loops. WEAVE is a tool that sits ON TOP of the session
 
 ## The track row
 
-Each track is one row, split into two lines. The top line is what a hand reaches for while the music runs; the second line is what you set once and leave.
+Each track is one row of up to four lines. The top line is what a hand reaches for while the music runs; the second is what you set once and leave; the third appears only while the track is generating; the fourth is the list of loops it may draw from.
 
 **Top line, left to right:**
 
@@ -30,7 +30,11 @@ Each track is one row, split into two lines. The top line is what a hand reaches
 - **The weaving control itself** — a dial, a queue or a square, depending on the topology.
 - **◐ Sound** — off by default. See *Playing one part on several instruments*.
 
-**Second line:** the note bar this track is about to play, then which slot (on a rack), instrument, preset, part, **who it follows**, **how long it takes to repeat itself**, style shelf, half/double time, and octave. The two in bold have sections of their own below.
+**Second line:** the note bar this track is about to play, then which slot (on a rack), instrument, preset, part, **who it follows**, **GEN**, **how long it takes to repeat itself**, style shelf, half/double time, and octave. The three in bold have sections of their own below.
+
+**Third line:** the generator's controls, and only while **GEN** is lit. On every other track the line is there and empty, so switching a track on does not shove the tracks below it down the screen.
+
+**Fourth line — PLAYS:** the loops this track draws from. See *The list a track draws from*.
 
 ---
 
@@ -40,7 +44,7 @@ Pick one per track from the dropdown.
 
 ### A→B
 
-Two loops and a dial between them. When the dial reaches the far end, **B becomes the new A and a fresh loop is drawn for B** — so the journey never ends and never returns to where it began.
+Two loops and a dial between them. When the dial reaches the far end, **B becomes the new A and a fresh loop is drawn for B** — so the journey never ends and never returns to where it began. Where that fresh loop comes from is decided by the track's **PLAYS** list, if it has one; see below.
 
 The control is an **endless dial**, not a fader, and it is dragged **up and down**. A dial rather than a fader because a fader promises two ends, and with the scene evolving there are none.
 
@@ -68,10 +72,10 @@ An ordered list with a cursor, always crossfading between the two entries it sit
 The header controls move every unlocked track at once.
 
 - **Flow** — the master dial, and a readout of where the scene is.
-- **Drift** — whether the tracks travel together or fan out.
+- **Drift** — **Together**, **Offset** or **Free**: where the tracks stand relative to one another. This is a **layout, applied once, the moment you pick it** — *Together* puts every track on the same number, *Offset* fans them out evenly, and *Free* places nothing at all. After that the dial moves every track by the same amount, so **the distances between them are carried, not replaced**. Move one track's own dial and its new distance from the others is the distance from then on. A **locked** track is left where it is, and so is a track with no weave.
 - **Speed** — how long one full journey takes, in bars. **Off** by default: a panel that started travelling the moment you opened it would change a session you had not touched.
 - **EVOLVE / STATIC** — what happens at the END of a lap. **STATIC** is a scene you place by hand and it stays placed. **EVOLVE** draws fresh material on arrival, which is what makes a scene keep moving.
-- **Journey** — **One way**, or **⇄ N laps**: how many laps out before the journey turns round and comes back. Going out it draws new loops; coming back it walks the ones it already played, so the way home is the same journey in reverse rather than a different one.
+- **Journey** — two controls, because how far a journey goes and whether it comes home are two decisions. The button reads **→ One way** or **⇄ There and back**; beside it a length picks **2, 4 or 8 laps**. Going out it draws new loops; coming back it walks the ones it already played, so the way home is the same journey in reverse rather than a different one. On a one-way journey the length decides nothing, so it greys out and says so — and it keeps the value you gave it, so turning the round trip back on resumes at the same length.
 - **🔒 HOLD** — freeze the arrangement. The chord walk keeps going and the step rack keeps writing; only the loops stop moving.
 - **SURGE** — held, not toggled: a momentary push that restores itself when you let go.
 - **⟳ Reshuffle** — **tap** to re-deal only the loop you are NOT hearing, which is why it is safe mid-phrase; **hold** it to re-deal every loop at once. A locked track ignores both.
@@ -92,6 +96,26 @@ A track's **part** decides which material it draws and in which register: **Bass
 
 ---
 
+## The list a track draws from
+
+Part and style say what a track **may** draw. The **PLAYS** list, on the fourth line of every track row, says what it **does** draw, and in what order.
+
+![A track row with two loops written into its PLAYS list](images/weave-pool.png)
+
+Leave it empty and it reads **everything it may**: the track draws from the whole shelf its part and style allow, at random, which is what WEAVE always did. Add a loop and the behaviour changes completely:
+
+- **It is walked in the order you wrote it, and it wraps.** An A→B hand-over goes to the *next* entry rather than drawing at random, so the same four loops come round in the same order, every time.
+- **A list of one freezes the track.** There is nowhere to hand over to, so it holds where it is. Falling back to the shelf would play exactly the material you excluded.
+- **It outranks the track's own clips and the shelf** — for the hand-over and for the generator both.
+- **The picker offers the whole library**, not just this track's shelf. That is deliberate: the list is how you hand a track material from outside its part and its style.
+- **A cloud ignores it.** A cloud renews itself by corners, not by hand-overs; the list is A→B's.
+
+Editing: **↑** and **↓** move an entry, **✕** takes it out, and the picker at the end adds one. Buttons rather than drag-and-drop, because the row repaints under your finger. If you delete the loop a travelling track is currently leaving, it rejoins the list at the **top** — the front is what you wrote next.
+
+The list is saved with the session, in the save file.
+
+---
+
 ## Following — a track that plays what another track implies
 
 A track can accompany another instead of playing material of its own. Set **Follow `<track>`** on its second line and it stops reading loops and clips entirely: every bar it works out what to play from what the track it follows is playing.
@@ -106,6 +130,74 @@ Worth knowing:
 - **Its harmony changes only where a BAR does**, and only while it is playing. A chord arriving mid-bar would re-schedule music already sounding.
 - **Following and weaving are exclusive, both ways.** Choosing a leader shelves the track's weave; switching back to *— plays its own —* hands it back exactly as it was. Choosing a topology clears the follow.
 - A **percussion** track cannot follow: it has no part to play. The control is simply not built rather than offered empty.
+
+---
+
+## GEN — a read head over the track's own material
+
+**GEN** is the amber switch beside the follow picker. It is the third thing that can decide what a track plays, and the strongest of the three after following: with GEN on, the track stops playing its loops and starts **reading** them.
+
+![The generator's controls — the third line of a track row](images/weave-gen.png)
+
+**What it actually does.** The track's loops are folded into a single bar exactly as the weave folds them. That bar's **pitches** become an ordered pool — the rhythm is thrown away — and a read head walks a pattern you set, taking one pitch per step. It invents nothing: everything you hear was already in the material. What you are dialling is *how it is read*.
+
+**Where the material comes from**, in this order: the track's **PLAYS** list, then its own clips that have notes in them, then the style shelf. With none of the three there is nothing to read, so the switch simply does not come on. Switching GEN on shelves the track's weave selection and switching it off hands it back untouched, so nothing is lost either way.
+
+The controls are the third line of the track row, and they come in five groups.
+
+**The grid — how the bar is cut up**
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| DIV | 1–16 | 4 | How many steps cut one bar. 4 is quarters in 4/4; the meter still says how long a bar is, so 6/8 wants 6 |
+| BARS | 1–16 | 1 | How many bars before the pattern comes round again. This is also the phrase length PHRASE reads |
+| ×2^ | 0–3 | 0 | A power-of-two multiplier on that length — ×1, ×2, ×4, ×8. Separate from BARS because "my phrase is four bars" and "now take four times as long to get through it" are different gestures |
+
+**Which steps fire**
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| CADENCE | 0–1 | 1 | A **floor on metric weight**, not a pattern. At 1 every step of the division fires; turning it down drops the weak positions first and the strong ones last; at 0 the track is silent |
+| CAD MOD | 0–1 | 0 | How much that floor varies from step to step. At 0 every bar of the pattern has an identical rhythm. It swings either side of the knob, so the average stays where you put it |
+| PHRASE | 0–1 | 0 | How much a bar's position in the phrase floors it: the opening bar states, the middle bars thin out, the turnaround comes back |
+
+**Which note it lands on**
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| IN KEY | OFF / SCALE / CHORD | OFF | SCALE snaps to the track's key — a passing note the chord does not contain still gets through. CHORD locks to the chord tones of the progression at that bar: it cannot sound wrong, and it cannot sound like a melody. OFF is honest rather than lazy — the blend already walks scale degrees |
+| VOICING | −7…+7 | 0 | Moves the note by whole **tones of the set** — chord tones on CHORD, scale degrees on SCALE. Not semitones: that would be a transposition, which is what the octave buttons are for |
+| VOICE MOD | 0–1 | 0 | Per-step variation on VOICING, up to three tones either way at full depth |
+
+VOICING and VOICE MOD do nothing while IN KEY is OFF. Off means off in both halves.
+
+**Where the hit lands, and how long it holds**
+
+| Control | Range | Default | What it does |
+|---|---|---|---|
+| NUDGE | −1…+1 | 0 | How far off its step a hit sits, in fractions of a step; negative is early. Fractions, so the feel survives a change of DIV |
+| GROOVE | 0–1 | 0 | Per-step variation on NUDGE. **This is what makes it a groove rather than a shift** — at 0 every hit moves the same way, which just reads as the track being late |
+| HOLD | 0.05–4 | 1 | Note length as a multiple of its step. 1 fills the step, below it detaches — and **above 1 the notes overlap, which is how the generator slides**: on a 303 (or any engine that infers portamento from overlap) this is the glide control |
+| HOLD MOD | 0–1 | 0 | Per-step variation on HOLD, up to a step either way |
+
+**The two wheels** — six controls that move the read head itself, three per wheel: **×** how far one turn moves it, **CYC** how many turns the wheel takes to come round (1 means it is not turning), and **%** how much of it is applied. The `%` is the one that switches the wheel on; the other two describe a wheel that is not yet moving anything.
+
+- **BAR ×/CYC/%** turns once per bar of the pattern, so what it does repeats when the pattern does — a figure you can learn.
+- **LOOP ×/CYC/%** turns once per lap, so it never repeats inside a pass. This is the one that reaches material a short pattern would otherwise never get to.
+
+Two readings that explain most surprises:
+
+- **The pool is read on every step, whether or not that step fires.** Turning CADENCE down gives you *the same line with holes in it*, not a different line.
+- **CADENCE reads the pattern's own bar; IN KEY reads the song's.** The rhythm repeats with the pattern, the harmony walks the progression.
+
+Worth knowing:
+
+- **BAR MOD does nothing out of the box.** The default pattern is one bar long, and a wheel that turns once per bar has one turn to make. Raise BARS (or ×2^) first.
+- **A pool longer than the pattern has a tail nobody hears** until LOOP % is raised.
+- **A scene launch does not stop the generator.** The grid takes the *weave* off a track; generating and following are properties of the song, saved on the track, and they carry on.
+- **Switch GEN off before you give a track a leader.** Turning GEN on clears a follow, but picking a leader does not turn GEN off — and following wins, so the switch stays lit over a track that is not generating.
+
+Everything here is saved with the session and undoable, and it lives on the track rather than in the panel: close WEAVE and the track keeps generating.
 
 ---
 
@@ -175,12 +267,16 @@ Its value goes to the audio object and never to the track's saved sound: the row
 
 **PRINT** freezes what the weave is playing into a new scene: a full lap of the chord progression, laid end to end, as ordinary clips you can edit. It is an output, never the goal — the weave carries on folding either way.
 
-> **Known limitation.** A track that is still weaving plays its weave, not its clips — so launching a printed scene on a track that is still weaving plays the weave. Switch that track's topology to `— off —` to hear what was printed.
+Launching a printed scene plays what was printed, even on a track that is still weaving — the grid wins, as below. (This used to be a known limitation, with a note telling you to switch the track's topology off first. Do not: choosing a topology is now exactly the gesture that takes the track *back* from the grid.)
 
 ---
 
 ## Two things worth knowing
 
-**A scene does not choose what a weaving track plays.** On a track with loops chosen, launching a scene decides only *whether* it sounds. What it sounds is the weave's own selection, the same in every scene — including a scene of empty clips.
+**The grid wins.** Launch a scene and every weaving track hands itself back to it: each one plays the clip that scene gives it, or is silent where the scene leaves it empty. Launching a single clip from the grid does the same for that track alone. Nothing is destroyed — the topology, the loops, the position and the list are all still there — and the panel takes the track back the moment you use it: its own **▶**, a topology, or choosing or moving a loop. While the grid holds a track, **Play skips it**, and the panel's own **▶** is how you hand it back.
+
+What the grid takes is the **crossfade**, not the whole track. Following and generating are properties of the song rather than of an open panel, so a track that follows or generates goes on doing it through a scene launch.
+
+(This used to work the other way round, and it is worth knowing which build you are on: a weaving track once read its own selection and nothing else, so every scene sounded the same on it — including a scene of empty clips.)
 
 **Nothing here is undoable.** A weave move is deliberately not an undo entry; it is a performance, not an edit. It IS saved with the session, and it nudges the autosave when it moves.
