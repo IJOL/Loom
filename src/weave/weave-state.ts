@@ -74,6 +74,16 @@ export interface LaneSelection {
   locked: boolean;
   forcedStyle?: StyleId;
   harmonyLeader: boolean;
+  /** The loops this lane draws from, in the order they were written.
+   *
+   *  Absent or empty ⇒ the whole shelf its role allows, which is how every
+   *  session before this one behaves and must keep behaving. Present, it is
+   *  what the A→B hand-over walks and what the generator seeds from.
+   *
+   *  Ids only — `clip:`, `lib:` or `chord:` — never notes: this is a choice
+   *  about material, and the notes behind an id are resolved fresh every time
+   *  so an edited clip is heard as edited. */
+  pool?: string[];
   /** How fast this lane plays what it is handed. 1 — the default — is as
    *  written; 2 is half time, 0.5 is double time.
    *
