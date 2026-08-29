@@ -1,34 +1,25 @@
 # Remaining work
 
-Swept 2026-08-22. **Everything in this file is open.** Anything that shipped has
+Swept 2026-08-29. **Everything in this file is open.** Anything that shipped has
 moved to [`archive/`](archive/) — read those as history, never as instructions.
 
 Two things still sit outside the archive: this file, and
 `specs/2026-07-26-architecture-symmetry-master-plan.md`, which is pending review
 rather than obsolete.
 
-Every item below was re-verified against the code on 2026-08-22 — but verify
-again before acting. That is what this list is for, and the WEAVE section below
-is what happens when nobody does.
+Every item below was re-verified against the code on 2026-08-29 — but verify
+again before acting. That is what this list is for, and this file has now failed
+that test **twice**:
 
-## WEAVE — a scene does not choose what a weaving lane plays
-
-With loops chosen, `weave-wiring`'s `build` reads the SELECTION and nothing
-else, so launching a scene decides only *whether* that lane sounds, never
-*what*. Every scene sounds the same on it, a scene of empty clips included — and
-a scene written by PRINT plays the weave rather than the print.
-
-Reported by the user and **not yet decided**. It is a design question about what
-a scene MEANS on a weaving lane, not a bug to patch, which is why it is here
-rather than fixed. Carried in the manual as a known limitation so a user meets
-it as a decision rather than a fault.
-
-> This section used to list three more slices as unfinished — the weave not
-> persisting, the lane pads not bound, PRINT having no handler. All three had
-> shipped, and the file went on saying otherwise until 2026-08-22. A backlog
-> that lists finished work as open is worse than no backlog: the next reader
-> builds something that exists, and then stops trusting the file that sent them.
-> Verify against the code before acting on anything below.
+> The WEAVE section used to list three shipped slices as unfinished until
+> 2026-08-22. The 2026-08-22 sweep then left its OWN headline item — "a scene
+> does not choose what a weaving lane plays" — sitting here while it shipped
+> five days later (`a7a61beb`, 2026-08-27: the grid wins, and a scene says what
+> every lane plays). A backlog that lists finished work as open is worse than no
+> backlog: the next reader builds something that exists, and then stops trusting
+> the file that sent them. The sweep interval this file assumes is longer than
+> the pace of the work; sweep it with every round that ships, not on its own
+> schedule.
 
 ## Which preset a lane is on has three answers and no owner
 
@@ -100,6 +91,17 @@ verify again before acting; that is what this list is for.
   plain elements — not wrapped in `createSelectControl`, not registered under a
   `<laneId>.preset` automation id — so a preset change cannot be automated or
   recorded like every other control.
+- **Clip envelopes wrap on the whole clip while the notes loop a region — twice,
+  same gap.** Two named `KNOWN DEBT` describes in
+  `session-envelope-tick.test.ts` pin it, for a clip's LOCAL loop region and for
+  the scene GLOBAL loop: the envelope index wraps on `lengthBars` while the
+  scheduler loops `[loopStartTick, loopEndTick)`, so when the notes come back
+  round, the curve is only part-way through its array and a different slice of
+  it plays over the SAME notes each lap, realigning only after as many laps as
+  the envelope is long. Fixing it means choosing what a curve drawn over the
+  whole clip should do inside a shorter loop — an audible decision, pinned
+  rather than quietly changed. Listed here so the backlog and the tests agree on
+  what is open.
 
 ## Sample rights — open, and disclosure is not clearance
 

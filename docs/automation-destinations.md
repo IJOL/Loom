@@ -47,12 +47,15 @@ currently sees.
 
 Canonical id, defined in [`AutomationTarget.id`](../src/automation/automation-targets.ts):
 
-- Engine param: `<laneId>.<param>` — e.g. `poly1.filter.cutoff` (lane `poly1`,
-  Subtractive's `filter.cutoff` param).
+- Engine param: `<laneId>.<param>` — e.g. `subtractive-1.filter.cutoff` (lane
+  `subtractive-1`, Subtractive's `filter.cutoff` param). Lane ids are
+  `<engineId>-<n>` (`tb-303-1`, `drums-1`, `subtractive-1` — see
+  `session.ts`'s boot lanes); `poly1` was the pre-worklet lane id shape and no
+  longer exists.
 - Insert param: `<scopeId>.fx:<slotId>.<param>` — e.g.
-  `poly1.fx:slot-a.drive` (an insert in slot `slot-a` on lane `poly1`).
+  `subtractive-1.fx:slot-a.drive` (an insert in slot `slot-a` on that lane).
   `scopeId` is one of:
-  - a lane id (`poly1`) — the lane's own insert chain,
+  - a lane id (`subtractive-1`) — the lane's own insert chain,
   - `fx.master` — the master insert rack,
   - `fx.send.<id>` — a send-bus insert rack (e.g. `fx.send.A`).
 
@@ -64,8 +67,8 @@ connection aimed at its neighbours onto the wrong slot.
 [`parseAutomationParamId`](../src/automation/automation-apply.ts) finds the
 insert by looking for the first segment that literally starts with `fx:`. It
 returns `null` only for an id with fewer than two segments; there is no explicit
-rejection of the old positional shape. A legacy `poly1.fx2.drive` therefore
-parses as an *engine* param whose local id happens to be `fx2.drive`.
+rejection of the old positional shape. A legacy `subtractive-1.fx2.drive`
+therefore parses as an *engine* param whose local id happens to be `fx2.drive`.
 
 The write is still dropped, but downstream and for a different reason:
 `applyAutomationToSession` bails when `deps.getRange(id)` returns nothing, and
