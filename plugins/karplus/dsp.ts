@@ -173,10 +173,19 @@ export class KarplusRenderer implements VoiceRenderer {
     // Dry run at the FROZEN trigger snapshot to derive a fixed headroom
     // scalar — the same peak-normalize the old bulk-precompute did, just
     // estimated once instead of baked permanently into the audio.
+    //
+    // WINDOWED on purpose: this runs in the CONSTRUCTOR, which is reached from
+    // VoiceManager.spawn inside process() — i.e. inside one 128-frame quantum
+    // with a ~3 ms budget. Scanning the whole note (up to 8 s ≈ 350k steps) was
+    // a guaranteed dropout on dense material. The loop is passive (g < 1, lp
+    // attenuates), so once the excitation stops the envelope decays and the
+    // peak lands during the burst or within its first ring — 8 periods after
+    // the burst end is a generous bound (~3k steps for a mid-register note).
     const g0 = gFromDamping(this.dampingBase, this.freq);
     const dry = new KsLoop(Li, frac, dlSize);
+    const normSamples = Math.min(this.totalSamples, this.exciteLen + Math.ceil(8 * period) + 64);
     let pk = 0;
-    for (let n = 0; n < this.totalSamples; n++) {
+    for (let n = 0; n < normSamples; n++) {
       const exc = n < this.exciteLen ? excBurst[n] : 0;
       const s = Math.abs(dry.step(exc, a0, g0));
       if (s > pk) pk = s;
