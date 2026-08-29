@@ -149,19 +149,31 @@ The master compressor is bypassed by default. Enable it for glue and loudness co
 Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot from the picker and pick its type. The **same fifteen plugin types** are available in every rack — per lane, per send, and here on the master:
 
 **Filter (multifilter)**
+
+![The Filter insert — Type, Freq and Q](images/fx-multifilter.png)
+
 - Type: LP / HP / BP / Notch
 - Freq: 20–20 000 Hz (exponential)
 - Q: 0.1–24
 
 **Distortion (Dist)**
+
+![The Dist insert — Drive and Mix](images/fx-distortion.png)
+
 - Drive: 0–1 — waveshaper saturation amount (4x oversampled)
 - Mix: 0–1 — dry/wet blend
 
 **Reverb** — same parameters as the Send B reverb above (Wet, PreD, Size, Decay, Type). Use as an insert to reverb the full master rather than via a send.
 
+![The Reverb insert — Wet, PreD, Size, Decay and the Type selector](images/fx-reverb.png)
+
 **Delay** — same parameters as the Send A delay (Time, Sync, Fbk, Wet, Damp, Width). Use as an insert for a master-bus slapback or stutter.
 
+![The Delay insert — Time, Fbk, Wet, Damp, Width and the Sync selector](images/fx-delay.png)
+
 **Compressor** — the same `CompBlock` dynamics compressor as the channel-strip and master compressors, now insertable anywhere. Its own ranges are narrower than the master's:
+
+![The Compressor insert — Thr, Ratio, Atk, Rel, Knee and Mkup](images/fx-compressor.png)
 
 - Thr: −60 to 0 dB (default −24)
 - Ratio: 1–20 (default 4)
@@ -174,10 +186,14 @@ There is no Bypass among them — to A/B an insert, use the slot's own bypass to
 
 **Limiter** — a brickwall limiter (ratio 20:1, hard knee, near-zero attack) for catching peaks.
 
+![The Limiter insert — Ceil and Rel](images/fx-limiter.png)
+
 - Ceil: −30 to 0 dB — the level it will not exceed
 - Rel: 0.001–0.5 s — how quickly it lets go
 
 **Tremolo (Trem/Gate)** — an LFO opening and closing the volume. The oldest modulation effect there is: slow and shallow it breathes, fast and deep it chops the sound into a rhythm of its own. Lovely on pads, electric-piano parts and sustained chords. It is also the trance gate: **Square shape + a 1/16 Sync + a little Smth** is that sound. (That is a *rhythmic* gate, driven by the clock. The **Gate** insert below is the other kind — driven by the signal's own level.)
+
+![The Trem/Gate insert — Rate, Depth, Smth and the Shape and Sync selectors](images/fx-tremolo.png)
 
 - Rate: 0.1–12 Hz — how fast it pulses, used when Sync is Free
 - Depth: 0–1 — how far it closes between pulses (at 1 it cuts to silence)
@@ -186,29 +202,44 @@ There is no Bypass among them — to A/B an insert, use the slot's own bypass to
 - Smth: 0.2–50 ms — smooths the LFO, so a square shape does not click at the edges
 
 **Chorus** — a delayed copy of the signal, detuned by a slow LFO and mixed back in. The two copies drift in and out of tune with each other, which the ear reads as several players at once. Thickens thin sounds and widens single-note leads without changing their pitch.
+
+![The Chorus insert — Rate, Depth and Mix](images/fx-chorus.png)
+
 - Rate: 0.05–8 Hz — speed of the detuning wobble
 - Depth: 0–1 — how far it detunes
 - Mix: 0–1 — dry/wet blend (start around 0.5)
 
 **Flanger** — the same idea as the chorus but with a much shorter delay and its output fed back into itself. Instead of thickening, the copies cancel each other at a comb of frequencies that sweeps up and down — the classic jet-plane whoosh. Feedback sharpens the effect from a gentle sweep to a metallic scream.
+
+![The Flanger insert — Rate, Depth, Fbk and Mix](images/fx-flanger.png)
+
 - Rate: 0.05–8 Hz — speed of the sweep
 - Depth: 0–1 — how far the sweep travels
 - Fbk: 0–1 — feedback; the higher, the more resonant and metallic
 - Mix: 0–1 — dry/wet blend
 
 **Phaser** — four all-pass filters whose corner frequencies an LFO sweeps together. They shift phase without changing volume, so mixing them back with the dry signal creates notches that slide through the sound. Similar in spirit to the flanger but smoother and more liquid — a staple on electric pianos, funk guitar and pads.
+
+![The Phaser insert — Rate, Depth, Fbk and Mix](images/fx-phaser.png)
+
 - Rate: 0.05–8 Hz — sweep speed
 - Depth: 0–1 — how far the notches travel
 - Fbk: 0–1 — feedback; deepens the notches
 - Mix: 0–1 — dry/wet blend
 
 **Bitcrusher (Crush)** — digital degradation. Reducing the bit depth quantises the waveform to a coarse staircase, adding the gritty, harmonic distortion of early samplers and game consoles; the tone control then dulls the result the way a low sample rate would. At extreme settings it destroys the sound completely, which is often the point.
+
+![The Crush insert — Bits, Tone, Mix and Dith](images/fx-bitcrusher.png)
+
 - Bits: 1–16 — amplitude resolution; 16 is nearly clean, 1 is a square-wave wreck
 - Tone: 200–20 000 Hz — a lowpass for the lo-fi dullness
 - Mix: 0–1 — dry/wet blend
 - Dith: 0–2 — noise summed in *before* the bit reduction, scaled to the step size. It trades the gritty, signal-locked distortion of low bit depths for an even hiss, which usually sounds better on quiet material
 
 **Auto-Wah** — a bandpass filter whose frequency follows how loud the signal is, so the sound opens up on every transient and closes as it decays. It is the funk-guitar wah pedal with your playing on the treadle instead of your foot; on a bassline or a clav it produces the "talking" quality no static filter gets.
+
+![The Auto-Wah insert — Sens, Range, Base, Atk, Rel, Q and Mix](images/fx-autowah.png)
+
 - Sens: 0–1 — how strongly the level moves the filter (default 0.6)
 - Range: 0–4800 ¢ — how far it travels, in cents above Base (default 2400, two octaves)
 - Base: 80–2000 Hz — the resting frequency it sits at when nothing is playing (default 300)
@@ -217,6 +248,9 @@ There is no Bypass among them — to A/B an insert, use the slot's own bypass to
 - Mix: 0–1 — dry/wet blend
 
 **Gate** — the opposite of the compressor: below the threshold it turns the signal *down*. Use it to clean the silence between hits — kill the bleed on a sampled drum loop, cut the tail of a reverb-soaked lane, or chop a sustained pad into stabs.
+
+![The Gate insert — Thr, Range, Atk, Hold and Rel](images/fx-gate.png)
+
 - Thr: −60 to 0 dB — the level below which it closes (default −30)
 - Range: −60 to 0 dB — how far down it closes. At −60 it silences; at −12 it just ducks, which sounds far more natural
 - Atk: 0.5–100 ms — how fast it opens. Too slow and it eats the transient
@@ -224,10 +258,16 @@ There is no Bypass among them — to A/B an insert, use the slot's own bypass to
 - Rel: 10–1000 ms — how gradually it closes
 
 **Ring (ring modulator)** — multiplies the signal by a sine wave, which replaces every partial with a pair at the sum and difference frequencies. The result is inharmonic by construction: bell-like and metallic at high Freq, a tremolo-ish shudder at low Freq, and unrecognisably alien in between. A blunt instrument, and the fastest route out of anything that sounds too clean.
+
+![The Ring insert — Freq and Mix](images/fx-ringmod.png)
+
 - Freq: 20–4000 Hz (exponential) — the carrier. Below ~30 Hz it reads as amplitude wobble rather than pitch
 - Mix: 0–1 — dry/wet blend. Keep the dry signal in to stay musical
 
 **Width** — a stereo widener: it scales the side channel against the mid, and can wobble that scale with an LFO. Below 1 it collapses toward mono, above 1 it exaggerates the sides.
+
+![The Width insert — Width, Rate, Depth and the Sync selector](images/fx-width.png)
+
 - Width: 0–2 — 0 is mono, 1 is untouched, 2 is double the side signal (default 1)
 - Rate: 0.05–8 Hz and Depth: 0–1 — an optional LFO on the width. Depth defaults to 0, so it is a static widener until you ask for movement
 - Sync: Free, 1/1, 1/2, 1/2., 1/2t, 1/4, 1/4t — lock that LFO to the project tempo

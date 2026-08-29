@@ -112,6 +112,46 @@ const addAudioChannel = async (page) => {
   await page.waitForTimeout(300); // let the waveform canvas paint
 };
 
+// ── FX insert helpers ────────────────────────────────────────────────────────
+
+/** Open the Master FX panel (the FX button on the master strip). */
+const openMasterFx = async (page) => {
+  await page.locator('.master-fx-toggle').click();
+  await page.locator('#master-fx-panel').waitFor({ state: 'visible' });
+};
+
+/** Add one insert to the MASTER rack and wait for its unit to render.
+ *
+ *  The master chain starts EMPTY — only the two sends are seeded (A = Delay,
+ *  B = Reverb) — so the single '.insert-unit' that appears under '#fx-filters'
+ *  is the one we asked for, and every effect can be framed by the same
+ *  selector. The rack markup is `buildLaneInsertUI`'s, the same one a lane and
+ *  a send return use, so these shots show the unit as it looks in ANY rack. */
+const addMasterInsert = async (page, pluginId) => {
+  await openMasterFx(page);
+  await page.locator('#fx-filters .insert-add').click();
+  const picker = page.locator('#fx-filters .insert-add-picker');
+  await picker.waitFor({ state: 'visible' });
+  await picker.selectOption(pluginId);
+  await page.locator('#fx-filters .insert-unit').first().waitFor({ state: 'visible' });
+  await page.waitForTimeout(300); // knob canvases + the unit's response curve
+};
+
+/** The fifteen inserts, in the order chapter 07 introduces them. The ids are
+ *  plugin ids (plugins/<id>/plugin.json) — the picker's option values. */
+const FX_PLUGIN_IDS = [
+  'multifilter', 'distortion', 'reverb', 'delay', 'compressor', 'limiter',
+  'tremolo', 'gate', 'chorus', 'flanger', 'phaser', 'bitcrusher', 'autowah',
+  'ringmod', 'width',
+];
+
+/** One shot per effect: `fx-<id>.png`, the insert unit on its own. */
+const fxShot = (pluginId) => ({
+  name: `fx-${pluginId}`,
+  selector: '#fx-filters .insert-unit',
+  setup: (page) => addMasterInsert(page, pluginId),
+});
+
 export const SHOTS = [
   { name: 'app-overview', selector: '.synth' },
   { name: 'transport', selector: '.row.transport' },
@@ -398,4 +438,8 @@ export const SHOTS = [
       await page.waitForTimeout(300);
     },
   },
+
+  // ── The fifteen inserts, one shot each ────────────────────────────────────
+  // Chapter 07 described every effect's knobs in prose and showed none of them.
+  ...FX_PLUGIN_IDS.map(fxShot),
 ];
