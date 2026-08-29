@@ -675,6 +675,16 @@ export interface PanelContext {
   /** Choose loops or move the position. Passing null clears the lane back to
    *  playing its clip untouched. */
   setLaneWeave(laneId: string, weave: PanelWeave | null): void;
+  /** The loops this lane draws from, in the order they were written.
+   *
+   *  Empty means no list: the lane draws from the whole shelf its role allows,
+   *  which is what every lane did before lists existed. A copy, so editing what
+   *  comes back changes nothing — write through `setLanePool`. */
+  lanePool(laneId: string): string[];
+  /** Write that list. Ids the lane is not offered are dropped, and so are
+   *  duplicates — a list is an order, and the same loop twice makes "the next
+   *  one" ambiguous exactly when the hand-over asks. */
+  setLanePool(laneId: string, ids: string[]): void;
   /** How long this lane takes to repeat ITSELF, 0..1.
    *
    *  Not how much it plays — how many independent wheels are turning under it,

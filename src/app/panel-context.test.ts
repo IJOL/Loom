@@ -488,6 +488,53 @@ describe('createPanelContext — the lane lock', () => {
   });
 });
 
+describe('the list a lane draws from', () => {
+  const LIB0 = `lib:${DEFAULT_MUSICALITY.style}:bass:0`;
+  const LIB1 = `lib:${DEFAULT_MUSICALITY.style}:bass:1`;
+
+  it('is empty until one is written', () => {
+    const h = harness();
+    expect(h.ctx.lanePool('lane1')).toEqual([]);
+  });
+
+  it('round-trips what the panel writes, in order', () => {
+    withLibrary(() => {
+      const h = harness();
+      h.ctx.setLanePool('lane1', [LIB1, LIB0]);
+      expect(h.ctx.lanePool('lane1')).toEqual([LIB1, LIB0]);
+    });
+  });
+
+  it('refuses an id the lane is not offered', () => {
+    // The panel is a plugin: an id nobody offers would be a lane pointing at
+    // material that does not exist, and it would be stored and saved.
+    withLibrary(() => {
+      const h = harness();
+      h.ctx.setLanePool('lane1', [LIB0, 'lib:nonsense:bass:99']);
+      expect(h.ctx.lanePool('lane1')).toEqual([LIB0]);
+    });
+  });
+
+  it('drops duplicates, keeping the FIRST place each loop was given', () => {
+    // A list is an order; the same loop twice would make "the next one"
+    // ambiguous at exactly the moment the hand-over asks.
+    withLibrary(() => {
+      const h = harness();
+      h.ctx.setLanePool('lane1', [LIB0, LIB1, LIB0]);
+      expect(h.ctx.lanePool('lane1')).toEqual([LIB0, LIB1]);
+    });
+  });
+
+  it('hands out a COPY — a panel cannot edit the list behind the host s back', () => {
+    withLibrary(() => {
+      const h = harness();
+      h.ctx.setLanePool('lane1', [LIB0]);
+      h.ctx.lanePool('lane1').push(LIB1);
+      expect(h.ctx.lanePool('lane1')).toEqual([LIB0]);
+    });
+  });
+});
+
 describe('createPanelContext — the master flow', () => {
   it('reports where the lanes actually are', () => {
     // Read off the LANES rather than remembered beside the speed: with a journey

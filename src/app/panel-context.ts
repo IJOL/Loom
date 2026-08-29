@@ -1004,6 +1004,31 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
       deps.onWeaveChanged?.(laneId);
     },
 
+    lanePool(laneId) {
+      // A COPY: the array lives in the weave state, which the host writes and
+      // saves, and a plugin holding the real one could edit a lane's material
+      // without anything hearing about it.
+      return [...(deps.weave.lanes[laneId]?.pool ?? [])];
+    },
+
+    setLanePool(laneId, ids) {
+      // Validated against what this lane is actually OFFERED, not trusted: the
+      // panel is a plugin, and an id nobody offers would be saved material that
+      // does not exist. Deduped keeping the first place each loop was given,
+      // because the list is an ORDER and the same loop twice makes "the next
+      // one" ambiguous exactly when the hand-over asks.
+      const offered = new Set(weaveLoopChoices(loopContext(laneId)).map((c) => c.id));
+      const seen = new Set<string>();
+      const clean = ids.filter((id) => {
+        if (!offered.has(id) || seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+      const cur = deps.weave.lanes[laneId] ?? defaultLaneSelection();
+      deps.weave.lanes[laneId] = { ...cur, pool: clean };
+      deps.onWeaveChanged?.(laneId);
+    },
+
     laneArrangeLevel(laneId) {
       // Only a lane whose notes are DERIVED has an arrangement to lengthen.
       // A weaving lane already has the weave to travel with, and a drum lane
