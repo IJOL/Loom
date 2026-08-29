@@ -791,7 +791,9 @@ export function createWeaveWiring(deps: WeaveWiringDeps): WeaveWiring {
         // The trail goes IN as well as out: the draw avoids the loops this lane
         // has already played, or the journey circles back onto two of them.
         const next = rehookOnArrival(
-          entry?.weave, loopContext(laneId), state.seed, laneId, entry?.trail,
+          // …and the lane's WRITTEN list, which the hand-over walks in order
+          // instead of drawing. Absent, everything below it is untouched.
+          entry?.weave, loopContext(laneId), state.seed, laneId, entry?.trail, entry?.pool,
         );
         if (!next || !entry) return;
         // Remember what it is leaving. Only the way OUT records: the way home

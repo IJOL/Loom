@@ -147,6 +147,46 @@ describe('what a lane hands over TO', () => {
     expect(next).toMatchObject({ a: `lib:${STYLE}:bass:0`, b: `lib:${STYLE}:bass:1` });
   });
 
+  it('walks the POOL in order when the lane has one', () => {
+    // The whole feature: what plays next is what the user wrote next, rather
+    // than a seeded draw over everything the role allows.
+    const c = ctxFor(laneWith(['c1', 'c2', 'c3']));
+    const pool = ['clip:c1', 'clip:c3', ID];
+    const next = rehookOnArrival(
+      { kind: 'ab', a: 'clip:c1', b: 'clip:c3', x: 1 } as never, c, 1, 'l1', undefined, pool,
+    );
+    expect(next).toMatchObject({ a: 'clip:c3', b: ID });
+  });
+
+  it('wraps the pool rather than running out', () => {
+    const c = ctxFor(laneWith(['c1', 'c2', 'c3']));
+    const pool = ['clip:c1', 'clip:c3'];
+    const next = rehookOnArrival(
+      { kind: 'ab', a: 'clip:c1', b: 'clip:c3', x: 1 } as never, c, 1, 'l1', undefined, pool,
+    );
+    expect(next).toMatchObject({ a: 'clip:c3', b: 'clip:c1' });
+  });
+
+  it('holds still on a pool of ONE — there is nowhere to hand over to', () => {
+    // A list of one names one piece of material. Handing over to the loop
+    // already sounding is not evolution, and re-drawing from the shelf would
+    // ignore the list the user wrote.
+    const c = ctxFor(laneWith(['c1', 'c2', 'c3']));
+    const next = rehookOnArrival(
+      { kind: 'ab', a: 'clip:c1', b: 'clip:c3', x: 1 } as never, c, 1, 'l1', undefined, ['clip:c3'],
+    );
+    expect(next).toBeNull();
+  });
+
+  it('draws exactly as before when there is NO pool (negative control)', () => {
+    // Every session that exists has no pool. This is the test that says so.
+    const c = ctxFor(laneWith(['c1', 'c2', 'c3']));
+    const sel = { kind: 'ab', a: 'clip:c1', b: 'clip:c2', x: 1 } as never;
+    expect(rehookOnArrival(sel, c, 1, 'l1')).toMatchObject({ a: 'clip:c2', b: 'clip:c3' });
+    expect(rehookOnArrival(sel, c, 1, 'l1', undefined, []))
+      .toMatchObject({ a: 'clip:c2', b: 'clip:c3' });
+  });
+
   it('a CLOUD is not this function’s business — it evolves per LEG', () => {
     // Reported as "cloud no cambia en evolve", and answered HERE first, which
     // was the mistake. A lap ends where it began, so this is called at the same

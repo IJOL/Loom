@@ -12,6 +12,7 @@
 
 import type { PanelChoice, PanelWeave } from '@loom/plugin-sdk';
 import { abAdvance } from '../weave/topology-ab';
+import { nextFromPool } from '../weave/loop-pool';
 import type { NoteEvent } from '../core/notes';
 import type { ScaleId, StyleId } from '../core/musicality';
 import type { SessionLane } from '../session/session';
@@ -470,6 +471,11 @@ export function rehookOnArrival(
    *  wheel winds back along. Absent, the draw only avoids where it stands, which
    *  is how the journey used to go round in circles. */
   trail?: readonly string[],
+  /** The loops this lane draws from, in the order the user wrote them. When it
+   *  has one, the hand-over WALKS it instead of drawing: the far end becomes
+   *  the entry after the one being left. Absent or empty ⇒ the draw below,
+   *  which is how every session without a list behaves. */
+  pool?: readonly string[],
 ): PanelWeave | null {
   if (!sel) return null;
 
@@ -501,6 +507,20 @@ export function rehookOnArrival(
 
   if (sel.kind !== 'ab') return null;
 
+  // The written list wins over every draw below it — that is what writing one
+  // means. It is read here rather than filtered into the pool further down
+  // because the ORDER is the point: a filter would still hash, and the whole
+  // request was "qué loops exactamente y en qué orden".
+  if (pool && pool.length > 0) {
+    // A list of ONE names one piece of material, so there is nowhere to hand
+    // over to. Returning null holds the lane where it is, which is honest;
+    // falling through to the shelf would play what the list excludes.
+    if (pool.length === 1) return null;
+    const b = nextFromPool(pool, sel.b);
+    if (!b || b === sel.b) return null;
+    return { ...sel, a: sel.b, b };
+  }
+
   // A lane's CLIPS are an arrangement: they advance IN ORDER, and shuffling
   // them would not be evolution, it would be noise. Only the library is drawn.
   //
@@ -528,13 +548,16 @@ export function rehookOnArrival(
   // on every arrival: a pad lane travelled its leg and then wove the same two
   // loops for ever, which is exactly what EVOLVE is for. Reported as "los pads
   // no siguen evolve, no cambian".
-  const pool = weaveLoopChoices(c).map((ch) => ch.id).filter((id) => !id.startsWith('clip:'));
-  if (pool.length === 0) return null;
+  // Named `shelf` and not `pool`: the pool is now the user's WRITTEN list, read
+  // at the top of this function, and two things called pool in one place would
+  // be exactly the confusion this feature exists to end.
+  const shelf = weaveLoopChoices(c).map((ch) => ch.id).filter((id) => !id.startsWith('clip:'));
+  if (shelf.length === 0) return null;
 
   // Everywhere it has been, most recent last. `sel.a` is the near end of the leg
   // just finished and belongs at the head of that memory: the caller pushes it
   // onto the trail AFTER this returns, so it is not in there yet.
-  const fresh = unplayed(pool, [...(trail ?? []), sel.a]);
+  const fresh = unplayed(shelf, [...(trail ?? []), sel.a]);
 
   // The loop it just arrived at stands in for "where the journey is": it differs
   // on every leg by construction, since the draw never picks the loop it came
