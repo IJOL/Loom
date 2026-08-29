@@ -34,8 +34,9 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
   a:hover { text-decoration: underline; }
 }
 </style></head><body><section class="chapter" id="top"><h1 id="top--loom--manual">Loom — Manual</h1>
-<p>Loom is a browser-based, session-based music workstation. It organises sound into <strong>lanes</strong> (instrument tracks), <strong>clips</strong> (patterns of notes), and <strong>scenes</strong> (rows of clips launched together). Eight synthesis engines are available — TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast, Sampler, and Drum Machine — and all synthesis runs live in the browser with no install or sign-in required.</p>
+<p>Loom is a browser-based, session-based music workstation. It organises sound into <strong>lanes</strong> (instrument tracks), <strong>clips</strong> (patterns of notes), and <strong>scenes</strong> (rows of clips launched together). Nine synthesis engines are available — TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast, Sampler, Drum Machine, and Layers, which holds up to four of the melodic ones in a single lane — and all synthesis runs live in the browser with no install or sign-in required.</p>
 <p>Beyond the engines, Loom has <strong>note velocity &amp; dynamics</strong> (an Ableton-style velocity lane), <strong>per-clip and arrangement-wide loop regions</strong>, <strong>per-lane modulation and FX</strong> with a sidechain mixer, <strong>MIDI import</strong>, ready-made <strong>sampled drum kits</strong>, a <strong>playable arrangement</strong> timeline, improved <strong>session editing workflow</strong> (inline track/scene rename, duplicate track/scene, and capture-playing-to-scene), optional <strong>stem separation + transcription</strong> (split a finished song into 4 lanes via a local helper and optionally derive editable note/drum lanes), <strong>key &amp; scale musical assistance</strong> (a project key/scale with an optional piano-roll scale lock — off by default, genre generators, an examples gallery, and a chord-accompaniment maker), and <strong>editable warp markers</strong> for locking audio loops to tempo.</p>
+<p><strong>WEAVE</strong>, the third view beside Session and Performance, is where a session stops being a fixed arrangement: it crossfades between loops and keeps crossfading on its own, with a per-track list of the loops it may draw from and a <strong>note generator</strong> that reads a track&#39;s own material rather than playing it back.</p>
 <hr>
 <p><img src="images/app-overview.png" alt="Loom — the full application: transport bar, session grid, and channel strips"></p>
 <p><em>The Loom interface: transport across the top, the session clip grid in the centre, and per-lane channel strips below.</em></p>
@@ -113,7 +114,7 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <ol>
 <li>Click the <strong>▶ Play</strong> button in the transport bar. The first click resumes the browser&#39;s AudioContext — this is a browser requirement; audio cannot start without a user gesture, so nothing plays until you press Play.</li>
 <li>Sound starts immediately. Use the <strong>Volume</strong> slider in the transport to adjust the output level.</li>
-<li>Want to hear a different demo? Select one from the <strong>— load a demo —</strong> dropdown (Minimal Techno, Acid Rain, Cordillera, Neon Drive). The session loads and begins at the first scene.</li>
+<li>Want to hear a different demo? There are <strong>37</strong> in the <strong>— load a demo —</strong> dropdown (also under <strong>File ▸ Open Demo</strong>). The first four — Minimal Techno, Acid Rain, Cordillera, Neon Drive — were built here; most of the rest are ports of tunes from the <a href="https://strudel.cc">Strudel</a> library, from Giant Steps to Amensister, and one, Supersaw Mask, came across from a live-coding patch. Picking one loads the session and begins at the first scene.</li>
 </ol>
 <p><img src="images/app-overview.png" alt="Loom with the Minimal Techno demo loaded and the session grid visible"></p>
 <p><em>The full Loom interface. Transport across the top; coloured clips in the session grid; per-lane channel strips below.</em></p>
@@ -183,7 +184,7 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <h2 id="01-getting-started--the-mental-model">The mental model</h2>
 <p>Loom organises music in three nested concepts:</p>
 <ul>
-<li>A <strong>lane</strong> is an instrument track. Each lane runs one engine — six melodic ones (TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast), the Sampler, the Drum Machine, or an Audio channel for playing a recording — and has its own mixer strip with EQ, sends, pan, and fader.</li>
+<li>A <strong>lane</strong> is an instrument track. Each lane runs one engine — six melodic ones (TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast), the Sampler, the Drum Machine, Layers (up to four melodic engines in one lane), or an Audio channel for playing a recording — and has its own mixer strip with EQ, sends, pan, and fader.</li>
 <li>A <strong>clip</strong> is a pattern of notes that lives in a lane. A lane can hold multiple clips — one per scene row.</li>
 <li>A <strong>scene</strong> is a horizontal row across all lanes. Launching a scene fires the clip in each lane at that row simultaneously, so scenes work like song sections or loop variations.</li>
 </ul>
@@ -306,7 +307,7 @@ blockquote { border-left: 3px solid var(--accent); margin: .8em 0; padding: .2em
 <p>The session view is the main workspace in Loom. It organises everything you hear into a compact grid of lanes and clips that you can launch, edit, and rearrange in any order.</p>
 <p><img src="images/session-view.png" alt="Session view — toolbar and grid"></p>
 <h2 id="03-sessions-lanes-clips-scenes--the-model">The model</h2>
-<p><strong>Lane</strong> — one instrument track. Each lane runs one engine — six melodic ones (TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast), the Sampler, the Drum Machine, or an Audio channel — with its own mixer strip and insert chain. Lanes appear as columns in the grid.</p>
+<p><strong>Lane</strong> — one instrument track. Each lane runs one engine — six melodic ones (TB-303, Subtractive, FM, Wavetable, Karplus-Strong, West Coast), the Sampler, the Drum Machine, Layers, or an Audio channel — with its own mixer strip and insert chain. Lanes appear as columns in the grid.</p>
 <p><strong>Clip</strong> — a pattern of notes that lives at one lane × scene cell. Every clip stores a list of note events, an optional name, a colour, and a length in bars. A cell is either filled (it holds a clip) or empty.</p>
 <p><strong>Scene</strong> — a row in the grid. Launching a scene fires one clip per lane simultaneously, aligning all starts to the same quantize boundary so the whole arrangement snaps together cleanly.</p>
 <h2 id="03-sessions-lanes-clips-scenes--the-grid">The grid</h2>
@@ -410,14 +411,16 @@ selector at the top of its editor panel — that dropdown offers the piano-roll
 engines only, so a lane can be moved between them freely but not turned into a
 Drum Machine, which edits on the drum grid. Changing the engine replaces the
 sound source while preserving the lane&#39;s clips and modulation routing.</p>
-<p>This chapter covers eight engines: six melodic synthesisers (TB-303,
-Subtractive, FM, Wavetable, Karplus-Strong, West Coast), a Sampler, and a Drum
-Machine. A ninth choice, the <strong>Audio channel</strong>, plays a recording rather than
+<p>This chapter covers nine engines: six melodic synthesisers (TB-303,
+Subtractive, FM, Wavetable, Karplus-Strong, West Coast), a Sampler, a Drum
+Machine, and <strong>Layers</strong> — a lane that holds up to four of the others at once. A
+tenth choice, the <strong>Audio channel</strong>, plays a recording rather than
 synthesising one and is covered in
 <a href="#08-midi-and-samples--audio-channel">MIDI &amp; Samples</a>.</p>
 <p>Each engine exposes a PRESET dropdown with <strong>Load</strong>, <strong>Save As…</strong> and <strong>Delete</strong>
 beside it, and a <strong>🎲 Sound</strong> button that randomises the patch and sets the
-preset name to &quot;Custom&quot;. See
+preset name to &quot;Custom&quot;. (Layers has neither a dice nor factory presets: what a
+rack sounds like is which instruments you put in it.) See
 <a href="#03-sessions-lanes-clips-scenes">Sessions, Lanes, Clips &amp; Scenes</a> for how to
 add and configure lanes.</p>
 <h2 id="04-engines--factory-presets-and-your-own">Factory presets and your own</h2>
@@ -441,6 +444,13 @@ without moving where it sits in the mix.</li>
 </ul>
 <p><strong>Delete</strong> removes a user preset; factory presets cannot be deleted, and the
 button says so if you try.</p>
+<p><strong>Changing a lane&#39;s engine forgets the preset it was on.</strong> Swap FM for Wavetable,
+or convert a lane to a rack, and the dropdown reads <strong>(custom — no preset)</strong>
+rather than going on naming a sound that is no longer loaded. Nothing is lost:
+the parameters are still whatever the swap left them.</p>
+<p>The same dropdown is what WEAVE offers on a track row, and it is now the same
+list — a Sampler track in WEAVE finally sees its bundled instruments and its
+loops, which it did not before.</p>
 <p>Your saved presets live in the browser, not in the session file. That cuts both
 ways: they follow you from one song to the next, and they are <strong>not</strong> included
 when you share a save — someone opening your session gets the sound, because the
@@ -479,6 +489,27 @@ jump the level instead of gliding it.</li>
 <p>Those apply from the next note you play. Everything else is immediate. (The Drum
 Machine is the exception to the whole section: its parameters are read when the
 hit fires.)</p>
+<hr>
+<h2 id="04-engines--voices-and-what-happens-when-you-run-out">Voices, and what happens when you run out</h2>
+<p>Every melodic engine has a <strong>Voices</strong> control: the most notes that lane will
+sound at once. The range is <strong>1 to 64</strong>, and the default is 32 on Subtractive,
+Wavetable, Karplus and West Coast, and 24 on FM.</p>
+<p>It is worth knowing that this is a real limit, because it did not use to be —
+the number was read as a mono switch, so anything above 1 meant &quot;no limit at
+all&quot;. A pad with a three-second release, played in 16ths, settles at around 28
+notes sounding simultaneously; a Layers rack multiplies that by however many
+slots it holds. That is the cost this control exists to bound, and the symptom
+of exceeding it is not a warning but the audio thread missing its deadline while
+everything on screen still looks right.</p>
+<p><strong>When the lane is full, the oldest note goes.</strong> It is not cut off: it is faded
+out over 8 ms and only then let go, so there is no step in the waveform to hear.
+Notes that are already releasing do not count against the cap, so a fast run
+cannot steal the same voice twice and thin the part out.</p>
+<p>Set it by ear. Lower it on a lane you want to sound monophonic (1 is a genuine
+mono lane), and lower it on a dense pad if the mix is straining; leave it alone
+otherwise. The TB-303 has no such control — it is monophonic by declaration, not
+by a number — and <strong>the Sampler&#39;s is inert</strong>: it runs its own voice pool and
+takes no cap.</p>
 <hr>
 <h2 id="04-engines--tb-303">TB-303</h2>
 <p><img src="images/engine-tb303.png" alt="TB-303 editor panel"></p>
@@ -572,8 +603,8 @@ Filter A. See
 Built-in Env).</li>
 <li><strong>MASTER</strong> — global Tune in semitones, plus <strong>Unison</strong>, <strong>Detune</strong> and
 <strong>Drift</strong>. See <a href="#04-engines--unison-detune-and-drift">Unison</a>.</li>
-<li><strong>POLY</strong> — voice count (1–16), poly/mono mode, and legato/retrig behaviour
-in mono mode.</li>
+<li><strong>POLY</strong> — the voice count (1–64, default 32). See
+<a href="#04-engines--voices-and-what-happens-when-you-run-out">Voices</a>.</li>
 </ul>
 <h3 id="04-engines--mode-and-type">Mode and Type</h3>
 <p>Two controls. <strong>Mode</strong> picks the circuit; <strong>Type</strong> picks the response you take
@@ -828,7 +859,7 @@ level; operators are wired together according to one of four algorithms.</p>
 </tr>
 <tr>
 <td>Voices</td>
-<td>Polyphony cap (1–16; default 6)</td>
+<td>Polyphony cap (1–64; default 24). See <a href="#04-engines--voices-and-what-happens-when-you-run-out">Voices</a></td>
 </tr>
 </tbody></table>
 <p>FM suits metallic tones, electric pianos, bells, and evolving textures. Small
@@ -877,7 +908,7 @@ Square, PWM 25%, Organ, Brass, and Vocal.</p>
 </tr>
 <tr>
 <td>Voices</td>
-<td>Polyphony cap (1–16; default 8)</td>
+<td>Polyphony cap (1–64; default 32). See <a href="#04-engines--voices-and-what-happens-when-you-run-out">Voices</a></td>
 </tr>
 </tbody></table>
 <p>Animating Morph with an LFO is the signature technique — sweeping from Sine to
@@ -930,7 +961,7 @@ at every frequency, natural high-harmonic roll-off, and no feedback runaway.</p>
 </tr>
 <tr>
 <td>Voices</td>
-<td>Polyphony cap (1–16; default 8)</td>
+<td>Polyphony cap (1–64; default 32). See <a href="#04-engines--voices-and-what-happens-when-you-run-out">Voices</a></td>
 </tr>
 </tbody></table>
 <p>Damping and Brightness are set per-note at the moment of the pluck (baked into
@@ -941,7 +972,7 @@ Karplus suits acoustic bass, guitar, harp, and marimba-style sounds.</p>
 <p><img src="images/engine-westcoast.png" alt="West Coast editor panel"></p>
 <p><em>A Buchla-style &quot;West Coast&quot; voice: complex oscillator → wavefolder → low-pass gate, driven by a built-in AD contour.</em></p>
 <p>The West Coast engine takes a fundamentally different approach to synthesis from the filter-based (&quot;East Coast&quot;) engines above. Instead of shaping a harmonically-rich waveform by subtracting frequencies with a filter, it <strong>adds</strong> harmonics by routing an oscillator through a <strong>wavefolder</strong> and then taming the result with a <strong>low-pass gate</strong>. The result is highly percussive and organic — metallic plucks, woody tones, evolving bell-like pads, and abstract textures that are difficult to achieve with conventional subtractive synthesis.</p>
-<p>The engine is <strong>polyphonic</strong> — up to 16 voices, 8 by default — with a Poly/Mono switch in the AMP section if you want the classic one-voice-at-a-time behaviour. FM here is native-linear, not through-zero.</p>
+<p>The engine is <strong>polyphonic</strong> — up to 64 voices, 32 by default; set Voices to 1 in the AMP section for the classic one-voice-at-a-time behaviour. FM here is native-linear, not through-zero.</p>
 <p>The signal chain is: <strong>Complex Oscillator</strong> → <strong>Timbre (Wavefolder)</strong> → <strong>Low-Pass Gate (LPG)</strong> driven by an <strong>AD Contour</strong>.</p>
 <h3 id="04-engines--complex-oscillator-section">COMPLEX OSCILLATOR section</h3>
 <p>Two cross-coupled oscillators produce the raw material. The principal oscillator&#39;s frequency is modulated by the modulator oscillator (linear FM), optionally ring-modulated, and a sub-harmonic divider can be added below.</p>
@@ -1073,11 +1104,7 @@ Karplus suits acoustic bass, guitar, harp, and marimba-style sounds.</p>
 </tr>
 <tr>
 <td>Voices</td>
-<td>Polyphony, 1–16 (default 8)</td>
-</tr>
-<tr>
-<td>Mode</td>
-<td>Poly or Mono</td>
+<td>Polyphony, 1–64 (default 32). See <a href="#04-engines--voices-and-what-happens-when-you-run-out">Voices</a></td>
 </tr>
 </tbody></table>
 <p>The engine ships with <strong>24 presets</strong> — spanning percussive bass plucks (BASS Fold Sub, BASS Growl FM), bells (BELL Metallic, BELL Crystal Ring), pads (PAD Fold Drone, PAD Glass Air), keys (KEYS Fold E-Piano, KEYS Marimba Fold), and abstract textures (FX Cycle Burst, FX Sci-Fi Cycle) — selectable from the lane&#39;s preset dropdown. Per-section knob accent colours group the COMPLEX OSCILLATOR, TIMBRE, LOW-PASS GATE, and CONTOUR sections visually.</p>
@@ -1103,7 +1130,7 @@ it possible to tune, filter, and pan individual pads independently.</p>
 </tr>
 <tr>
 <td>Voices</td>
-<td>Polyphony cap (1–16; default 8)</td>
+<td>1–16, default 8 — but <strong>the Sampler does not honour it</strong>. It runs in a voice pool of its own with no cap; the control is there and does nothing. Every other engine&#39;s Voices knob is a real limit</td>
 </tr>
 </tbody></table>
 <h3 id="04-engines--per-pad-parameters">Per-pad parameters</h3>
@@ -1177,7 +1204,7 @@ Each voice routes through its own channel strip and then to a shared drum bus.</
 </thead>
 <tbody><tr>
 <td>Kick</td>
-<td>Tune, Attack (click), Decay, Start/End Freq, Sweep, Wave</td>
+<td>Tune, Attack (click), Decay, Tone, Snap, Thud, Boom, Body — plus Start/End Freq, Sweep, Wave, Drive and the three shape controls under <strong>▸ advanced</strong>. See <a href="#04-engines--building-a-kick">Building a kick</a></td>
 </tr>
 <tr>
 <td>Snare</td>
@@ -1219,6 +1246,83 @@ Each voice routes through its own channel strip and then to a shared drum bus.</
 <p>Each voice also has its own mixer row — <strong>Level, A, B, Pan, Lo, Mid, Hi</strong> — where
 <strong>A</strong> and <strong>B</strong> are that voice&#39;s send amounts to Send A (a Delay by default) and
 Send B (a Reverb by default).</p>
+<h3 id="04-engines--building-a-kick">Building a kick</h3>
+<p>The kick used to be a pitch sweep with a 15 ms click on top, and the click had
+to fight its way out from under the body&#39;s own envelope — which meant no layer
+could outlast it. It now carries <strong>four layers with lives of their own</strong>, plus a
+filter and a saturator across the sum of them. Everything here is <strong>off by
+default</strong>, so no kit you already have sounds any different.</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Range</th>
+<th>Default</th>
+<th>What it adds</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SNAP</td>
+<td>0–1</td>
+<td>0</td>
+<td>A noise transient at the very front — the beater. Unlike the old click it has its own decay, so it can die instantly or ring on past the body</td>
+</tr>
+<tr>
+<td>SDEC</td>
+<td>2–150 ms</td>
+<td>20 ms</td>
+<td>How long that transient lasts <em>(advanced)</em></td>
+</tr>
+<tr>
+<td>THUD</td>
+<td>0–1</td>
+<td>0</td>
+<td>A sine an octave <strong>above</strong> where the sweep lands — the knock, the part you hear on a laptop speaker</td>
+</tr>
+<tr>
+<td>BOOM</td>
+<td>0–1</td>
+<td>0</td>
+<td>A sine an octave <strong>below</strong> it, on a tail one and a half times the kick&#39;s own decay — the weight. It grows with the kick rather than sitting at a fixed length</td>
+</tr>
+<tr>
+<td>BODY</td>
+<td>0–1</td>
+<td>0</td>
+<td>The resonant shell: noise through a bandpass, the sound of the drum rather than of the beater</td>
+</tr>
+<tr>
+<td>BCTR</td>
+<td>80–1200 Hz</td>
+<td>220 Hz</td>
+<td>Where that shell resonates <em>(advanced)</em></td>
+</tr>
+<tr>
+<td>BLEN</td>
+<td>10–600 ms</td>
+<td>120 ms</td>
+<td>How long it rings <em>(advanced)</em></td>
+</tr>
+<tr>
+<td>TONE</td>
+<td>200–12 000 Hz</td>
+<td>12 000 (open)</td>
+<td>A 24 dB/oct lowpass across the whole kick. At the top it is an exact bypass</td>
+</tr>
+<tr>
+<td>DRIVE</td>
+<td>0–1</td>
+<td>0</td>
+<td>Saturation after the filter, normalised so the <strong>peak stays where it was</strong> — it changes the shape, not the level <em>(advanced)</em></td>
+</tr>
+</tbody></table>
+<p>TONE, SNAP, THUD, BOOM and BODY sit in the kick&#39;s front row; the four marked
+<em>(advanced)</em> are in its collapsed <strong>▸ advanced</strong> block, along with Start/End
+Freq, Sweep and Wave.</p>
+<p>A practical order: set the pitch and length first (Tune, Decay, Sweep), then
+<strong>THUD</strong> until it speaks through the mix, then <strong>BOOM</strong> for weight, then <strong>SNAP</strong>
+for attack, and only then <strong>BODY</strong> if the drum should sound like a drum rather
+than a tone. <strong>TONE</strong> and <strong>DRIVE</strong> are the finish, not the start.</p>
 <h3 id="04-engines--drum-preset-dropdown--synth-kits-and-sample-kits">Drum preset dropdown — synth kits and sample kits</h3>
 <p>The preset dropdown for any drum lane lists kits from five groups:</p>
 <table>
@@ -1259,7 +1363,7 @@ Send B (a Reverb by default).</p>
 <p><strong>Sample kits</strong> load the matching WAV for each voice (kick, snare, closed hat, open hat, clap, tom, cowbell, ride) from <code>public/drumkits/</code> and rebuild the keymap fresh on every session load — you never need to re-import the files manually. Once a sample kit is selected, the lane uses the drum-grid editor and the full per-pad parameter rack, exactly like a Sampler lane in drumkit mode.</p>
 <p>The sample WAVs are curated one-shots from the Dirt-Samples collection (used by TidalCycles), classic TR-808 recordings, and — for the <strong>Drum Machines</strong> group — the <a href="https://github.com/ritchse/tidal-drum-machines">tidal-drum-machines</a> library. Full credits are in the repo <code>README.md</code> under &quot;Credits — sample sources&quot;.</p>
 <blockquote>
-<p>Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler&#39;s own PRESET dropdown (grouped Presets / Drumkit / Loop) and per-pad parameters, see <a href="#08-midi-and-samples">MIDI &amp; Samples</a>.</p>
+<p>Note: sample kits are loaded by the Sampler engine under the hood. For the Sampler&#39;s own PRESET dropdown — two groups now, <strong>Melodic</strong> and <strong>Loops</strong>, each sorted by name — and its per-pad parameters, see <a href="#08-midi-and-samples">MIDI &amp; Samples</a>. Drum kits are no longer offered there: they are this page&#39;s shelf, and a Sampler lane already on one keeps playing it.</p>
 </blockquote>
 <h3 id="04-engines--bus-controls">Bus controls</h3>
 <p>The master bus row gives Vol, Pan, A, B, Lo, Mid, and Hi (±18 dB) for the whole
@@ -1270,6 +1374,86 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <h3 id="04-engines--choke-groups">Choke groups</h3>
 <p>Each drum voice has a <strong>Choke</strong> dropdown in the voice&#39;s advanced area of the per-voice rack. Voices assigned to the <strong>same non-zero choke group are mutually exclusive</strong>: triggering one immediately cuts the tails of all other voices in the same group. A voice assigned to group 0 (the default) is never choked by anything.</p>
 <p>The default configuration is <strong>closed hat and open hat both in group 1</strong>, which gives the classic hi-hat choke behaviour — hitting the closed hat silences the open hat&#39;s ring, just as on a real drum kit. You can reassign any voice to any group number to create other exclusive pairs, for example a conga and cowbell that cannot overlap.</p>
+<hr>
+<h2 id="04-engines--layers">Layers</h2>
+<p><img src="images/engine-layers.png" alt="The Layers rack — four slots, the MIX control, and the open slot&#39;s own instrument below"></p>
+<p>A <strong>Layers</strong> lane does not synthesise anything itself. It holds <strong>up to four
+other instruments</strong> and plays them together, from one set of clips, through one
+mixer channel. A piano with a pad under it, a bass whose top octave is a
+different synth, a lead that is three detuned engines at once: all of it without
+spending four lanes and four channel strips on one part.</p>
+<p><strong>Three ways in.</strong> Pick <em>Layers</em> from the <strong>+</strong> menu when you add a lane, pick it
+from the <strong>ENGINE</strong> selector on a lane you already have, or — the useful one —
+right-click a lane header and choose <strong>Convert to layered</strong>. Converting keeps
+the lane&#39;s current sound, patch and modulators and puts it in the first slot,
+with the second slot holding the same instrument at zero gain: the lane sounds
+exactly as it did a moment ago, and you have somewhere to build.</p>
+<p><strong>The rack.</strong> Four numbered tabs, <code>1 2 3 4</code>, sit above the ordinary parameter
+grid. Click one and the panel below shows <strong>that slot&#39;s own instrument</strong> — its
+real page, its real sections, the same knobs you would see on a lane of its own.
+Under the tabs is the <strong>Instrument</strong> dropdown for the open slot (<code>— empty —</code>
+clears it) and its <strong>Preset</strong> dropdown.</p>
+<p><strong>What a slot may hold</strong> is narrower than what a lane may be: the six melodic
+engines only. The Sampler, the Drum Machine, the Audio channel and Layers itself
+are not offered — the first three run in machinery of their own that a rack
+cannot reach into, and a rack inside a rack has no bottom. This is a real
+restriction rather than an oversight: it exists because a slot naming the
+Sampler played silence.</p>
+<p><strong>Each slot has three controls of its own</strong>, in the LAYER section:</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Range</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Gain</td>
+<td>0–2</td>
+<td>1</td>
+<td>That slot&#39;s level within the rack. It goes above 1 on purpose — a quiet instrument used to sit at the top of its fader with nowhere left to go</td>
+</tr>
+<tr>
+<td>Low / High</td>
+<td>0–127</td>
+<td>0 / 127</td>
+<td>The range of notes that reach this slot. Leave them alone and every note does</td>
+</tr>
+</tbody></table>
+<p>Overlapping ranges are the point: two slots that both cover the middle both
+sound there. Set them to meet rather than overlap and you have a split keyboard
+instead of a stack.</p>
+<p><strong>The MIX control</strong> sits between the tabs and the slot pickers, and its shape
+follows how many slots are loaded. With <strong>two or three</strong>, it is a horizontal
+fader with the loaded slots numbered underneath as stops: it crosses between
+them at constant power, only ever two at a time, and parking it on a stop plays
+that instrument alone. With <strong>four</strong>, it becomes a square with a slot in each
+corner — the same square the WEAVE cloud and the WEAVE sound control use. With
+fewer than two slots loaded there is nothing to balance, so nothing is drawn.</p>
+<p>It is a gesture over the ordinary Gain params rather than a control of its own:
+it writes them, reads its position back from them, and so a rack balance
+automates, undoes and saves like any other knob. Empty slots take no share.</p>
+<p><strong>Level the slots</strong> is a checkbox, on by default. Loom&#39;s presets span some 46 dB
+end to end, so a rack of four sounds picked for their character will usually be
+badly out of balance before you touch anything. With this on, each slot is
+corrected toward a common loudness — by measurement, not guesswork, and never by
+more than ±12 dB — so the faders start meaning <em>balance</em> rather than
+<em>compensation</em>. Turn it off when the difference between two instruments <strong>is</strong>
+the arrangement.</p>
+<p><strong>Saving a rack.</strong> <em>Save As…</em> on a Layers lane stores which instrument is in each
+slot as well as all four sets of knobs, so recalling it rebuilds the rack rather
+than dropping four sets of values onto whatever happened to be loaded. Presets
+saved before this still load; they simply carry knobs alone.</p>
+<p><strong>Which slot plays a note</strong> is normally decided by the note&#39;s pitch and the
+slots&#39; ranges. There is a second way, and WEAVE uses it: a note can carry the
+slot it belongs to, in which case it goes there whatever its pitch. That is what
+lets one part be played by several instruments — see
+<a href="#11-weave--playing-one-part-on-several-instruments">WEAVE</a>.</p>
+<p><strong>Changing which engine sits in a slot rebuilds the lane</strong>, which takes a
+moment and resets that slot&#39;s parameters to the new engine&#39;s defaults. Moving a
+gain or a range does not.</p>
 <hr>
 <h2 id="04-engines--summary-table">Summary table</h2>
 <table>
@@ -1288,7 +1472,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <tr>
 <td>Subtractive</td>
 <td>Pads, leads, basses, general-purpose</td>
-<td>Dual OSC detune, Filter Drive, Key Track, POLY mode</td>
+<td>Dual OSC detune, Filter Drive, Key Track, Unison</td>
 </tr>
 <tr>
 <td>FM</td>
@@ -1318,7 +1502,12 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <tr>
 <td>Drums</td>
 <td>Synthesised drum machine, percussion</td>
-<td>10-voice synth rack, kits-as-presets, bus EQ, Choke groups</td>
+<td>10-voice synth rack, the kick&#39;s four layers, kits-as-presets, bus EQ, Choke groups</td>
+</tr>
+<tr>
+<td>Layers</td>
+<td>One part on up to four instruments at once</td>
+<td>Four slots, per-slot Gain and key range, the MIX gesture, Level the slots</td>
 </tr>
 </tbody></table>
 </section>
@@ -1636,8 +1825,8 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <em>The FM engine editor. The MODULATORS section (LFO1 + ADSR1) and the NOTE FX row are visible at the bottom of the panel.</em></p>
 <hr>
 <h2 id="06-modulation-and-note-fx--modulators">Modulators</h2>
-<p>Open any lane&#39;s engine editor and scroll to the <strong>MODULATORS</strong> section. Press <strong>+ ADSR</strong>, <strong>+ LFO</strong> or <strong>+ S&amp;H</strong> to add a modulator; you can add as many as you need. Each modulator appears as a card with its own controls, an <strong>ON / OFF</strong> toggle, and a <strong>×</strong> remove button.</p>
-<p>That row of buttons is not a fixed list — it is built from whatever modulators are registered, so a plugin that ships one adds its own button. <strong>S&amp;H is exactly that</strong>: a modulator that arrives as an external plugin rather than from Loom&#39;s own source, and behaves like any other.</p>
+<p>Open any lane&#39;s engine editor and scroll to the <strong>MODULATORS</strong> section. Press <strong>+ ADSR</strong>, <strong>+ LFO</strong>, <strong>+ Per-Note</strong> or <strong>+ S&amp;H</strong> to add a modulator; you can add as many as you need. Each modulator appears as a card with its own controls, an <strong>ON / OFF</strong> toggle, and a <strong>×</strong> remove button.</p>
+<p>That row of buttons is not a fixed list — it is built from whatever modulators are registered, so a plugin that ships one adds its own button. <strong>S&amp;H and Per-Note are exactly that</strong>: modulators that arrive as external plugins rather than from Loom&#39;s own source, and behave like any other.</p>
 <p><strong>The section is not empty to begin with.</strong> Every engine arrives with its own modulators already wired, and on some engines they are load-bearing rather than decorative:</p>
 <table>
 <thead>
@@ -1668,7 +1857,7 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </tr>
 </tbody></table>
 <p>On Subtractive in particular, deleting the two ADSRs removes the amplitude and filter envelopes: they are not extras sitting on top of the sound, they <em>are</em> the sound&#39;s shape.</p>
-<p><strong>A preset can carry its own modulators.</strong> Loading one replaces the lane&#39;s modulator set with the preset&#39;s — because for some patches the modulation <em>is</em> the patch. A wobble bass is an LFO on the filter cutoff; without it there is no wobble. Six of the Subtractive presets ship one today: <strong>BASS Wobble LFO</strong>, <strong>BASS Neuro</strong>, <strong>PAD Shimmer</strong>, <strong>PAD Cosmic</strong>, <strong>PAD Ethereal</strong> and <strong>LEAD Sync Sweep</strong>. Load one and look at the MODULATORS section to see how it was built — they are the quickest way to learn what this section can do.</p>
+<p><strong>A preset can carry its own modulators.</strong> Loading one replaces the lane&#39;s modulator set with the preset&#39;s — because for some patches the modulation <em>is</em> the patch. A wobble bass is an LFO on the filter cutoff; without it there is no wobble. On Subtractive that is not the exception but the rule: all 103 of its factory presets arrive with their envelopes and LFOs wired, which is why loading one and reading its MODULATORS section is the quickest way to learn what this section can do. One of them, <strong>PLUCK Per-Note Pulse</strong>, is built on the Per-Note modulator described below.</p>
 <h3 id="06-modulation-and-note-fx--lfo">LFO</h3>
 <p>An LFO generates a periodic waveform that you route to one or more target parameters.</p>
 <table>
@@ -1759,6 +1948,36 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </tbody></table>
 <p><strong>Bipolar</strong> swings both ways around the destination&#39;s current value; <strong>Unipolar</strong> only adds. Like the LFO it can run shared across the lane or per voice.</p>
 <p>The steps are random but not <em>unrepeatable</em>: the value of a given step is derived from its index, so the same passage lands identically every time — the offline render and what you heard live agree exactly.</p>
+<h3 id="06-modulation-and-note-fx--per-note">Per-Note</h3>
+<p>Every other modulator answers <em>what time is it</em>. This one answers <strong>which note is this</strong> — it is a function of the note&#39;s position in the sequence of notes played, not of the clock. The value is fixed when the note starts and <strong>never moves while the note sounds</strong>, and the same note always gets the same value.</p>
+<p>It is the modulator to reach for when consecutive notes should not be identical: a touch on filter cutoff and the line stops sounding machine-stamped; a touch on pulse width and every note has its own body.</p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Range</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Pattern</td>
+<td>0 – 1</td>
+<td>0.618…</td>
+</tr>
+<tr>
+<td>Skew</td>
+<td>0 – 1</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Polarity</td>
+<td>Unipolar / Bipolar</td>
+<td>Bipolar</td>
+</tr>
+</tbody></table>
+<p><strong>Pattern is the instrument.</strong> It says how far the value walks from one note to the next: <strong>0.5</strong> alternates between two values, <strong>0.25</strong> cycles every four notes, <strong>0.75</strong> every four but in a different order — and the golden-ratio default, 0.618…, <strong>never repeats</strong>. That precision matters: any short decimal is a fraction, and every fraction comes back round eventually. <strong>Skew</strong> slides the whole sequence along without changing its shape, which is how two Per-Notes on the same Pattern can be made to disagree. <strong>Polarity</strong> follows the S&amp;H convention — Unipolar only pushes the destination one way from where you set it, Bipolar lets a note land under the knob as well as over it.</p>
+<p>There is no depth control on the card, because every destination row already has one.</p>
+<p><strong>One caveat.</strong> Because it counts notes rather than reading the clock, an offline render that starts partway through does <strong>not</strong> reproduce what you heard from the top: the note that was the fortieth is now the first. This is the opposite of the S&amp;H guarantee above, and it is the price of the value depending on which note it is.</p>
 <h3 id="06-modulation-and-note-fx--destinations-and-depth">Destinations and depth</h3>
 <p>Below each modulator card&#39;s controls is a destination list. To route the modulator:</p>
 <ol>
@@ -1783,17 +2002,17 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </thead>
 <tbody><tr>
 <td>PATTERN</td>
-<td>up, down, updown, random, cosmic</td>
-<td>Direction of the arpeggio. <strong>cosmic</strong> adds occasional octave jumps and random steps for an unpredictable feel.</td>
+<td>up, down, updown, random, cosmic, <strong>steps</strong></td>
+<td>Direction of the arpeggio. <strong>cosmic</strong> adds occasional octave jumps and random steps for an unpredictable feel; <strong>steps</strong> is a pattern you write yourself — see below.</td>
 </tr>
 <tr>
 <td>SCALE</td>
-<td>major, minor, pentMinor, phrygian, chromatic</td>
-<td>Scale from which arp notes are drawn, starting from the held root note.</td>
+<td><strong>global</strong>, major, minor, pentMinor, phrygian, chromatic</td>
+<td>Where the arp&#39;s notes come from. <strong>global</strong> is the default and is not a scale of its own: the run walks the degrees of the <em>session&#39;s</em> key upward from the note you played, so it stays in the song. The named scales are transposed onto the played note instead, which is the older behaviour and can leave the key — in C major, playing E gives E-F-G-A-B on <strong>global</strong> and E-F♯-G♯-A-B on <strong>major</strong>.</td>
 </tr>
 <tr>
 <td>RATE</td>
-<td>free, 1/4, 1/8, 1/8t, 1/16, 1/16t, 1/32</td>
+<td>free, 1/4, 1/8, 1/8t, 1/16 <em>(default)</em>, 1/16t, 1/32</td>
 <td>Step rate in musical divisions (BPM-synced), or free Hz.</td>
 </tr>
 <tr>
@@ -1803,16 +2022,21 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </tr>
 <tr>
 <td>GATE</td>
-<td>0.05–1.0</td>
+<td>0.05–1.0 (default 0.7)</td>
 <td>Fraction of the step interval during which each arp note is held. Lower values create a more staccato feel.</td>
 </tr>
 <tr>
 <td>FREE Hz</td>
-<td>0.5–32 Hz</td>
+<td>0.5–32 Hz (default 8)</td>
 <td>Rate used when RATE is set to <em>free</em>.</td>
 </tr>
 </tbody></table>
 <p>The Arp fires as many notes as fit inside the original note&#39;s gate duration, so longer notes produce longer runs.</p>
+<p><img src="images/notefx-arp-steps.png" alt="The Arp card with PATTERN on steps, showing the painted STEPS row"></p>
+<p><strong>PATTERN = steps — the pattern you paint.</strong> Choosing <em>steps</em> reveals a <strong>STEPS</strong> row of bars beneath the controls. Drag across it to paint, exactly as you would an automation lane; <code>−</code> and <code>+</code> change the pattern&#39;s length, from 1 to 32 steps, and lengthening repeats the last step rather than the whole cycle.</p>
+<p>What a bar&#39;s height sets is <strong>which note of the run</strong>, not which pitch — the pattern is written in positions, so it survives everything that would otherwise break it. Transpose the part, change the key, change the scale, change OCT: the pattern still means the same thing, because SCALE and OCT decide the pool the positions point into and the positions themselves do not move. Eight rungs are available above the floor.</p>
+<p><strong>A bar dragged all the way down is a rest.</strong> It keeps its slot — nothing sounds there and nothing shifts up to fill it — which is what lets you write a rhythm and not just an order. Every fourth bar is drawn brighter so you can count without a ruler.</p>
+<p>The default is <code>0 1 2 3</code>, the plain upward walk written out, so switching to <em>steps</em> changes nothing until you edit it. A pattern with every bar at rest plays silence; it does not fall back to the walk.</p>
 <h3 id="06-modulation-and-note-fx--chord">Chord</h3>
 <p>The Chord processor expands each incoming note into a chord built on that note as the root. Out of the box the note you played is part of what you hear — the octave shift is a switch you throw deliberately, never something the processor does behind your back.</p>
 <table>
@@ -1825,8 +2049,18 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 </thead>
 <tbody><tr>
 <td>CHORD</td>
-<td>maj, min, maj7, min7, sus2, sus4, dim</td>
-<td>Chord voicing to generate</td>
+<td>maj, min, maj7, min7, sus2, sus4, dim, <strong>free</strong></td>
+<td>Chord voicing to generate. <strong>free</strong> replaces the named voicing with three intervals you dial yourself.</td>
+</tr>
+<tr>
+<td>INT 1 / INT 2 / INT 3</td>
+<td>–24 to +24 semitones (4 / 7 / 0)</td>
+<td>Only with CHORD = <em>free</em>: the three intervals above (or below) the root. <strong>A zero switches that voice off</strong> rather than doubling the root — the root always sounds, so a two-note voicing is one interval at 0.</td>
+</tr>
+<tr>
+<td>IN KEY</td>
+<td>off <em>(default)</em> / scale / chord</td>
+<td>Whether the notes it produces are pulled into the song&#39;s harmony. See below.</td>
 </tr>
 <tr>
 <td>OCT SHIFT</td>
@@ -1839,7 +2073,13 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <td>Only with OCT SHIFT on: transposes the whole chord, root included, that many octaves.</td>
 </tr>
 </tbody></table>
-<p>All notes in the chord share the original note&#39;s timing and gate length.</p>
+<p>All notes in the chord share the original note&#39;s timing and gate length. The chord is also built in the <strong>session&#39;s</strong> key now: playing live used to be answered in A minor whatever the song said, so the same lane with the same settings was in two different keys depending on whether the note came from a clip or from your fingers.</p>
+<p><strong>IN KEY — staying in the key is not the same as landing on the chord.</strong></p>
+<ul>
+<li><strong>scale</strong> snaps every note to the session&#39;s key and scale. You cannot play a wrong note, but you can still play a passing note the chord underneath does not contain — which is often what you want, and is why this is not the stronger setting. Be aware of one consequence: in a major scale every out-of-scale note sits exactly between two neighbours, and a tie resolves upward, so a D major triad in C major comes out D-G-A rather than D minor.</li>
+<li><strong>chord</strong> snaps to the pitch classes of the chord sounding at that bar of the progression. It cannot sound wrong against the harmony — and it cannot sound like a melody either, because it is locked to three notes. With no progression to read it falls back to <em>scale</em>.</li>
+</ul>
+<p>Conforming can land two intervals on the same note; the duplicate is dropped rather than played twice.</p>
 <h3 id="06-modulation-and-note-fx--random">Random</h3>
 <p>The Random processor introduces controlled uncertainty into a part — the humanising pass that keeps a loop from sounding like a loop. It is built around <strong>chance sliders</strong>: each of the four things it can vary has its own 0–1 probability, and <strong>every one of them starts at 0</strong>, so adding the processor changes nothing until you ask it to. Turn one up and it intervenes on that fraction of notes.</p>
 <table>
@@ -1878,12 +2118,22 @@ reverb and delay sends is covered in <a href="#07-mixing-and-fx">Mixing &amp; FX
 <tr>
 <td>SCALE</td>
 <td>ON / OFF (<strong>on</strong> by default)</td>
-<td>Snaps every generated pitch to a key and scale, so the randomness stays in the song. Switching it on reveals <strong>ROOT</strong> and <strong>SCALE</strong> selects to override the ones the song is using</td>
+<td>Snaps every generated pitch to a key and scale, so the randomness stays in the song. Switching it on reveals <strong>ROOT</strong> and <strong>SCALE</strong> selects, both of which start on <strong>Global</strong> — they follow the song&#39;s own key until you pick something else</td>
 </tr>
 <tr>
 <td>VEL CHANCE / VEL RND</td>
 <td>0–1 (0 / 0.3)</td>
 <td>How often, and how far, the <strong>velocity</strong> varies. This is the one to reach for first: a little velocity variation is most of what &quot;played by a human&quot; means</td>
+</tr>
+<tr>
+<td>VEL SMOOTH</td>
+<td>0–1 (default 0)</td>
+<td>How much the velocity variation is smoothed from note to note. At 0 each note is drawn independently, which reads as twitchy; turned up, the loudness drifts instead of jumping</td>
+</tr>
+<tr>
+<td>VEL DRIFT</td>
+<td>0.05–8 Hz (default 1)</td>
+<td>How fast that drift moves. Only does anything while VEL SMOOTH is above 0</td>
 </tr>
 <tr>
 <td>DUR CHANCE / DUR RND</td>
@@ -2149,19 +2399,24 @@ and the modulation stays relative to wherever you left the fader.</p>
 <h3 id="07-mixing-and-fx--inserts--the-master-rack">INSERTS — the master rack</h3>
 <p>Below MASTER COMP, the INSERTS section holds the master insert chain. Add a slot from the picker and pick its type. The <strong>same fifteen plugin types</strong> are available in every rack — per lane, per send, and here on the master:</p>
 <p><strong>Filter (multifilter)</strong></p>
+<p><img src="images/fx-multifilter.png" alt="The Filter insert — Type, Freq and Q"></p>
 <ul>
 <li>Type: LP / HP / BP / Notch</li>
 <li>Freq: 20–20 000 Hz (exponential)</li>
 <li>Q: 0.1–24</li>
 </ul>
 <p><strong>Distortion (Dist)</strong></p>
+<p><img src="images/fx-distortion.png" alt="The Dist insert — Drive and Mix"></p>
 <ul>
 <li>Drive: 0–1 — waveshaper saturation amount (4x oversampled)</li>
 <li>Mix: 0–1 — dry/wet blend</li>
 </ul>
 <p><strong>Reverb</strong> — same parameters as the Send B reverb above (Wet, PreD, Size, Decay, Type). Use as an insert to reverb the full master rather than via a send.</p>
+<p><img src="images/fx-reverb.png" alt="The Reverb insert — Wet, PreD, Size, Decay and the Type selector"></p>
 <p><strong>Delay</strong> — same parameters as the Send A delay (Time, Sync, Fbk, Wet, Damp, Width). Use as an insert for a master-bus slapback or stutter.</p>
+<p><img src="images/fx-delay.png" alt="The Delay insert — Time, Fbk, Wet, Damp, Width and the Sync selector"></p>
 <p><strong>Compressor</strong> — the same <code>CompBlock</code> dynamics compressor as the channel-strip and master compressors, now insertable anywhere. Its own ranges are narrower than the master&#39;s:</p>
+<p><img src="images/fx-compressor.png" alt="The Compressor insert — Thr, Ratio, Atk, Rel, Knee and Mkup"></p>
 <ul>
 <li>Thr: −60 to 0 dB (default −24)</li>
 <li>Ratio: 1–20 (default 4)</li>
@@ -2172,11 +2427,13 @@ and the modulation stays relative to wherever you left the fader.</p>
 </ul>
 <p>There is no Bypass among them — to A/B an insert, use the slot&#39;s own bypass toggle described at the end of this section.</p>
 <p><strong>Limiter</strong> — a brickwall limiter (ratio 20:1, hard knee, near-zero attack) for catching peaks.</p>
+<p><img src="images/fx-limiter.png" alt="The Limiter insert — Ceil and Rel"></p>
 <ul>
 <li>Ceil: −30 to 0 dB — the level it will not exceed</li>
 <li>Rel: 0.001–0.5 s — how quickly it lets go</li>
 </ul>
 <p><strong>Tremolo (Trem/Gate)</strong> — an LFO opening and closing the volume. The oldest modulation effect there is: slow and shallow it breathes, fast and deep it chops the sound into a rhythm of its own. Lovely on pads, electric-piano parts and sustained chords. It is also the trance gate: <strong>Square shape + a 1/16 Sync + a little Smth</strong> is that sound. (That is a <em>rhythmic</em> gate, driven by the clock. The <strong>Gate</strong> insert below is the other kind — driven by the signal&#39;s own level.)</p>
+<p><img src="images/fx-tremolo.png" alt="The Trem/Gate insert — Rate, Depth, Smth and the Shape and Sync selectors"></p>
 <ul>
 <li>Rate: 0.1–12 Hz — how fast it pulses, used when Sync is Free</li>
 <li>Depth: 0–1 — how far it closes between pulses (at 1 it cuts to silence)</li>
@@ -2185,12 +2442,14 @@ and the modulation stays relative to wherever you left the fader.</p>
 <li>Smth: 0.2–50 ms — smooths the LFO, so a square shape does not click at the edges</li>
 </ul>
 <p><strong>Chorus</strong> — a delayed copy of the signal, detuned by a slow LFO and mixed back in. The two copies drift in and out of tune with each other, which the ear reads as several players at once. Thickens thin sounds and widens single-note leads without changing their pitch.</p>
+<p><img src="images/fx-chorus.png" alt="The Chorus insert — Rate, Depth and Mix"></p>
 <ul>
 <li>Rate: 0.05–8 Hz — speed of the detuning wobble</li>
 <li>Depth: 0–1 — how far it detunes</li>
 <li>Mix: 0–1 — dry/wet blend (start around 0.5)</li>
 </ul>
 <p><strong>Flanger</strong> — the same idea as the chorus but with a much shorter delay and its output fed back into itself. Instead of thickening, the copies cancel each other at a comb of frequencies that sweeps up and down — the classic jet-plane whoosh. Feedback sharpens the effect from a gentle sweep to a metallic scream.</p>
+<p><img src="images/fx-flanger.png" alt="The Flanger insert — Rate, Depth, Fbk and Mix"></p>
 <ul>
 <li>Rate: 0.05–8 Hz — speed of the sweep</li>
 <li>Depth: 0–1 — how far the sweep travels</li>
@@ -2198,6 +2457,7 @@ and the modulation stays relative to wherever you left the fader.</p>
 <li>Mix: 0–1 — dry/wet blend</li>
 </ul>
 <p><strong>Phaser</strong> — four all-pass filters whose corner frequencies an LFO sweeps together. They shift phase without changing volume, so mixing them back with the dry signal creates notches that slide through the sound. Similar in spirit to the flanger but smoother and more liquid — a staple on electric pianos, funk guitar and pads.</p>
+<p><img src="images/fx-phaser.png" alt="The Phaser insert — Rate, Depth, Fbk and Mix"></p>
 <ul>
 <li>Rate: 0.05–8 Hz — sweep speed</li>
 <li>Depth: 0–1 — how far the notches travel</li>
@@ -2205,6 +2465,7 @@ and the modulation stays relative to wherever you left the fader.</p>
 <li>Mix: 0–1 — dry/wet blend</li>
 </ul>
 <p><strong>Bitcrusher (Crush)</strong> — digital degradation. Reducing the bit depth quantises the waveform to a coarse staircase, adding the gritty, harmonic distortion of early samplers and game consoles; the tone control then dulls the result the way a low sample rate would. At extreme settings it destroys the sound completely, which is often the point.</p>
+<p><img src="images/fx-bitcrusher.png" alt="The Crush insert — Bits, Tone, Mix and Dith"></p>
 <ul>
 <li>Bits: 1–16 — amplitude resolution; 16 is nearly clean, 1 is a square-wave wreck</li>
 <li>Tone: 200–20 000 Hz — a lowpass for the lo-fi dullness</li>
@@ -2212,6 +2473,7 @@ and the modulation stays relative to wherever you left the fader.</p>
 <li>Dith: 0–2 — noise summed in <em>before</em> the bit reduction, scaled to the step size. It trades the gritty, signal-locked distortion of low bit depths for an even hiss, which usually sounds better on quiet material</li>
 </ul>
 <p><strong>Auto-Wah</strong> — a bandpass filter whose frequency follows how loud the signal is, so the sound opens up on every transient and closes as it decays. It is the funk-guitar wah pedal with your playing on the treadle instead of your foot; on a bassline or a clav it produces the &quot;talking&quot; quality no static filter gets.</p>
+<p><img src="images/fx-autowah.png" alt="The Auto-Wah insert — Sens, Range, Base, Atk, Rel, Q and Mix"></p>
 <ul>
 <li>Sens: 0–1 — how strongly the level moves the filter (default 0.6)</li>
 <li>Range: 0–4800 ¢ — how far it travels, in cents above Base (default 2400, two octaves)</li>
@@ -2221,6 +2483,7 @@ and the modulation stays relative to wherever you left the fader.</p>
 <li>Mix: 0–1 — dry/wet blend</li>
 </ul>
 <p><strong>Gate</strong> — the opposite of the compressor: below the threshold it turns the signal <em>down</em>. Use it to clean the silence between hits — kill the bleed on a sampled drum loop, cut the tail of a reverb-soaked lane, or chop a sustained pad into stabs.</p>
+<p><img src="images/fx-gate.png" alt="The Gate insert — Thr, Range, Atk, Hold and Rel"></p>
 <ul>
 <li>Thr: −60 to 0 dB — the level below which it closes (default −30)</li>
 <li>Range: −60 to 0 dB — how far down it closes. At −60 it silences; at −12 it just ducks, which sounds far more natural</li>
@@ -2229,11 +2492,13 @@ and the modulation stays relative to wherever you left the fader.</p>
 <li>Rel: 10–1000 ms — how gradually it closes</li>
 </ul>
 <p><strong>Ring (ring modulator)</strong> — multiplies the signal by a sine wave, which replaces every partial with a pair at the sum and difference frequencies. The result is inharmonic by construction: bell-like and metallic at high Freq, a tremolo-ish shudder at low Freq, and unrecognisably alien in between. A blunt instrument, and the fastest route out of anything that sounds too clean.</p>
+<p><img src="images/fx-ringmod.png" alt="The Ring insert — Freq and Mix"></p>
 <ul>
 <li>Freq: 20–4000 Hz (exponential) — the carrier. Below ~30 Hz it reads as amplitude wobble rather than pitch</li>
 <li>Mix: 0–1 — dry/wet blend. Keep the dry signal in to stay musical</li>
 </ul>
 <p><strong>Width</strong> — a stereo widener: it scales the side channel against the mid, and can wobble that scale with an LFO. Below 1 it collapses toward mono, above 1 it exaggerates the sides.</p>
+<p><img src="images/fx-width.png" alt="The Width insert — Width, Rate, Depth and the Sync selector"></p>
 <ul>
 <li>Width: 0–2 — 0 is mono, 1 is untouched, 2 is double the side signal (default 1)</li>
 <li>Rate: 0.05–8 Hz and Depth: 0–1 — an optional LFO on the width. Depth defaults to 0, so it is a static widener until you ask for movement</li>
@@ -2340,7 +2605,7 @@ and the modulation stays relative to wherever you left the fader.</p>
 <p><img src="images/engine-sampler.png" alt="Sampler engine editor"></p>
 <p>The Sampler is a polyphonic playback engine that maps audio across the keyboard and plays it back at the correct pitch per note. A Sampler lane can be three things — a <strong>melodic instrument</strong> (samples spread across ranges of keys), a <strong>drumkit</strong> (one sample per key), or a <strong>loop</strong> (a sliced loop played as a sequence of notes) — and all three share <strong>one inspector layout</strong>.</p>
 <h3 id="08-midi-and-samples--presets-are-the-instruments">Presets are the instruments</h3>
-<p>The Sampler&#39;s bundled instruments — drumkits, melodic instruments, and loops — <em>are</em> its presets: pick one straight from the standard <strong>PRESET</strong> dropdown at the top of the inspector, which is grouped <strong>Presets / Drumkit / Loop</strong> (the <strong>Presets</strong> group holds the melodic multi-zone instruments). Selecting one downloads + decodes its WAVs into IndexedDB (so it persists across reloads) and loads it. There is no separate picker. Loom ships <strong>68 ready-made sample kits</strong>, plus a small set of melodic instruments and loops — all working on the live deploy without a manual import. Most of the kits are grouped under <strong>Drum Machines</strong>: one-shot sets modelled on classic hardware (TR-808, LinnDrum, MPC60, DMX and dozens more), alongside a few hand-curated kits (<strong>TR-808</strong>, <strong>Acoustic</strong>, <strong>Dirt</strong>) and a 31-pad <strong>GM Percussion</strong> kit.</p>
+<p>The Sampler&#39;s bundled instruments — drumkits, melodic instruments, and loops — <em>are</em> its presets: pick one straight from the standard <strong>PRESET</strong> dropdown at the top of the inspector, which has two groups: <strong>Melodic</strong> — the multi-zone instruments, whether their samples are carried inline or fetched by name, merged into one shelf and sorted, because which of the two a sound is stored as is Loom&#39;s business and not yours — and <strong>Loops</strong>, kept apart because a chopped amen is not an instrument you play up the keyboard. <strong>Drum kits are not in this dropdown</strong>: they are the Drum Machine page&#39;s shelf, and a Sampler lane already loaded with one goes on playing it, named, from wherever you left it. Selecting one downloads + decodes its WAVs into IndexedDB (so it persists across reloads) and loads it. There is no separate picker. Loom ships <strong>68 ready-made sample kits</strong>, plus a small set of melodic instruments and loops — all working on the live deploy without a manual import. Most of the kits are grouped under <strong>Drum Machines</strong>: one-shot sets modelled on classic hardware (TR-808, LinnDrum, MPC60, DMX and dozens more), alongside a few hand-curated kits (<strong>TR-808</strong>, <strong>Acoustic</strong>, <strong>Dirt</strong>) and a 31-pad <strong>GM Percussion</strong> kit.</p>
 <h3 id="08-midi-and-samples--the-channel-layout">The channel layout</h3>
 <p>Whatever you load, the inspector has the same shape:</p>
 <ul>
@@ -2784,7 +3049,7 @@ uvicorn app:app --port 8765
 <p>You are never editing the loops. WEAVE is a tool that sits ON TOP of the session: switch a track&#39;s weave off and its clip is exactly as you left it.</p>
 <hr>
 <h2 id="11-weave--the-track-row">The track row</h2>
-<p>Each track is one row, split into two lines. The top line is what a hand reaches for while the music runs; the second line is what you set once and leave.</p>
+<p>Each track is one row of up to four lines. The top line is what a hand reaches for while the music runs; the second is what you set once and leave; the third appears only while the track is generating; the fourth is the list of loops it may draw from.</p>
 <p><strong>Top line, left to right:</strong></p>
 <ul>
 <li><strong>VU meter</strong> — what the track is putting out, the same meter the mixer column shows. It keeps reading with the transport stopped, because a held note or a reverb tail is still sound.</li>
@@ -2795,12 +3060,14 @@ uvicorn app:app --port 8765
 <li><strong>The weaving control itself</strong> — a dial, a queue or a square, depending on the topology.</li>
 <li><strong>◐ Sound</strong> — off by default. See <em>Playing one part on several instruments</em>.</li>
 </ul>
-<p><strong>Second line:</strong> the note bar this track is about to play, then which slot (on a rack), instrument, preset, part, <strong>who it follows</strong>, <strong>how long it takes to repeat itself</strong>, style shelf, half/double time, and octave. The two in bold have sections of their own below.</p>
+<p><strong>Second line:</strong> the note bar this track is about to play, then which slot (on a rack), instrument, preset, part, <strong>who it follows</strong>, <strong>GEN</strong>, <strong>how long it takes to repeat itself</strong>, style shelf, half/double time, and octave. The three in bold have sections of their own below.</p>
+<p><strong>Third line:</strong> the generator&#39;s controls, and only while <strong>GEN</strong> is lit. On every other track the line is there and empty, so switching a track on does not shove the tracks below it down the screen.</p>
+<p><strong>Fourth line — PLAYS:</strong> the loops this track draws from. See <em>The list a track draws from</em>.</p>
 <hr>
 <h2 id="11-weave--topologies--how-a-track-weaves">Topologies — how a track weaves</h2>
 <p>Pick one per track from the dropdown.</p>
 <h3 id="11-weave--ab">A→B</h3>
-<p>Two loops and a dial between them. When the dial reaches the far end, <strong>B becomes the new A and a fresh loop is drawn for B</strong> — so the journey never ends and never returns to where it began.</p>
+<p>Two loops and a dial between them. When the dial reaches the far end, <strong>B becomes the new A and a fresh loop is drawn for B</strong> — so the journey never ends and never returns to where it began. Where that fresh loop comes from is decided by the track&#39;s <strong>PLAYS</strong> list, if it has one; see below.</p>
 <p>The control is an <strong>endless dial</strong>, not a fader, and it is dragged <strong>up and down</strong>. A dial rather than a fader because a fader promises two ends, and with the scene evolving there are none.</p>
 <p>The names sit either side as <em>from → to</em>.</p>
 <h3 id="11-weave--cloud">Cloud</h3>
@@ -2818,10 +3085,10 @@ uvicorn app:app --port 8765
 <p>The header controls move every unlocked track at once.</p>
 <ul>
 <li><strong>Flow</strong> — the master dial, and a readout of where the scene is.</li>
-<li><strong>Drift</strong> — whether the tracks travel together or fan out.</li>
+<li><strong>Drift</strong> — <strong>Together</strong>, <strong>Offset</strong> or <strong>Free</strong>: where the tracks stand relative to one another. This is a <strong>layout, applied once, the moment you pick it</strong> — <em>Together</em> puts every track on the same number, <em>Offset</em> fans them out evenly, and <em>Free</em> places nothing at all. After that the dial moves every track by the same amount, so <strong>the distances between them are carried, not replaced</strong>. Move one track&#39;s own dial and its new distance from the others is the distance from then on. A <strong>locked</strong> track is left where it is, and so is a track with no weave.</li>
 <li><strong>Speed</strong> — how long one full journey takes, in bars. <strong>Off</strong> by default: a panel that started travelling the moment you opened it would change a session you had not touched.</li>
 <li><strong>EVOLVE / STATIC</strong> — what happens at the END of a lap. <strong>STATIC</strong> is a scene you place by hand and it stays placed. <strong>EVOLVE</strong> draws fresh material on arrival, which is what makes a scene keep moving.</li>
-<li><strong>Journey</strong> — <strong>One way</strong>, or <strong>⇄ N laps</strong>: how many laps out before the journey turns round and comes back. Going out it draws new loops; coming back it walks the ones it already played, so the way home is the same journey in reverse rather than a different one.</li>
+<li><strong>Journey</strong> — two controls, because how far a journey goes and whether it comes home are two decisions. The button reads <strong>→ One way</strong> or <strong>⇄ There and back</strong>; beside it a length picks <strong>2, 4 or 8 laps</strong>. Going out it draws new loops; coming back it walks the ones it already played, so the way home is the same journey in reverse rather than a different one. On a one-way journey the length decides nothing, so it greys out and says so — and it keeps the value you gave it, so turning the round trip back on resumes at the same length.</li>
 <li><strong>🔒 HOLD</strong> — freeze the arrangement. The chord walk keeps going and the step rack keeps writing; only the loops stop moving.</li>
 <li><strong>SURGE</strong> — held, not toggled: a momentary push that restores itself when you let go.</li>
 <li><strong>⟳ Reshuffle</strong> — <strong>tap</strong> to re-deal only the loop you are NOT hearing, which is why it is safe mid-phrase; <strong>hold</strong> it to re-deal every loop at once. A locked track ignores both.</li>
@@ -2837,6 +3104,20 @@ uvicorn app:app --port 8765
 <p><strong>Style</strong> picks which shelf of the library this track draws from, independent of the session&#39;s own style. A style change lands on the <strong>next</strong> loop drawn, not the one playing — changing it mid-phrase would be a splice, not an evolution.</p>
 <p><strong>Half and double time</strong> (<code>×2</code> / <code>÷2</code>) and the <strong>octave</strong> (<code>− +</code>) both live on the weave, never on the clip. The phrase is always delivered whole: half time stretches it and takes the room it needs.</p>
 <hr>
+<h2 id="11-weave--the-list-a-track-draws-from">The list a track draws from</h2>
+<p>Part and style say what a track <strong>may</strong> draw. The <strong>PLAYS</strong> list, on the fourth line of every track row, says what it <strong>does</strong> draw, and in what order.</p>
+<p><img src="images/weave-pool.png" alt="A track row with two loops written into its PLAYS list"></p>
+<p>Leave it empty and it reads <strong>everything it may</strong>: the track draws from the whole shelf its part and style allow, at random, which is what WEAVE always did. Add a loop and the behaviour changes completely:</p>
+<ul>
+<li><strong>It is walked in the order you wrote it, and it wraps.</strong> An A→B hand-over goes to the <em>next</em> entry rather than drawing at random, so the same four loops come round in the same order, every time.</li>
+<li><strong>A list of one freezes the track.</strong> There is nowhere to hand over to, so it holds where it is. Falling back to the shelf would play exactly the material you excluded.</li>
+<li><strong>It outranks the track&#39;s own clips and the shelf</strong> — for the hand-over and for the generator both.</li>
+<li><strong>The picker offers the whole library</strong>, not just this track&#39;s shelf. That is deliberate: the list is how you hand a track material from outside its part and its style.</li>
+<li><strong>A cloud ignores it.</strong> A cloud renews itself by corners, not by hand-overs; the list is A→B&#39;s.</li>
+</ul>
+<p>Editing: <strong>↑</strong> and <strong>↓</strong> move an entry, <strong>✕</strong> takes it out, and the picker at the end adds one. Buttons rather than drag-and-drop, because the row repaints under your finger. If you delete the loop a travelling track is currently leaving, it rejoins the list at the <strong>top</strong> — the front is what you wrote next.</p>
+<p>The list is saved with the session, in the save file.</p>
+<hr>
 <h2 id="11-weave--following--a-track-that-plays-what-another-track-implies">Following — a track that plays what another track implies</h2>
 <p>A track can accompany another instead of playing material of its own. Set <strong>Follow <code>&lt;track&gt;</code></strong> on its second line and it stops reading loops and clips entirely: every bar it works out what to play from what the track it follows is playing.</p>
 <p>What it plays is decided by its <strong>part</strong> — the same Bass / Comp / Pad / Arp choice as above. Following says <em>whose</em> harmony; the part says <em>which player</em>. A bass takes roots and leans on the change; a comp reads a rhythm from the style; a pad takes the nearest inversion; an arp walks the chord&#39;s own tones and is deliberately not voice-led, because an arpeggio is heard as a line.</p>
@@ -2848,6 +3129,154 @@ uvicorn app:app --port 8765
 <li><strong>Following and weaving are exclusive, both ways.</strong> Choosing a leader shelves the track&#39;s weave; switching back to <em>— plays its own —</em> hands it back exactly as it was. Choosing a topology clears the follow.</li>
 <li>A <strong>percussion</strong> track cannot follow: it has no part to play. The control is simply not built rather than offered empty.</li>
 </ul>
+<hr>
+<h2 id="11-weave--gen--a-read-head-over-the-tracks-own-material">GEN — a read head over the track&#39;s own material</h2>
+<p><strong>GEN</strong> is the amber switch beside the follow picker. It is the third thing that can decide what a track plays, and the strongest of the three after following: with GEN on, the track stops playing its loops and starts <strong>reading</strong> them.</p>
+<p><img src="images/weave-gen.png" alt="The generator&#39;s controls — the third line of a track row"></p>
+<p><strong>What it actually does.</strong> The track&#39;s loops are folded into a single bar exactly as the weave folds them. That bar&#39;s <strong>pitches</strong> become an ordered pool — the rhythm is thrown away — and a read head walks a pattern you set, taking one pitch per step. It invents nothing: everything you hear was already in the material. What you are dialling is <em>how it is read</em>.</p>
+<p><strong>Where the material comes from</strong>, in this order: the track&#39;s <strong>PLAYS</strong> list, then its own clips that have notes in them, then the style shelf. With none of the three there is nothing to read, so the switch simply does not come on. Switching GEN on shelves the track&#39;s weave selection and switching it off hands it back untouched, so nothing is lost either way.</p>
+<p>The controls are the third line of the track row, and they come in five groups.</p>
+<p><strong>The grid — how the bar is cut up</strong></p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Range</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DIV</td>
+<td>1–16</td>
+<td>4</td>
+<td>How many steps cut one bar. 4 is quarters in 4/4; the meter still says how long a bar is, so 6/8 wants 6</td>
+</tr>
+<tr>
+<td>BARS</td>
+<td>1–16</td>
+<td>1</td>
+<td>How many bars before the pattern comes round again. This is also the phrase length PHRASE reads</td>
+</tr>
+<tr>
+<td>×2^</td>
+<td>0–3</td>
+<td>0</td>
+<td>A power-of-two multiplier on that length — ×1, ×2, ×4, ×8. Separate from BARS because &quot;my phrase is four bars&quot; and &quot;now take four times as long to get through it&quot; are different gestures</td>
+</tr>
+</tbody></table>
+<p><strong>Which steps fire</strong></p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Range</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CADENCE</td>
+<td>0–1</td>
+<td>1</td>
+<td>A <strong>floor on metric weight</strong>, not a pattern. At 1 every step of the division fires; turning it down drops the weak positions first and the strong ones last; at 0 the track is silent</td>
+</tr>
+<tr>
+<td>CAD MOD</td>
+<td>0–1</td>
+<td>0</td>
+<td>How much that floor varies from step to step. At 0 every bar of the pattern has an identical rhythm. It swings either side of the knob, so the average stays where you put it</td>
+</tr>
+<tr>
+<td>PHRASE</td>
+<td>0–1</td>
+<td>0</td>
+<td>How much a bar&#39;s position in the phrase floors it: the opening bar states, the middle bars thin out, the turnaround comes back</td>
+</tr>
+</tbody></table>
+<p><strong>Which note it lands on</strong></p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Range</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>IN KEY</td>
+<td>OFF / SCALE / CHORD</td>
+<td>OFF</td>
+<td>SCALE snaps to the track&#39;s key — a passing note the chord does not contain still gets through. CHORD locks to the chord tones of the progression at that bar: it cannot sound wrong, and it cannot sound like a melody. OFF is honest rather than lazy — the blend already walks scale degrees</td>
+</tr>
+<tr>
+<td>VOICING</td>
+<td>−7…+7</td>
+<td>0</td>
+<td>Moves the note by whole <strong>tones of the set</strong> — chord tones on CHORD, scale degrees on SCALE. Not semitones: that would be a transposition, which is what the octave buttons are for</td>
+</tr>
+<tr>
+<td>VOICE MOD</td>
+<td>0–1</td>
+<td>0</td>
+<td>Per-step variation on VOICING, up to three tones either way at full depth</td>
+</tr>
+</tbody></table>
+<p>VOICING and VOICE MOD do nothing while IN KEY is OFF. Off means off in both halves.</p>
+<p><strong>Where the hit lands, and how long it holds</strong></p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Range</th>
+<th>Default</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>NUDGE</td>
+<td>−1…+1</td>
+<td>0</td>
+<td>How far off its step a hit sits, in fractions of a step; negative is early. Fractions, so the feel survives a change of DIV</td>
+</tr>
+<tr>
+<td>GROOVE</td>
+<td>0–1</td>
+<td>0</td>
+<td>Per-step variation on NUDGE. <strong>This is what makes it a groove rather than a shift</strong> — at 0 every hit moves the same way, which just reads as the track being late</td>
+</tr>
+<tr>
+<td>HOLD</td>
+<td>0.05–4</td>
+<td>1</td>
+<td>Note length as a multiple of its step. 1 fills the step, below it detaches — and <strong>above 1 the notes overlap, which is how the generator slides</strong>: on a 303 (or any engine that infers portamento from overlap) this is the glide control</td>
+</tr>
+<tr>
+<td>HOLD MOD</td>
+<td>0–1</td>
+<td>0</td>
+<td>Per-step variation on HOLD, up to a step either way</td>
+</tr>
+</tbody></table>
+<p><strong>The two wheels</strong> — six controls that move the read head itself, three per wheel: <strong>×</strong> how far one turn moves it, <strong>CYC</strong> how many turns the wheel takes to come round (1 means it is not turning), and <strong>%</strong> how much of it is applied. The <code>%</code> is the one that switches the wheel on; the other two describe a wheel that is not yet moving anything.</p>
+<ul>
+<li><strong>BAR ×/CYC/%</strong> turns once per bar of the pattern, so what it does repeats when the pattern does — a figure you can learn.</li>
+<li><strong>LOOP ×/CYC/%</strong> turns once per lap, so it never repeats inside a pass. This is the one that reaches material a short pattern would otherwise never get to.</li>
+</ul>
+<p>Two readings that explain most surprises:</p>
+<ul>
+<li><strong>The pool is read on every step, whether or not that step fires.</strong> Turning CADENCE down gives you <em>the same line with holes in it</em>, not a different line.</li>
+<li><strong>CADENCE reads the pattern&#39;s own bar; IN KEY reads the song&#39;s.</strong> The rhythm repeats with the pattern, the harmony walks the progression.</li>
+</ul>
+<p>Worth knowing:</p>
+<ul>
+<li><strong>BAR MOD does nothing out of the box.</strong> The default pattern is one bar long, and a wheel that turns once per bar has one turn to make. Raise BARS (or ×2^) first.</li>
+<li><strong>A pool longer than the pattern has a tail nobody hears</strong> until LOOP % is raised.</li>
+<li><strong>A scene launch does not stop the generator.</strong> The grid takes the <em>weave</em> off a track; generating and following are properties of the song, saved on the track, and they carry on.</li>
+<li><strong>Switch GEN off before you give a track a leader.</strong> Turning GEN on clears a follow, but picking a leader does not turn GEN off — and following wins, so the switch stays lit over a track that is not generating.</li>
+</ul>
+<p>Everything here is saved with the session and undoable, and it lives on the track rather than in the panel: close WEAVE and the track keeps generating.</p>
 <hr>
 <h2 id="11-weave--how-long-a-track-takes-to-repeat-itself">How long a track takes to repeat itself</h2>
 <p>Beside the follow picker is a five-rung ladder: <strong>Loop · Turns · Travels · Wanders · Never repeats</strong>.</p>
@@ -2864,6 +3293,7 @@ uvicorn app:app --port 8765
 <p>Every chordal track follows one progression, walked across the session&#39;s bars and shown as a bar with the current chord in Roman numerals. Pick a catalogue entry, or edit the strip and it becomes yours — the catalogue is never written to. &quot;Stay home&quot; is a single chord and no journey.</p>
 <p><strong>The progression travels too</strong>, in the same legs the loops do. The first chord never moves — home is what a departure is measured against — an interior chord may be swapped for its diatonic relative, and the last alternates with V as a turnaround. Only ONE chord moves per leg: harmony is far less forgiving than timbre, and two changing at once stops reading as a variation and starts reading as a wrong chord.</p>
 <p>If the progression is longer than a track&#39;s clip, the track hears a <strong>window</strong> of it at a time rather than the first two chords for ever; a short progression tiles instead.</p>
+<p><strong>The progression is the session&#39;s, not the panel&#39;s.</strong> It is stored with the key and the scale — the same question asked at three different rates — which is why the Chord note-FX&#39;s <em>chord</em> setting and the generator&#39;s <code>IN KEY = CHORD</code> can both read it, on any lane, whether or not WEAVE is open.</p>
 <hr>
 <h2 id="11-weave--the-macros">The macros</h2>
 <p>Four knobs colour everything at once, and each of them changes the MUSIC rather than the treatment of it.</p>
@@ -2887,12 +3317,12 @@ uvicorn app:app --port 8765
 <hr>
 <h2 id="11-weave--print--keeping-what-you-heard">PRINT — keeping what you heard</h2>
 <p><strong>PRINT</strong> freezes what the weave is playing into a new scene: a full lap of the chord progression, laid end to end, as ordinary clips you can edit. It is an output, never the goal — the weave carries on folding either way.</p>
-<blockquote>
-<p><strong>Known limitation.</strong> A track that is still weaving plays its weave, not its clips — so launching a printed scene on a track that is still weaving plays the weave. Switch that track&#39;s topology to <code>— off —</code> to hear what was printed.</p>
-</blockquote>
+<p>Launching a printed scene plays what was printed, even on a track that is still weaving — the grid wins, as below. (This used to be a known limitation, with a note telling you to switch the track&#39;s topology off first. Do not: choosing a topology is now exactly the gesture that takes the track <em>back</em> from the grid.)</p>
 <hr>
 <h2 id="11-weave--two-things-worth-knowing">Two things worth knowing</h2>
-<p><strong>A scene does not choose what a weaving track plays.</strong> On a track with loops chosen, launching a scene decides only <em>whether</em> it sounds. What it sounds is the weave&#39;s own selection, the same in every scene — including a scene of empty clips.</p>
+<p><strong>The grid wins.</strong> Launch a scene and every weaving track hands itself back to it: each one plays the clip that scene gives it, or is silent where the scene leaves it empty. Launching a single clip from the grid does the same for that track alone. Nothing is destroyed — the topology, the loops, the position and the list are all still there — and the panel takes the track back the moment you use it: its own <strong>▶</strong>, a topology, or choosing or moving a loop. While the grid holds a track, <strong>Play skips it</strong>, and the panel&#39;s own <strong>▶</strong> is how you hand it back.</p>
+<p>What the grid takes is the <strong>crossfade</strong>, not the whole track. Following and generating are properties of the song rather than of an open panel, so a track that follows or generates goes on doing it through a scene launch.</p>
+<p>(This used to work the other way round, and it is worth knowing which build you are on: a weaving track once read its own selection and nothing else, so every scene sounded the same on it — including a scene of empty clips.)</p>
 <p><strong>Nothing here is undoable.</strong> A weave move is deliberately not an undo entry; it is a performance, not an edit. It IS saved with the session, and it nudges the autosave when it moves.</p>
 </section>
 <section class="chapter" id="12-developer-guide"><h1 id="12-developer-guide--developer-guide">Developer Guide</h1>
@@ -2901,7 +3331,7 @@ uvicorn app:app --port 8765
 <h2 id="12-developer-guide--the-spine">The spine</h2>
 <p>Three structures hold everything together:</p>
 <ol>
-<li><p><strong>A plugin registry</strong> — engines, FX and modulators are all plugins, and most of them are no longer in this repository&#39;s source at all. A plugin is a directory under <code>plugins/</code>, compiled into <code>public/plugins/&lt;id&gt;/</code>, and loaded by the browser <strong>at runtime</strong> off a JSON manifest; it compiles against <code>@loom/plugin-sdk</code> and talks to the host through one small runtime ABI, <code>globalThis.Loom</code>. Six engines, fifteen inserts and one modulator ship that way today. A shrinking in-tree SPI, discovered by a Vite <code>import.meta.glob</code> scan, still carries the LFO/ADSR modulators and the note-FX.</p>
+<li><p><strong>A plugin registry</strong> — engines, FX and modulators are all plugins, and most of them are no longer in this repository&#39;s source at all. A plugin is a directory under <code>plugins/</code>, compiled into <code>public/plugins/&lt;id&gt;/</code>, and loaded by the browser <strong>at runtime</strong> off a JSON manifest; it compiles against <code>@loom/plugin-sdk</code> and talks to the host through one small runtime ABI, <code>globalThis.Loom</code>. Six engines, fifteen inserts, two modulators and one whole VIEW (the WEAVE panel) ship that way today. A shrinking in-tree SPI, discovered by a Vite <code>import.meta.glob</code> scan, still carries the LFO/ADSR modulators and the note-FX.</p>
 </li>
 <li><p><strong><code>SessionState</code></strong> — the pure data model: lanes contain clips, scenes reference which clip each lane plays. No audio side-effects live here.</p>
 </li>
@@ -3121,11 +3551,18 @@ worklet engine&#39;s params are modulated per sample by <code>ModulationRuntime<
                       declared ONCE: engine params, automation targets,
                       modulation targets and mixer knob ids all read this
   engines/        SynthEngine abstraction, registry, and the HOST side of an
-                  instrument. Only THREE engines still have a file here —
-                  sampler, audio (the dedicated audio channel) and drums-engine
-                  — because each owns browser resources a plugin cannot hold.
-                  The other six arrive from plugins/ and register the same
-                  descriptor shape from their manifest. Nine in total.
+                  instrument. Only FOUR engines still have a file here —
+                  sampler, audio (the dedicated audio channel), drums-engine
+                  and layers — because each reaches for something a plugin
+                  cannot: the first three own browser resources, and layers
+                  builds OTHER engines through the renderer registry, which the
+                  plugin ABI deliberately forbids. The other six arrive from
+                  plugins/ and register the same descriptor shape from their
+                  manifest. Ten in total.
+                  layers-engine.ts + layers-rack-ui.ts — the host half of the
+                    rack; it carries itself on three declared hooks
+                    (dynamicParamsFor, structuralFor, extraUI) rather than an
+                    engineId === … anywhere in the core
                   Also: the lane engine wrappers (worklet-lane-engine,
                   sampler-/drums-/audio-worklet-engine), engine-selector UI,
                   engine-param-commit (the one write path for a param edit) and
@@ -3182,6 +3619,12 @@ worklet engine&#39;s params are modulated per sample by <code>ModulationRuntime<
                     note already sounding
                   duck-detector.ts — the sidechain envelope follower (one-pole,
                     asymmetric attack/release), run by the duck worklet
+                  layers/ — LAYERS: a voice made of other voices. layer-spec
+                    (the rack, and the TWO ways a note picks a slot — by
+                    keyboard ZONE when a person plays, by an INDEX the note
+                    carries when something upstream already knows) and
+                    layers-renderer, which builds sub-renderers through the
+                    registry and sums them
   audio-worklet/  The processors + typed node wrappers: loom-processor/loom-node
                   (melodic), drums-*, sampler-*, duck-* (the sidechain
                   follower). A processor is referenced ONLY via ?worker&amp;url and
@@ -3195,10 +3638,14 @@ worklet engine&#39;s params are modulated per sample by <code>ModulationRuntime<
                   the preset dropdown + Randomize, apply, store, templates and
                   the param id list (poly-params). Was src/polysynth/ before the
                   poly → instrument rename; the PolySynth class it was named
-                  after went with the worklet cutover. The `poly` names INSIDE
-                  it are load-bearing and must not be renamed: the localStorage
-                  key &#39;tb303-poly-presets-v1&#39; and the JSON shape stored under
-                  it. There are no migrations in this project
+                  after went with the worklet cutover. User presets are keyed
+                  BY ENGINE under &#39;loom-user-presets-v1&#39;; the old
+                  &#39;tb303-poly-presets-v1&#39; key is gone, and nothing reads it,
+                  because no released build ever wrote one. There are no
+                  migrations in this project. The `poly` names that ARE
+                  load-bearing live elsewhere: polyBlep in the SDK DSP, the
+                  manifest&#39;s polyphony field, and the poly group / poly.voices
+                  param id carried by five plugin manifests
   app/            Boot wiring, one module per concern (37 files). main.ts calls
                   into these; it does not contain them — see &quot;Boot&quot; above
                   audio spine  — audio-graph, lane-allocator, engine-swap,
@@ -3226,7 +3673,31 @@ worklet engine&#39;s params are modulated per sample by <code>ModulationRuntime<
                   attachKnobUndo + the undo keyboard — LIVE and load-bearing:
                   withUndo wraps mutation sites across the app)
   notefx/         Note-FX processors (arpeggiator, chord spread, random) —
-                  per-lane, applied to notes before they reach the engine
+                  per-lane, applied to notes before they reach the engine.
+                  The arp&#39;s `steps` pattern is written in POSITIONS rather than
+                  notes (arp-steps.ts), so it survives a transpose or a change
+                  of key, scale or octave
+  weave/          WEAVE&#39;s pure core — no DOM, no AudioContext, no module state.
+                  The blend (blend-rhythm / blend-melody / blend-clip), the
+                  three topologies, the master flow, the macros, the loop ids,
+                  loop-pool (the list a lane draws from, walked with wrap) and
+                  weave-runtime, which answers the scheduler&#39;s &quot;what does this
+                  lane play&quot; through SchedulerContext.notes
+  harmony/        The DERIVED accompaniment: what a lane plays when it FOLLOWS
+                  another rather than reading clips. follow-source is the door,
+                  shaped as the same WeaveSource the weave hands the scheduler;
+                  render-part picks between parts/ (bass, comp, pad, arp);
+                  cycle is the arrangement ladder that buys LENGTH, not density
+  generator/      GEN — a read head over a lane&#39;s own material rather than a
+                  producer of new notes. grid (how a bar is cut), pool (the
+                  blended bar&#39;s pitches, ordered), cadence (a floor on metric
+                  weight), chord (conform + voicing), note-timing (nudge and
+                  hold), displace (the two wheels) and generate, which walks
+                  the head. The panel row is data — src/app/panel-context-
+                  generator.ts declares the params and the plugin draws them
+  arranger/       The chord progression as session data: progression.ts and
+                  chord-track (chordDegreeAtTime — what chord is sounding at a
+                  given moment, read by the note-FX and by the generator)
   automation/     Clip envelope recording + read-back, the automation painter
                   and its LFO, the knob right-click menu — and the
                   DestinationRegistry, the ONE catalogue every parameter
@@ -3236,15 +3707,17 @@ worklet engine&#39;s params are modulated per sample by <code>ModulationRuntime<
   demo/           Baked MIDI demos + demo picker
   styles/         SCSS
 
-plugins/          PLUGIN SOURCE — 22 shipped directories, each a plugin.json
+plugins/          PLUGIN SOURCE — 24 shipped directories, each a plugin.json
                   plus its code: six engines (tb303, subtractive, fm, wavetable,
                   karplus, westcoast), fifteen inserts (autowah, bitcrusher,
                   chorus, compressor, delay, distortion, flanger, gate, limiter,
-                  multifilter, phaser, reverb, ringmod, tremolo, width) and one
-                  modulator (sh). A component that synthesises ships dsp.ts; an
-                  insert ships main.ts and builds native nodes on the main
-                  thread. Its tests live beside it. audio-probe is private:true
-                  — a fixture for the host&#39;s own tests, never shipped
+                  multifilter, phaser, reverb, ringmod, tremolo, width), two
+                  modulators (sh, pernote) and one PANEL (weave — a whole view,
+                  handed a DOM root and a PanelContext). A component that
+                  synthesises ships dsp.ts; an insert ships main.ts and builds
+                  native nodes on the main thread. Its tests live beside it.
+                  audio-probe is private:true — a fixture for the host&#39;s own
+                  tests, never shipped
 
 packages/
   loom-plugin-sdk/  @loom/plugin-sdk — the surface a plugin author compiles

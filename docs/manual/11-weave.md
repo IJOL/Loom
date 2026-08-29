@@ -231,6 +231,8 @@ Every chordal track follows one progression, walked across the session's bars an
 
 If the progression is longer than a track's clip, the track hears a **window** of it at a time rather than the first two chords for ever; a short progression tiles instead.
 
+**The progression is the session's, not the panel's.** It is stored with the key and the scale — the same question asked at three different rates — which is why the Chord note-FX's *chord* setting and the generator's `IN KEY = CHORD` can both read it, on any lane, whether or not WEAVE is open.
+
 ---
 
 ## The macros

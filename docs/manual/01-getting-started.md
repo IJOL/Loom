@@ -13,7 +13,7 @@ When the app opens it loads the *Minimal Techno* demo automatically, so there is
 
 1. Click the **▶ Play** button in the transport bar. The first click resumes the browser's AudioContext — this is a browser requirement; audio cannot start without a user gesture, so nothing plays until you press Play.
 2. Sound starts immediately. Use the **Volume** slider in the transport to adjust the output level.
-3. Want to hear a different demo? Select one from the **— load a demo —** dropdown (Minimal Techno, Acid Rain, Cordillera, Neon Drive). The session loads and begins at the first scene.
+3. Want to hear a different demo? There are **37** in the **— load a demo —** dropdown (also under **File ▸ Open Demo**). The first four — Minimal Techno, Acid Rain, Cordillera, Neon Drive — were built here; most of the rest are ports of tunes from the [Strudel](https://strudel.cc) library, from Giant Steps to Amensister, and one, Supersaw Mask, came across from a live-coding patch. Picking one loads the session and begins at the first scene.
 
 ![Loom with the Minimal Techno demo loaded and the session grid visible](images/app-overview.png)
 

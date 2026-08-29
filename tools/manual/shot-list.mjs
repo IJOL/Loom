@@ -345,9 +345,12 @@ export const SHOTS = [
     selector: '.page[data-page="instrument"]',
     setup: async (page) => {
       await openSamplerLane(page);
-      // Load a ready-made drumkit so the channel strips, keyboard map and
-      // Selected-sample editor render (a fresh Sampler lane is empty).
-      await loadPolyPreset(page, 'sampler:drumkit:tr808');
+      // A bundled MELODIC instrument, so the keyboard map's range bands, the
+      // channel strips and the sample editor all render (a fresh Sampler lane
+      // is empty). It used to be 'sampler:drumkit:tr808' — drum kits left this
+      // dropdown when it was cut to two groups, and this shot has been failing
+      // the whole manual build ever since.
+      await loadPolyPreset(page, 'sampler:melodic:strudel-rhodes');
       await page.locator('.dv-col').first().waitFor({ state: 'visible', timeout: 10_000 });
       await page.waitForTimeout(500); // keyboard / connector / sample-viewer canvases
     },
