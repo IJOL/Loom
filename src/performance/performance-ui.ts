@@ -20,6 +20,7 @@ import {
   toolbarTemplate, emptyTemplate, rulerTemplate, clipBandTemplate, labelTemplate,
 } from './performance-ui-templates';
 import { songBarSec } from '../core/song-position';
+import { peaksFor, paintWaveband, paintNoteband } from './band-render';
 
 export interface PerfUICallbacks {
   onPlay: () => void;
@@ -50,6 +51,11 @@ export interface PerfUICallbacks {
   onSetLoop: (enabled: boolean, startBar: number, endBar: number) => void;
   /** Ruler click: move the playhead to the clicked seconds. */
   onSeek?: (sec: number) => void;
+  /** What a band SHOWS (waveform / note preview / loop ticks / bars-chip).
+   *  Null for a clip the session no longer holds — the band paints as a ghost. */
+  resolveClipInfo?: (clipId: string) => import('./band-render').BandClipInfo | null;
+  /** The selected band ids — painted with the selection outline. */
+  selection?: ReadonlySet<string>;
   onMoveBand: (laneId: string, index: number, newAtSec: number) => void;
   onResizeBand: (laneId: string, index: number, edge: 'start' | 'end', newSec: number) => void;
   onDeleteBand: (laneId: string, index: number) => void;
@@ -128,4 +134,32 @@ export function renderPerformanceView(host: HTMLElement, state: ArrangementState
   host.classList.add('performance-view');
   if (effectiveDurationSec(state, cb.meter) > 0) attachWheelZoom(host, cb);
   render(viewTemplate(state, cb), host);
+  paintBandCanvases(host, cb);
+}
+
+/** One imperative pass after each lit commit: paint every band canvas from the
+ *  cached peaks / the clip's notes. Painting inside the template would tie the
+ *  canvas lifecycle to lit's diffing; painting here keeps it a plain "the DOM
+ *  is settled, fill the pixels" step, and it only runs on render commits. */
+function paintBandCanvases(host: HTMLElement, cb: PerfUICallbacks): void {
+  if (!cb.resolveClipInfo) return;
+  host.querySelectorAll<HTMLCanvasElement>('canvas.perf-clip-canvas').forEach((canvas) => {
+    const clipId = canvas.dataset.clipId ?? '';
+    const info = cb.resolveClipInfo!(clipId);
+    if (!info) return;
+    // Backing store sized from the CSS box (the band's inline width).
+    const boxW = Math.max(1, Math.round(parseFloat(canvas.dataset.w ?? '0')));
+    canvas.width = boxW;
+    canvas.height = 30;
+    if (info.kind === 'audio' && info.sampleId) {
+      const peaks = peaksFor(info.sampleId, 256);
+      if (peaks) {
+        const offsetFrac = info.loopSec > 0 ? (parseFloat(canvas.dataset.offsetSec ?? '0') / info.loopSec) : 0;
+        const spanFrac = info.loopSec > 0 ? (parseFloat(canvas.dataset.durSec ?? '0') / info.loopSec) : 1;
+        paintWaveband(canvas, peaks, offsetFrac, spanFrac);
+      }
+    } else if (info.kind === 'notes' && info.notes && info.lengthTicks) {
+      paintNoteband(canvas, info.notes, info.lengthTicks);
+    }
+  });
 }

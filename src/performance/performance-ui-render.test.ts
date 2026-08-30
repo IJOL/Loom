@@ -101,6 +101,35 @@ describe('renderPerformanceView', () => {
     expect(onSeek.mock.calls[0][0]).toBeCloseTo(3, 6);
   });
 
+  it('a band longer than its clip renders one looptick per extra iteration', () => {
+    const host = document.createElement('div');
+    const state = makeState({
+      lanes: [{
+        laneId: 'lane1',
+        // 4 iterations of a 2s clip → 3 ticks
+        clipEvents: [{ id: 'b1', clipId: 'c1', laneId: 'lane1', atSec: 0, untilSec: 8 }],
+        automation: [],
+      }],
+    });
+    const cb = makeCb({
+      resolveClipInfo: () => ({ kind: 'audio', sampleId: 's1', loopSec: 2 }),
+    } as never);
+    renderPerformanceView(host, state, cb);
+    expect(host.querySelectorAll('.perf-clip-looptick')).toHaveLength(3);
+    expect(host.querySelector('.perf-clip-bars')!.textContent).toContain('1 bar');
+  });
+
+  it('paints muted and selected bands as such', () => {
+    const host = document.createElement('div');
+    const state = makeState();
+    state.lanes[0].clipEvents[0].muted = true;
+    renderPerformanceView(host, state, makeCb({ selection: new Set(['b1']) } as never));
+    const clip = host.querySelector('.perf-clip') as HTMLElement;
+    expect(clip.classList.contains('muted')).toBe(true);
+    expect(clip.classList.contains('selected')).toBe(true);
+    expect(clip.getAttribute('data-band-id')).toBe('b1');
+  });
+
   it('marks a clip whose color cannot resolve as missing', () => {
     const host = document.createElement('div');
     renderPerformanceView(host, makeState(), makeCb({ resolveClipColor: () => '' }));

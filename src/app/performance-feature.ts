@@ -40,6 +40,8 @@ import { arrangementFromSession } from '../performance/arrangement-from-session'
 import { createHistory } from '../core/history';
 import { songBarSec } from '../core/song-position';
 import { moveEvent, resizeEvent, deleteEvent } from '../performance/arrangement-edit';
+import { clipLoopSec } from '../core/launch-timing';
+import { ticksPerBar } from '../core/meter';
 
 export interface PerformanceFeatureDeps {
   ctx: AudioContext;
@@ -176,6 +178,8 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   const commitArrUndo = () => arrHistory.commit(snapArr());
   let pxPerBar = 80;
   let brush: AutoBrush = 'line';
+  /** The selected band ids — runtime state, never persisted (spec §1). */
+  const bandSelection = new Set<string>();
   const laneIds = () => sessionHost.state.lanes.map((l) => l.id);
 
   // Everything the take DOES while it plays — launching clips, landing curves on
@@ -344,6 +348,17 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         refreshPerformanceView();
       },
       onSeek: (sec) => playback.seekTo(sec),
+      resolveClipInfo: (id) => {
+        const clip = findClip(id);
+        if (!clip) return null;
+        const loopSec = clipLoopSec(clip, arrangement.bpm, seq.meter);
+        if (clip.sample) return { kind: 'audio', sampleId: clip.sample.sampleId, loopSec };
+        return {
+          kind: 'notes', loopSec, notes: clip.notes,
+          lengthTicks: clip.lengthBars * ticksPerBar(seq.meter),
+        };
+      },
+      selection: bandSelection,
       onMoveBand: (laneId, index, newAtSec) => { commitArrUndo(); editBands(laneId, (evs) => moveEvent(evs, index, newAtSec, arrangement.bpm)); },
       onResizeBand: (laneId, index, edge, newSec) => { commitArrUndo(); editBands(laneId, (evs) => resizeEvent(evs, index, edge, newSec, arrangement.bpm)); },
       onDeleteBand: (laneId, index) => { commitArrUndo(); editBands(laneId, (evs) => deleteEvent(evs, index)); },

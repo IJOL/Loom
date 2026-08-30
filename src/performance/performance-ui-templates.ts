@@ -247,11 +247,36 @@ function clipTemplate(
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
   };
 
+  // What the band shows: a waveform for an audio clip, a note preview for a
+  // MIDI one (painted by performance-ui's paintBandCanvases pass after the lit
+  // commit), loop ticks where the band tiles past one clip iteration, and the
+  // bars-chip on audio bands. Muted paints dimmed; selection paints an outline.
+  const info = cb.resolveClipInfo?.(ev.clipId) ?? null;
+  const durSec = Math.min(ev.untilSec, durationSec) - ev.atSec;
+  const loops = info && info.loopSec > 0 ? Math.floor(durSec / info.loopSec + 1e-9) : 0;
+  const ticks = Math.max(0, Math.min(64, loops - 1));
+  const classes = ['perf-clip'];
+  if (!color) classes.push('missing');
+  if (ev.muted) classes.push('muted');
+  if (cb.selection?.has(ev.id)) classes.push('selected');
   return html`<div
-    class=${color ? 'perf-clip' : 'perf-clip missing'}
+    class=${classes.join(' ')}
+    data-band-id=${ev.id}
     style="left:${baseLeft};width:${baseWidth}${color ? `;background:${color}` : ''}"
     @pointerdown=${onBodyDown}
-  >${cb.resolveClipName(ev.clipId)}<span
+  >${info ? html`<canvas
+      class="perf-clip-canvas"
+      data-clip-id=${ev.clipId}
+      data-w=${Math.max(8, w)}
+      data-offset-sec=${ev.offsetSec ?? 0}
+      data-dur-sec=${durSec}
+    ></canvas>` : nothing}<span class="perf-clip-name">${cb.resolveClipName(ev.clipId)}</span>${Array.from(
+      { length: ticks },
+      (_, t) => html`<span
+        class="perf-clip-looptick"
+        style="left:${((t + 1) * info!.loopSec / barSec) * pxPerBar}px"
+      ></span>`,
+    )}${info?.kind === 'audio' ? html`<span class="perf-clip-bars">${Math.round(info.loopSec / barSec) || 1} bar${Math.round(info.loopSec / barSec) > 1 ? 's' : ''}</span>` : nothing}<span
       class="perf-clip-handle l"
       @pointerdown=${resize('start')}
     ></span><span
