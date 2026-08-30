@@ -109,6 +109,21 @@ describe('timeline wins — the weave door', () => {
   });
 });
 
+describe('band offset — the trimmed band enters the clip already started', () => {
+  it('launches with a past-shifted anchor: queuedBoundary = launch time - offsetSec', () => {
+    const { deps, laneStates, ctx, arrangement } = fixture();
+    arrangement.lanes[0].clipEvents[0].atSec = 2;
+    arrangement.lanes[0].clipEvents[0].untilSec = 6;
+    arrangement.lanes[0].clipEvents[0].offsetSec = 1.5;
+    const pb = createArrangementPlayback(deps);
+    pb.begin();
+    (ctx as { currentTime: number }).currentTime = 2;
+    pb.tick(2, 0.12);
+    // the clip "entered already started": its anchor sits offsetSec in the past
+    expect(laneStates.get('l1')!.queuedBoundary).toBeCloseTo(2 - 1.5, 9);
+  });
+});
+
 describe('launch-mute', () => {
   it('is the single-lane version of the same gate', () => {
     const { deps, ps, laneStates, ctx } = fixture();

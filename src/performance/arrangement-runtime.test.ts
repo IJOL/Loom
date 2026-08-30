@@ -90,6 +90,39 @@ describe('tickArrangement — muted bands', () => {
   });
 });
 
+describe('tickArrangement — band offset', () => {
+  it('forwards a band offsetSec to onLaunchClip', () => {
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'l1', 'c1', 2.0);
+    closePendingClipEvent(s, 'l1', 6.0);
+    s.lanes[0].clipEvents[0].offsetSec = 1.5;
+
+    const ps = createArrangementPlayState();
+    startArrangement(ps, 100);
+    const calls: Array<[string, string, number, number | undefined]> = [];
+    tickArrangement({
+      ps, state: s, nowCtx: 102, lookaheadSec: 0.12, bpm: 120,
+      onLaunchClip: (laneId, clipId, atCtx, offsetSec) => calls.push([laneId, clipId, atCtx, offsetSec]),
+      onStopLane: () => {},
+      applyAutomation: () => {},
+    });
+    expect(calls).toEqual([['l1', 'c1', 102, 1.5]]);
+  });
+
+  it('a seek INTO a band adds the intra-band elapsed to the band offset', () => {
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'l1', 'c1', 2.0);
+    closePendingClipEvent(s, 'l1', 6.0);
+    s.lanes[0].clipEvents[0].offsetSec = 1.5;
+
+    const ps = createArrangementPlayState();
+    const calls: Array<[string, number | undefined]> = [];
+    // seek to t=3: one second into the band → offset 1.5 + 1 = 2.5
+    startArrangementAt(ps, 100, s, 3, (laneId, _c, _at, offsetSec) => calls.push([laneId, offsetSec]));
+    expect(calls).toEqual([['l1', 2.5]]);
+  });
+});
+
 describe('tickArrangement', () => {
   it('emits launchClip when an event falls inside the lookahead window', () => {
     const s = emptyArrangementState(120);

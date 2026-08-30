@@ -81,7 +81,7 @@ export interface ArrangementPlayback {
 export function createArrangementPlayback(deps: ArrangementPlaybackDeps): ArrangementPlayback {
   const { ctx, seq, sessionHost, automationRegistry, arrangement, ps, recHooks } = deps;
 
-  function onLaunchClip(laneId: string, clipId: string, atCtx: number) {
+  function onLaunchClip(laneId: string, clipId: string, atCtx: number, offsetSec = 0) {
     const lane = sessionHost.state.lanes.find((l) => l.id === laneId);
     if (!lane) return;
     const clip = lane.clips.find((c) => c?.id === clipId);
@@ -94,7 +94,12 @@ export function createArrangementPlayback(deps: ArrangementPlaybackDeps): Arrang
     // next absolute bar boundary, leaving a silent first bar. Clamp to now so the
     // very first event (atSec 0, already a hair in the past once the tick fires)
     // schedules immediately rather than at a past time.
-    launchClipAtTime(sessionHost.laneStates, lane, clip, Math.max(atCtx, ctx.currentTime));
+    //
+    // The band's content offset is a PAST-SHIFTED anchor: subtracting it AFTER
+    // the clamp makes the clip enter already `offsetSec` into itself — the same
+    // mid-clip-entry machinery the A-loop seek exercises, so notes before the
+    // offset are simply outside the look-ahead window and never fire.
+    launchClipAtTime(sessionHost.laneStates, lane, clip, Math.max(atCtx, ctx.currentTime) - offsetSec);
   }
 
   function onStopLane(laneId: string) {

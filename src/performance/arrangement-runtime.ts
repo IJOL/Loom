@@ -40,9 +40,6 @@ export function stopArrangement(ps: ArrangementPlayState): void {
   ps.nextStopIdxPerLane.clear();
 }
 
-/** Point every lane's launch/stop pointers at `atSec` (skipping events already
- *  finished by then) and relaunch the clip spanning `atSec` at `relaunchAtCtx`.
- *  Shared by the A-B loop wrap and the loop-start seek (startArrangementAt). */
 /** One lane's half of anchorLanesAt: point its launch/stop pointers at `atSec`
  *  and relaunch the band spanning it. Exported on its own for the un-solo path,
  *  which re-anchors exactly the lanes that just came back to the arrangement. */
@@ -51,7 +48,7 @@ export function anchorLaneAt(
   lane: ArrangementLaneRec,
   atSec: number,
   relaunchAtCtx: number,
-  onLaunchClip: (laneId: string, clipId: string, atCtx: number) => void,
+  onLaunchClip: (laneId: string, clipId: string, atCtx: number, offsetSec?: number) => void,
 ): void {
   let idx = 0;
   let stopIdx = 0;
@@ -65,7 +62,14 @@ export function anchorLaneAt(
   }
   ps.nextEventIdxPerLane.set(lane.laneId, idx);
   ps.nextStopIdxPerLane.set(lane.laneId, stopIdx);
-  if (active && !active.muted) onLaunchClip(lane.laneId, active.clipId, relaunchAtCtx);
+  // A seek into the middle of a band re-enters the CLIP mid-flight too: the
+  // content offset is the band's own trim plus however far into the band the
+  // seek landed. (This also fixes the A-loop wrap restarting a spanning clip
+  // from its top.)
+  if (active && !active.muted) {
+    onLaunchClip(lane.laneId, active.clipId, relaunchAtCtx,
+                 (active.offsetSec ?? 0) + (atSec - active.atSec));
+  }
 }
 
 function anchorLanesAt(
@@ -73,7 +77,7 @@ function anchorLanesAt(
   state: ArrangementState,
   atSec: number,
   relaunchAtCtx: number,
-  onLaunchClip: (laneId: string, clipId: string, atCtx: number) => void,
+  onLaunchClip: (laneId: string, clipId: string, atCtx: number, offsetSec?: number) => void,
 ): void {
   for (const lane of state.lanes) anchorLaneAt(ps, lane, atSec, relaunchAtCtx, onLaunchClip);
 }
@@ -86,7 +90,7 @@ export function startArrangementAt(
   nowCtx: number,
   state: ArrangementState,
   startSec: number,
-  onLaunchClip: (laneId: string, clipId: string, atCtx: number) => void,
+  onLaunchClip: (laneId: string, clipId: string, atCtx: number, offsetSec?: number) => void,
 ): void {
   startArrangement(ps, nowCtx);
   if (startSec <= 0) return;
@@ -122,7 +126,7 @@ export interface TickArrangementArgs {
   nowCtx: number;
   lookaheadSec: number;
   bpm: number;
-  onLaunchClip: (laneId: string, clipId: string, atCtx: number) => void;
+  onLaunchClip: (laneId: string, clipId: string, atCtx: number, offsetSec?: number) => void;
   onStopLane: (laneId: string, atCtx: number) => void;
   applyAutomation: (paramId: string, valueNorm: number) => void;
   loopWindow?: { startSec: number; endSec: number; active: boolean };
@@ -144,7 +148,7 @@ export function tickArrangement(args: TickArrangementArgs): void {
       const ev = lane.clipEvents[i];
       // A muted band exists but never fires — the gate lives HERE, not in the
       // paint, so it holds for every launch path (tick, seek, loop wrap).
-      if (!ev.muted) onLaunchClip(lane.laneId, ev.clipId, ps.startedAtCtx + ev.atSec);
+      if (!ev.muted) onLaunchClip(lane.laneId, ev.clipId, ps.startedAtCtx + ev.atSec, ev.offsetSec ?? 0);
       i++;
     }
     ps.nextEventIdxPerLane.set(lane.laneId, i);
