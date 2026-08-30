@@ -8,7 +8,7 @@ Switch between the two views using the **Session / Performance** toggle in the t
 
 ---
 
-## Four ways to fill the arrangement
+## Five ways to fill the arrangement
 
 The arrangement starts empty — and an empty arrangement invites its primary gesture: **drop audio loops on it**.
 
@@ -22,7 +22,26 @@ Drag audio files (WAV, MP3, FLAC, OGG, M4A, AIFF) from your file manager anywher
 
 Dropping several files at once creates one lane per file, all starting at the drop bar. Nothing about this is a parallel world: the dropped loop is an **ordinary session clip on an ordinary Audio lane** — it appears in the Session grid too, launches from there like any clip, and saves in the session file with its sample in the project's sample store.
 
-### 2. Copy to Performance
+### 2. Record a loop (●)
+
+The other way in is to **record** a loop instead of dropping one. The **●** button — in the Performance toolbar, and on the big invitation when the timeline is empty — is a bar-quantized looper:
+
+1. Press **●**. Recording is armed for the **next bar boundary** — the button blinks and the toolbar shows *recording at bar N…*. If the transport is stopped, it starts playing first.
+2. When the bar arrives, recording begins. The button turns solid red with a live bar count, and a red ghost band grows on the **＋ new lane** strip where the take will land.
+3. Press **●** again. Recording continues to the **end of the current bar** and stops there — the cut is sample-exact, so the loop is always a whole number of bars with no tail.
+4. The take lands exactly like a dropped file: a new **Audio lane**, a clip at the session tempo, and a band at the bar where recording **started**. Undo removes it like any drop.
+
+What it records is chosen by the **source selector** next to ●:
+
+- **Master** (the default) — resamples Loom's own output: everything you hear becomes the loop. No permissions needed.
+- **System** — records the computer's audio via the browser's screen-share picker (tick **share audio** — a browser tab, a different app, anything).
+- **Mic** — records the microphone, unprocessed (no echo cancellation or noise suppression — it is music, not a call).
+
+For the external sources a **🎧 monitor** toggle appears; it is **off by default** — turn it on to hear what you are recording through Loom (mind the feedback loop with a live microphone on speakers).
+
+Escape hatches: **Esc** cancels a countdown or a recording outright; pressing **⏹ Stop** while recording keeps the whole bars already played and drops the partial one (if no bar has completed, the take is discarded); switching views cancels a countdown but lets a running recording finish and land.
+
+### 3. Copy to Performance
 
 The fastest route from a working session to a playable song is the **⤉ Copy-to-Performance** button (`#copy-to-performance`) in the session bar of the header — now an icon-only button with the tooltip "Copy the scenes to the Performance timeline". Clicking it calls `arrangementFromSession`, which walks your scenes in order and lays them out as a linear song:
 
@@ -32,7 +51,7 @@ The fastest route from a working session to a playable song is the **⤉ Copy-to
 
 After the layout is computed, Loom switches you to Performance automatically. **This one is not undoable** — it overwrites whatever arrangement was there, so copy before you start editing bands by hand, not after.
 
-### 3. Record a take live
+### 4. Record a take live
 
 You can record the arrangement in real time while you play.
 
@@ -45,7 +64,7 @@ Recording is driven by the unified **REC** control in the session bar, which has
 
 If you arm REC and then switch to Performance mode before pressing Play, the arm is cleared automatically (a toast notification appears) because Performance mode drives playback from the arrangement directly rather than from the live session.
 
-### 4. MIDI import
+### 5. MIDI import
 
 When you import a Standard MIDI File via **File ▸ Import MIDI…** (see [MIDI & Samples](08-midi-and-samples.md)), Loom calls the same `arrangementFromSession` logic after building the session. Because an imported MIDI file produces a single scene whose clips span the full song, the arrangement comes out as one long section per lane — the complete track laid out linearly from bar 1.
 
