@@ -17,6 +17,7 @@ import type {
 export interface SubParams {
   masterTune: number;       // semitones
   unisonVoices: number;     // 1..7 stacked copies of osc1/osc2 (read at trigger)
+  unisonMode: number;       // UNISON_MODES index — interval per copy (read at trigger)
   unisonDetune: number;     // spread across the stack, cents
   unisonDrift: number;      // 0..1 analog per-copy pitch wander
   osc1Wave: number; osc1Level: number; osc1Detune: number;   // wave 0..4, level 0..1, detune cents
@@ -54,6 +55,7 @@ const NO_SLOTS = new Float64Array(0);
 export function subParamsInto(b: ParamBag, out: SubParams): SubParams {
   out.masterTune = param(b, 'master.tune', 0);
   out.unisonVoices = param(b, 'master.unison', 1);
+  out.unisonMode = param(b, 'master.unisonMode', 0);
   out.unisonDetune = param(b, 'master.detune', 25);
   out.unisonDrift = param(b, 'master.drift', 0);
   out.osc1Wave = param(b, 'osc1.wave', 0);
@@ -240,8 +242,8 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     const baseFreq = this.noteHz * Math.pow(2, p.masterTune / 12);
     // The stack size is read once, here: you cannot grow a stack mid-note without
     // a click, so it is a trigger-time decision like the filter kind.
-    this.osc1 = new UnisonStack(p.osc1Wave, p.unisonVoices, sampleRate);
-    this.osc2 = new UnisonStack(p.osc2Wave, p.unisonVoices, sampleRate);
+    this.osc1 = new UnisonStack(p.osc1Wave, p.unisonVoices, sampleRate, p.unisonMode);
+    this.osc2 = new UnisonStack(p.osc2Wave, p.unisonVoices, sampleRate, p.unisonMode);
     this.driftDepth = driftDepthFor(baseFreq);
     this.sub = new SineOsc(sampleRate);
     this.noiseLp = new Svf(sampleRate);

@@ -186,3 +186,45 @@ describe('WestcoastRenderer', () => {
   // touches — it calls Loom.registerRenderer instead, and
   // westcoast-parity.dsp.test.ts asserts exactly that, at the right door.
 });
+
+describe('unison stack on the main oscillator', () => {
+  // Everything that could put its own energy at 440 is off: no FM, no ring, no
+  // sub, fold at zero (drive 0.1 on a symmetric sine adds no even harmonics),
+  // LPG open in filter mode. A sine main at 220 then has nothing an octave up
+  // — Octave mode's second copy is the only possible source.
+  const CLEAN: ParamBag = {
+    ...P, 'osc.fmIndex': 0, 'osc.ring': 0, 'osc.subDiv': 0,
+    'timbre.fold': 0, 'timbre.symmetry': 0,
+    'lpg.mode': 0, 'lpg.cutoff': 1, 'lpg.resonance': 0,
+    'osc.unison': 2, 'osc.spread': 0, 'osc.unisonMode': 0,
+  };
+  const mag = (xs: Float32Array, freqHz: number): number => {
+    let re = 0;
+    let im = 0;
+    const w = (2 * Math.PI * freqHz) / SR;
+    for (let i = 0; i < xs.length; i++) {
+      re += xs[i] * Math.cos(w * i);
+      im += xs[i] * Math.sin(w * i);
+    }
+    return Math.hypot(re, im);
+  };
+
+  it('osc.unisonMode reaches the stack: Octave adds energy an octave up', () => {
+    const n = note({ midi: 57, durationSec: 0.5 }); // 220 Hz
+    const plain = render(CLEAN, n, 0.25);
+    const octave = render({ ...CLEAN, 'osc.unisonMode': 1 }, n, 0.25);
+    expect(mag(plain, 220)).toBeGreaterThan(0.1);
+    expect(mag(octave, 440)).toBeGreaterThan(mag(plain, 440) * 5);
+  });
+
+  it('a patch that never mentions unison is bit-identical to the single osc', () => {
+    // P carries no unison params at all — the silent defaults must be the
+    // pre-unison voice, or every saved Westcoast patch changes sound on load.
+    const n = note({ midi: 57, durationSec: 0.5 });
+    const a = render(P, n, 0.25);
+    const b = render({ ...P, 'osc.unison': 1, 'osc.unisonMode': 0, 'osc.spread': 15 }, n, 0.25);
+    let d = 0;
+    for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
+    expect(d).toBe(0);
+  });
+});

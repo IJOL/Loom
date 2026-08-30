@@ -164,7 +164,27 @@ var ModEnvHost = class {
 var TWO_PI = Math.PI * 2;
 
 // packages/loom-plugin-sdk/src/dsp/unison.ts
+var harmonicSemis = (k) => 12 * Math.log2(k);
+var cycle = (semis) => (u) => semis[u % semis.length];
+var UNISON_MODES = [
+  // The classic supersaw: every copy at the root, only the spread separates
+  // them. Mode 0 so an unaware caller gets exactly the pre-mode stack.
+  { id: "unison", label: "Unison", semisFor: () => 0 },
+  { id: "octave", label: "Octave", semisFor: cycle([0, 12]) },
+  // The middle copy drops an octave — a sub under the spread. Needs a stack
+  // wide enough to HAVE a middle that is not the root.
+  { id: "center-drop", label: "Center Drop", semisFor: (u, n) => n >= 3 && u === n >> 1 ? -12 : 0 },
+  { id: "power-chord", label: "Power Chord", semisFor: cycle([0, 7, 12]) },
+  { id: "major", label: "Major", semisFor: cycle([0, 4, 7, 12]) },
+  { id: "minor", label: "Minor", semisFor: cycle([0, 3, 7, 12]) },
+  // The harmonic series itself: copy u sings partial u+1. Not equal-tempered
+  // on purpose — 19.02, 27.86… is what makes it sound like an organ drawbar
+  // rig instead of a chord.
+  { id: "harmonics", label: "Harmonics", semisFor: (u) => harmonicSemis(u + 1) },
+  { id: "odd-harmonics", label: "Odd Harmonics", semisFor: (u) => harmonicSemis(2 * u + 1) }
+];
 var TWO_PI2 = Math.PI * 2;
+var unisonGain = (n) => 1 / Math.pow(n, 0.3);
 
 // packages/loom-plugin-sdk/src/dsp/filter-kinds.ts
 var FILTER_MODES = [
@@ -251,12 +271,19 @@ var KarplusRenderer = class {
   // snapshot (see the constructor) so a single note can never clip regardless
   // of the resonance the live knobs later dial in.
   normGain;
-  // The REAL playback loop — persistent per-sample state, live coefficients.
-  loop;
-  // Cached expensive conversion: gFromDamping (pow+exp+log) is not a
-  // per-sample cost while the damping knob is settled.
+  // The REAL playback loops — one string per unison copy (one by default),
+  // persistent per-sample state, live coefficients. All copies share the SAME
+  // excitation burst: their detuned delay lines decorrelate the ring on their
+  // own, and generating (and dry-running) one burst per string would multiply
+  // exactly the constructor cost that already sits inside process()'s budget.
+  loops;
+  /** Each string's own frequency — root first, mode intervals + spread after. */
+  freqs;
+  stackGain;
+  // Cached expensive conversion: gFromDamping (pow+exp+log) per string is not
+  // a per-sample cost while the damping knob is settled.
   dampRaw = NaN;
-  gCache = 0;
+  gCaches;
   modEnv = new ModEnvHost();
   /** The lane's live (smoothed) values, or null when this voice runs standalone
    *  (the offline kernel builds renderers directly). Addressed by the four slots
@@ -287,12 +314,24 @@ var KarplusRenderer = class {
     this.brightnessBase = param(p, "string.brightness", 0.65);
     this.vel = velGain01(note.velocity, note.accent);
     this.freq = midiToFreq(note.midi);
+    const nStr = Math.max(1, Math.min(7, Math.round(param(p, "string.unison", 1))));
+    const uMode = UNISON_MODES[Math.max(0, Math.min(UNISON_MODES.length - 1, Math.round(param(p, "string.unisonMode", 0))))];
+    const spreadC = param(p, "string.spread", 8);
+    this.freqs = new Float64Array(nStr);
+    for (let u = 0; u < nStr; u++) {
+      const pos = nStr === 1 ? 0 : u / (nStr - 1) * 2 - 1;
+      this.freqs[u] = this.freq * Math.pow(2, (uMode.semisFor(u, nStr) * 100 + pos * spreadC) / 1200);
+    }
+    this.stackGain = unisonGain(nStr);
+    this.gCaches = new Float64Array(nStr);
     const a0 = aFromBrightness(this.brightnessBase);
+    const sizeFor = (hz) => {
+      const Ldelay = Math.max(1, fs / Math.max(20, hz) - (1 - a0) / a0);
+      const Li2 = Math.floor(Ldelay);
+      return { Li: Li2, frac: Ldelay - Li2, dlSize: Li2 + 2 };
+    };
     const period = fs / Math.max(20, this.freq);
-    const Ldelay = Math.max(1, period - (1 - a0) / a0);
-    const Li = Math.floor(Ldelay);
-    const frac = Ldelay - Li;
-    const dlSize = Li + 2;
+    const { Li, frac, dlSize } = sizeFor(this.freq);
     this.totalSamples = Math.max(1, Math.round(
       Math.min(8, Math.max(0.4, note.durationSec + this.rel + 0.3)) * fs
     ));
@@ -325,7 +364,11 @@ var KarplusRenderer = class {
       if (s > pk) pk = s;
     }
     this.normGain = pk > 1e-9 ? 1 / pk : 1;
-    this.loop = new KsLoop(Li, frac, dlSize);
+    this.loops = [];
+    for (let u = 0; u < nStr; u++) {
+      const s = sizeFor(this.freqs[u]);
+      this.loops.push(new KsLoop(s.Li, s.frac, s.dlSize));
+    }
   }
   noteOff(t) {
     if (t < this.holdEnd) this.holdEnd = t;
@@ -360,11 +403,17 @@ var KarplusRenderer = class {
     const brightness = L && this.sBrightness >= 0 ? L[this.sBrightness] : this.brightnessBase;
     if (damping !== this.dampRaw) {
       this.dampRaw = damping;
-      this.gCache = gFromDamping(damping, this.freq);
+      for (let u = 0; u < this.loops.length; u++) {
+        this.gCaches[u] = gFromDamping(damping, this.freqs[u]);
+      }
     }
     const a = aFromBrightness(brightness);
     const exc = idx < this.exciteLen ? this.excBurst[idx] : 0;
-    const raw = this.loop.step(exc, a, this.gCache) * this.normGain;
+    let sum = 0;
+    for (let u = 0; u < this.loops.length; u++) {
+      sum += this.loops[u].step(exc, a, this.gCaches[u]);
+    }
+    const raw = sum * this.normGain * this.stackGain;
     let env = 1;
     if (this.ampEnvOn) {
       const dt = t - this.begin;

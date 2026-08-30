@@ -165,7 +165,27 @@ var ModEnvHost = class {
 var TWO_PI = Math.PI * 2;
 
 // packages/loom-plugin-sdk/src/dsp/unison.ts
+var harmonicSemis = (k) => 12 * Math.log2(k);
+var cycle = (semis) => (u) => semis[u % semis.length];
+var UNISON_MODES = [
+  // The classic supersaw: every copy at the root, only the spread separates
+  // them. Mode 0 so an unaware caller gets exactly the pre-mode stack.
+  { id: "unison", label: "Unison", semisFor: () => 0 },
+  { id: "octave", label: "Octave", semisFor: cycle([0, 12]) },
+  // The middle copy drops an octave — a sub under the spread. Needs a stack
+  // wide enough to HAVE a middle that is not the root.
+  { id: "center-drop", label: "Center Drop", semisFor: (u, n) => n >= 3 && u === n >> 1 ? -12 : 0 },
+  { id: "power-chord", label: "Power Chord", semisFor: cycle([0, 7, 12]) },
+  { id: "major", label: "Major", semisFor: cycle([0, 4, 7, 12]) },
+  { id: "minor", label: "Minor", semisFor: cycle([0, 3, 7, 12]) },
+  // The harmonic series itself: copy u sings partial u+1. Not equal-tempered
+  // on purpose — 19.02, 27.86… is what makes it sound like an organ drawbar
+  // rig instead of a chord.
+  { id: "harmonics", label: "Harmonics", semisFor: (u) => harmonicSemis(u + 1) },
+  { id: "odd-harmonics", label: "Odd Harmonics", semisFor: (u) => harmonicSemis(2 * u + 1) }
+];
 var TWO_PI2 = Math.PI * 2;
+var unisonGain = (n) => 1 / Math.pow(n, 0.3);
 
 // packages/loom-plugin-sdk/src/dsp/filter-kinds.ts
 var FILTER_MODES = [
@@ -248,7 +268,6 @@ var FMRenderer = class {
     this.opR = [];
     this.lvl = [];
     for (let i = 1; i <= 4; i++) {
-      this.oscs.push(new FmSine(sr));
       this.envs.push(new Adsr());
       this.ratioBase.push(param(p, `op${i}.ratio`, 1));
       this.detuneBase.push(param(p, `op${i}.detune`, 0));
@@ -258,6 +277,18 @@ var FMRenderer = class {
       this.opR.push(Math.max(5e-3, param(p, `op${i}.release`, 0.3)));
       this.lvl.push(param(p, `op${i}.level`, 0.6));
     }
+    const nCp = Math.max(1, Math.min(5, Math.round(param(p, "unison.count", 1))));
+    const uMode = UNISON_MODES[Math.max(0, Math.min(UNISON_MODES.length - 1, Math.round(param(p, "unison.mode", 0))))];
+    const spreadC = param(p, "unison.spread", 10);
+    this.nCopies = nCp;
+    this.copyMul = new Float64Array(nCp);
+    for (let u = 0; u < nCp; u++) {
+      const pos = nCp === 1 ? 0 : u / (nCp - 1) * 2 - 1;
+      this.copyMul[u] = Math.pow(2, (uMode.semisFor(u, nCp) * 100 + pos * spreadC) / 1200);
+    }
+    this.stackGain = unisonGain(nCp);
+    this.fbStates = new Float64Array(nCp);
+    for (let u = 0; u < nCp * 4; u++) this.oscs.push(new FmSine(sr));
   }
   begin;
   holdEnd;
@@ -282,7 +313,16 @@ var FMRenderer = class {
   mix;
   vel;
   outputTrim;
-  fbState = 0;
+  // Unison: N copies of the whole 4-op chain (one by default). Per-copy state
+  // is only what makes a copy a different SOUND — oscillator phases (oscs holds
+  // 4·N, copy u at offset 4u) and the op4 feedback sample. The envelopes and
+  // levels stay shared: they are the note's, not the chain's.
+  nCopies;
+  copyMul;
+  stackGain;
+  fbStates;
+  envVal = new Float64Array(4);
+  lvlEff = new Float64Array(4);
   modEnv = new ModEnvHost();
   /** The lane's live (smoothed) values, or null when this voice runs standalone
    *  (the offline kernel builds renderers directly). Addressed by the slots
@@ -349,28 +389,34 @@ var FMRenderer = class {
         fe[i] = this.f0 * effRatio * Math.pow(2, effDetune / 1200);
       }
     }
-    for (let i = 3; i >= 0; i--) {
-      const env = this.envs[i].update(t, gate, this.opA[i], this.opD[i], this.opS[i], this.opR[i]);
-      let fmHz = 0;
-      for (const mIdx of algo[i]) {
-        const mLvlBase = L && this.sLevel[mIdx] >= 0 ? L[this.sLevel[mIdx]] : this.lvl[mIdx];
-        const mLvlOff = mo?.[this.sLevel[mIdx]];
-        const mLvl = mLvlOff ? clamp01(mLvlBase + mLvlOff) : mLvlBase;
-        fmHz += opOut[mIdx] * fe[mIdx] * mLvl * FM_DEPTH;
-      }
-      if (i === 3 && feedback > 0) {
-        fmHz += this.fbState * fe[3] * feedback * FB_DEPTH;
-      }
-      opOut[i] = this.oscs[i].next(fe[i], fmHz) * env;
-      if (i === 3) this.fbState = opOut[3];
+    const ev = this.envVal;
+    const le = this.lvlEff;
+    for (let i = 0; i < 4; i++) {
+      ev[i] = this.envs[i].update(t, gate, this.opA[i], this.opD[i], this.opS[i], this.opR[i]);
+      const lvlBase = L && this.sLevel[i] >= 0 ? L[this.sLevel[i]] : this.lvl[i];
+      const lo = mo?.[this.sLevel[i]];
+      le[i] = lo ? clamp01(lvlBase + lo) : lvlBase;
     }
     let out = 0;
-    for (const c of carriers) {
-      const lvlBase = L && this.sLevel[c] >= 0 ? L[this.sLevel[c]] : this.lvl[c];
-      const lo = mo?.[this.sLevel[c]];
-      const lvl = lo ? clamp01(lvlBase + lo) : lvlBase;
-      out += opOut[c] * lvl;
+    for (let u = 0; u < this.nCopies; u++) {
+      const mul = this.copyMul[u];
+      const off = u * 4;
+      for (let i = 3; i >= 0; i--) {
+        let fmHz = 0;
+        for (const mIdx of algo[i]) {
+          fmHz += opOut[mIdx] * fe[mIdx] * mul * le[mIdx] * FM_DEPTH;
+        }
+        if (i === 3 && feedback > 0) {
+          fmHz += this.fbStates[u] * fe[3] * mul * feedback * FB_DEPTH;
+        }
+        opOut[i] = this.oscs[off + i].next(fe[i] * mul, fmHz) * ev[i];
+      }
+      this.fbStates[u] = opOut[3];
+      let copyOut = 0;
+      for (const c of carriers) copyOut += opOut[c] * le[c];
+      out += Math.tanh(copyOut * FM_DRIVE);
     }
+    out *= this.stackGain;
     let allOff = true;
     for (let i = 0; i < 4; i++) {
       if (!this.envs[i].isOff) {
@@ -382,8 +428,7 @@ var FMRenderer = class {
       this.done = true;
     }
     const mix = mo?.[this.sMix] ? Math.max(0, mixKnob + mo[this.sMix]) : mixKnob;
-    const shaped = Math.tanh(out * FM_DRIVE);
-    let s = shaped * outputTrimKnob * mix * this.vel;
+    let s = out * outputTrimKnob * mix * this.vel;
     if (mo?.[this.sAmpGain]) s *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
     return s;
   }

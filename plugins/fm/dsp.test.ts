@@ -189,3 +189,46 @@ describe('FMRenderer', () => {
   // dsp.ts no longer touches — it calls Loom.registerRenderer instead, and
   // fm-parity.dsp.test.ts asserts exactly that, at the right door.
 });
+
+describe('unison stacks', () => {
+  // Mute every modulator (algorithm 0 = serial 4→3→2→1, so op1 alone is the
+  // carrier) and the voice is a pure sine at 220 — nothing at 440 until
+  // Octave mode's second chain actually sits there.
+  const PURE = base({
+    'op2.level': 0, 'op3.level': 0, 'op4.level': 0, feedback: 0,
+    'unison.count': 2, 'unison.spread': 0, 'unison.mode': 0,
+  });
+  const renderF = (bag: ParamBag): number[] => {
+    const v = new FMRenderer(note({ durationSec: 0.5 }), bag, SR);
+    const out: number[] = [];
+    for (let i = 0; i < SR * 0.25; i++) out.push(v.renderSample(i / SR));
+    return out;
+  };
+  const mag = (xs: number[], freqHz: number): number => {
+    let re = 0;
+    let im = 0;
+    const w = (2 * Math.PI * freqHz) / SR;
+    for (let i = 0; i < xs.length; i++) {
+      re += xs[i] * Math.cos(w * i);
+      im += xs[i] * Math.sin(w * i);
+    }
+    return Math.hypot(re, im);
+  };
+
+  it('unison.mode reaches the op chains: Octave adds energy an octave up', () => {
+    const plain = renderF(PURE);
+    const octave = renderF({ ...PURE, 'unison.mode': 1 });
+    expect(mag(plain, 220)).toBeGreaterThan(0.1);
+    expect(mag(octave, 440)).toBeGreaterThan(mag(plain, 440) * 5);
+  });
+
+  it('a patch that never mentions unison is bit-identical to one chain', () => {
+    // base() carries no unison params — the silent defaults must be the
+    // pre-unison voice, or every saved FM patch changes sound on load.
+    const a = renderF(base());
+    const b = renderF(base({ 'unison.count': 1, 'unison.mode': 0, 'unison.spread': 10 }));
+    let d = 0;
+    for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
+    expect(d).toBe(0);
+  });
+});

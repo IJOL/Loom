@@ -667,6 +667,49 @@
           "group": "master"
         },
         {
+          "id": "master.unisonMode",
+          "label": "Stack",
+          "kind": "discrete",
+          "min": 0,
+          "max": 7,
+          "default": 0,
+          "group": "master",
+          "options": [
+            {
+              "value": "0",
+              "label": "Unison"
+            },
+            {
+              "value": "1",
+              "label": "Octave"
+            },
+            {
+              "value": "2",
+              "label": "Center Drop"
+            },
+            {
+              "value": "3",
+              "label": "Power Chord"
+            },
+            {
+              "value": "4",
+              "label": "Major"
+            },
+            {
+              "value": "5",
+              "label": "Minor"
+            },
+            {
+              "value": "6",
+              "label": "Harmonics"
+            },
+            {
+              "value": "7",
+              "label": "Odd Harmonics"
+            }
+          ]
+        },
+        {
           "id": "master.detune",
           "label": "Detune",
           "kind": "continuous",

@@ -5,6 +5,25 @@ var EMPTY = new Float64Array(0);
 var TWO_PI = Math.PI * 2;
 
 // packages/loom-plugin-sdk/src/dsp/unison.ts
+var harmonicSemis = (k) => 12 * Math.log2(k);
+var cycle = (semis) => (u) => semis[u % semis.length];
+var UNISON_MODES = [
+  // The classic supersaw: every copy at the root, only the spread separates
+  // them. Mode 0 so an unaware caller gets exactly the pre-mode stack.
+  { id: "unison", label: "Unison", semisFor: () => 0 },
+  { id: "octave", label: "Octave", semisFor: cycle([0, 12]) },
+  // The middle copy drops an octave — a sub under the spread. Needs a stack
+  // wide enough to HAVE a middle that is not the root.
+  { id: "center-drop", label: "Center Drop", semisFor: (u, n) => n >= 3 && u === n >> 1 ? -12 : 0 },
+  { id: "power-chord", label: "Power Chord", semisFor: cycle([0, 7, 12]) },
+  { id: "major", label: "Major", semisFor: cycle([0, 4, 7, 12]) },
+  { id: "minor", label: "Minor", semisFor: cycle([0, 3, 7, 12]) },
+  // The harmonic series itself: copy u sings partial u+1. Not equal-tempered
+  // on purpose — 19.02, 27.86… is what makes it sound like an organ drawbar
+  // rig instead of a chord.
+  { id: "harmonics", label: "Harmonics", semisFor: (u) => harmonicSemis(u + 1) },
+  { id: "odd-harmonics", label: "Odd Harmonics", semisFor: (u) => harmonicSemis(2 * u + 1) }
+];
 var TWO_PI2 = Math.PI * 2;
 
 // packages/loom-plugin-sdk/src/dsp/filter-kinds.ts

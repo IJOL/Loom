@@ -18,7 +18,7 @@ import { attachSlots } from '../../test/slot-offsets';
 import manifest from './plugin.json';
 import { CATEGORY_GAIN } from '../../src/audio-dsp/gain-staging';
 import { SubtractiveVoiceRenderer } from './dsp';
-import { Svf } from '@loom/plugin-sdk';
+import { Svf, UNISON_MODES } from '@loom/plugin-sdk';
 import type { NoteSpec, ParamBag, ModEnvSpec } from '@loom/plugin-sdk';
 
 const SR = 48000;
@@ -292,6 +292,52 @@ const energyAt = (buf: number[], freq: number): number => {
   }
   return Math.hypot(re, im) / buf.length;
 };
+
+describe('unison stack mode', () => {
+  // A pure sine at 220 has NOTHING at 440, so Octave mode's second copy is the
+  // only possible source of energy there — the cleanest proof the manifest
+  // param actually reaches the stack inside the renderer.
+  const SINE_STACK: ParamBag = {
+    ...DEFAULTS, 'osc1.wave': 3, 'osc2.level': 0,
+    'sub.level': 0, 'noise.level': 0,
+    'filter.cutoff': 1, 'filter.resonance': 0, 'filter.envAmount': 0, 'filter.builtinEnv': 0,
+    'master.unison': 2, 'master.detune': 0, 'master.drift': 0,
+  };
+  const render = (bag: ParamBag): number[] => {
+    const v = new SubtractiveVoiceRenderer(note({ durationSec: 0.5 }), bag, SR);
+    const b: number[] = [];
+    for (let i = 0; i < SR * 0.25; i++) b.push(v.renderSample(i / SR));
+    return b;
+  };
+  const mag = (xs: number[], freqHz: number): number => {
+    let re = 0;
+    let im = 0;
+    const w = (2 * Math.PI * freqHz) / SR;
+    for (let i = 0; i < xs.length; i++) {
+      re += xs[i] * Math.cos(w * i);
+      im += xs[i] * Math.sin(w * i);
+    }
+    return Math.hypot(re, im);
+  };
+
+  it('master.unisonMode reaches the stack: Octave adds energy an octave up', () => {
+    const octaveIdx = UNISON_MODES.findIndex(m => m.label === 'Octave');
+    const plain = render({ ...SINE_STACK, 'master.unisonMode': 0 });
+    const octave = render({ ...SINE_STACK, 'master.unisonMode': octaveIdx });
+    expect(mag(plain, 220)).toBeGreaterThan(0.1); // the root is sounding at all
+    expect(mag(octave, 440)).toBeGreaterThan(mag(plain, 440) * 5);
+  });
+
+  it('a patch that never mentions the mode is bit-identical to mode 0', () => {
+    // DEFAULTS carries no master.unisonMode — the silent default must be the
+    // pre-mode stack, or every saved Subtractive patch changes sound on load.
+    const a = render(SINE_STACK);
+    const b = render({ ...SINE_STACK, 'master.unisonMode': 0 });
+    let d = 0;
+    for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
+    expect(d).toBe(0);
+  });
+});
 
 describe('ring modulation', () => {
   // Ring is osc1 × osc2, mixed in as its OWN source next to sub and noise —

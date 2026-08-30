@@ -13,11 +13,11 @@ const FM_PARAMS = manifest.components[0].params as unknown as EngineParamSpec[];
 const FM_GROUPS = manifest.components[0].groups as unknown as EngineParamGroup[];
 
 describe('the fm page, from data', () => {
-  it('shares OP 1/OP 2 on one row and OP 3/OP 4 on the next, POLY last', () => {
+  it('shares OP 1/OP 2 on one row and OP 3/OP 4 on the next, UNISON and POLY last', () => {
     const rows = resolveParamRows(FM_PARAMS, FM_GROUPS);
     const titled = rows.filter((r) => r.sections.some((s) => s.title !== undefined));
     expect(titled.map((r) => r.sections.map((s) => s.title))).toEqual([
-      ['OP 1', 'OP 2'], ['OP 3', 'OP 4'], ['POLY'],
+      ['OP 1', 'OP 2'], ['OP 3', 'OP 4'], ['UNISON', 'POLY'],
     ]);
   });
 

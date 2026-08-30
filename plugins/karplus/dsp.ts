@@ -16,7 +16,7 @@
 // feedback gain move live, so an extreme brightness sweep can drift the pitch
 // by a fraction of a sample — an accepted trade-off of a real analogue-style
 // tone control living inside the resonator, not a bug.
-import { param, slotOf, midiToFreq, velGain01, ModEnvHost } from '@loom/plugin-sdk';
+import { param, slotOf, midiToFreq, velGain01, ModEnvHost, UNISON_MODES, unisonGain } from '@loom/plugin-sdk';
 import type {
   NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets, ModEnvSpec,
 } from '@loom/plugin-sdk';
@@ -96,12 +96,19 @@ export class KarplusRenderer implements VoiceRenderer {
   // snapshot (see the constructor) so a single note can never clip regardless
   // of the resonance the live knobs later dial in.
   private readonly normGain: number;
-  // The REAL playback loop — persistent per-sample state, live coefficients.
-  private readonly loop: KsLoop;
-  // Cached expensive conversion: gFromDamping (pow+exp+log) is not a
-  // per-sample cost while the damping knob is settled.
+  // The REAL playback loops — one string per unison copy (one by default),
+  // persistent per-sample state, live coefficients. All copies share the SAME
+  // excitation burst: their detuned delay lines decorrelate the ring on their
+  // own, and generating (and dry-running) one burst per string would multiply
+  // exactly the constructor cost that already sits inside process()'s budget.
+  private readonly loops: KsLoop[];
+  /** Each string's own frequency — root first, mode intervals + spread after. */
+  private readonly freqs: Float64Array;
+  private readonly stackGain: number;
+  // Cached expensive conversion: gFromDamping (pow+exp+log) per string is not
+  // a per-sample cost while the damping knob is settled.
   private dampRaw = NaN;
-  private gCache = 0;
+  private readonly gCaches: Float64Array;
   private modEnv = new ModEnvHost();
   /** The lane's live (smoothed) values, or null when this voice runs standalone
    *  (the offline kernel builds renderers directly). Addressed by the four slots
@@ -134,15 +141,31 @@ export class KarplusRenderer implements VoiceRenderer {
     this.vel = velGain01(note.velocity, note.accent);
     this.freq = midiToFreq(note.midi);
 
-    // Frozen structural sizing: the delay-line LENGTH is set once from the
+    // Unison: N strings at the mode's intervals, fanned across a cents spread.
+    // ALL of it is structural here — a delay line's length is decided once —
+    // which is why Karplus has no live spread knob where Subtractive does.
+    const nStr = Math.max(1, Math.min(7, Math.round(param(p, 'string.unison', 1))));
+    const uMode = UNISON_MODES[Math.max(0, Math.min(UNISON_MODES.length - 1, Math.round(param(p, 'string.unisonMode', 0))))];
+    const spreadC = param(p, 'string.spread', 8);
+    this.freqs = new Float64Array(nStr);
+    for (let u = 0; u < nStr; u++) {
+      const pos = nStr === 1 ? 0 : (u / (nStr - 1)) * 2 - 1;
+      this.freqs[u] = this.freq * Math.pow(2, (uMode.semisFor(u, nStr) * 100 + pos * spreadC) / 1200);
+    }
+    this.stackGain = unisonGain(nStr);
+    this.gCaches = new Float64Array(nStr);
+
+    // Frozen structural sizing: each delay-line LENGTH is set once from the
     // initial brightness (its low-frequency group delay compensates so the
     // loop resonates at the true pitch) and never resized mid-note.
     const a0 = aFromBrightness(this.brightnessBase);
+    const sizeFor = (hz: number): { Li: number; frac: number; dlSize: number } => {
+      const Ldelay = Math.max(1, fs / Math.max(20, hz) - (1 - a0) / a0);
+      const Li = Math.floor(Ldelay);
+      return { Li, frac: Ldelay - Li, dlSize: Li + 2 };
+    };
     const period = fs / Math.max(20, this.freq);
-    const Ldelay = Math.max(1, period - (1 - a0) / a0);
-    const Li = Math.floor(Ldelay);
-    const frac = Ldelay - Li;
-    const dlSize = Li + 2;
+    const { Li, frac, dlSize } = sizeFor(this.freq);
 
     // Excitation: a band-limited white-noise burst whose colour is set by
     // noiseTone (200 Hz dark … 12 kHz bright), with a short raised-cosine
@@ -192,8 +215,14 @@ export class KarplusRenderer implements VoiceRenderer {
     }
     this.normGain = pk > 1e-9 ? 1 / pk : 1;
 
-    // The real playback loop: fresh state, driven live sample by sample.
-    this.loop = new KsLoop(Li, frac, dlSize);
+    // The real playback loops: fresh state, driven live sample by sample. The
+    // dry-run normalisation above measured the ROOT string alone; the stack's
+    // own 1/N^0.3 law (stackGain) is what keeps N of them off the ceiling.
+    this.loops = [];
+    for (let u = 0; u < nStr; u++) {
+      const s = sizeFor(this.freqs[u]);
+      this.loops.push(new KsLoop(s.Li, s.frac, s.dlSize));
+    }
   }
 
   noteOff(t: number): void {
@@ -226,14 +255,21 @@ export class KarplusRenderer implements VoiceRenderer {
     const damping = L && this.sDamping >= 0 ? L[this.sDamping] : this.dampingBase;
     const brightness = L && this.sBrightness >= 0 ? L[this.sBrightness] : this.brightnessBase;
 
-    // Cached: gFromDamping (pow+exp+log) only re-runs when damping actually moves.
+    // Cached: gFromDamping (pow+exp+log) only re-runs when damping actually
+    // moves — per string, because T60 compensation depends on each one's pitch.
     if (damping !== this.dampRaw) {
       this.dampRaw = damping;
-      this.gCache = gFromDamping(damping, this.freq);
+      for (let u = 0; u < this.loops.length; u++) {
+        this.gCaches[u] = gFromDamping(damping, this.freqs[u]);
+      }
     }
     const a = aFromBrightness(brightness);   // cheap linear map — no cache needed
     const exc = idx < this.exciteLen ? this.excBurst[idx] : 0;
-    const raw = this.loop.step(exc, a, this.gCache) * this.normGain;
+    let sum = 0;
+    for (let u = 0; u < this.loops.length; u++) {
+      sum += this.loops[u].step(exc, a, this.gCaches[u]);
+    }
+    const raw = sum * this.normGain * this.stackGain;
 
     let env = 1;
     if (this.ampEnvOn) {

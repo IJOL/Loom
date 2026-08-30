@@ -192,3 +192,44 @@ describe('the plugin sits where the in-tree engine sat, against wavetable', () =
     expect(plugin / wavetable / KARPLUS_VS_WAVETABLE).toBeCloseTo(1, 2);
   });
 });
+
+describe('unison strings', () => {
+  // A string at 220 rings at 220/440/660… — the equal-tempered fifth (329.63)
+  // is nobody's harmonic until a second string actually sits there. Both sides
+  // of each comparison share a seeded rng, so the pluck itself is identical.
+  const mag = (xs: number[], freqHz: number): number => {
+    let re = 0;
+    let im = 0;
+    const w = (2 * Math.PI * freqHz) / SR;
+    for (let i = 0; i < xs.length; i++) {
+      re += xs[i] * Math.cos(w * i);
+      im += xs[i] * Math.sin(w * i);
+    }
+    return Math.hypot(re, im);
+  };
+  const renderK = (bag: ParamBag, seed: number): number[] => {
+    const v = new KarplusRenderer(note({ midi: 57, durationSec: 0.5 }), bag, SR, seeded(seed));
+    const out: number[] = [];
+    for (let i = 0; i < SR * 0.25; i++) out.push(v.renderSample(i / SR));
+    return out;
+  };
+
+  it('string.unisonMode reaches the strings: Power Chord rings at the fifth', () => {
+    const stack = { ...P, 'string.unison': 2, 'string.spread': 0 };
+    const plain = renderK({ ...stack, 'string.unisonMode': 0 }, 1);
+    const chord = renderK({ ...stack, 'string.unisonMode': 3 }, 1);
+    const fifthHz = 220 * Math.pow(2, 7 / 12);
+    expect(mag(plain, 220)).toBeGreaterThan(0.1);
+    expect(mag(chord, fifthHz)).toBeGreaterThan(mag(plain, fifthHz) * 5);
+  });
+
+  it('a patch that never mentions unison is bit-identical to one string', () => {
+    // P carries no unison params — the silent defaults must be the pre-unison
+    // voice, same rng stream included, or every saved pluck changes on load.
+    const a = renderK(P, 7);
+    const b = renderK({ ...P, 'string.unison': 1, 'string.unisonMode': 0, 'string.spread': 8 }, 7);
+    let d = 0;
+    for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
+    expect(d).toBe(0);
+  });
+});

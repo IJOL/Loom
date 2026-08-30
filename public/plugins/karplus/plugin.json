@@ -32,6 +32,68 @@
           "group": "string"
         },
         {
+          "id": "string.unison",
+          "label": "Strings",
+          "kind": "continuous",
+          "min": 1,
+          "max": 7,
+          "default": 1,
+          "group": "string"
+        },
+        {
+          "id": "string.unisonMode",
+          "label": "Stack",
+          "kind": "discrete",
+          "min": 0,
+          "max": 7,
+          "default": 0,
+          "group": "string",
+          "options": [
+            {
+              "value": "0",
+              "label": "Unison"
+            },
+            {
+              "value": "1",
+              "label": "Octave"
+            },
+            {
+              "value": "2",
+              "label": "Center Drop"
+            },
+            {
+              "value": "3",
+              "label": "Power Chord"
+            },
+            {
+              "value": "4",
+              "label": "Major"
+            },
+            {
+              "value": "5",
+              "label": "Minor"
+            },
+            {
+              "value": "6",
+              "label": "Harmonics"
+            },
+            {
+              "value": "7",
+              "label": "Odd Harmonics"
+            }
+          ]
+        },
+        {
+          "id": "string.spread",
+          "label": "Spread",
+          "kind": "continuous",
+          "min": 0,
+          "max": 25,
+          "default": 8,
+          "unit": "¢",
+          "group": "string"
+        },
+        {
           "id": "excite.time",
           "label": "Excite",
           "kind": "continuous",

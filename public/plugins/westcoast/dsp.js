@@ -187,6 +187,22 @@ var SawOsc = class {
     return s;
   }
 };
+var SquareOsc = class {
+  constructor(sr) {
+    this.sr = sr;
+  }
+  phase = 0;
+  saw(offset, dt) {
+    const phase = (this.phase + offset) % 1;
+    return 2 * phase - 1 - polyBlep(phase, dt);
+  }
+  update(freq, pw = 0.5) {
+    const dt = freq / this.sr;
+    const pulse = this.saw(0, dt) - this.saw(pw, dt);
+    this.phase = (this.phase + dt) % 1;
+    return pulse + pw * 2 - 1;
+  }
+};
 var TriOsc = class {
   constructor(sr) {
     this.sr = sr;
@@ -208,6 +224,46 @@ var SineOsc = class {
     const v = Math.sin(this.phase * 2 * Math.PI);
     this.phase = (this.phase + freq / this.sr) % 1;
     return v;
+  }
+};
+
+// packages/loom-plugin-sdk/src/dsp/sync-osc.ts
+function polyBlep2(t, dt) {
+  if (t < dt) {
+    t /= dt;
+    return t + t - t * t - 1;
+  }
+  if (t > 1 - dt) {
+    t = (t - 1) / dt;
+    return t * t + t + t + 1;
+  }
+  return 0;
+}
+var SyncOsc = class {
+  // advances at freq * ratio, reset when master wraps
+  constructor(sr) {
+    this.sr = sr;
+  }
+  master = 0;
+  // 0..1, advances at the note frequency
+  slave = 0;
+  /** One sample. `freq` is the master (the pitch); the second argument is the
+   *  sync ratio (the timbre) — named to satisfy the shared Osc interface, whose
+   *  other members read it as pulse width. Ratios below 1 are clamped up. */
+  update(freq, ratio = 2) {
+    const dt = freq / this.sr;
+    const r = Math.max(1, ratio);
+    const slaveDt = dt * r;
+    this.master += dt;
+    this.slave += slaveDt;
+    if (this.master >= 1) {
+      this.master -= 1;
+      this.slave = this.master * r;
+    }
+    const p = this.slave % 1;
+    let s = 2 * p - 1;
+    s -= polyBlep2(this.master, dt);
+    return Math.max(-1, Math.min(1, s));
   }
 };
 
@@ -245,7 +301,108 @@ var Svf = class {
 };
 
 // packages/loom-plugin-sdk/src/dsp/unison.ts
+function makeOsc(wave, sr) {
+  switch (wave) {
+    case 1:
+      return new SquareOsc(sr);
+    case 2:
+      return new TriOsc(sr);
+    case 3:
+      return new SineOsc(sr);
+    case 4:
+      return new SyncOsc(sr);
+    default:
+      return new SawOsc(sr);
+  }
+}
+var MAX_UNISON = 7;
+var harmonicSemis = (k) => 12 * Math.log2(k);
+var cycle = (semis) => (u) => semis[u % semis.length];
+var UNISON_MODES = [
+  // The classic supersaw: every copy at the root, only the spread separates
+  // them. Mode 0 so an unaware caller gets exactly the pre-mode stack.
+  { id: "unison", label: "Unison", semisFor: () => 0 },
+  { id: "octave", label: "Octave", semisFor: cycle([0, 12]) },
+  // The middle copy drops an octave — a sub under the spread. Needs a stack
+  // wide enough to HAVE a middle that is not the root.
+  { id: "center-drop", label: "Center Drop", semisFor: (u, n) => n >= 3 && u === n >> 1 ? -12 : 0 },
+  { id: "power-chord", label: "Power Chord", semisFor: cycle([0, 7, 12]) },
+  { id: "major", label: "Major", semisFor: cycle([0, 4, 7, 12]) },
+  { id: "minor", label: "Minor", semisFor: cycle([0, 3, 7, 12]) },
+  // The harmonic series itself: copy u sings partial u+1. Not equal-tempered
+  // on purpose — 19.02, 27.86… is what makes it sound like an organ drawbar
+  // rig instead of a chord.
+  { id: "harmonics", label: "Harmonics", semisFor: (u) => harmonicSemis(u + 1) },
+  { id: "odd-harmonics", label: "Odd Harmonics", semisFor: (u) => harmonicSemis(2 * u + 1) }
+];
 var TWO_PI2 = Math.PI * 2;
+var unisonGain = (n) => 1 / Math.pow(n, 0.3);
+var UnisonStack = class {
+  oscs = [];
+  /** Where each copy sits across the spread, -1..+1. */
+  pos;
+  /** Frequency ratio per copy, cached against the inputs that produced it. */
+  ratio;
+  cachedBase = NaN;
+  cachedSpread = NaN;
+  driftPhase;
+  driftRate;
+  n;
+  invSr;
+  /** N copies must not be N times louder. */
+  gain;
+  /** The mode's per-copy interval, in cents, fixed at construction: a mode
+   *  change is a structural decision like the stack size, applied at the next
+   *  trigger. */
+  modeCents;
+  constructor(wave, count, sr, mode = 0) {
+    const n = Math.max(1, Math.min(MAX_UNISON, Math.round(count)));
+    this.n = n;
+    this.invSr = 1 / sr;
+    const m = UNISON_MODES[Math.max(0, Math.min(UNISON_MODES.length - 1, Math.round(mode)))];
+    this.modeCents = new Float64Array(n);
+    for (let u = 0; u < n; u++) this.modeCents[u] = m.semisFor(u, n) * 100;
+    this.gain = unisonGain(n);
+    this.pos = new Float64Array(n);
+    this.ratio = new Float64Array(n);
+    this.driftPhase = new Float64Array(n);
+    this.driftRate = new Float64Array(n);
+    for (let u = 0; u < n; u++) {
+      this.oscs.push(typeof wave === "function" ? wave(sr) : makeOsc(wave, sr));
+      this.pos[u] = n === 1 ? 0 : u / (n - 1) * 2 - 1;
+      this.driftRate[u] = 0.15 + Math.random() * 0.2;
+      this.driftPhase[u] = Math.random();
+    }
+  }
+  /**
+   * One sample of the whole stack, gain-compensated.
+   * @param freq        note frequency (Hz)
+   * @param pw          pulse width (bites on squares only)
+   * @param baseCents   this oscillator's own detune
+   * @param spreadCents half-width of the unison spread
+   * @param driftAmt    drift depth as a fraction of freq; 0 skips it entirely
+   */
+  update(freq, pw, baseCents, spreadCents, driftAmt) {
+    if (baseCents !== this.cachedBase || spreadCents !== this.cachedSpread) {
+      for (let u = 0; u < this.n; u++) {
+        this.ratio[u] = Math.pow(2, (baseCents + this.pos[u] * spreadCents + this.modeCents[u]) / 1200);
+      }
+      this.cachedBase = baseCents;
+      this.cachedSpread = spreadCents;
+    }
+    let sum = 0;
+    if (driftAmt > 0) {
+      for (let u = 0; u < this.n; u++) {
+        const d = 1 + Math.sin(TWO_PI2 * this.driftPhase[u]) * driftAmt;
+        sum += this.oscs[u].update(freq * d * this.ratio[u], pw);
+        this.driftPhase[u] = (this.driftPhase[u] + this.driftRate[u] * this.invSr) % 1;
+      }
+    } else {
+      for (let u = 0; u < this.n; u++) sum += this.oscs[u].update(freq * this.ratio[u], pw);
+    }
+    return sum * this.gain;
+  }
+};
 
 // packages/loom-plugin-sdk/src/dsp/fold.ts
 var FOLD_STAGES = 4;
@@ -302,12 +459,12 @@ function cutoffHz(norm) {
 }
 var CUTOFF_ENV_SCALE = 3;
 var AdContour = class {
-  constructor(atk, dec, amount, cmode, cycle, holdEnd) {
+  constructor(atk, dec, amount, cmode, cycle2, holdEnd) {
     this.atk = atk;
     this.dec = dec;
     this.amount = amount;
     this.cmode = cmode;
-    this.cycle = cycle;
+    this.cycle = cycle2;
     this.holdEnd = holdEnd;
     this.peak = amount;
   }
@@ -396,7 +553,13 @@ var WestcoastRenderer = class {
     this.subDiv = SUBDIV_VALUES[Math.round(param(p, "osc.subDiv", 0))] ?? 0;
     const mainWave = Math.max(0, Math.min(2, Math.round(param(p, "osc.mainWave", 0))));
     const modWave = Math.max(0, Math.min(1, Math.round(param(p, "osc.modWave", 0))));
-    this.main = (MAIN_WAVE_OSC[mainWave] ?? MAIN_WAVE_OSC[0])(sr);
+    this.main = new UnisonStack(
+      MAIN_WAVE_OSC[mainWave] ?? MAIN_WAVE_OSC[0],
+      param(p, "osc.unison", 1),
+      sr,
+      param(p, "osc.unisonMode", 0)
+    );
+    this.spreadBase = param(p, "osc.spread", 15);
     this.mod = (MOD_WAVE_OSC[modWave] ?? MOD_WAVE_OSC[0])(sr);
     this.sub = new SineOsc(sr);
     this.fmIndexBase = param(p, "osc.fmIndex", 0.2);
@@ -416,15 +579,21 @@ var WestcoastRenderer = class {
     const atk = Math.max(1e-3, param(p, "contour.attack", 5e-3));
     const dec = Math.max(5e-3, param(p, "contour.decay", 0.4));
     const amount = param(p, "contour.amount", 0.9);
-    const cycle = Math.round(param(p, "contour.cycle", 0)) >= 1;
-    this.contour = new AdContour(atk, dec, amount, cmode, cycle, this.holdEnd);
+    const cycle2 = Math.round(param(p, "contour.cycle", 0)) >= 1;
+    this.contour = new AdContour(atk, dec, amount, cmode, cycle2, this.holdEnd);
     this.levelBase = param(p, "amp.level", 0.8);
     this.ampTrim = velGain01(note.velocity, note.accent);
     this.accentMul = accentMul;
   }
+  // The MAIN oscillator is a unison stack (n=1 by default — one oscillator at
+  // unity gain, exactly what it was before). The mod and sub oscillators stay
+  // single on purpose: stacking the FM modulator blurs the sidebands into
+  // noise, and a stacked sub defeats its point as an anchor.
   main;
   mod;
   sub;
+  spreadBase;
+  sSpread = -1;
   freq0;
   // structural base frequency (from note.midi)
   subDiv;
@@ -505,6 +674,7 @@ var WestcoastRenderer = class {
     this.sFmIndex = slotOf(index, "osc.fmIndex");
     this.sRing = slotOf(index, "osc.ring");
     this.sSubLevel = slotOf(index, "osc.subLevel");
+    this.sSpread = slotOf(index, "osc.spread");
     this.sSymmetry = slotOf(index, "timbre.symmetry");
     this.sFold = slotOf(index, "timbre.fold");
     this.sCutoff = slotOf(index, "lpg.cutoff");
@@ -534,7 +704,8 @@ var WestcoastRenderer = class {
     const fmDepthHz = fmIndexEff * fmFactor;
     const modSample = this.mod.update(modFreq);
     const mainFreq = freq + modSample * fmDepthHz;
-    const mainSample = this.main.update(mainFreq);
+    const spreadKnob = L && this.sSpread >= 0 ? L[this.sSpread] : this.spreadBase;
+    const mainSample = this.main.update(mainFreq, 0.5, 0, spreadKnob, 0);
     const ringKnob = L && this.sRing >= 0 ? L[this.sRing] : this.ringBase;
     const ringSample = mainSample * modSample * ringKnob;
     const subLevelKnob = L && this.sSubLevel >= 0 ? L[this.sSubLevel] : this.subLevelBase;

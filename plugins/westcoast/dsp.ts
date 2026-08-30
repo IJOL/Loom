@@ -7,7 +7,7 @@
 //   → low-pass gate (SVF + VCA driven by AD contour)
 // Pure — no Web Audio. Sample rate is injected.
 
-import { param, slotOf, SineOsc, TriOsc, SawOsc, Svf, fold, ModEnvHost, velGain01, midiToFreq, clamp01 } from '@loom/plugin-sdk';
+import { param, slotOf, SineOsc, TriOsc, SawOsc, Svf, fold, ModEnvHost, velGain01, midiToFreq, clamp01, UnisonStack } from '@loom/plugin-sdk';
 import type {
   NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets, ModEnvSpec,
 } from '@loom/plugin-sdk';
@@ -131,9 +131,15 @@ class AdContour {
 }
 
 export class WestcoastRenderer implements VoiceRenderer {
-  private main: Osc;
+  // The MAIN oscillator is a unison stack (n=1 by default — one oscillator at
+  // unity gain, exactly what it was before). The mod and sub oscillators stay
+  // single on purpose: stacking the FM modulator blurs the sidebands into
+  // noise, and a stacked sub defeats its point as an anchor.
+  private main: UnisonStack;
   private mod: Osc;
   private sub: SineOsc;
+  private spreadBase: number;
+  private sSpread = -1;
 
   private freq0: number;            // structural base frequency (from note.midi)
   private subDiv: number;
@@ -216,7 +222,16 @@ export class WestcoastRenderer implements VoiceRenderer {
     // Oscillators — wave CHOICE is structural (frozen).
     const mainWave = Math.max(0, Math.min(2, Math.round(param(p, 'osc.mainWave', 0))));
     const modWave = Math.max(0, Math.min(1, Math.round(param(p, 'osc.modWave', 0))));
-    this.main = (MAIN_WAVE_OSC[mainWave] ?? MAIN_WAVE_OSC[0])(sr);
+    // Stack size and mode are structural (a stack cannot grow mid-note without
+    // a click); the spread is live. The factory keeps THIS table's numbering —
+    // makeOsc's indices mean different waves.
+    this.main = new UnisonStack(
+      MAIN_WAVE_OSC[mainWave] ?? MAIN_WAVE_OSC[0],
+      param(p, 'osc.unison', 1),
+      sr,
+      param(p, 'osc.unisonMode', 0),
+    );
+    this.spreadBase = param(p, 'osc.spread', 15);
     this.mod = (MOD_WAVE_OSC[modWave] ?? MOD_WAVE_OSC[0])(sr);
     this.sub = new SineOsc(sr);
 
@@ -286,6 +301,7 @@ export class WestcoastRenderer implements VoiceRenderer {
     this.sFmIndex = slotOf(index, 'osc.fmIndex');
     this.sRing = slotOf(index, 'osc.ring');
     this.sSubLevel = slotOf(index, 'osc.subLevel');
+    this.sSpread = slotOf(index, 'osc.spread');
     this.sSymmetry = slotOf(index, 'timbre.symmetry');
     this.sFold = slotOf(index, 'timbre.fold');
     this.sCutoff = slotOf(index, 'lpg.cutoff');
@@ -327,7 +343,8 @@ export class WestcoastRenderer implements VoiceRenderer {
     const fmDepthHz = fmIndexEff * fmFactor;
     const modSample = this.mod.update(modFreq);
     const mainFreq = freq + modSample * fmDepthHz;
-    const mainSample = this.main.update(mainFreq);
+    const spreadKnob = L && this.sSpread >= 0 ? L[this.sSpread] : this.spreadBase;
+    const mainSample = this.main.update(mainFreq, 0.5, 0, spreadKnob, 0);
 
     // Ring/AM: ringMod.gain = modSample, so ring = mainSample * modSample * ringAmt
     // In the original: mainOsc → ringMod (gain.value = 0 initially), modOsc → ringMod.gain

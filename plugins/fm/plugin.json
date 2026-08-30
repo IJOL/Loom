@@ -55,6 +55,15 @@
         { "id": "op4.release",  "label": "Op4 Rel",   "kind": "continuous", "min": 0.005, "max": 4,  "default": 0.3,  "unit": "s", "group": "op4" },
 
         { "id": "amp.mix",      "label": "Mix",       "kind": "continuous", "min": 0,     "max": 1,  "default": 0.7 },
+        { "id": "unison.count", "label": "Unison",    "kind": "continuous", "min": 1,     "max": 5,  "default": 1, "group": "unison" },
+        { "id": "unison.mode",  "label": "Stack",     "kind": "discrete",   "min": 0,     "max": 7,  "default": 0, "group": "unison",
+          "options": [
+            { "value": "0", "label": "Unison" }, { "value": "1", "label": "Octave" },
+            { "value": "2", "label": "Center Drop" }, { "value": "3", "label": "Power Chord" },
+            { "value": "4", "label": "Major" }, { "value": "5", "label": "Minor" },
+            { "value": "6", "label": "Harmonics" }, { "value": "7", "label": "Odd Harmonics" }
+          ] },
+        { "id": "unison.spread", "label": "Spread",   "kind": "continuous", "min": 0,     "max": 50, "default": 10, "unit": "¢", "group": "unison" },
         { "id": "poly.voices",  "label": "Voices",    "kind": "continuous", "min": 1,     "max": 64, "default": 24, "group": "poly" }
       ],
       "groups": [
@@ -62,6 +71,7 @@
         { "id": "op2",  "title": "OP 2", "row": 0, "color": "var(--knob-yellow)" },
         { "id": "op3",  "title": "OP 3", "row": 1, "color": "var(--knob-blue)" },
         { "id": "op4",  "title": "OP 4", "row": 1, "color": "var(--knob-purple)" },
+        { "id": "unison", "title": "UNISON", "row": 2 },
         { "id": "poly", "title": "POLY", "row": 2 }
       ],
       "modulators": [

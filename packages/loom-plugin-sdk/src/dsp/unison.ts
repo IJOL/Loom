@@ -28,6 +28,10 @@ import { SyncOsc } from './sync-osc';
 /** `pw` is ignored by every wave but the square, where it is the duty cycle. */
 export type Osc = { update(freq: number, pw?: number): number };
 
+/** An engine whose wave table does not share makeOsc's numbering hands the
+ *  stack one of these instead of an index, and keeps its own meaning. */
+export type OscFactory = (sr: number) => Osc;
+
 export function makeOsc(wave: number, sr: number): Osc {
   switch (wave) {
     case 1: return new SquareOsc(sr);
@@ -41,7 +45,49 @@ export function makeOsc(wave: number, sr: number): Osc {
 /** mpump's ceiling, and plenty — 7 copies is the classic supersaw. */
 export const MAX_UNISON = 7;
 
+/** A stack MODE places each copy on an interval before the detune spread fans
+ *  them in cents — Vital's "unison stack" idea. Copy 0 is the ROOT in every
+ *  mode, always at 0 semitones: the perceived pitch of a patch must not move
+ *  when the mode does, and a 1-copy stack must be mode-proof by construction.
+ *
+ *  `semisFor(u, n)` rather than a flat table because one mode (Center Drop)
+ *  is a function of WHERE the copy sits in the stack, not of its index alone. */
+export interface UnisonMode {
+  id: string;
+  label: string;
+  semisFor(u: number, n: number): number;
+}
+
+/** Semitones of harmonic k relative to the fundamental (k=1 → 0). */
+const harmonicSemis = (k: number): number => 12 * Math.log2(k);
+
+const cycle = (semis: number[]) => (u: number): number => semis[u % semis.length];
+
+export const UNISON_MODES: UnisonMode[] = [
+  // The classic supersaw: every copy at the root, only the spread separates
+  // them. Mode 0 so an unaware caller gets exactly the pre-mode stack.
+  { id: 'unison', label: 'Unison', semisFor: () => 0 },
+  { id: 'octave', label: 'Octave', semisFor: cycle([0, 12]) },
+  // The middle copy drops an octave — a sub under the spread. Needs a stack
+  // wide enough to HAVE a middle that is not the root.
+  { id: 'center-drop', label: 'Center Drop', semisFor: (u, n) => (n >= 3 && u === (n >> 1) ? -12 : 0) },
+  { id: 'power-chord', label: 'Power Chord', semisFor: cycle([0, 7, 12]) },
+  { id: 'major', label: 'Major', semisFor: cycle([0, 4, 7, 12]) },
+  { id: 'minor', label: 'Minor', semisFor: cycle([0, 3, 7, 12]) },
+  // The harmonic series itself: copy u sings partial u+1. Not equal-tempered
+  // on purpose — 19.02, 27.86… is what makes it sound like an organ drawbar
+  // rig instead of a chord.
+  { id: 'harmonics', label: 'Harmonics', semisFor: u => harmonicSemis(u + 1) },
+  { id: 'odd-harmonics', label: 'Odd Harmonics', semisFor: u => harmonicSemis(2 * u + 1) },
+];
+
 const TWO_PI = Math.PI * 2;
+
+/** The stack's gain law — N copies must not be N times louder. It sits between
+ *  no compensation (N^0) and full incoherent sqrt(N) (N^-0.5); at N=1 it is
+ *  exactly 1. Exported so an engine that stacks something OTHER than an Osc
+ *  (Karplus' strings) compensates by the same law instead of a second one. */
+export const unisonGain = (n: number): number => 1 / Math.pow(n, 0.3);
 
 /** Drift depth as a fraction of the note frequency (mpump's values). Bass notes
  *  wander less than high ones: the same number of cents is far more Hz down low,
@@ -62,21 +108,27 @@ export class UnisonStack {
   /** N copies must not be N times louder. */
   readonly gain: number;
 
-  constructor(wave: number, count: number, sr: number) {
+  /** The mode's per-copy interval, in cents, fixed at construction: a mode
+   *  change is a structural decision like the stack size, applied at the next
+   *  trigger. */
+  private readonly modeCents: Float64Array;
+
+  constructor(wave: number | OscFactory, count: number, sr: number, mode = 0) {
     const n = Math.max(1, Math.min(MAX_UNISON, Math.round(count)));
     this.n = n;
     this.invSr = 1 / sr;
-    // mpump's law. It sits between no compensation (N^0) and a full incoherent
-    // sqrt(N) (N^-0.5), so a detuned stack lands around N^0.2 — audibly fatter,
-    // which is the whole point, but nowhere near N times louder. At N=1 it is
-    // exactly 1, so a single voice is bit-identical to having no stack at all.
-    this.gain = 1 / Math.pow(n, 0.3);
+    const m = UNISON_MODES[Math.max(0, Math.min(UNISON_MODES.length - 1, Math.round(mode)))];
+    this.modeCents = new Float64Array(n);
+    for (let u = 0; u < n; u++) this.modeCents[u] = m.semisFor(u, n) * 100;
+    // mpump's law, shared via unisonGain: a detuned stack lands around N^0.2 —
+    // audibly fatter, which is the whole point, but nowhere near N times louder.
+    this.gain = unisonGain(n);
     this.pos = new Float64Array(n);
     this.ratio = new Float64Array(n);
     this.driftPhase = new Float64Array(n);
     this.driftRate = new Float64Array(n);
     for (let u = 0; u < n; u++) {
-      this.oscs.push(makeOsc(wave, sr));
+      this.oscs.push(typeof wave === 'function' ? wave(sr) : makeOsc(wave, sr));
       // A lone copy sits dead centre — a spread needs something to spread.
       this.pos[u] = n === 1 ? 0 : (u / (n - 1)) * 2 - 1;
       // Random per copy, per note: the drift must not be a chorus, and two notes
@@ -99,7 +151,7 @@ export class UnisonStack {
     // Nothing modulating the spread ⇒ these ratios are the same every sample.
     if (baseCents !== this.cachedBase || spreadCents !== this.cachedSpread) {
       for (let u = 0; u < this.n; u++) {
-        this.ratio[u] = Math.pow(2, (baseCents + this.pos[u] * spreadCents) / 1200);
+        this.ratio[u] = Math.pow(2, (baseCents + this.pos[u] * spreadCents + this.modeCents[u]) / 1200);
       }
       this.cachedBase = baseCents; this.cachedSpread = spreadCents;
     }

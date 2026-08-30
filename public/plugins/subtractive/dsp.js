@@ -320,7 +320,27 @@ function makeOsc(wave, sr) {
   }
 }
 var MAX_UNISON = 7;
+var harmonicSemis = (k) => 12 * Math.log2(k);
+var cycle = (semis) => (u) => semis[u % semis.length];
+var UNISON_MODES = [
+  // The classic supersaw: every copy at the root, only the spread separates
+  // them. Mode 0 so an unaware caller gets exactly the pre-mode stack.
+  { id: "unison", label: "Unison", semisFor: () => 0 },
+  { id: "octave", label: "Octave", semisFor: cycle([0, 12]) },
+  // The middle copy drops an octave — a sub under the spread. Needs a stack
+  // wide enough to HAVE a middle that is not the root.
+  { id: "center-drop", label: "Center Drop", semisFor: (u, n) => n >= 3 && u === n >> 1 ? -12 : 0 },
+  { id: "power-chord", label: "Power Chord", semisFor: cycle([0, 7, 12]) },
+  { id: "major", label: "Major", semisFor: cycle([0, 4, 7, 12]) },
+  { id: "minor", label: "Minor", semisFor: cycle([0, 3, 7, 12]) },
+  // The harmonic series itself: copy u sings partial u+1. Not equal-tempered
+  // on purpose — 19.02, 27.86… is what makes it sound like an organ drawbar
+  // rig instead of a chord.
+  { id: "harmonics", label: "Harmonics", semisFor: (u) => harmonicSemis(u + 1) },
+  { id: "odd-harmonics", label: "Odd Harmonics", semisFor: (u) => harmonicSemis(2 * u + 1) }
+];
 var TWO_PI2 = Math.PI * 2;
+var unisonGain = (n) => 1 / Math.pow(n, 0.3);
 var driftDepthFor = (freq) => freq < 200 ? 2e-3 : 5e-3;
 var UnisonStack = class {
   oscs = [];
@@ -336,17 +356,24 @@ var UnisonStack = class {
   invSr;
   /** N copies must not be N times louder. */
   gain;
-  constructor(wave, count, sr) {
+  /** The mode's per-copy interval, in cents, fixed at construction: a mode
+   *  change is a structural decision like the stack size, applied at the next
+   *  trigger. */
+  modeCents;
+  constructor(wave, count, sr, mode = 0) {
     const n = Math.max(1, Math.min(MAX_UNISON, Math.round(count)));
     this.n = n;
     this.invSr = 1 / sr;
-    this.gain = 1 / Math.pow(n, 0.3);
+    const m = UNISON_MODES[Math.max(0, Math.min(UNISON_MODES.length - 1, Math.round(mode)))];
+    this.modeCents = new Float64Array(n);
+    for (let u = 0; u < n; u++) this.modeCents[u] = m.semisFor(u, n) * 100;
+    this.gain = unisonGain(n);
     this.pos = new Float64Array(n);
     this.ratio = new Float64Array(n);
     this.driftPhase = new Float64Array(n);
     this.driftRate = new Float64Array(n);
     for (let u = 0; u < n; u++) {
-      this.oscs.push(makeOsc(wave, sr));
+      this.oscs.push(typeof wave === "function" ? wave(sr) : makeOsc(wave, sr));
       this.pos[u] = n === 1 ? 0 : u / (n - 1) * 2 - 1;
       this.driftRate[u] = 0.15 + Math.random() * 0.2;
       this.driftPhase[u] = Math.random();
@@ -363,7 +390,7 @@ var UnisonStack = class {
   update(freq, pw, baseCents, spreadCents, driftAmt) {
     if (baseCents !== this.cachedBase || spreadCents !== this.cachedSpread) {
       for (let u = 0; u < this.n; u++) {
-        this.ratio[u] = Math.pow(2, (baseCents + this.pos[u] * spreadCents) / 1200);
+        this.ratio[u] = Math.pow(2, (baseCents + this.pos[u] * spreadCents + this.modeCents[u]) / 1200);
       }
       this.cachedBase = baseCents;
       this.cachedSpread = spreadCents;
@@ -536,6 +563,7 @@ var NO_SLOTS = new Float64Array(0);
 function subParamsInto(b, out) {
   out.masterTune = param(b, "master.tune", 0);
   out.unisonVoices = param(b, "master.unison", 1);
+  out.unisonMode = param(b, "master.unisonMode", 0);
   out.unisonDetune = param(b, "master.detune", 25);
   out.unisonDrift = param(b, "master.drift", 0);
   out.osc1Wave = param(b, "osc1.wave", 0);
@@ -711,8 +739,8 @@ var SubtractiveVoiceRenderer = class {
     this.holdEnd = note.beginSec + note.durationSec;
     this.noteHz = midiToFreq(note.midi);
     const baseFreq = this.noteHz * Math.pow(2, p.masterTune / 12);
-    this.osc1 = new UnisonStack(p.osc1Wave, p.unisonVoices, sampleRate);
-    this.osc2 = new UnisonStack(p.osc2Wave, p.unisonVoices, sampleRate);
+    this.osc1 = new UnisonStack(p.osc1Wave, p.unisonVoices, sampleRate, p.unisonMode);
+    this.osc2 = new UnisonStack(p.osc2Wave, p.unisonVoices, sampleRate, p.unisonMode);
     this.driftDepth = driftDepthFor(baseFreq);
     this.sub = new SineOsc(sampleRate);
     this.noiseLp = new Svf(sampleRate);
