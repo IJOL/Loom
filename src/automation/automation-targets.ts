@@ -108,16 +108,20 @@ export function listAutomationTargets(
     const laneName = lane.name || lane.id;
 
     // A live knob, when mounted, is the authority on how the param reads.
+    // `prefix` goes ON TOP of that authority: it exists to tell two same-label
+    // params apart, and the mounted knob carries the bare colliding label.
     const push = (
       id: string, label: string, min: number, max: number,
       subGroup?: { key: string; label: string },
+      prefix?: string,
     ) => {
       const live = registry.get(id);
+      const base = live?.meta.label ?? label;
       targets.push({
         id,
         laneId: lane.id,
         laneName,
-        label: live?.meta.label ?? label,
+        label: prefix ? `${prefix} · ${base}` : base,
         min: live?.meta.min ?? min,
         max: live?.meta.max ?? max,
         ...(subGroup ? { subGroup } : {}),
@@ -129,10 +133,34 @@ export function listAutomationTargets(
     // session (the sampler's per-pad params, from the lane keymap). The engine
     // owns both the sub-group naming and the dynamic list — the catalogue never
     // learns what a voice or a pad is.
-    const engineSpecs = [...(engine?.params ?? []), ...(engine?.dynamicParamsFor?.(lane) ?? [])];
-    for (const spec of engineSpecs) {
-      if (spec.kind !== 'continuous') continue;
-      push(`${lane.id}.${spec.id}`, spec.label, spec.min, spec.max, engine?.subGroupFor?.(spec.id));
+    const engineSpecs = [...(engine?.params ?? []), ...(engine?.dynamicParamsFor?.(lane) ?? [])]
+      .filter((spec) => spec.kind === 'continuous')
+      .map((spec) => ({ spec, subGroup: engine?.subGroupFor?.(spec.id) }));
+
+    // One engine may label two params identically — the Subtractive has a
+    // "Cutoff" in FILTER A and another in FILTER B — and a flat picker showed
+    // them as two indistinguishable rows. A COLLIDING label is prefixed with
+    // its group's title; a unique one stays bare, because prefixing everything
+    // would bury the signal it exists to give.
+    //
+    // The census runs PER SUB-GROUP, not per engine: a heading (a drum voice,
+    // a sampler pad, a rack slot) already tells its members apart from every
+    // other heading's, so eight drum Tunes are no collision at all — while the
+    // two filters of one Subtractive SLOT still are, under one heading. The
+    // group table includes the DYNAMIC groups (a rack derives its slot
+    // engines' sections per lane), or a LAYERS slot's cutoffs would have no
+    // title to be prefixed with.
+    const labelCount = new Map<string, number>();
+    const bucket = (e: (typeof engineSpecs)[number]) => `${e.subGroup?.key ?? ''}|${e.spec.label}`;
+    for (const e of engineSpecs) {
+      labelCount.set(bucket(e), (labelCount.get(bucket(e)) ?? 0) + 1);
+    }
+    const groupTable = [...(engine?.groups ?? []), ...(engine?.dynamicGroupsFor?.(lane) ?? [])];
+    for (const e of engineSpecs) {
+      const prefix = (labelCount.get(bucket(e)) ?? 0) > 1
+        ? groupTable.find((g) => g.id === e.spec.group)?.title
+        : undefined;
+      push(`${lane.id}.${e.spec.id}`, e.spec.label, e.spec.min, e.spec.max, e.subGroup, prefix);
     }
 
     // A modulator's DEPTH is an automatable value like any other, and until now

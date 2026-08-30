@@ -193,6 +193,15 @@ function makeLayersDescriptor() {
     modulators: LAYERS_DEFAULT_MODULATORS,
     dynamicParamsFor: layersDynamicParamsFor,
     dynamicGroupsFor: layersDynamicGroupsFor,
+    // Every `l<i>.` param — a slot engine's knob or the slot's own zone/gain —
+    // sits under its layer's heading in the destination catalogue. Without
+    // this, two Subtractive slots put eight identical Cutoff/Resonance rows in
+    // every picker; the heading is also what scopes the catalogue's collision
+    // census, so the two filters WITHIN one slot still get their group titles.
+    subGroupFor: (paramId) => {
+      const m = /^l(\d+)\./.exec(paramId);
+      return m ? { key: `l${m[1]}`, label: `Layer ${Number(m[1]) + 1}` } : undefined;
+    },
     // Plain objects: this crosses the thread boundary by structured clone.
     //
     // Each slot carries its engine's own output balance. A lane gets ONE trim

@@ -870,9 +870,15 @@ export function createPanelContext(deps: PanelContextDeps): PanelContext {
     destinations() {
       // The ONE catalogue. Enumerating knobs or building a parallel list here is
       // how four inconsistent pickers happened once already.
+      //
+      // The sub-group folds into the NAME, not the group: the group is the
+      // WHERE picker's vocabulary (one entry per lane/rack), and hiding a drum
+      // voice or an insert behind its own place would triple that list. Dropped
+      // entirely — which is what this used to do — an insert's Cutoff and the
+      // engine's read as the same row.
       return (deps.destinations?.() ?? []).map((d) => ({
         id: d.id,
-        name: d.label,
+        name: d.subGroup ? `${d.subGroup.label} · ${d.label}` : d.label,
         group: d.laneName,
       }));
     },

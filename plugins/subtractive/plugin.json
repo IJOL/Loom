@@ -137,7 +137,7 @@
             }
           } },
         { "id": "filter2.cutoff",    "label": "Cutoff", "kind": "continuous", "min": 0, "max": 1, "default": 0.25, "group": "filter2" },
-        { "id": "filter2.resonance", "label": "Res",    "kind": "continuous", "min": 0, "max": 1, "default": 0.2, "group": "filter2" },
+        { "id": "filter2.resonance", "label": "Resonance", "kind": "continuous", "min": 0, "max": 1, "default": 0.2, "group": "filter2" },
         { "id": "filter2.track",     "label": "Track",  "kind": "continuous", "min": 0, "max": 1, "default": 0, "group": "filter2" },
         { "id": "filter.blend",      "label": "Blend",  "kind": "continuous", "min": 0, "max": 1, "default": 1, "group": "filter2" },
 
