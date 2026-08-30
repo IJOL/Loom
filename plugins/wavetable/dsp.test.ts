@@ -226,3 +226,74 @@ describe('WavetableRenderer', () => {
   // dsp.ts no longer touches — it calls Loom.registerRenderer instead, and
   // wavetable-parity.dsp.test.ts asserts exactly that, at the right door.
 });
+
+describe('spectral warp', () => {
+  // The tables are BORN as Fourier specs (real/imag per harmonic), so the warp
+  // operates in that native domain and resynthesises. Filter wide open and no
+  // envelope, so what the assertions measure is the table itself.
+  const CLEAN: ParamBag = {
+    ...P, 'osc.waveA': 2, 'osc.waveB': 2, 'osc.morph': 0, 'osc.detune': 0,
+    'filter.cutoff': 1, 'filter.resonance': 0, 'amp.builtinEnv': 0,
+  };
+  const render = (bag: ParamBag): number[] => {
+    const v = new WavetableRenderer(note({ durationSec: 0.5 }), bag, SR);
+    const out: number[] = [];
+    for (let i = 0; i < SR * 0.25; i++) out.push(v.renderSample(i / SR));
+    return out;
+  };
+  const mag = (xs: number[], freqHz: number): number => {
+    let re = 0;
+    let im = 0;
+    const w = (2 * Math.PI * freqHz) / SR;
+    for (let i = 0; i < xs.length; i++) {
+      re += xs[i] * Math.cos(w * i);
+      im += xs[i] * Math.sin(w * i);
+    }
+    return Math.hypot(re, im);
+  };
+  // Mode indices pinned by the manifest options: 0=Stretch 1=Smear 2=Low-pass 3=Random.
+  const STRETCH = 0;
+  const LOWPASS = 2;
+  const RANDOM = 3;
+
+  it('spectral low-pass strips the top of a saw and leaves the fundamental', () => {
+    const plain = render({ ...CLEAN, 'osc.spectral': LOWPASS, 'osc.spectralAmt': 0 });
+    const dark = render({ ...CLEAN, 'osc.spectral': LOWPASS, 'osc.spectralAmt': 1 });
+    expect(mag(dark, 220 * 12)).toBeLessThan(mag(plain, 220 * 12) / 5);
+    expect(mag(dark, 220)).toBeGreaterThan(mag(plain, 220) / 3);
+  });
+
+  it('harmonic stretch leaves gaps where the stretched grid skips a harmonic', () => {
+    // amt 0.5 → factor 1.5: source harmonics land on 2, 3, 5, 6… so the saw's
+    // 4th (880 Hz) falls in a GAP while the 3rd (660) inherits the strong
+    // source h2. Full amt would be a plain octave shift — a saw is
+    // self-similar under that, which is exactly the case this dodges.
+    const plain = render({ ...CLEAN, 'osc.spectral': STRETCH, 'osc.spectralAmt': 0 });
+    const wide = render({ ...CLEAN, 'osc.spectral': STRETCH, 'osc.spectralAmt': 0.5 });
+    expect(mag(wide, 880)).toBeLessThan(mag(plain, 880) / 3);
+    expect(mag(wide, 660)).toBeGreaterThan(mag(plain, 660) * 0.5);
+  });
+
+  it('a patch that never mentions the warp is bit-identical to amount 0', () => {
+    // P carries no spectral params — the silent defaults must leave the tables
+    // untouched, or every saved Wavetable patch (and the pinned parity render)
+    // changes sound on load.
+    const a = render(CLEAN);
+    const b = render({ ...CLEAN, 'osc.spectral': STRETCH, 'osc.spectralAmt': 0 });
+    let d = 0;
+    for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
+    expect(d).toBe(0);
+  });
+
+  it('random amplitudes is deterministic — the same patch renders the same twice', () => {
+    // The offline export renders in a different order from the live path; a
+    // Math.random in the warp would make an export sound different from what
+    // was heard. Seeded by (harmonic, wave) on purpose.
+    const bag = { ...CLEAN, 'osc.spectral': RANDOM, 'osc.spectralAmt': 0.8 };
+    const a = render(bag);
+    const b = render(bag);
+    let d = 0;
+    for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
+    expect(d).toBe(0);
+  });
+});

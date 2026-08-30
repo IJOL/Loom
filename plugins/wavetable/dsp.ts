@@ -8,7 +8,7 @@ import { param, slotOf, Svf, Adsr, ModEnvHost, midiToFreq, clamp01, velGain01 } 
 import type {
   NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets, ModEnvSpec,
 } from '@loom/plugin-sdk';
-import { getWaveTables } from './wavetable-data';
+import { getWaveTables, getWarpedTable, SPECTRAL_STEPS } from './wavetable-data';
 // Detune modulation span: depth 1 (bipolar) sweeps ±50 cents, matching the knob.
 const MOD_DETUNE_CENTS = 50;
 
@@ -23,6 +23,15 @@ function sampleTable(tab: Float32Array, phase: number): number {
 export class WavetableRenderer implements VoiceRenderer {
   private tA: Float32Array;
   private tB: Float32Array;
+  // Spectral warp: the MODE is structural (frozen at trigger); the AMOUNT is
+  // live and quantised to SPECTRAL_STEPS, so moving it swaps precomputed
+  // tables (cached in wavetable-data) — phase carries across the swap.
+  private readonly waveA: number;
+  private readonly waveB: number;
+  private readonly specMode: number;
+  private spectralBase: number;
+  private sSpectral = -1;
+  private specStep: number;
   private phA = 0;
   private phB = 0;
   private f0: number;                 // base note frequency (Hz), for live detune
@@ -67,8 +76,15 @@ export class WavetableRenderer implements VoiceRenderer {
     const tables = getWaveTables();
     const ai = Math.max(0, Math.min(tables.length - 1, Math.round(param(p, 'osc.waveA', 2))));
     const bi = Math.max(0, Math.min(tables.length - 1, Math.round(param(p, 'osc.waveB', 3))));
-    this.tA = tables[ai];
-    this.tB = tables[bi];
+    this.waveA = ai;
+    this.waveB = bi;
+    this.specMode = param(p, 'osc.spectral', 0);
+    this.spectralBase = clamp01(param(p, 'osc.spectralAmt', 0));
+    this.specStep = Math.round(this.spectralBase * SPECTRAL_STEPS);
+    // Step 0 hands back the untouched originals — the exact arrays the
+    // pre-warp voice used, which is what keeps the parity render pinned.
+    this.tA = getWarpedTable(ai, this.specMode, this.specStep);
+    this.tB = getWarpedTable(bi, this.specMode, this.specStep);
     this.morphBase = param(p, 'osc.morph', 0);
 
     this.detuneBase = param(p, 'osc.detune', 0);
@@ -103,6 +119,7 @@ export class WavetableRenderer implements VoiceRenderer {
   setLiveValues(values: Float64Array, index: ParamIndex): void {
     this.live = values;
     this.sMorph = slotOf(index, 'osc.morph');
+    this.sSpectral = slotOf(index, 'osc.spectralAmt');
     this.sDetune = slotOf(index, 'osc.detune');
     this.sCutoff = slotOf(index, 'filter.cutoff');
     this.sRes = slotOf(index, 'filter.resonance');
@@ -122,6 +139,18 @@ export class WavetableRenderer implements VoiceRenderer {
     const detuneKnob = L && this.sDetune >= 0 ? L[this.sDetune] : this.detuneBase;
     const cutoffKnob = L && this.sCutoff >= 0 ? L[this.sCutoff] : this.cutoffBase;
     const qKnob = L && this.sRes >= 0 ? clamp01(L[this.sRes]) : this.qBase;
+
+    // Spectral warp amount: live knob + modulation, quantised to a table step.
+    // A step change swaps cached tables; phase carries across, so the swap is
+    // a timbre move, not a retrigger.
+    const spectralKnob = L && this.sSpectral >= 0 ? clamp01(L[this.sSpectral]) : this.spectralBase;
+    const spectralEff = mo?.[this.sSpectral] ? clamp01(spectralKnob + mo[this.sSpectral]) : spectralKnob;
+    const step = Math.round(spectralEff * SPECTRAL_STEPS);
+    if (step !== this.specStep) {
+      this.specStep = step;
+      this.tA = getWarpedTable(this.waveA, this.specMode, step);
+      this.tB = getWarpedTable(this.waveB, this.specMode, step);
+    }
 
     // Morph (equal-power crossfade), modulatable.
     const morph = mo?.[this.sMorph] ? clamp01(morphKnob + mo[this.sMorph]) : morphKnob;

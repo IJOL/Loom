@@ -145,3 +145,96 @@ export function getWaveTables(): Float32Array[] {
   if (!cache) cache = WAVETABLES.map(synth);
   return cache;
 }
+
+// ── Spectral warp ────────────────────────────────────────────────────────────
+// The tables are BORN as Fourier specs, so the warp is native: transform the
+// harmonics, resynthesise, cache. The AMOUNT is quantised to SPECTRAL_STEPS so
+// a live sweep swaps between a bounded set of precomputed tables instead of
+// resynthesising per sample — each (wave, mode, step) is paid for once, ever.
+// Order pinned by the manifest options: 0=Stretch 1=Smear 2=Low-pass 3=Random.
+
+export const SPECTRAL_MODES = ['Stretch', 'Smear', 'Low-pass', 'Random'] as const;
+export const SPECTRAL_STEPS = 32;
+
+/** Deterministic 0..1 per (harmonic, wave) — the offline export renders in a
+ *  different order from the live path, so Math.random here would make an
+ *  export sound different from what was heard. */
+function hash01(n: number): number {
+  let h = (n ^ 0x9e3779b9) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b) >>> 0;
+  return ((h ^ (h >>> 16)) >>> 0) / 0xffffffff;
+}
+
+function warpSpec(src: WaveTableDef, mode: number, amt: number, waveIdx: number): WaveTableDef {
+  const real = new Float32Array(HARMONICS);
+  const imag = new Float32Array(HARMONICS);
+  if (mode === 0) {
+    // Stretch: harmonic k lands at round(k·(1+amt)). Collisions add, the top
+    // falls off the table, and the gaps the stretched grid skips are the
+    // sound of it.
+    const f = 1 + amt;
+    for (let k = 1; k < HARMONICS; k++) {
+      const kk = Math.round(k * f);
+      if (kk < HARMONICS) {
+        real[kk] += src.real[k];
+        imag[kk] += src.imag[k];
+      }
+    }
+  } else if (mode === 1) {
+    // Smear: box-blur the spec across neighbours. Blurring real/imag rather
+    // than magnitude also blurs phase — cheaper, and the wash is the point.
+    const w = Math.max(1, Math.round(amt * 6));
+    for (let k = 1; k < HARMONICS; k++) {
+      let r = 0;
+      let i2 = 0;
+      let cnt = 0;
+      for (let j = Math.max(1, k - w); j <= Math.min(HARMONICS - 1, k + w); j++) {
+        r += src.real[j];
+        i2 += src.imag[j];
+        cnt++;
+      }
+      real[k] = r / cnt;
+      imag[k] = i2 / cnt;
+    }
+  } else if (mode === 2) {
+    // Spectral low-pass: everything above the cutoff harmonic rolls off
+    // exponentially. Squared curve so the knob's first half is gentle.
+    const kc = 1 + (HARMONICS - 1) * Math.pow(1 - amt, 2);
+    for (let k = 1; k < HARMONICS; k++) {
+      const g = k <= kc ? 1 : Math.exp(-(k - kc) / 2);
+      real[k] = src.real[k] * g;
+      imag[k] = src.imag[k] * g;
+    }
+  } else {
+    // Random amplitudes: each harmonic keeps or loses level by its own
+    // seeded coin. 1.5 ceiling so the expected energy stays near unity.
+    for (let k = 1; k < HARMONICS; k++) {
+      const g = 1 - amt + amt * 1.5 * hash01(k * 31 + waveIdx * 977);
+      real[k] = src.real[k] * g;
+      imag[k] = src.imag[k] * g;
+    }
+  }
+  return { name: src.name, real, imag };
+}
+
+const warped = new Map<number, Float32Array>();
+
+/** The single-cycle table for wave `waveIdx` warped by `mode` at quantised
+ *  `step` (0..SPECTRAL_STEPS; 0 = the untouched original, same reference the
+ *  parity render pins). Cached per (wave, mode, step); the ceiling covers a
+ *  hand sweeping everything and then starts over rather than growing. */
+export function getWarpedTable(waveIdx: number, mode: number, step: number): Float32Array {
+  const tables = getWaveTables();
+  const wi = Math.max(0, Math.min(tables.length - 1, Math.round(waveIdx)));
+  const s = Math.max(0, Math.min(SPECTRAL_STEPS, Math.round(step)));
+  if (s === 0) return tables[wi];
+  const m = Math.max(0, Math.min(SPECTRAL_MODES.length - 1, Math.round(mode)));
+  const key = (wi << 16) | (m << 8) | s;
+  const hit = warped.get(key);
+  if (hit) return hit;
+  if (warped.size > 96) warped.clear();   // ~0.8 MB ceiling
+  const t = synth(warpSpec(WAVETABLES[wi], m, s / SPECTRAL_STEPS, wi));
+  warped.set(key, t);
+  return t;
+}
