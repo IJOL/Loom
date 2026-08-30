@@ -321,14 +321,16 @@ export function buildSessionCallbacks(self: SessionHost): SessionUICallbacks {
      *  `opts.anchorSec` so it lands on bar 1. With `opts.replace` the whole session
      *  is swapped for a clean one holding only the stems (1 scene). */
     onAddStemLanes(
-      stems: { label: string; sampleId: string; durationSec: number; warpRef?: boolean }[],
+      stems: { label: string; sampleId: string; durationSec: number; warpRef?: boolean; originalBpm?: number }[],
       opts: { replace?: boolean; anchorSec?: number; warpMarkers?: import('./session').WarpMarker[]; warpGroupId?: string } = {},
     ) {
       const hd = self.deps.historyDeps;
       const anchorSec = opts.anchorSec ?? 0;
-      const build = (stem: { label: string; sampleId: string; durationSec: number; warpRef?: boolean }, id: string) =>
+      const build = (stem: { label: string; sampleId: string; durationSec: number; warpRef?: boolean; originalBpm?: number }, id: string) =>
         buildStemAudioLane(stem, id, {
-          bpm: seq.bpm, meter: seq.meter, anchorSec,
+          // A dropped LOOP declares its own tempo (the bar fit); a stem is
+          // assumed to already sit at the project tempo.
+          bpm: stem.originalBpm ?? seq.bpm, meter: seq.meter, anchorSec,
           warpMarkers: opts.warpMarkers, warpGroupId: opts.warpGroupId, warpRef: stem.warpRef,
         });
 

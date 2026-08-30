@@ -43,6 +43,11 @@ import { moveEvent, resizeEvent, deleteEvent, clampMove } from '../performance/a
 import { findBand, setBandMuted, duplicateBand, splitBandAt } from '../performance/band-ops';
 import { attachPerfGestures } from '../performance/perf-gestures';
 import { attachPerfActions } from '../performance/perf-keys';
+import { attachPerfDrop } from '../performance/perf-ingest';
+import { getOrCreateLane } from '../performance/arrangement-ops';
+import { buildSampleAsset, newSampleId } from '../samples/import';
+import { sampleCache } from '../samples/sample-cache';
+import { sampleStore } from '../samples/store-singleton';
 import { arrangementPlayhead } from '../performance/arrangement-runtime';
 import { newBandId } from '../performance/performance';
 import { clipLoopSec } from '../core/launch-timing';
@@ -343,6 +348,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
 
   let gesturesDetach: (() => void) | null = null;
   let actionsDetach: (() => void) | null = null;
+  let dropDetach: (() => void) | null = null;
 
   /** Copied bands, offsets relative to the earliest — plain data, fresh ids on
    *  paste. Runtime state, never persisted. */
@@ -420,6 +426,45 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       getSelection: () => bandSelection,
       setSelection: (ids) => { bandSelection.clear(); for (const id of ids) bandSelection.add(id); },
       moveBands: moveBandsBy,
+      refresh: refreshPerformanceView,
+    });
+    dropDetach ??= attachPerfDrop(host, {
+      bpm: () => arrangement.bpm,
+      meter: () => seq.meter,
+      pxPerBar: () => pxPerBar,
+      importFile: async (file) => {
+        try {
+          const bytes = await file.arrayBuffer();
+          const buffer = await ctx.decodeAudioData(bytes.slice(0));
+          const asset = buildSampleAsset({
+            id: newSampleId(), name: file.name, mime: file.type || 'audio/wav',
+            bytes, buffer, createdAt: Date.now(),
+          });
+          sampleCache.put(asset.id, buffer);   // audible immediately
+          void sampleStore.put(asset);         // persisted for reload
+          return { sampleId: asset.id, durationSec: buffer.duration };
+        } catch (err) {
+          console.warn('[arrange-drop] decode failed for', file.name, err);
+          return null;
+        }
+      },
+      addLoopLane: (input) => {
+        // The session half: the stems door builds the Audio lane + the
+        // bar-fitted audioChannelClip (originalBpm IS the fit), undoably.
+        sessionHost.addStemLanes([input], { replace: false });
+        const lane = sessionHost.state.lanes[sessionHost.state.lanes.length - 1];
+        const clip = lane?.clips.find((c) => !!c);
+        return lane && clip ? { laneId: lane.id, clipId: clip.id } : null;
+      },
+      addBand: (laneId, clipId, atSec, durSec) => {
+        commitArrUndo();
+        const rec = getOrCreateLane(arrangement, laneId);
+        rec.clipEvents = [
+          ...rec.clipEvents,
+          { id: newBandId(), clipId, laneId, atSec, untilSec: atSec + durSec },
+        ].sort((a, b) => a.atSec - b.atSec); // the runtime pointers expect order
+        recomputeDurationSec(arrangement);
+      },
       refresh: refreshPerformanceView,
     });
     actionsDetach ??= attachPerfActions(host, {

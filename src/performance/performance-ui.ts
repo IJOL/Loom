@@ -128,7 +128,10 @@ function viewTemplate(state: ArrangementState, cb: PerfUICallbacks): TemplateRes
     (lane) => html`${clipBandTemplate(lane, dur, barSec, cb.pxPerBar, cb)}${lane.automation.map((curve) => buildAutomationLane(curve, autoDeps))}`,
   )}${state.globalAutomation.length > 0
     ? html`<div class="perf-row perf-master-header">${labelTemplate('MASTER')}</div>${state.globalAutomation.map((curve) => buildAutomationLane(curve, autoDeps))}`
-    : nothing}<div class="perf-playhead" id="perf-playhead"></div></div>`;
+    : nothing}<div class="perf-row perf-droplane">${labelTemplate('＋ new lane')}<div
+      class="perf-track"
+      style="width:${totalBars * cb.pxPerBar}px"
+    ><div class="perf-dropzone">⇣ drop audio loops — each becomes an Audio lane, fitted to bars</div></div></div><div class="perf-playhead" id="perf-playhead"></div></div>`;
 }
 
 export function renderPerformanceView(host: HTMLElement, state: ArrangementState, cb: PerfUICallbacks): void {

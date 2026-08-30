@@ -86,7 +86,16 @@ export function createArrangementPlayback(deps: ArrangementPlaybackDeps): Arrang
   function onLaunchClip(laneId: string, clipId: string, atCtx: number, offsetSec = 0) {
     const lane = sessionHost.state.lanes.find((l) => l.id === laneId);
     if (!lane) return;
-    const clip = lane.clips.find((c) => c?.id === clipId);
+    // A re-laned band still references the clip of the lane it came from, so
+    // the lookup falls back to EVERY lane's clips — the band says where it
+    // PLAYS, the clip stays where it lives.
+    let clip = lane.clips.find((c) => c?.id === clipId);
+    if (!clip) {
+      for (const l of sessionHost.state.lanes) {
+        clip = l.clips.find((c) => c?.id === clipId);
+        if (clip) break;
+      }
+    }
     if (!clip) return;
     // Timeline wins: claim the lane BEFORE the launch, so a weaving lane is
     // already suspended when its clip starts.
