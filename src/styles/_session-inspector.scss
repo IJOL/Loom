@@ -542,6 +542,32 @@
   height: 22px;
 }
 
+/* The diatonic voicing toggles (OPEN / ±8VA / COLOR / ALTER): five small
+ * switches sharing one row, wrapping when the card is narrow. */
+.notefx-chord-toggles {
+  flex-wrap: wrap;
+
+  button {
+    font-size: 9px;
+    padding: 2px 5px;
+    height: 20px;
+  }
+}
+/* The custom-scale painter: 12 degree buttons, one per pitch class relative
+ * to the key. A grid rather than a flex row so the dozen stays legible. */
+.notefx-custom-scale {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 2px;
+
+  button {
+    font-size: 8px;
+    padding: 2px 0;
+    height: 20px;
+    min-width: 0;
+  }
+}
+
 /* Compact buttons inside note-FX cards (add/remove/enable) — the
  * `.mod-card-row button` rule does not reach `.notefx-card-row`. */
 .notefx-panel .mod-panel-header button,

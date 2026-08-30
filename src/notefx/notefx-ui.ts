@@ -14,6 +14,8 @@ import type { NoteFxState } from './notefx-types';
 import { DEFAULT_ARP_STEPS } from './arp-steps';
 import { createArpStepsEditor, type ArpStepsEditor } from './arp-steps-editor';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
+import { selectField, numberField } from './notefx-fields';
+import { chordCardTemplate } from './chord-card';
 
 export interface NoteFxUIDeps {
   laneId: string;
@@ -36,13 +38,7 @@ function withMaybeUndo(deps: NoteFxUIDeps, fn: () => void): void {
 const ARP_PATTERNS = ['up', 'down', 'updown', 'random', 'cosmic', 'steps'];
 const ARP_SCALES = ['global', 'major', 'minor', 'pentMinor', 'phrygian', 'chromatic'];
 const ARP_RATES = ['free', '1/4', '1/8', '1/8t', '1/16', '1/16t', '1/32'];
-// 'free' last: it is the one that replaces the named voicing with three numbers.
-const CHORD_TYPES = ['maj', 'min', 'maj7', 'min7', 'sus2', 'sus4', 'dim', 'free'];
-// off  — play the intervals as dialled.
-// scale — stay in the key.
-// chord — lock to the tones of the chord sounding now (falls back to scale
-//         when the session names no progression).
-const CONFORM_MODES = ['off', 'scale', 'chord'];
+// The chord card's own selects (types, conform, tonality) live in chord-card.ts.
 const RANDOM_MODES = ['random', 'alt'];
 const RANDOM_SIGNS = ['add', 'sub', 'bi'];
 const SCALE_IDS: ScaleId[] = SCALE_CATALOG.map((s) => s.id);
@@ -92,11 +88,12 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
     set(k, v);
     ctx.rerender();
   };
-  const octaveOn = fx.params.octaveOn === true;
-  const chordFree = String(fx.params.chordType ?? 'maj') === 'free';
-  // Three-way now: off / scale / chord. The middle one is what IN KEY used
-  // to mean; the third locks to the chord sounding now.
-  const conform = String(fx.params.conform ?? 'off');
+  /** The preset road: many params as ONE undo entry, then a repaint — the
+   *  card's whole shape can change (a preset may flip it into diatonic). */
+  const apply = (fn: () => void) => {
+    withMaybeUndo(deps, () => { fn(); sync(); });
+    ctx.rerender();
+  };
   const scaleAware = fx.params.scaleAware !== false;
   return html`
     <div class="notefx-card notefx-${fx.kind}">
@@ -147,36 +144,9 @@ function cardTemplate(fx: NoteFxState, ctx: Ctx): TemplateResult {
         ${numberField('DUR CHANCE', 0, 1, 0.01, Number(fx.params.durChance ?? 0), (v) => set('durChance', v))}
         ${numberField('DUR RND', 0, 1, 0.01, Number(fx.params.durRandom ?? 0.3), (v) => set('durRandom', v))}
         ${numberField('DROP', 0, 1, 0.01, Number(fx.params.dropChance ?? 0), (v) => set('dropChance', v))}
-      ` : html`
-        ${/* 'free' shows three more fields; the named types hide them. */ ''}
-        ${selectField('CHORD', CHORD_TYPES, String(fx.params.chordType ?? 'maj'), (v) => setShape('chordType', v))}
-        ${chordFree ? html`
-          ${numberField('INT 1', -24, 24, 1, Number(fx.params.i1 ?? 4), (v) => set('i1', v))}
-          ${numberField('INT 2', -24, 24, 1, Number(fx.params.i2 ?? 7), (v) => set('i2', v))}
-          ${numberField('INT 3', -24, 24, 1, Number(fx.params.i3 ?? 0), (v) => set('i3', v))}
-        ` : ''}
-        ${selectField('IN KEY', CONFORM_MODES, conform, (v) => set('conform', v))}
-        <div class="notefx-field notefx-oct-toggle">
-          <span>OCT SHIFT</span>
-          <button class=${octaveOn ? 'rnd primary' : 'rnd'} @click=${() => {
-            set('octaveOn', !octaveOn);
-            ctx.rerender();
-          }}>${octaveOn ? 'ON' : 'OFF'}</button>
-        </div>
-        ${octaveOn
-          ? numberField('OCT', -2, 2, 1, Number(fx.params.octave ?? 0), (v) => set('octave', v))
-          : ''}
-      `}
+      ` : chordCardTemplate(fx, { set, setShape, apply })}
     </div>
   `;
-}
-
-function selectField(
-  label: string, opts: string[], value: string, onChange: (v: string) => void,
-): TemplateResult {
-  return html`<label class="notefx-field">${label}<select
-    @change=${(e: Event) => onChange((e.target as HTMLSelectElement).value)}
-  >${opts.map((o) => html`<option value=${o} ?selected=${o === value}>${o}</option>`)}</select></label>`;
 }
 
 /** The arp's pattern editor, kept ALIVE across repaints.
@@ -213,13 +183,4 @@ function stepsField(
     entry.emitted = value;
   }
   return html`<div class="notefx-field notefx-steps"><span>STEPS</span>${entry.ed.el}</div>`;
-}
-
-function numberField(
-  label: string, min: number, max: number, step: number, value: number, onChange: (v: number) => void,
-): TemplateResult {
-  return html`<label class="notefx-field">${label}<input
-    type="range" min=${min} max=${max} step=${step} .value=${String(value)}
-    @input=${(e: Event) => onChange(Number((e.target as HTMLInputElement).value))}
-  /></label>`;
 }

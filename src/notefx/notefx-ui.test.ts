@@ -141,6 +141,61 @@ describe('renderNoteFxPanel', () => {
     expect(container.querySelector('.notefx-card')).toBeNull();
   });
 
+  // --- the chord card, Scales & Chords round ---
+  describe('chord card', () => {
+    const addChord = (c: HTMLElement) => headerButtons(c)[1].click();
+    const selectByOption = (c: HTMLElement, option: string) =>
+      [...c.querySelectorAll<HTMLSelectElement>('.notefx-chord select')]
+        .find((s) => [...s.options].some((o) => o.value === option))!;
+
+    it('choosing diatonic reveals the voicing controls; a named type hides them', () => {
+      const { container } = mount();
+      addChord(container);
+      expect(container.querySelector('.notefx-chord-toggles')).toBeNull();
+      choose(selectByOption(container, 'diatonic'), 'diatonic');
+      expect(container.querySelector('.notefx-chord-toggles')).toBeTruthy();
+      const toggles = [...container.querySelectorAll('.notefx-chord-toggles button')].map((b) => b.textContent);
+      expect(toggles).toEqual(['OPEN', '+8VA', '-8VA', 'COLOR', 'ALTER']);
+      choose(selectByOption(container, 'diatonic'), 'maj');
+      expect(container.querySelector('.notefx-chord-toggles')).toBeNull();
+    });
+
+    it('a factory preset applies its params in one gesture and repaints the card', () => {
+      const { container, chain } = mount();
+      addChord(container);
+      choose(selectByOption(container, 'open-pad'), 'open-pad');
+      expect(chain.noteFx[0].params.chordType).toBe('diatonic');
+      expect(chain.noteFx[0].params.open).toBe(true);
+      expect(chain.noteFx[0].params.addOctDown).toBe(true);
+      // The card repainted into diatonic shape on the spot.
+      expect(container.querySelector('.notefx-chord-toggles')).toBeTruthy();
+    });
+
+    it('KEY and SCALE default to Session; picking custom reveals the 12-key painter', () => {
+      const { container, chain } = mount();
+      addChord(container);
+      const scaleSel = selectByOption(container, 'custom');
+      expect(scaleSel.value).toBe('session');
+      expect(container.querySelector('.notefx-custom-scale')).toBeNull();
+      choose(scaleSel, 'custom');
+      const painter = container.querySelector('.notefx-custom-scale')!;
+      expect(painter).toBeTruthy();
+      expect(painter.querySelectorAll('button')).toHaveLength(12);
+      // Painting the b2 degree sets bit 1 of the mask (major default = 0b101010110101).
+      painter.querySelectorAll<HTMLButtonElement>('button')[1].click();
+      expect(Number(chain.noteFx[0].params.customMask) & 0b10).toBe(0b10);
+    });
+
+    it('IN KEY offers filter, and only outside diatonic mode', () => {
+      const { container } = mount();
+      addChord(container);
+      expect(selectByOption(container, 'filter')).toBeTruthy();
+      choose(selectByOption(container, 'diatonic'), 'diatonic');
+      expect([...container.querySelectorAll<HTMLSelectElement>('.notefx-chord select')]
+        .find((s) => [...s.options].some((o) => o.value === 'filter'))).toBeUndefined();
+    });
+  });
+
   it('survives the caller wiping the container and re-rendering (re-adoption)', () => {
     const { container, chain, deps } = mount();
     headerButtons(container)[0].click();
