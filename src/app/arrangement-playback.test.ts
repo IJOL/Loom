@@ -145,3 +145,18 @@ describe('launch-mute', () => {
     expect(pb.getLaunchState()).toEqual({ solo: 'l1', muted: new Set(['l2']) });
   });
 });
+
+describe('mixer automation route', () => {
+  it('a .mixer.mute curve lands on applyMixerFlag, thresholded at 0.5', () => {
+    const { deps, arrangement, ctx } = fixture();
+    const flags: Array<[string, string, boolean]> = [];
+    (deps as { applyMixerFlag?: (l: string, k: string, on: boolean) => void }).applyMixerFlag =
+      (l, k, on) => flags.push([l, k, on]);
+    arrangement.lanes[0].automation.push({ paramId: 'l1.mixer.mute', values: [1, 1, 1, 1], enabled: true });
+    const pb = createArrangementPlayback(deps);
+    pb.begin();
+    (ctx as { currentTime: number }).currentTime = 0.01;
+    pb.tick(0.01, 0.12);
+    expect(flags).toContainEqual(['l1', 'mute', true]);
+  });
+});

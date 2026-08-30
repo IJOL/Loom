@@ -48,7 +48,9 @@ describe('listAutomationTargets — multi-strip sub-groups', () => {
       stateWith({ id: 'P', name: 'Sub', engineId: 'subtractive', clips: [], inserts: [] }),
       new Map(),
     );
-    const anyP = targets.find((t) => t.laneId === 'P');
+    // Engine params specifically — the mixer m/s pair carries its own MIXER
+    // sub-group on every lane by design (Arrange round).
+    const anyP = targets.find((t) => t.laneId === 'P' && !t.id.includes('.mixer.'));
     expect(anyP).toBeDefined();
     expect(anyP!.subGroup).toBeUndefined();
   });

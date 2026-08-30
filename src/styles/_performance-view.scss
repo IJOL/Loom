@@ -203,3 +203,8 @@
   color: #8a8a8a; font-size: 11px; pointer-events: none;
   &.drop-hot { border-color: #f0b429; color: #f0b429; background: rgba(240, 180, 41, 0.06); }
 }
+
+.performance-view .perf-lane-btn.launch-solo.active,
+.performance-view .perf-lane-btn.launch-mute.active {
+  background: #f0b429; color: #1a1a1a; border-color: #f0b429;
+}

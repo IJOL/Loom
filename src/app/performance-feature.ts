@@ -14,12 +14,12 @@ import {
   type RecState,
 } from '../performance/rec-state';
 import {
-  emptyArrangementState,
+  emptyArrangementState, stepsPerSec,
   type ArrangementState,
 } from '../performance/performance';
 import {
   finalizeArrangement, setArrangementLengthBars, recomputeDurationSec,
-  addAutomationCurve, removeAutomationCurve,
+  addAutomationCurve, removeAutomationCurve, writeAutomationSample,
   effectiveDurationSec, seedClipEventsFromSounding,
 } from '../performance/arrangement-ops';
 import type { AutoBrush } from '../automation/automation-painter';
@@ -45,6 +45,7 @@ import { attachPerfGestures } from '../performance/perf-gestures';
 import { attachPerfActions } from '../performance/perf-keys';
 import { attachPerfDrop } from '../performance/perf-ingest';
 import { getOrCreateLane } from '../performance/arrangement-ops';
+import { AUTOMATION_SUB_RES } from '../core/pattern';
 import { buildSampleAsset, newSampleId } from '../samples/import';
 import { sampleCache } from '../samples/sample-cache';
 import { sampleStore } from '../samples/store-singleton';
@@ -203,6 +204,16 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     isPerformanceMode: () => mode === 'performance',
     onArrangementEnd: () => deps.onArrangementEnd?.(),
     onTimelineLaunch: deps.onTimelineLaunch,
+    // The mixer's booleans land on the SAME tables the desk's own buttons
+    // write, through the same applyMuteSolo — one owner, two writers.
+    applyMixerFlag: (laneId, kind, on) => {
+      const md = sessionHost.deps.mixerDeps;
+      if (!md) return;
+      const table = kind === 'mute' ? md.muteState : md.soloState;
+      if (table[laneId] === on) return;
+      table[laneId] = on;
+      md.applyMuteSolo();
+    },
     applyUnmounted: deps.applyUnmounted,
     getTargetRanges: deps.getTargetRanges,
   });
@@ -289,20 +300,48 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     if (!md || !strip) return null;
     // One-shot build (renderElement): the view rebuilds this header on every
     // re-render, so the buttons patch only themselves in between.
-    const toggle = (get: () => boolean, set: (v: boolean) => void) => (e: Event) => {
+    const toggle = (kind: 'mute' | 'solo', get: () => boolean, set: (v: boolean) => void) => (e: Event) => {
       e.stopPropagation();
       set(!get());
       (e.currentTarget as HTMLElement).classList.toggle('active', get());
       md.applyMuteSolo();
+      // A mute performance is part of the take: while recording, the press
+      // lands as a 0/1 sample on the lane's mixer curve (sampleAutomationAt
+      // holds the last value, so one press sustains until the next).
+      if (rec.recording) {
+        const subIdx = Math.floor(
+          arrangementNow(rec, ctx.currentTime) * stepsPerSec(arrangement.bpm) * AUTOMATION_SUB_RES,
+        );
+        writeAutomationSample(arrangement, `${laneId}.mixer.${kind}`, get() ? 1 : 0, subIdx, laneIds());
+      }
     };
+    // Launch-solo/mute (accent pair): the ARRANGEMENT stops driving lanes —
+    // musically, at the bar. Distinct from the mixer's audio m/s beside them.
+    const launch = playback.getLaunchState();
     const vu = createLevelMeter({ analyser: strip.getMeterAnalyser() });
     perfDisposables.push(vu);
     return renderElement(html`<div class="perf-lane-ctrls"><button
+        class=${'perf-lane-btn launch-solo' + (launch.solo === laneId ? ' active' : '')}
+        title="Launch-solo: the take drives only this lane"
+        @click=${(e: Event) => {
+          e.stopPropagation();
+          playback.setLaunchSolo(launch.solo === laneId ? null : laneId);
+          refreshPerformanceView();
+        }}
+      >S▸</button><button
+        class=${'perf-lane-btn launch-mute' + (launch.muted.has(laneId) ? ' active' : '')}
+        title="Launch-mute: the take stops driving this lane"
+        @click=${(e: Event) => {
+          e.stopPropagation();
+          playback.setLaunchMute(laneId, !launch.muted.has(laneId));
+          refreshPerformanceView();
+        }}
+      >M▸</button><button
         class=${'perf-lane-btn mute' + (md.muteState[laneId] ? ' active' : '')}
-        @click=${toggle(() => !!md.muteState[laneId], (v) => { md.muteState[laneId] = v; })}
+        @click=${toggle('mute', () => !!md.muteState[laneId], (v) => { md.muteState[laneId] = v; })}
       >M</button><button
         class=${'perf-lane-btn solo' + (md.soloState[laneId] ? ' active' : '')}
-        @click=${toggle(() => !!md.soloState[laneId], (v) => { md.soloState[laneId] = v; })}
+        @click=${toggle('solo', () => !!md.soloState[laneId], (v) => { md.soloState[laneId] = v; })}
       >S</button>${vu.el}</div>`);
   }
 

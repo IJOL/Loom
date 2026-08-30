@@ -54,6 +54,9 @@ export interface ArrangementPlaybackDeps {
    *  weaving/following lane hands over the moment the take drives it; the
    *  WEAVE panel takes it back with its own ▶, exactly as after a grid launch. */
   onTimelineLaunch?: (laneId: string | null) => void;
+  /** The landing for `<laneId>.mixer.mute` / `.mixer.solo` automation — the
+   *  mixer's booleans are not engine params, so they take their own route. */
+  applyMixerFlag?: (laneId: string, kind: 'mute' | 'solo', on: boolean) => void;
   /** Late-bound: automation-writes is built AFTER the performance feature, so
    *  main hands this in as a closure, never as a bare reference. Absent in test
    *  fixtures with no audio graph. */
@@ -120,6 +123,13 @@ export function createArrangementPlayback(deps: ArrangementPlaybackDeps): Arrang
   }
 
   function applyAutomation(paramId: string, valueNorm: number) {
+    // Mixer mute/solo curves take their own route — a boolean on the desk, not
+    // a knob on an engine. >= 0.5 is on, exactly what a stepped 0/1 curve says.
+    const mixer = paramId.match(/^(.+)\.mixer\.(mute|solo)$/);
+    if (mixer) {
+      deps.applyMixerFlag?.(mixer[1], mixer[2] as 'mute' | 'solo', valueNorm >= 0.5);
+      return;
+    }
     // A take curve is a property of the take, not of what is on screen: when
     // the lane's editor is closed there is no knob, and the value must still
     // reach the audio object. It used to be dropped here.

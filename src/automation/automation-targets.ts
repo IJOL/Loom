@@ -187,6 +187,15 @@ export function listAutomationTargets(
         push(insertParamId(lane.id, slot.id, spec.id), spec.label, spec.min, spec.max, subGroup);
       }
     });
+
+    // The mixer's own mute/solo, as 0/1 destinations — so a take can capture a
+    // mute performance and the + Automation picker can drive the desk. They
+    // land through their own route (arrangement-playback's applyMixerFlag),
+    // never through an engine param. LAST in the lane on purpose: consumers
+    // that slice a lane's leading params as its knob bank (the MIDI facade)
+    // must keep seeing the engine's own first.
+    push(`${lane.id}.mixer.mute`, 'Mute', 0, 1, { key: 'mixer', label: 'MIXER' });
+    push(`${lane.id}.mixer.solo`, 'Solo', 0, 1, { key: 'mixer', label: 'MIXER' });
   }
 
   // The global racks are destinations too, grouped under their own headings.

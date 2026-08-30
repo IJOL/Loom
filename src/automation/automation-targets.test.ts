@@ -188,3 +188,18 @@ describe('a modulator depth is a destination like any other', () => {
     expect(ids.some((id) => id.endsWith('.depth'))).toBe(false);
   });
 });
+
+describe('mixer mute/solo destinations (Arrange round)', () => {
+  it('every lane offers <laneId>.mixer.mute and .mixer.solo as 0/1 targets', () => {
+    const state = sessionWithInsertLane();
+    const targets = listAutomationTargets(state, new Map<string, KnobHandle>());
+    const laneId = state.lanes[0].id;
+    const mute = targets.find((t) => t.id === `${laneId}.mixer.mute`);
+    const solo = targets.find((t) => t.id === `${laneId}.mixer.solo`);
+    expect(mute).toBeTruthy();
+    expect(solo).toBeTruthy();
+    expect(mute!.min).toBe(0);
+    expect(mute!.max).toBe(1);
+    expect(mute!.subGroup?.label).toBe('MIXER');
+  });
+});
