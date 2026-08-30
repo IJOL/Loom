@@ -40,8 +40,11 @@ import { arrangementFromSession } from '../performance/arrangement-from-session'
 import { createHistory } from '../core/history';
 import { songBarSec } from '../core/song-position';
 import { moveEvent, resizeEvent, deleteEvent, clampMove } from '../performance/arrangement-edit';
-import { findBand } from '../performance/band-ops';
+import { findBand, setBandMuted, duplicateBand, splitBandAt } from '../performance/band-ops';
 import { attachPerfGestures } from '../performance/perf-gestures';
+import { attachPerfActions } from '../performance/perf-keys';
+import { arrangementPlayhead } from '../performance/arrangement-runtime';
+import { newBandId } from '../performance/performance';
 import { clipLoopSec } from '../core/launch-timing';
 import { ticksPerBar } from '../core/meter';
 
@@ -339,6 +342,72 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   }
 
   let gesturesDetach: (() => void) | null = null;
+  let actionsDetach: (() => void) | null = null;
+
+  /** Copied bands, offsets relative to the earliest — plain data, fresh ids on
+   *  paste. Runtime state, never persisted. */
+  let bandClipboard: Array<{
+    laneId: string; clipId: string; relAtSec: number; durSec: number;
+    offsetSec?: number; muted?: boolean;
+  }> = [];
+
+  /** Where the playhead sits, playing or stopped (the paste target). */
+  function playheadSec(): number {
+    if (arrangementPlayState.isPlaying) return arrangementPlayhead(arrangementPlayState, ctx.currentTime);
+    return Math.max(0, ctx.currentTime - sessionHost.songAnchorSec);
+  }
+
+  /** Apply `fn` to every lane that holds one of `ids`, as ONE undo entry. */
+  function editSelectedBands(
+    ids: ReadonlySet<string>,
+    fn: (events: import('../performance/performance').ArrangementClipEvent[], id: string) =>
+      import('../performance/performance').ArrangementClipEvent[],
+  ): void {
+    commitArrUndo();
+    for (const lane of arrangement.lanes) {
+      for (const ev of [...lane.clipEvents]) {
+        if (!ids.has(ev.id)) continue;
+        lane.clipEvents = fn(lane.clipEvents, ev.id);
+      }
+    }
+    recomputeDurationSec(arrangement);
+    refreshPerformanceView();
+  }
+
+  function deleteBands(ids: ReadonlySet<string>): void {
+    editSelectedBands(ids, (evs, id) => evs.filter((e) => e.id !== id));
+    bandSelection.clear();
+  }
+
+  function copyBands(ids: ReadonlySet<string>): void {
+    const all = arrangement.lanes.flatMap((l) => l.clipEvents.filter((e) => ids.has(e.id)));
+    if (all.length === 0) return;
+    const t0 = Math.min(...all.map((e) => e.atSec));
+    bandClipboard = all.map((e) => ({
+      laneId: e.laneId, clipId: e.clipId, relAtSec: e.atSec - t0,
+      durSec: e.untilSec - e.atSec, offsetSec: e.offsetSec, muted: e.muted,
+    }));
+  }
+
+  function pasteAtPlayhead(): void {
+    if (bandClipboard.length === 0) return;
+    commitArrUndo();
+    const at = playheadSec();
+    bandSelection.clear();
+    for (const item of bandClipboard) {
+      const lane = arrangement.lanes.find((l) => l.laneId === item.laneId);
+      if (!lane) continue;
+      const ev = {
+        id: newBandId(), clipId: item.clipId, laneId: item.laneId,
+        atSec: at + item.relAtSec, untilSec: at + item.relAtSec + item.durSec,
+        offsetSec: item.offsetSec, muted: item.muted,
+      };
+      lane.clipEvents = clampMove([...lane.clipEvents, ev], lane.clipEvents.length, ev.atSec, arrangement.bpm);
+      if (lane.clipEvents.some((e) => e.id === ev.id)) bandSelection.add(ev.id);
+    }
+    recomputeDurationSec(arrangement);
+    refreshPerformanceView();
+  }
 
   function refreshPerformanceView() {
     const host = document.getElementById('performance-view-root');
@@ -352,6 +421,20 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       setSelection: (ids) => { bandSelection.clear(); for (const id of ids) bandSelection.add(id); },
       moveBands: moveBandsBy,
       refresh: refreshPerformanceView,
+    });
+    actionsDetach ??= attachPerfActions(host, {
+      isActive: () => mode === 'performance',
+      getSelection: () => bandSelection,
+      playheadSec,
+      deleteBands,
+      duplicateBands: (ids) => editSelectedBands(ids, (evs, id) => duplicateBand(evs, id)),
+      toggleMuteBands: (ids) => editSelectedBands(ids, (evs, id) => {
+        const ev = evs.find((e) => e.id === id);
+        return ev ? setBandMuted(evs, id, !ev.muted) : evs;
+      }),
+      splitBandsAt: (ids, sec) => editSelectedBands(ids, (evs, id) => splitBandAt(evs, id, sec, arrangement.bpm)),
+      copyBands,
+      pasteAtPlayhead,
     });
     // Tear down the previous toolbar's VU meter(s) before renderPerformanceView
     // rebuilds them (each render constructs fresh meters and lit swaps the old
