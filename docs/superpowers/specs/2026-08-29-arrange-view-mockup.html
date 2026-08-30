@@ -1,0 +1,220 @@
+<title>Loom Arrange Mockup</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --bg: #14161a; --panel: #1c1f24; --panel2: #22262c; --line: #30353d;
+    --ink: #d8dbe0; --ink-dim: #8b919b; --accent: #e8873a; --accent-dim: #7a4a22;
+    --sel: #4da3ff; --band-audio: #2c4a44; --band-audio-edge: #3f6e64; --wave: #7fc7b4;
+    --band-midi: #3a3350; --band-midi-edge: #5a5080; --note: #a794e8;
+    --muted-alpha: 0.35; --good: #6cc290; --rec: #e0776c;
+  }
+  body { background: var(--bg); color: var(--ink); font-family: Archivo, sans-serif; margin: 0; padding: 1.2rem; font-size: 13px; }
+  h1 { font-size: 1rem; font-weight: 700; margin: 0 0 0.2rem; }
+  .sub { color: var(--ink-dim); margin: 0 0 1rem; font-size: 0.8rem; }
+  .frame { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); max-width: 1060px; }
+  .toolbar { display: flex; gap: 0.9rem; align-items: center; padding: 0.45rem 0.8rem; border-bottom: 1px solid var(--line); background: var(--panel2); font-size: 0.78rem; color: var(--ink-dim); }
+  .toolbar b { color: var(--ink); font-weight: 600; }
+  .tbtn { border: 1px solid var(--line); border-radius: 4px; padding: 0.15rem 0.5rem; background: var(--panel); color: var(--ink); }
+  .tbtn.on { border-color: var(--accent); color: var(--accent); }
+  .scroller { position: relative; display: grid; grid-template-columns: 168px 1fr; max-height: 520px; overflow: auto; }
+  .headcol { position: sticky; left: 0; z-index: 3; background: var(--panel); border-right: 1px solid var(--line); }
+  .timeline { position: relative; min-width: 880px; }
+  .ruler { position: sticky; top: 0; z-index: 2; height: 26px; background: var(--panel2); border-bottom: 1px solid var(--line); display: flex; align-items: flex-end; font-family: "JetBrains Mono", monospace; font-size: 0.65rem; color: var(--ink-dim); }
+  .ruler .bar { width: 110px; flex: none; border-left: 1px solid var(--line); padding: 0 0 3px 4px; }
+  .rulerhead { position: sticky; top: 0; z-index: 4; height: 26px; background: var(--panel2); border-bottom: 1px solid var(--line); display:flex; align-items:center; padding-left: 0.6rem; color: var(--ink-dim); font-size: 0.68rem; }
+  .brace { position: absolute; top: 0; left: 220px; width: 440px; height: 26px; background: color-mix(in srgb, var(--accent) 18%, transparent); border-left: 2px solid var(--accent); border-right: 2px solid var(--accent); z-index: 2; }
+  .lane { display: grid; grid-template-columns: subgrid; grid-column: 1 / 3; }
+  .lh { height: 56px; border-bottom: 1px solid var(--line); padding: 0.4rem 0.55rem; display: flex; flex-direction: column; justify-content: space-between; position: sticky; left: 0; background: var(--panel); z-index: 3; }
+  .lh .name { font-weight: 600; font-size: 0.8rem; }
+  .lh .ctrls { display: flex; gap: 0.3rem; align-items: center; }
+  .chip { font-size: 0.62rem; border: 1px solid var(--line); border-radius: 3px; padding: 0.05rem 0.3rem; color: var(--ink-dim); font-family: "JetBrains Mono", monospace; }
+  .chip.launch-s { border-color: var(--accent); color: var(--accent); }
+  .chip.launch-s.on { background: var(--accent); color: #14161a; }
+  .vu { width: 40px; height: 5px; background: #0e1013; border-radius: 2px; overflow: hidden; }
+  .vu i { display: block; height: 100%; width: 62%; background: linear-gradient(90deg, var(--good), #d9a83f); }
+  .row { position: relative; height: 56px; border-bottom: 1px solid var(--line); background: repeating-linear-gradient(90deg, transparent 0 109px, var(--line) 109px 110px); }
+  .band { position: absolute; top: 6px; height: 44px; border-radius: 5px; overflow: hidden; border: 1px solid var(--band-audio-edge); background: var(--band-audio); }
+  .band .nm { position: absolute; top: 2px; left: 6px; font-size: 0.64rem; font-weight: 600; z-index: 1; text-shadow: 0 1px 2px #0008; }
+  .band canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .band.midi { background: var(--band-midi); border-color: var(--band-midi-edge); }
+  .band.selected { outline: 2px solid var(--sel); outline-offset: 1px; }
+  .band.muted { opacity: var(--muted-alpha); }
+  .band .looptick { position: absolute; top: 0; bottom: 0; width: 1px; background: #ffffff2e; }
+  .band .barschip { position: absolute; right: 4px; bottom: 3px; font-family: "JetBrains Mono", monospace; font-size: 0.6rem; background: #0007; border: 1px solid var(--line); border-radius: 3px; padding: 0 0.25rem; color: var(--ink); z-index: 1; }
+  .band .grip { position: absolute; top: 0; bottom: 0; width: 6px; background: #ffffff22; opacity: 0; }
+  .band:hover .grip { opacity: 1; }
+  .grip.l { left: 0; } .grip.r { right: 0; }
+  .playhead { position: absolute; top: 0; bottom: 0; left: 385px; width: 2px; background: var(--accent); z-index: 2; box-shadow: 0 0 8px var(--accent); }
+  .droplane { display: grid; grid-template-columns: subgrid; grid-column: 1 / 3; }
+  .droplane .lh { color: var(--ink-dim); font-size: 0.72rem; height: 40px; }
+  .droplane .row { height: 40px; background: none; }
+  .dropzone { position: absolute; inset: 5px 8px; border: 1.5px dashed var(--accent-dim); border-radius: 6px; display: flex; align-items: center; padding-left: 0.8rem; color: var(--ink-dim); font-size: 0.72rem; }
+  .dropzone.hot { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .autolane { display: grid; grid-template-columns: subgrid; grid-column: 1 / 3; }
+  .autolane .lh { height: 30px; font-size: 0.65rem; color: var(--ink-dim); }
+  .autolane .row { height: 30px; }
+  .curve { position: absolute; inset: 0; }
+  .marquee { position: absolute; left: 480px; top: 4px; width: 180px; height: 48px; border: 1px dashed var(--sel); background: #4da3ff14; z-index: 2; }
+  .legend { max-width: 1060px; margin-top: 0.9rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.5rem 1.4rem; font-size: 0.74rem; color: var(--ink-dim); }
+  .legend b { color: var(--ink); font-weight: 600; }
+  .empty { margin-top: 1.6rem; max-width: 1060px; }
+  .empty .frame { display: flex; align-items: center; justify-content: center; height: 220px; }
+  .bigdrop { border: 2px dashed var(--accent-dim); border-radius: 10px; padding: 2.2rem 3rem; text-align: center; color: var(--ink-dim); }
+  .bigdrop .big { font-size: 1.05rem; font-weight: 700; color: var(--ink); margin-bottom: 0.3rem; }
+  .bigdrop .rec { color: var(--rec); }
+  .ctx { position: absolute; left: 640px; top: 210px; z-index: 5; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 0.25rem 0; width: 170px; box-shadow: 0 6px 20px #000a; font-size: 0.74rem; }
+  .ctx div { padding: 0.28rem 0.8rem; } .ctx div:hover { background: var(--panel); }
+  .ctx .k { float: right; color: var(--ink-dim); font-family: "JetBrains Mono", monospace; font-size: 0.65rem; }
+</style>
+
+<h1>Performance → Arrange · mockup</h1>
+<p class="sub">One scroll surface · sticky ruler + lane headers · audio-loop-first. Annotations below the frame.</p>
+
+<div class="frame">
+  <div class="toolbar">
+    <b>ARRANGE</b><span>Len <b>16</b> bars</span><span>Zoom ▮▮▮▯▯</span>
+    <span class="tbtn on">Loop A–B</span><span class="tbtn">Snap: beat</span>
+    <span style="margin-left:auto">▶ 3.2.1 · 122 BPM</span>
+  </div>
+  <div class="scroller">
+    <div class="rulerhead">bars</div>
+    <div class="timeline" style="grid-row: 1;">
+      <div class="ruler">
+        <div class="bar">1</div><div class="bar">2</div><div class="bar">3</div><div class="bar">4</div>
+        <div class="bar">5</div><div class="bar">6</div><div class="bar">7</div><div class="bar">8</div>
+      </div>
+      <div class="brace"></div>
+    </div>
+
+    <div class="lane">
+      <div class="lh">
+        <span class="name">Drums loop</span>
+        <span class="ctrls"><span class="chip launch-s on">S▸</span><span class="chip">M▸</span><span class="chip">m</span><span class="chip">s</span><span class="vu"><i></i></span></span>
+      </div>
+      <div class="row">
+        <div class="band selected" style="left:0; width:438px" data-wave="a">
+          <canvas></canvas><span class="nm">amen_155.wav</span>
+          <span class="looptick" style="left:110px"></span><span class="looptick" style="left:220px"></span><span class="looptick" style="left:330px"></span>
+          <span class="barschip">1 bar ×4</span>
+          <span class="grip l"></span><span class="grip r"></span>
+        </div>
+        <div class="band" style="left:660px; width:218px" data-wave="b">
+          <canvas></canvas><span class="nm">fill_v2.wav</span><span class="barschip">2 bars</span>
+          <span class="grip l"></span><span class="grip r"></span>
+        </div>
+        <div class="playhead"></div>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="lh">
+        <span class="name">Bass 303</span>
+        <span class="ctrls"><span class="chip launch-s">S▸</span><span class="chip">M▸</span><span class="chip">m</span><span class="chip">s</span><span class="vu"><i style="width:38%"></i></span></span>
+      </div>
+      <div class="row">
+        <div class="band midi" style="left:110px; width:328px">
+          <canvas data-notes="1"></canvas><span class="nm">Acid A · clip</span>
+          <span class="grip l"></span><span class="grip r"></span>
+        </div>
+        <div class="band midi muted" style="left:550px; width:218px">
+          <canvas data-notes="1"></canvas><span class="nm">Acid B (muted)</span>
+        </div>
+        <div class="marquee"></div>
+        <div class="playhead"></div>
+      </div>
+    </div>
+
+    <div class="autolane">
+      <div class="lh">└ cutoff · smooth · ⏻</div>
+      <div class="row"><canvas class="curve" data-curve="1"></canvas><div class="playhead"></div></div>
+    </div>
+
+    <div class="lane">
+      <div class="lh">
+        <span class="name">Vox chop</span>
+        <span class="ctrls"><span class="chip launch-s">S▸</span><span class="chip">M▸</span><span class="chip">m</span><span class="chip">s</span><span class="vu"><i style="width:20%"></i></span></span>
+      </div>
+      <div class="row">
+        <div class="band" style="left:220px; width:328px" data-wave="c">
+          <canvas></canvas><span class="nm">vox_wet.wav ◐ offset 1.2</span><span class="barschip">3 bars</span>
+          <span class="grip l"></span><span class="grip r"></span>
+        </div>
+        <div class="playhead"></div>
+      </div>
+    </div>
+
+    <div class="droplane">
+      <div class="lh">＋ new lane</div>
+      <div class="row"><div class="dropzone hot">⇣ drop audio loop — creates an Audio lane, fits to bars</div></div>
+    </div>
+
+    <div class="ctx">
+      <div>Mute band <span class="k">M</span></div>
+      <div>Split at playhead <span class="k">S</span></div>
+      <div>Duplicate <span class="k">Ctrl+D</span></div>
+      <div>Bars: 2 ▾ <span class="k">fit</span></div>
+      <div>Delete <span class="k">Del</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <div><b>S▸ / M▸</b> — launch-solo/mute (arrangement stops driving the others / this lane). <b>m / s</b> — the mixer's audio mute/solo, unchanged.</div>
+  <div><b>Waveform bands</b> — audio loops with cached peaks; tick marks show loop tiling; the bars-chip corrects a bad fit.</div>
+  <div><b>Selected band</b> — blue outline; marquee on empty space; Shift-click adds. Drag = free move + clamp; <b>Shift</b>=ripple, <b>Alt</b>=no snap; vertical drag changes lane.</div>
+  <div><b>◐ offset</b> — left-trim slides content (offsetSec), waveform stays anchored to the music. Right edge resizes with tiling.</div>
+  <div><b>Ruler</b> — click seeks; drag sets the A–B loop (amber brace). Playhead follows the audio clock.</div>
+  <div><b>Context menu</b> — right-click a band. Keyboard: Del, Ctrl+D, Ctrl+C/V (paste at playhead), Esc cancels a gesture.</div>
+</div>
+
+<div class="empty">
+  <h1>Empty state (File → New)</h1>
+  <p class="sub">The primary gesture IS the interface: an empty session invites loops, not a "back to Session" prompt.</p>
+  <div class="frame">
+    <div class="bigdrop">
+      <div class="big">Drop audio loops to start</div>
+      <div>each loop becomes a lane, synced to 120 BPM</div>
+      <div style="margin-top:0.6rem"><span class="rec">●</span> Record a loop (resample · system · mic) — round 2</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Deterministic fake peaks / notes / curve so the mockup reads as real content.
+  function rng(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+  document.querySelectorAll('.band canvas').forEach((cv, idx) => {
+    const w = cv.parentElement.clientWidth, h = cv.parentElement.clientHeight;
+    cv.width = w * 2; cv.height = h * 2;
+    const ctx = cv.getContext('2d'); ctx.scale(2, 2);
+    const r = rng(37 + idx * 101);
+    if (cv.dataset.notes) {
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--note');
+      for (let i = 0; i < w / 14; i++) {
+        const x = i * 14 + 3, y = 8 + Math.floor(r() * 5) * 6;
+        ctx.globalAlpha = 0.85; ctx.fillRect(x, y, 10 + r() * 8, 4);
+      }
+    } else {
+      ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--wave');
+      ctx.globalAlpha = 0.9; ctx.lineWidth = 1;
+      const mid = h / 2;
+      for (let x = 2; x < w - 2; x += 2) {
+        const period = 110; const ph = (x % period) / period;
+        const env = ph < 0.08 ? 1 : Math.exp(-ph * 3.2);
+        const a = (2 + r() * (h * 0.42)) * env + 1.5;
+        ctx.beginPath(); ctx.moveTo(x, mid - a); ctx.lineTo(x, mid + a); ctx.stroke();
+      }
+    }
+  });
+  document.querySelectorAll('canvas.curve').forEach((cv) => {
+    const w = cv.parentElement.clientWidth, h = cv.parentElement.clientHeight;
+    cv.width = w * 2; cv.height = h * 2;
+    const ctx = cv.getContext('2d'); ctx.scale(2, 2);
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent');
+    ctx.globalAlpha = 0.8; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let x = 0; x <= w; x += 4) {
+      const y = h * 0.65 - Math.sin(x / 90) * h * 0.3 - (x > w * 0.6 ? (x - w * 0.6) * 0.05 : 0);
+      x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  });
+</script>
