@@ -37,7 +37,7 @@ function makeCb(over: Partial<PerfUICallbacks> = {}): PerfUICallbacks {
     onSetLengthBars: vi.fn(), onZoom: vi.fn(),
     onAddCurve: vi.fn(), onRemoveCurve: vi.fn(), onEdited: vi.fn(),
     loopEnabled: false, loopStartBar: 0, loopEndBar: 4,
-    onSetLoop: vi.fn(), onMoveBand: vi.fn(), onResizeBand: vi.fn(), onDeleteBand: vi.fn(),
+    onSetLoop: vi.fn(), onResizeBand: vi.fn(), onDeleteBand: vi.fn(),
     ...over,
   } as unknown as PerfUICallbacks;
 }

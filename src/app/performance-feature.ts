@@ -39,7 +39,9 @@ import { createLevelMeter } from '../core/level-meter';
 import { arrangementFromSession } from '../performance/arrangement-from-session';
 import { createHistory } from '../core/history';
 import { songBarSec } from '../core/song-position';
-import { moveEvent, resizeEvent, deleteEvent } from '../performance/arrangement-edit';
+import { moveEvent, resizeEvent, deleteEvent, clampMove } from '../performance/arrangement-edit';
+import { findBand } from '../performance/band-ops';
+import { attachPerfGestures } from '../performance/perf-gestures';
 import { clipLoopSec } from '../core/launch-timing';
 import { ticksPerBar } from '../core/meter';
 
@@ -296,9 +298,61 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       >S</button>${vu.el}</div>`);
   }
 
+  /** The gesture layer's band-move: same-lane bands move by delta
+   *  (id-addressed, processed away from the drag direction so clamps do not
+   *  cascade); a single band dropped on another lane row re-lanes. One undo
+   *  entry per gesture. */
+  function moveBandsBy(
+    ids: ReadonlySet<string>, deltaSec: number, targetLaneId: string | null,
+    mode: 'clamp' | 'ripple', snap: boolean,
+  ) {
+    commitArrUndo();
+    if (targetLaneId && ids.size === 1) {
+      const only = [...ids][0];
+      const found = findBand(arrangement.lanes, only);
+      const target = arrangement.lanes.find((l) => l.laneId === targetLaneId);
+      if (found && target && found.lane !== target) {
+        const ev = found.lane.clipEvents[found.index];
+        found.lane.clipEvents = found.lane.clipEvents.filter((e) => e.id !== only);
+        target.clipEvents = clampMove(
+          [...target.clipEvents, { ...ev, laneId: targetLaneId }],
+          target.clipEvents.length, ev.atSec + deltaSec, arrangement.bpm, snap,
+        );
+        recomputeDurationSec(arrangement);
+        refreshPerformanceView();
+        return;
+      }
+    }
+    for (const lane of arrangement.lanes) {
+      const mine = lane.clipEvents.filter((e) => ids.has(e.id)).map((e) => ({ id: e.id, at: e.atSec }));
+      mine.sort((a, b) => (deltaSec > 0 ? b.at - a.at : a.at - b.at));
+      for (const { id } of mine) {
+        const idx = lane.clipEvents.findIndex((e) => e.id === id);
+        if (idx < 0) continue;
+        lane.clipEvents = moveEvent(
+          lane.clipEvents, idx, lane.clipEvents[idx].atSec + deltaSec, arrangement.bpm, mode, snap,
+        );
+      }
+    }
+    recomputeDurationSec(arrangement);
+    refreshPerformanceView();
+  }
+
+  let gesturesDetach: (() => void) | null = null;
+
   function refreshPerformanceView() {
     const host = document.getElementById('performance-view-root');
     if (!host) return;
+    // The gesture layer attaches ONCE to the persistent host — pointerdown is
+    // delegated, so re-renders never strand it (see perf-gestures.ts).
+    gesturesDetach ??= attachPerfGestures(host, {
+      pxPerBar: () => pxPerBar,
+      barSec: () => songBarSec(arrangement.bpm, seq.meter),
+      getSelection: () => bandSelection,
+      setSelection: (ids) => { bandSelection.clear(); for (const id of ids) bandSelection.add(id); },
+      moveBands: moveBandsBy,
+      refresh: refreshPerformanceView,
+    });
     // Tear down the previous toolbar's VU meter(s) before renderPerformanceView
     // rebuilds them (each render constructs fresh meters and lit swaps the old
     // elements out), so they don't leak their analyser registration with the
@@ -359,7 +413,6 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         };
       },
       selection: bandSelection,
-      onMoveBand: (laneId, index, newAtSec) => { commitArrUndo(); editBands(laneId, (evs) => moveEvent(evs, index, newAtSec, arrangement.bpm)); },
       onResizeBand: (laneId, index, edge, newSec) => { commitArrUndo(); editBands(laneId, (evs) => resizeEvent(evs, index, edge, newSec, arrangement.bpm)); },
       onDeleteBand: (laneId, index) => { commitArrUndo(); editBands(laneId, (evs) => deleteEvent(evs, index)); },
       buildMaster: () => (deps.masterMeterAnalyser && deps.volInput)

@@ -183,3 +183,7 @@
   pointer-events: none; z-index: 9999;
   opacity: 1; transition: opacity 0.3s;
 }
+  .perf-marquee {
+    position: fixed; z-index: 9998; pointer-events: none;
+    border: 1px dashed #4da3ff; background: rgba(77, 163, 255, 0.08);
+  }

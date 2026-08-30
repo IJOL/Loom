@@ -56,7 +56,8 @@ export interface PerfUICallbacks {
   resolveClipInfo?: (clipId: string) => import('./band-render').BandClipInfo | null;
   /** The selected band ids — painted with the selection outline. */
   selection?: ReadonlySet<string>;
-  onMoveBand: (laneId: string, index: number, newAtSec: number) => void;
+  // Band MOVEMENT belongs to the gesture layer (perf-gestures.ts) since the
+  // Arrange round — only resize (the edge handles) and delete stay per-element.
   onResizeBand: (laneId: string, index: number, edge: 'start' | 'end', newSec: number) => void;
   onDeleteBand: (laneId: string, index: number) => void;
   /** Optional: build the compact master strip (VU + fader) for the toolbar.

@@ -30,11 +30,12 @@ export type MoveMode = 'clamp' | 'ripple';
  *  DAW default since the Arrange round — ripple survives behind Shift. */
 export function clampMove(
   events: ArrangementClipEvent[], index: number, newAtSec: number, bpm: number,
+  snap = true,
 ): ArrangementClipEvent[] {
   const cur = events[index];
   if (!cur) return events;
   const dur = cur.untilSec - cur.atSec;
-  let at = Math.max(0, snapSecToBeat(newAtSec, bpm));
+  let at = Math.max(0, snap ? snapSecToBeat(newAtSec, bpm) : newAtSec);
   const others = events.filter((_, i) => i !== index).sort((a, b) => a.atSec - b.atSec);
   const prev = [...others].reverse().find((e) => e.atSec <= at);
   if (prev && at < prev.untilSec) at = prev.untilSec;          // pushed off the previous band
@@ -49,13 +50,13 @@ export function clampMove(
 
 export function moveEvent(
   events: ArrangementClipEvent[], index: number, newAtSec: number, bpm: number,
-  mode: MoveMode = 'clamp',
+  mode: MoveMode = 'clamp', snap = true,
 ): ArrangementClipEvent[] {
-  if (mode === 'clamp') return clampMove(events, index, newAtSec, bpm);
+  if (mode === 'clamp') return clampMove(events, index, newAtSec, bpm, snap);
   const cur = events[index];
   if (!cur) return events;
   const dur = cur.untilSec - cur.atSec;
-  const at = Math.max(0, snapSecToBeat(newAtSec, bpm));
+  const at = Math.max(0, snap ? snapSecToBeat(newAtSec, bpm) : newAtSec);
   const moved = { ...cur, atSec: at, untilSec: at + dur };
   const next = events.map((e, i) => (i === index ? moved : e));
   return rippleForward(next);

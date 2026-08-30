@@ -180,7 +180,7 @@ export function clipBandTemplate(
   // Loop A–B span across this lane: a translucent column with A/B edges. Every
   // lane draws it at the same x (same pxPerBar), so it reads as one continuous
   // marker down the whole arrangement, not just a brace in the ruler.
-  return html`<div class="perf-row"><div class="perf-label"><span
+  return html`<div class="perf-row" data-lane-id=${laneRec.laneId}><div class="perf-label"><span
       class="perf-lane-name"
     >${laneRec.laneId}</span>${cb.buildLaneHeader?.(laneRec.laneId) ?? nothing}</div><div
       class="perf-track"
@@ -209,24 +209,11 @@ function clipTemplate(
   const baseLeft = `${x}px`;
   const baseWidth = `${Math.max(8, w)}px`;
 
-  // body drag = move
-  const onBodyDown = (down: PointerEvent) => {
-    down.preventDefault();
-    const el = down.currentTarget as HTMLElement;
-    const startX = down.clientX;
-    const baseAt = ev.atSec;
-    const move = (e: PointerEvent) => {
-      const dxSec = (e.clientX - startX) * secPerPx;
-      el.style.left = `${((baseAt + dxSec) / barSec) * pxPerBar}px`;
-    };
-    const up = (e: PointerEvent) => {
-      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up);
-      const dxSec = (e.clientX - startX) * secPerPx;
-      el.style.left = baseLeft; // see header comment
-      cb.onMoveBand(laneId, i, baseAt + dxSec);
-    };
-    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
-  };
+  // Body drag moved to the gesture layer (perf-gestures.ts): selection,
+  // marquee, free-move+clamp, Shift-ripple, Alt-nosnap, cross-lane. Only the
+  // edge handles and the × keep per-element handlers (they stopPropagation, so
+  // the layer never sees them).
+  void secPerPx;
   const resize = (edge: 'start' | 'end') => (down: PointerEvent) => {
     down.preventDefault(); down.stopPropagation();
     const el = (down.currentTarget as HTMLElement).parentElement as HTMLElement; // the .perf-clip
@@ -263,7 +250,6 @@ function clipTemplate(
     class=${classes.join(' ')}
     data-band-id=${ev.id}
     style="left:${baseLeft};width:${baseWidth}${color ? `;background:${color}` : ''}"
-    @pointerdown=${onBodyDown}
   >${info ? html`<canvas
       class="perf-clip-canvas"
       data-clip-id=${ev.clipId}
