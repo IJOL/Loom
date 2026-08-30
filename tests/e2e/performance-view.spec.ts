@@ -25,10 +25,10 @@ test('switching to Performance shows the empty-state placeholder', async ({ page
   await expect(page.locator('#performance-view-root')).toBeVisible();
   await expect(page.locator('#session-view-root')).toBeHidden();
 
-  // With no recording, the empty-state div is rendered.
+  // With no content, the empty state leads with the primary gesture.
   const emptyState = page.locator('.perf-empty');
   await expect(emptyState).toBeVisible({ timeout: 3_000 });
-  await expect(emptyState).toContainText('No recording.');
+  await expect(emptyState).toContainText('Drop audio loops to start');
   // No clip blocks should exist.
   await expect(page.locator('.perf-clip')).toHaveCount(0);
 });

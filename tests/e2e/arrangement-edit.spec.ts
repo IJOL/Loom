@@ -8,14 +8,18 @@ async function openPerf(page: Page): Promise<void> {
 }
 const firstBand = (page: Page) => page.locator('#performance-view-root .perf-clip').first();
 
-test('dragging a band moves it right', async ({ page }) => {
+test('Shift-dragging a band right ripples it through its neighbour', async ({ page }) => {
+  // The DEFAULT drag is free move + clamp (a full lane refuses the overlap);
+  // the push-through behaviour lives behind Shift since the Arrange round.
   await openPerf(page);
   const before = await firstBand(page).boundingBox();
   const box = before!;
+  await page.keyboard.down('Shift');
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2, { steps: 8 });
   await page.mouse.up();
+  await page.keyboard.up('Shift');
   const after = await firstBand(page).boundingBox();
   expect(after!.x).toBeGreaterThan(before!.x + 20);
 });

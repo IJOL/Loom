@@ -124,27 +124,28 @@ test('Performance: growing a band past the end is drawn in full, not clipped', a
   const before = await bandGeom(page);
   const lane0 = before[0];
   expect(lane0.length).toBeGreaterThanOrEqual(2);
-  const clipW = lane0[0].width;
-
-  // Grow the first band by its own width (2 bars → 4). The last band on the lane
-  // ripples past the old total; it must still be drawn at full width.
-  await dragBandEdge(page, 0, clipW);
+  // Since the Arrange round, resize CLAMPS at the neighbour and never moves
+  // another band — so the growth test targets the LAST band on the lane, whose
+  // end is the arrangement's end and free to grow past it.
+  const lastIdx = lane0.length - 1;
+  const clipW = lane0[lastIdx].width;
+  await dragBandEdge(page, lastIdx, clipW);
 
   const after = await bandGeom(page);
-  expect(after[0][0].width).toBeGreaterThan(clipW * 1.5);
-  const lastBefore = before[0][before[0].length - 1].width;
-  const lastAfter = after[0][after[0].length - 1].width;
-  expect(lastAfter).toBeCloseTo(lastBefore, 0);
+  expect(after[0][lastIdx].width).toBeGreaterThan(clipW * 1.5);
+  // ...and the first band did NOT move — resizing is local now.
+  expect(after[0][0].left).toBeCloseTo(before[0][0].left, 0);
 });
 
-test('Performance: the ruler grows when a band is pushed past the old end', async ({ page }) => {
+test('Performance: the ruler grows when a band grows past the old end', async ({ page }) => {
   await page.goto('/');
   await waitForBoot(page);
   await copyToPerformance(page);
 
   const barsBefore = await page.locator('.perf-ruler .perf-track > *').count();
-  const clipW = (await bandGeom(page))[0][0].width;
-  await dragBandEdge(page, 0, clipW);
+  const lane0 = (await bandGeom(page))[0];
+  const lastIdx = lane0.length - 1;
+  await dragBandEdge(page, lastIdx, lane0[lastIdx].width);
   const barsAfter = await page.locator('.perf-ruler .perf-track > *').count();
 
   expect(barsAfter).toBeGreaterThan(barsBefore);
@@ -155,8 +156,8 @@ test('Performance: stretching a band does not put a scrollbar on the lane', asyn
   await waitForBoot(page);
   await copyToPerformance(page);
 
-  const clipW = (await bandGeom(page))[0][0].width;
-  await dragBandEdge(page, 0, clipW);
+  const lane0 = (await bandGeom(page))[0];
+  await dragBandEdge(page, lane0.length - 1, lane0[lane0.length - 1].width);
 
   // The lane must grow with its content. When the timeline stayed at the stale
   // length the band overflowed its track and the browser put a horizontal

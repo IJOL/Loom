@@ -527,10 +527,28 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       playheadSec,
       deleteBands,
       duplicateBands: (ids) => editSelectedBands(ids, (evs, id) => duplicateBand(evs, id)),
-      toggleMuteBands: (ids) => editSelectedBands(ids, (evs, id) => {
-        const ev = evs.find((e) => e.id === id);
-        return ev ? setBandMuted(evs, id, !ev.muted) : evs;
-      }),
+      toggleMuteBands: (ids) => {
+        editSelectedBands(ids, (evs, id) => {
+          const ev = evs.find((e) => e.id === id);
+          return ev ? setBandMuted(evs, id, !ev.muted) : evs;
+        });
+        // Muting a band that is SOUNDING must stop it: the scheduler gate only
+        // suppresses future launches AND the muted band's own stop, so the clip
+        // already playing would loop under its muted band forever. Same
+        // queuedStop door as everything else.
+        if (arrangementPlayState.isPlaying) {
+          const at = playheadSec();
+          for (const lane of arrangement.lanes) {
+            for (const ev of lane.clipEvents) {
+              if (!ids.has(ev.id) || !ev.muted) continue;
+              if (ev.atSec <= at && at < ev.untilSec) {
+                const lp = sessionHost.laneStates.get(lane.laneId);
+                if (lp) { lp.queued = null; lp.queuedStop = ctx.currentTime; }
+              }
+            }
+          }
+        }
+      },
       splitBandsAt: (ids, sec) => editSelectedBands(ids, (evs, id) => splitBandAt(evs, id, sec, arrangement.bpm)),
       copyBands,
       pasteAtPlayhead,
