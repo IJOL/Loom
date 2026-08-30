@@ -2950,9 +2950,17 @@ uvicorn app:app --port 8765
 <p>Switch between the two views using the <strong>Session / Performance</strong> toggle in the transport bar (<code>#mode-toggle</code>). Switching stops playback. See <a href="#02-transport">Transport</a> for the full transport layout.</p>
 <p><img src="images/performance-view.png" alt="Performance view — timeline with clip bands and automation curves"></p>
 <hr>
-<h2 id="10-performance-and-arrangement--three-ways-to-fill-the-arrangement">Three ways to fill the arrangement</h2>
-<p>The arrangement starts empty. There are three ways to give it content.</p>
-<h3 id="10-performance-and-arrangement--1-copy-to-performance">1. Copy to Performance</h3>
+<h2 id="10-performance-and-arrangement--four-ways-to-fill-the-arrangement">Four ways to fill the arrangement</h2>
+<p>The arrangement starts empty — and an empty arrangement invites its primary gesture: <strong>drop audio loops on it</strong>.</p>
+<h3 id="10-performance-and-arrangement--1-drop-audio-loops-the-primary-gesture">1. Drop audio loops (the primary gesture)</h3>
+<p>Drag audio files (WAV, MP3, FLAC, OGG, M4A, AIFF) from your file manager anywhere onto the Performance view — the big <strong>&quot;Drop audio loops to start&quot;</strong> invitation when the timeline is empty, or the <strong>＋ new lane</strong> strip at the bottom once it has content. Each file becomes:</p>
+<ul>
+<li>a new <strong>Audio lane</strong>, named after the file;</li>
+<li>a clip <strong>fitted to the session tempo</strong>: the file is assumed to be a loop, its duration rounds to the nearest whole-bar count and the clip warps to fit exactly (pure arithmetic — no beat detection). The band&#39;s <strong>bars-chip</strong> shows the fit; if the rounding guessed wrong, the clip&#39;s own Warp editor corrects it;</li>
+<li>a <strong>band</strong> on the timeline at the bar you dropped it, showing the loop&#39;s <strong>waveform</strong> with tick marks where it repeats.</li>
+</ul>
+<p>Dropping several files at once creates one lane per file, all starting at the drop bar. Nothing about this is a parallel world: the dropped loop is an <strong>ordinary session clip on an ordinary Audio lane</strong> — it appears in the Session grid too, launches from there like any clip, and saves in the session file with its sample in the project&#39;s sample store.</p>
+<h3 id="10-performance-and-arrangement--2-copy-to-performance">2. Copy to Performance</h3>
 <p>The fastest route from a working session to a playable song is the <strong>⤉ Copy-to-Performance</strong> button (<code>#copy-to-performance</code>) in the session bar of the header — now an icon-only button with the tooltip &quot;Copy the scenes to the Performance timeline&quot;. Clicking it calls <code>arrangementFromSession</code>, which walks your scenes in order and lays them out as a linear song:</p>
 <ul>
 <li>Each scene becomes one section.</li>
@@ -2960,7 +2968,7 @@ uvicorn app:app --port 8765
 <li>Every lane that has a clip assigned for that scene gets a timeline band covering the section.</li>
 </ul>
 <p>After the layout is computed, Loom switches you to Performance automatically. <strong>This one is not undoable</strong> — it overwrites whatever arrangement was there, so copy before you start editing bands by hand, not after.</p>
-<h3 id="10-performance-and-arrangement--2-record-a-take-live">2. Record a take live</h3>
+<h3 id="10-performance-and-arrangement--3-record-a-take-live">3. Record a take live</h3>
 <p>You can record the arrangement in real time while you play.</p>
 <p>Recording is driven by the unified <strong>REC</strong> control in the session bar, which has three modes selectable beside the <strong>● REC</strong> button: <strong>🎛 take</strong> (the default — captures knob moves + clip launches into a performance take, described below), <strong>⏱ live</strong> (records real-time audio to a WAV file), and <strong>⚡ offline</strong> (renders the current scene to WAV offline, faster than real time). The steps below assume <strong>🎛 take</strong> is selected.</p>
 <ol>
@@ -2970,26 +2978,31 @@ uvicorn app:app --port 8765
 <li>Press Stop. Loom finalises the take: any still-open clip events are clamped to the stop time, durations are computed, and the recorded content appears in the Performance view as timeline bands and automation curves.</li>
 </ol>
 <p>If you arm REC and then switch to Performance mode before pressing Play, the arm is cleared automatically (a toast notification appears) because Performance mode drives playback from the arrangement directly rather than from the live session.</p>
-<h3 id="10-performance-and-arrangement--3-midi-import">3. MIDI import</h3>
+<h3 id="10-performance-and-arrangement--4-midi-import">4. MIDI import</h3>
 <p>When you import a Standard MIDI File via <strong>File ▸ Import MIDI…</strong> (see <a href="#08-midi-and-samples">MIDI &amp; Samples</a>), Loom calls the same <code>arrangementFromSession</code> logic after building the session. Because an imported MIDI file produces a single scene whose clips span the full song, the arrangement comes out as one long section per lane — the complete track laid out linearly from bar 1.</p>
 <hr>
 <h2 id="10-performance-and-arrangement--the-timeline">The timeline</h2>
-<p>Once the arrangement has content, the Performance view shows:</p>
+<p>Once the arrangement has content, the Performance view shows <strong>one scrolling surface</strong>: the ruler stays pinned to the top, the lane labels stay pinned to the left, and everything scrolls together (the rows used to scroll independently and desync on a long song). Zoom and horizontal scroll are remembered <strong>per machine</strong>, not in the save file.</p>
 <ul>
-<li><strong>Toolbar</strong> — Length (bars), a Zoom slider (16–400 pixels per bar), the <strong>Loop A–B</strong> toggle with numeric <strong>A</strong> and <strong>B</strong> bar fields beside it, and a readout showing total bars and BPM.</li>
-<li><strong>Ruler</strong> — a bar-numbered ruler across the top. When the A–B loop is active, a loop brace with two drag handles sits on the ruler.</li>
-<li><strong>Clip bands</strong> — one row per lane. Each recorded or copied clip event is shown as a coloured block, labelled with the clip name, spanning the bars it occupies.</li>
-<li><strong>Automation curves</strong> — below each clip band, any recorded or drawn automation curves appear. Each curve corresponds to one parameter (identified by its ID). You can draw into curves directly using the Line or Flat brush.</li>
-<li><strong>Master automation</strong> — any automation curves routed to global (master) parameters appear in a separate section at the bottom.</li>
-<li><strong>Playhead</strong> — a vertical line (<code>#perf-playhead</code>) that moves in real time via <code>requestAnimationFrame</code> while the arrangement is playing.</li>
+<li><strong>Toolbar</strong> — Length (bars), a Zoom slider (16–400 pixels per bar; Ctrl+wheel works anywhere on the timeline), the <strong>Loop A–B</strong> toggle with numeric <strong>A</strong> and <strong>B</strong> bar fields beside it, and a readout showing total bars and BPM.</li>
+<li><strong>Ruler</strong> — a bar-numbered ruler across the top. <strong>Click it to move the playhead</strong> (playing or stopped); <strong>drag on empty ruler space to set the A–B loop</strong>. When the loop is active, its brace with two drag handles sits on the ruler.</li>
+<li><strong>Clip bands</strong> — one row per lane. An audio band shows its <strong>waveform</strong> (with tick marks where the loop repeats, and a bars-chip naming the fit); a MIDI band shows a <strong>mini note preview</strong>. A <strong>muted</strong> band paints dimmed; a <strong>selected</strong> one carries a blue outline.</li>
+<li><strong>＋ new lane strip</strong> — the permanent drop target at the bottom: drop an audio loop, get a lane.</li>
+<li><strong>Automation curves</strong> — below each clip band, any recorded or drawn automation curves appear. You can draw into curves directly using the Line or Flat brush.</li>
+<li><strong>Master automation</strong> — curves routed to global (master) parameters, in a section at the bottom.</li>
+<li><strong>Playhead</strong> — a vertical line that moves in real time while the arrangement plays, scrolling with the content.</li>
 </ul>
-<p>Bands are fully editable by hand — you do not have to re-record to change the layout:</p>
+<h3 id="10-performance-and-arrangement--editing-bands">Editing bands</h3>
+<p>Bands are first-class objects with a selection model — you do not have to re-record to change the layout:</p>
 <ul>
-<li><strong>Move</strong> — drag the body of a band. It snaps to the beat, and later bands on that lane ripple forward so the lane stays ordered and non-overlapping.</li>
-<li><strong>Resize</strong> — drag the handle at either end.</li>
-<li><strong>Delete</strong> — click the <strong>×</strong> on the band.</li>
+<li><strong>Select</strong> — click a band; <strong>Shift-click</strong> adds or removes it from the selection; drag on empty track space draws a <strong>marquee</strong>; clicking empty space clears.</li>
+<li><strong>Move</strong> — drag the body. The default is <strong>free movement</strong>: the band lands where you drop it (snapped to the beat), gaps are allowed, and a collision clamps it against its neighbour. Hold <strong>Shift</strong> while dragging for the old <strong>ripple</strong> behaviour (later bands push forward); hold <strong>Alt</strong> to disable the beat snap. Dragging <strong>vertically</strong> onto another lane row moves the band to that lane. <strong>Escape</strong> cancels a drag in flight.</li>
+<li><strong>Resize</strong> — drag the handle at either end. The <strong>left edge is an honest trim</strong>: it slides the band&#39;s content offset with it, so what you hear stays anchored to the bars — trimming reveals or covers material instead of shifting it. Resizing clamps against neighbours; it never moves another band.</li>
+<li><strong>Delete</strong> — press <strong>Delete</strong> (or click the band&#39;s <strong>×</strong>).</li>
+<li><strong>Keyboard</strong> — <strong>Ctrl+D</strong> duplicates the selection, <strong>Ctrl+C / Ctrl+V</strong> copy and paste it at the playhead (relative offsets preserved, on the bands&#39; own lanes).</li>
+<li><strong>Right-click</strong> a band for the context menu: <strong>Mute</strong> (the band stays but never fires — the gate is in the scheduler, so a muted band is genuinely silent), <strong>Split at playhead</strong> (two bands; the right half keeps playing the same material via its content offset), <strong>Duplicate</strong>, <strong>Delete</strong>.</li>
 </ul>
-<p>All three are undoable (but see the note on Performance&#39;s separate undo stack below).</p>
+<p>All of it is undoable on Performance&#39;s own stack (see below).</p>
 <hr>
 <h2 id="10-performance-and-arrangement--ab-loop-brace">A–B loop brace</h2>
 <p>The <strong>Loop A–B</strong> button in the Performance toolbar toggles the arrangement-wide loop brace. When active:</p>
@@ -3001,14 +3014,15 @@ uvicorn app:app --port 8765
 <p>This loop brace operates on the arrangement timeline as a whole, and it is <strong>the same region</strong> as the clip editor&#39;s <strong>Global</strong> loop: set A–B here and the active scene&#39;s shared loop follows, and when you switch back into Performance the brace picks the scene&#39;s shared loop up — but only if that loop is switched <strong>on</strong>. A scene whose shared loop is off leaves the A–B window you had here untouched rather than clearing it. It is still distinct from a clip&#39;s <em>own</em> (non-Global) loop brace, which repeats a sub-region inside that one clip. See <a href="#05-editing-clips">Editing Clips</a> for both.</p>
 <hr>
 <h2 id="10-performance-and-arrangement--song-playback">Song playback</h2>
-<p>Press Play while in Performance mode to start playback from the beginning of the arrangement. The arrangement&#39;s own play state is used — it is independent of the live Session runtime. The playhead advances, clips launch at their scheduled times, and automation curves are applied continuously.</p>
+<p>Press Play while in Performance mode to start playback from the beginning of the arrangement (or click the ruler to start anywhere). The arrangement&#39;s own play state is used — it is independent of the live Session runtime. The playhead advances, clips launch at their scheduled times, and automation curves are applied continuously. A band that was left-trimmed enters its clip <strong>already started</strong> — the music under the playhead is the music you placed there.</p>
+<p><strong>The timeline wins over WEAVE</strong>, with the same rule the Session grid keeps: the moment the arrangement drives a lane, that lane&#39;s weave (or follow) is suspended, exactly as if a scene had launched it. The WEAVE panel takes the lane back with its own ▶.</p>
 <p>At the end of the arrangement (when Loop A–B is off), all lanes stop and <code>onArrangementEnd</code> fires, which stops the transport. You can press Play again to restart from the top.</p>
 <p>Knob automation written into the arrangement&#39;s curves is applied every lookahead tick alongside clip launches. Automation values are normalised (0–1) internally and mapped to each parameter&#39;s min–max range at playback time.</p>
 <hr>
 <h2 id="10-performance-and-arrangement--automation-lanes">Automation lanes</h2>
 <p>Automation curves can be added by hand — you do not have to record a take first. Set a non-zero <strong>Length</strong> in the toolbar (or record/copy content so the arrangement has a duration), then use the automation header that appears just below the ruler.</p>
 <h3 id="10-performance-and-arrangement--adding-a-lane">Adding a lane</h3>
-<p>The header row contains a grouped parameter dropdown and a <strong>+ Automation</strong> button. The dropdown lists every automatable parameter in the project, organised by prefix (lane ID or <code>master</code>). Each entry shows the parameter ID and its label — for example <code>lane-1.fx.reverb.wet — WET</code>. Each lane&#39;s <strong>mixer column is in there too</strong>: <code>bus.level</code>, <code>bus.pan</code>, <code>bus.delaySend</code>, <code>bus.reverbSend</code> and the three <code>bus.eq.*</code> bands, so a fade-in, a pan sweep or a send that opens up over eight bars is drawn here like any other curve. Select the parameter you want, then click <strong>+ Automation</strong>. A new lane appears below the clip band for that lane (or in the Master section for global parameters). The curve starts flat at the parameter&#39;s current value.</p>
+<p>The header row contains a grouped parameter dropdown and a <strong>+ Automation</strong> button. The dropdown lists every automatable parameter in the project, organised by prefix (lane ID or <code>master</code>). Each entry shows the parameter ID and its label — for example <code>lane-1.fx.reverb.wet — WET</code>. Each lane&#39;s <strong>mixer column is in there too</strong>: <code>bus.level</code>, <code>bus.pan</code>, <code>bus.delaySend</code>, <code>bus.reverbSend</code>, the three <code>bus.eq.*</code> bands — and, under the MIXER heading, <code>mixer.mute</code> and <code>mixer.solo</code> as 0/1 stepped curves — so a fade-in, a pan sweep, a send that opens up over eight bars or a section that drops the drums is drawn here like any other curve. Select the parameter you want, then click <strong>+ Automation</strong>. A new lane appears below the clip band for that lane (or in the Master section for global parameters). The curve starts flat at the parameter&#39;s current value.</p>
 <p>There is a quicker route for a knob you can see: <strong>right-click it</strong>. In Performance view the menu offers <em>Automate on the timeline</em> (or <em>Edit automation on the timeline</em> if a curve already exists) and jumps you straight to it. The same menu in Session view targets the open clip instead — see <a href="#06-modulation-and-note-fx">Modulation &amp; Note FX</a>.</p>
 <h3 id="10-performance-and-arrangement--drawing-the-shape">Drawing the shape</h3>
 <p>Two brush buttons sit in that same automation header, after the <strong>+ Automation</strong> button and under the label <strong>Brush</strong>. They only appear once at least one curve exists — per-lane or on master — so on a fresh arrangement there is no Brush label to find:</p>
@@ -3023,15 +3037,15 @@ uvicorn app:app --port 8765
 <p>Curves added manually behave identically to curves captured by recording. During arrangement playback they are applied continuously alongside clip launches — knob values are updated every lookahead tick, mapped from the normalised 0–1 curve to the parameter&#39;s min–max range. Curves generated by a recorded take (see <a href="#02-transport">Transport — REC</a>) and manually drawn curves live in the same list and can coexist on the same lane.</p>
 <p>For modulator-driven per-lane automation (LFO / ADSR) that runs in Session view rather than the arrangement timeline, see <a href="#06-modulation-and-note-fx">Modulation &amp; Note FX</a>.</p>
 <hr>
-<h2 id="10-performance-and-arrangement--lane-mute-solo--vu-meters">Lane mute, solo &amp; VU meters</h2>
-<p>Each lane header — visible in both the session lane strip and the mixer — carries three live controls:</p>
+<h2 id="10-performance-and-arrangement--lane-mute--solo--two-kinds-side-by-side">Lane mute &amp; solo — two kinds, side by side</h2>
+<p>The Performance lane header carries <strong>two pairs</strong> of buttons, and they mean different things:</p>
 <ul>
-<li><strong>M (Mute)</strong> — silences the lane&#39;s audio output. The lane continues to schedule notes; unmuting restores it at full level with no re-trigger.</li>
-<li><strong>S (Solo)</strong> — solos this lane, temporarily muting all other lanes. Multiple lanes can be soloed simultaneously; un-soloing the last one restores normal playback.</li>
-<li><strong>VU meter</strong> — a vertical level meter in the lane header shows the lane&#39;s live output RMS. It gives an at-a-glance read of which lanes are active and how loud each one is during a take or a performance.</li>
+<li><strong>S▸ / M▸ (launch-solo / launch-mute, accent-coloured)</strong> — the <strong>arrangement</strong> stops driving lanes. Launch-solo a lane and the take launches clips and applies automation ONLY there; what was already sounding on the other lanes finishes <strong>at the next bar</strong> (a musical handover, not a cut). Un-solo and the freed lanes re-enter the band under the playhead immediately. This is &quot;solo this loop&quot; in the musical sense, and it is fully reversible mid-song.</li>
+<li><strong>m / s (the mixer&#39;s audio mute/solo)</strong> — the classic desk pair: silences the lane&#39;s audio <strong>bus</strong> instantly, tails included. The lane keeps scheduling underneath. These are the SAME switches as the mixer&#39;s and the clip editor&#39;s — one pair, three places.</li>
+<li><strong>VU meter</strong> — a vertical level meter shows the lane&#39;s live output RMS.</li>
 </ul>
-<p>The same two buttons also sit in the clip editor&#39;s header, acting on the lane whose clip is open — the same switches, not a second pair, so muting from either place lights both. See <a href="#07-mixing-and-fx--mute-and-solo">Mixing &amp; FX</a>.</p>
-<p>Mute and solo states are saved with the session.</p>
+<p>The audio pair is saved with the session; the launch pair is performance state.</p>
+<p><strong>The mixer&#39;s mute and solo are also automatable</strong>: every lane lists <code>mixer.mute</code> and <code>mixer.solo</code> (under the MIXER heading) in the + Automation picker, as 0/1 stepped curves — and pressing m/s <strong>while a take records</strong> writes the press into the take, so a mute performance replays like any knob move. See <a href="#07-mixing-and-fx--mute-and-solo">Mixing &amp; FX</a>.</p>
 <hr>
 <h2 id="10-performance-and-arrangement--persistence">Persistence</h2>
 <p>The arrangement is saved as part of the session file (schema version 3). Recorded takes — clip bands, automation curves, loop brace position — survive Save / Load and browser restarts.</p>
