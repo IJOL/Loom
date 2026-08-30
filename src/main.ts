@@ -655,6 +655,9 @@ const performanceFeature = createPerformanceFeature({
   // Arrangement reached the end (song mode): halt the engine + reset the Play
   // button so the next Play restarts from the top.
   onArrangementEnd: () => { _origStop(); setPlaying(playBtn, false); },
+  // TIMELINE WINS: the same closure Session's onGridLaunch gets — a take
+  // suspends a weaving/following lane the moment it drives it.
+  onTimelineLaunch: (laneId) => weaveWiring.suspendForGrid(laneId),
   onRegisterKnob,
   // Late-bound on purpose: the recording feature (which owns the shared REC
   // button) is created further down, so this must stay a closure — the bare

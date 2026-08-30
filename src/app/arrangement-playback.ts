@@ -48,6 +48,12 @@ export interface ArrangementPlaybackDeps {
   /** Fired when playback runs off the end (song mode) so the host can reset its
    *  transport button. */
   onArrangementEnd?: () => void;
+  /** The TIMELINE WINS door — the same contract the grid's onGridLaunch keeps:
+   *  null claims every lane (begin, like a scene), a laneId claims that lane
+   *  (each band launch). main wires it to weaveWiring.suspendForGrid, so a
+   *  weaving/following lane hands over the moment the take drives it; the
+   *  WEAVE panel takes it back with its own ▶, exactly as after a grid launch. */
+  onTimelineLaunch?: (laneId: string | null) => void;
   /** Late-bound: automation-writes is built AFTER the performance feature, so
    *  main hands this in as a closure, never as a bare reference. Absent in test
    *  fixtures with no audio graph. */
@@ -80,6 +86,9 @@ export function createArrangementPlayback(deps: ArrangementPlaybackDeps): Arrang
     if (!lane) return;
     const clip = lane.clips.find((c) => c?.id === clipId);
     if (!clip) return;
+    // Timeline wins: claim the lane BEFORE the launch, so a weaving lane is
+    // already suspended when its clip starts.
+    deps.onTimelineLaunch?.(laneId);
     // Honour the arrangement's exact start time (startedAtCtx + atSec). Never
     // re-quantize to the session bar grid — that snapped the first event to the
     // next absolute bar boundary, leaving a silent first bar. Clamp to now so the
@@ -230,6 +239,9 @@ export function createArrangementPlayback(deps: ArrangementPlaybackDeps): Arrang
     // position to resume either way: arrangementPlayhead() returns 0 while
     // stopped and the cursor is hidden, so the "preserved position" was never
     // visible or reachable. Start from a real number instead of a stale clock.
+    // Timeline wins: a take speaks for every lane, like a scene — claim them
+    // all before the first launch.
+    deps.onTimelineLaunch?.(null);
     const lw = arrangementLoopWindowSec(arrangement, seq.meter);
     const startSec = lw.active && lw.startSec > 0 ? lw.startSec : 0;
     startArrangementAt(ps, ctx.currentTime, arrangement, startSec, onLaunchClip);

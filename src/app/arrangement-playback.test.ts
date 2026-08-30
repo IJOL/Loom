@@ -93,6 +93,22 @@ describe('launch-solo', () => {
   });
 });
 
+describe('timeline wins — the weave door', () => {
+  it('begin() claims every lane (null) and each band launch claims its lane', () => {
+    const { deps, ctx } = fixture();
+    const claimed: (string | null)[] = [];
+    (deps as { onTimelineLaunch?: (id: string | null) => void }).onTimelineLaunch =
+      (id) => claimed.push(id);
+    const pb = createArrangementPlayback(deps);
+    pb.begin();
+    expect(claimed).toEqual([null]);   // a take speaks for every lane, like a scene
+    (ctx as { currentTime: number }).currentTime = 0.01;
+    pb.tick(0.01, 0.12);
+    // both lanes' bands at t=0 launched, each claiming its lane BEFORE the launch
+    expect(claimed.slice(1).sort()).toEqual(['l1', 'l2']);
+  });
+});
+
 describe('launch-mute', () => {
   it('is the single-lane version of the same gate', () => {
     const { deps, ps, laneStates, ctx } = fixture();

@@ -62,6 +62,10 @@ export interface PerformanceFeatureDeps {
    *  lets the host stop the transport engine and reset the Play button so a
    *  fresh Play restarts from the top rather than toggling a stale ■. */
   onArrangementEnd?: () => void;
+  /** TIMELINE WINS — the same door as SessionHost.deps.onGridLaunch: main wires
+   *  both to weaveWiring.suspendForGrid, so a take drives a weaving lane exactly
+   *  the way a scene does. Passed straight through to arrangement-playback. */
+  onTimelineLaunch?: (laneId: string | null) => void;
   /** Optional master meter tap — feeds the compact master VU in the Performance
    *  toolbar (the full master strip is hidden with the session root in Perf). */
   masterMeterAnalyser?: AnalyserNode;
@@ -184,6 +188,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     getPxPerBar: () => pxPerBar,
     isPerformanceMode: () => mode === 'performance',
     onArrangementEnd: () => deps.onArrangementEnd?.(),
+    onTimelineLaunch: deps.onTimelineLaunch,
     applyUnmounted: deps.applyUnmounted,
     getTargetRanges: deps.getTargetRanges,
   });
