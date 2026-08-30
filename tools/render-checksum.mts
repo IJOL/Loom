@@ -7,10 +7,10 @@
 // the bit or they do not, which is what a refactor claiming "numerically
 // identical" has to prove. Capture a run, change the code, run again, diff.
 //
-// This exists because the golden-WAV path (npm run test:wav-diff) has nothing to
-// compare against for the melodic engines: test/output/ is only written by
-// test/dsp-battery.ts, which lost its callers when the node-per-note engines were
-// deleted, so no test renders those engines to disk any more.
+// Predates the revived golden-WAV path: test/preset-render.dsp.test.ts now
+// writes test/output/ again, so npm run test:wav-diff works. This tool still
+// earns its keep as the FAST, exact check — a checksum answers "bit-identical?"
+// in seconds without rendering WAVs or a human ear.
 import { note, makeRenderer, MELODIC_IDS, SR } from '../test/engine-fixtures';
 import type { VoiceRenderer } from '../src/audio-dsp/types';
 

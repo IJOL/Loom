@@ -8,10 +8,11 @@
 // run it again: the RATIO between the two runs is what a re-trim has to bring
 // back to 1 at full velocity.
 //
-// This is the melodic replacement for the golden-WAV route (npm run test:wav-diff).
-// test/output/ is written only by test/dsp-battery.ts, which lost every caller
-// when the node-per-note engines were deleted, so no test renders fm or karplus
-// to disk any more and there is nothing on disk to diff.
+// Predates the revived golden-WAV route: test/preset-render.dsp.test.ts now
+// writes test/output/ again (three presets per engine through renderKernelLane),
+// so npm run test:wav-diff has something to diff. This tool still earns its
+// keep for LEVEL questions — it measures RMS ratios directly instead of asking
+// a human to listen to WAV deltas.
 import { note, makeRenderer, MELODIC_IDS, SR } from '../test/engine-fixtures';
 import type { VoiceRenderer } from '../src/audio-dsp/types';
 
