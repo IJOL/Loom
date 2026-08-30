@@ -26,10 +26,17 @@ export interface AppPrefs {
   arrangePxPerBar: number;
   /** Arrange-view horizontal scroll (px). Same reasoning. */
   arrangeScrollLeft: number;
+  /** Loop-capture source. A machine preference like the zoom: what THIS
+   *  machine records from is not a property of the project. */
+  captureSource: 'master' | 'system' | 'mic';
+  /** 🎧 monitor external capture sources. Off by default — the obvious
+   *  mic-on-speakers feedback loop should be opted into, not out of. */
+  captureMonitor: boolean;
 }
 
 export const DEFAULT_APP_PREFS: AppPrefs = {
   autosave: false, arrangePxPerBar: 80, arrangeScrollLeft: 0,
+  captureSource: 'master', captureMonitor: false,
 };
 
 export function appPrefs(): AppPrefs {
@@ -46,6 +53,10 @@ export function appPrefs(): AppPrefs {
         ? parsed.arrangePxPerBar : DEFAULT_APP_PREFS.arrangePxPerBar,
       arrangeScrollLeft: typeof parsed.arrangeScrollLeft === 'number' && parsed.arrangeScrollLeft >= 0
         ? parsed.arrangeScrollLeft : DEFAULT_APP_PREFS.arrangeScrollLeft,
+      captureSource: parsed.captureSource === 'system' || parsed.captureSource === 'mic'
+        ? parsed.captureSource : DEFAULT_APP_PREFS.captureSource,
+      captureMonitor: typeof parsed.captureMonitor === 'boolean'
+        ? parsed.captureMonitor : DEFAULT_APP_PREFS.captureMonitor,
     };
   } catch {
     // Private browsing, a full quota, a corrupt value: a preference is never

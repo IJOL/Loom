@@ -23,3 +23,16 @@ describe('arrange view state prefs', () => {
     expect(appPrefs().autosave).toBe(true);
   });
 });
+
+describe('loop-capture prefs', () => {
+  it('captureSource defaults to master and rejects unknown values', () => {
+    localStorage.setItem('loom-app-prefs-v1', JSON.stringify({ captureSource: 'tape-deck' }));
+    expect(appPrefs().captureSource).toBe('master');
+    localStorage.setItem('loom-app-prefs-v1', JSON.stringify({ captureSource: 'mic' }));
+    expect(appPrefs().captureSource).toBe('mic');
+  });
+
+  it('captureMonitor defaults to off', () => {
+    expect(appPrefs().captureMonitor).toBe(false);
+  });
+});
