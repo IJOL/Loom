@@ -3,7 +3,7 @@ import { snapSecToBeat, moveEvent, resizeEvent, deleteEvent } from './arrangemen
 import type { ArrangementClipEvent } from './performance';
 
 const E = (id: string, at: number, until: number): ArrangementClipEvent =>
-  ({ clipId: id, laneId: 'L', atSec: at, untilSec: until });
+  ({ id, clipId: id, laneId: 'L', atSec: at, untilSec: until });
 
 describe('snapSecToBeat (120 bpm → 0.5s per beat)', () => {
   it('rounds to the nearest beat', () => {

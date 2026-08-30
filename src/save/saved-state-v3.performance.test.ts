@@ -52,6 +52,24 @@ describe('SavedStateV3 persists mode + arrangement', () => {
     expect((s as any).arrangement?.durationSec).toBe(4);
   });
 
+  it('the saved arrangement is a deep clone — editing after save does not mutate the payload', () => {
+    const arr = {
+      bpm: 130, durationSec: 4,
+      lanes: [{ laneId: 'l1', clipEvents: [{ id: 'b1', clipId: 'c1', laneId: 'l1', atSec: 0, untilSec: 2 }], automation: [] }],
+      globalAutomation: [],
+    };
+    const deps = {
+      seq: { bpm: 130, swing: 0 },
+      volInput: { value: '0.5' },
+      sessionHost: { getStateForSave: () => ({ lanes: [], scenes: [], globalQuantize: '1/1' }) },
+      lanes: { resources: new Map() },
+      getArrangement: () => arr,
+    } as any;
+    const s = buildSavedStateV3(deps);
+    arr.lanes[0].clipEvents[0].atSec = 99; // live edit AFTER the save was built
+    expect((s as any).arrangement.lanes[0].clipEvents[0].atSec).toBe(0);
+  });
+
   it('buildSavedStateV3 omits mode/arrangement when no accessors are provided', () => {
     const deps = {
       seq: { bpm: 120, swing: 0 },

@@ -1,4 +1,4 @@
-import { emptyLaneRec, stepsPerSec, type ArrangementLaneRec, type ArrangementState } from './performance';
+import { emptyLaneRec, newBandId, stepsPerSec, type ArrangementLaneRec, type ArrangementState } from './performance';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
 import { songBarSec } from '../core/song-position';
 import { stepsPerBar, type TimeSignature } from '../core/meter';
@@ -19,7 +19,7 @@ export function appendClipEvent(
   const rec = getOrCreateLane(s, laneId);
   const last = rec.clipEvents[rec.clipEvents.length - 1];
   if (last && last.untilSec === Infinity) last.untilSec = atSec;
-  rec.clipEvents.push({ clipId, laneId, atSec, untilSec: Infinity });
+  rec.clipEvents.push({ id: newBandId(), clipId, laneId, atSec, untilSec: Infinity });
 }
 
 /** Opens an event at t=0 for each clip that was ALREADY sounding when the take
@@ -42,7 +42,7 @@ export function seedClipEventsFromSounding(
     const rec = getOrCreateLane(s, laneId);
     const last = rec.clipEvents[rec.clipEvents.length - 1];
     if (last && last.untilSec === Infinity) continue;
-    rec.clipEvents.push({ clipId, laneId, atSec: 0, untilSec: Infinity });
+    rec.clipEvents.push({ id: newBandId(), clipId, laneId, atSec: 0, untilSec: Infinity });
   }
 }
 

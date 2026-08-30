@@ -2,10 +2,39 @@
 // side effects. Mirror role of session.ts for the Session view.
 
 export interface ArrangementClipEvent {
+  /** Stable identity — selection, per-band mute, drag and copy/paste hang off
+   *  this, never off the array index. Generated at creation; backfilled for old
+   *  saves by migrateArrangementBands. */
+  id: string;
   clipId: string;
   laneId: string;
   atSec: number;
   untilSec: number;
+  /** Where inside the clip this band starts (sec). Absent = 0. A left-trim
+   *  moves atSec AND offsetSec together so the music does not change bars. */
+  offsetSec?: number;
+  /** The band exists but never fires. Painted dimmed; gated in tickArrangement. */
+  muted?: boolean;
+}
+
+let bandSeq = 0;
+export function newBandId(): string {
+  return `band-${Date.now().toString(36)}-${(bandSeq++).toString(36)}`;
+}
+
+/** Load-time backfill: an arrangement written before bands had ids gets them
+ *  generated here, so id-addressed editing works on it like on any other.
+ *  Mutates in place (the caller owns the object) — mirrors migrateArrangementCurves.
+ *
+ *  Standing user rule: this is the ONE band migration and there will be no
+ *  more. If it ever breaks, DELETE it rather than fix it — an old arrangement
+ *  simply loses band editing until recreated. */
+export function migrateArrangementBands(a: ArrangementState): void {
+  for (const lane of a.lanes) {
+    for (const ev of lane.clipEvents) {
+      if (!(ev as { id?: string }).id) (ev as { id: string }).id = newBandId();
+    }
+  }
 }
 
 export interface AutomationCurve {

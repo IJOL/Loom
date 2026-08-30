@@ -292,7 +292,7 @@ describe('seedClipEventsFromSounding', () => {
     ]);
     expect(s.lanes).toHaveLength(2);
     expect(s.lanes[0].clipEvents).toEqual([
-      { clipId: 'c-bass', laneId: 'bass', atSec: 0, untilSec: Infinity },
+      { id: expect.any(String), clipId: 'c-bass', laneId: 'bass', atSec: 0, untilSec: Infinity },
     ]);
     expect(s.lanes[1].clipEvents[0].clipId).toBe('c-drums');
   });

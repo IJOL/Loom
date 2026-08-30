@@ -15,7 +15,7 @@ function makeState(over: Partial<ArrangementState> = {}): ArrangementState {
     lengthBars: 0,
     lanes: [{
       laneId: 'lane1',
-      clipEvents: [{ clipId: 'c1', laneId: 'lane1', atSec: 0, untilSec: 2 }],
+      clipEvents: [{ id: 'b1', clipId: 'c1', laneId: 'lane1', atSec: 0, untilSec: 2 }],
       automation: [{ paramId: 'lane1.filter.cutoff', values: [0.5, 0.5], enabled: true }],
     }],
     globalAutomation: [],
@@ -164,7 +164,7 @@ describe('renderPerformanceView', () => {
     const noCurves = makeState({
       lanes: [{
         laneId: 'lane1',
-        clipEvents: [{ clipId: 'c1', laneId: 'lane1', atSec: 0, untilSec: 2 }],
+        clipEvents: [{ id: 'b1', clipId: 'c1', laneId: 'lane1', atSec: 0, untilSec: 2 }],
         automation: [],
       }],
     } as Partial<ArrangementState>);
@@ -179,7 +179,7 @@ describe('renderPerformanceView', () => {
     const globalOnly = makeState({
       lanes: [{
         laneId: 'lane1',
-        clipEvents: [{ clipId: 'c1', laneId: 'lane1', atSec: 0, untilSec: 2 }],
+        clipEvents: [{ id: 'b1', clipId: 'c1', laneId: 'lane1', atSec: 0, untilSec: 2 }],
         automation: [],
       }],
       globalAutomation: [{ paramId: 'master.gain', values: [0.5, 0.5], enabled: true }],

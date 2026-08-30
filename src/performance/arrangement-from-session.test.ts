@@ -23,7 +23,7 @@ describe('arrangementFromSession', () => {
     const arr = arrangementFromSession(state, 120, DEFAULT_METER); // barSec=2
     expect(arr.durationSec).toBe(8); // 4 bars
     const la = arr.lanes.find((l) => l.laneId === 'A')!;
-    expect(la.clipEvents).toEqual([{ clipId: 'a1', laneId: 'A', atSec: 0, untilSec: 8 }]);
+    expect(la.clipEvents).toEqual([{ id: expect.any(String), clipId: 'a1', laneId: 'A', atSec: 0, untilSec: 8 }]);
   });
 
   it('two scenes concatenate in order; a lane present in both gets two consecutive events', () => {
@@ -34,8 +34,8 @@ describe('arrangementFromSession', () => {
     const arr = arrangementFromSession(state, 120, DEFAULT_METER);
     const la = arr.lanes.find((l) => l.laneId === 'A')!;
     expect(la.clipEvents).toEqual([
-      { clipId: 'a1', laneId: 'A', atSec: 0, untilSec: 4 },
-      { clipId: 'a2', laneId: 'A', atSec: 4, untilSec: 8 },
+      { id: expect.any(String), clipId: 'a1', laneId: 'A', atSec: 0, untilSec: 4 },
+      { id: expect.any(String), clipId: 'a2', laneId: 'A', atSec: 4, untilSec: 8 },
     ]);
     expect(arr.durationSec).toBe(8);
   });
@@ -112,6 +112,6 @@ describe('arrangementFromSession', () => {
       scenes: [{ id: 's0', clipPerLane: { A: 0 } }],
     });
     const arr = arrangementFromSession(state, 120, DEFAULT_METER);
-    expect(arr.lanes[0].clipEvents).toEqual([{ clipId: 'song', laneId: 'A', atSec: 0, untilSec: 16 }]);
+    expect(arr.lanes[0].clipEvents).toEqual([{ id: expect.any(String), clipId: 'song', laneId: 'A', atSec: 0, untilSec: 16 }]);
   });
 });

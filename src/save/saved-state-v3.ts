@@ -2,7 +2,7 @@ import type { Sequencer } from '../core/sequencer';
 import type { SessionHost } from '../session/session-host';
 import type { SessionState } from '../session/session';
 import type { LaneAllocator } from '../app/lane-allocator';
-import type { ArrangementState } from '../performance/performance';
+import { migrateArrangementBands, type ArrangementState } from '../performance/performance';
 import { resolveMeter, formatMeter, type TimeSignature } from '../core/meter';
 import { defaultWeaveState } from '../weave/weave-state';
 
@@ -90,7 +90,10 @@ export function buildSavedStateV3(deps: SavedStateV3Deps): SavedStateV3 {
     sessionState: sessionHost.getStateForSave(),
   };
   if (deps.getMode) state.mode = deps.getMode();
-  if (deps.getArrangement) state.arrangement = deps.getArrangement();
+  // Deep-copied for the same reason as the weave below: the live arrangement
+  // keeps being edited, and a save holding the feature's own object would go on
+  // changing after it was written.
+  if (deps.getArrangement) state.arrangement = structuredClone(deps.getArrangement());
   // Deep-copied, because the live weave keeps moving: a save holding the panel's
   // own object would go on changing after it was written, and what landed on
   // disk would be wherever the fader stopped rather than where it was.
@@ -127,6 +130,7 @@ export function applyLoadedStateV3(s: SavedStateV3, deps: SavedStateV3Deps): voi
   // first so the view has content, then switch to the saved mode.
   if (s.arrangement && deps.setArrangement) {
     migrateArrangementCurves(s.arrangement);
+    migrateArrangementBands(s.arrangement);
     deps.setArrangement(s.arrangement);
   }
   // AFTER replaceSession, because the weave names clips by id and those clips
