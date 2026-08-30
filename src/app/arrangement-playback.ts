@@ -69,6 +69,8 @@ export interface ArrangementPlayback {
   begin(): void;
   /** One look-ahead frame. The caller ticks this ONLY in Performance mode. */
   tick(nowCtx: number, lookaheadSec: number): void;
+  /** Ruler click: move the playhead (see seekTo's doc). */
+  seekTo(sec: number): void;
   /** Launch-mute one lane: the arrangement stops driving it (launches AND
    *  automation), and what already sounds leaves at the next bar. */
   setLaunchMute(laneId: string, on: boolean): void;
@@ -152,28 +154,41 @@ export function createArrangementPlayback(deps: ArrangementPlaybackDeps): Arrang
     const animating = deps.isPerformanceMode() && ps.isPlaying;
     const el = document.getElementById('perf-playhead');
     if (el) {
-      const host = document.getElementById('performance-view-root');
-      const rulerTrack = host?.querySelector('.perf-ruler .perf-track') as HTMLElement | null;
-      if (animating && host && rulerTrack) {
+      const scroller = document.querySelector('#performance-view-root .perf-scroller') as HTMLElement | null;
+      const rulerTrack = scroller?.querySelector('.perf-ruler .perf-track') as HTMLElement | null;
+      if (animating && scroller && rulerTrack) {
         const barSec = songBarSec(arrangement.bpm, seq.meter);
         const lw = arrangementLoopWindowSec(arrangement, seq.meter);
         let sec = arrangementPlayhead(ps, ctx.currentTime);
         if (lw.active) sec = lw.startSec + ((sec - lw.startSec) % (lw.endSec - lw.startSec));
         const bars = sec / barSec;
-        // Position against the REAL ruler-track rect so the cursor lines up with
-        // bar 1 regardless of the host padding, the label column, the toolbar
-        // height or horizontal scroll. (The old hardcoded 90/26 offsets ignored
-        // all of these → the cursor sat ~20px left of bar 1 and over the toolbar.)
-        const hostRect = host.getBoundingClientRect();
-        const trackRect = rulerTrack.getBoundingClientRect();
-        el.style.left = `${(trackRect.left - hostRect.left) + bars * deps.getPxPerBar() - rulerTrack.scrollLeft}px`;
-        el.style.top = `${trackRect.top - hostRect.top}px`;
+        // The playhead lives INSIDE the one scroll surface, so its coordinates
+        // are content coordinates: the ruler track's offsetLeft (the sticky
+        // label column) plus the bar position. No scroll compensation — the
+        // cursor scrolls with the music. Height spans the full content, not
+        // just the visible box.
+        el.style.left = `${rulerTrack.offsetLeft + bars * deps.getPxPerBar()}px`;
+        el.style.height = `${scroller.scrollHeight}px`;
         el.style.display = 'block'; // '' would fall back to the CSS display:none
       } else {
         el.style.display = 'none';
       }
     }
     playheadRaf = animating ? requestAnimationFrame(rafPlayhead) : 0;
+  }
+
+  /** Ruler click: move the playhead. Playing → stop everything and re-anchor
+   *  at the clicked second (the same relaunch a loop wrap uses, so the bands
+   *  under the new position sound at once). Stopped → move the shared song
+   *  anchor so the next Play and the Session view agree on the position. */
+  function seekTo(sec: number) {
+    const at = Math.max(0, sec);
+    if (ps.isPlaying) {
+      stopAll(sessionHost.laneStates, sessionHost.deps.liveVoices, ctx.currentTime);
+      startArrangementAt(ps, ctx.currentTime, arrangement, at, onLaunchClip);
+    } else {
+      sessionHost.setSongAnchor(ctx.currentTime - at);
+    }
   }
 
   // ---- Launch-solo / launch-mute -------------------------------------------
@@ -253,5 +268,5 @@ export function createArrangementPlayback(deps: ArrangementPlaybackDeps): Arrang
     if (playheadRaf === 0) playheadRaf = requestAnimationFrame(rafPlayhead);
   }
 
-  return { begin, tick, setLaunchMute, setLaunchSolo, getLaunchState };
+  return { begin, tick, seekTo, setLaunchMute, setLaunchSolo, getLaunchState };
 }

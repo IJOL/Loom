@@ -343,6 +343,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
         sessionHost.setGlobalLoop(enabled, startBar, endBar);
         refreshPerformanceView();
       },
+      onSeek: (sec) => playback.seekTo(sec),
       onMoveBand: (laneId, index, newAtSec) => { commitArrUndo(); editBands(laneId, (evs) => moveEvent(evs, index, newAtSec, arrangement.bpm)); },
       onResizeBand: (laneId, index, edge, newSec) => { commitArrUndo(); editBands(laneId, (evs) => resizeEvent(evs, index, edge, newSec, arrangement.bpm)); },
       onDeleteBand: (laneId, index) => { commitArrUndo(); editBands(laneId, (evs) => deleteEvent(evs, index)); },

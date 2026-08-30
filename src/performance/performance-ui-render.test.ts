@@ -78,6 +78,29 @@ describe('renderPerformanceView', () => {
     expect(host.querySelector('#perf-playhead')).toBeTruthy();
   });
 
+  it('renders ONE scroller that owns the timeline; rows live inside it', () => {
+    const host = document.createElement('div');
+    renderPerformanceView(host, makeState(), makeCb());
+    expect(host.querySelectorAll('.perf-scroller')).toHaveLength(1);
+    expect(host.querySelector('.perf-scroller .perf-ruler')).toBeTruthy();
+    expect(host.querySelector('.perf-scroller .perf-clip')).toBeTruthy();
+    expect(host.querySelector('.perf-scroller #perf-playhead')).toBeTruthy();
+    // the toolbar stays OUTSIDE the scrolling surface
+    expect(host.querySelector('.perf-scroller .perf-toolbar')).toBeNull();
+  });
+
+  it('clicking the ruler seeks to the clicked seconds', () => {
+    const onSeek = vi.fn();
+    const host = document.createElement('div');
+    renderPerformanceView(host, makeState(), makeCb({ onSeek } as never));
+    const track = host.querySelector('.perf-ruler .perf-track') as HTMLElement;
+    // jsdom rects sit at 0, so clientX IS the track-local x: 120px at 80px/bar
+    // over 2s bars → 3 seconds.
+    track.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: 120 }));
+    expect(onSeek).toHaveBeenCalledTimes(1);
+    expect(onSeek.mock.calls[0][0]).toBeCloseTo(3, 6);
+  });
+
   it('marks a clip whose color cannot resolve as missing', () => {
     const host = document.createElement('div');
     renderPerformanceView(host, makeState(), makeCb({ resolveClipColor: () => '' }));

@@ -97,9 +97,40 @@ export function emptyTemplate(cb: PerfUICallbacks): TemplateResult {
 // re-derive a bar of its own.
 export function rulerTemplate(durationSec: number, barSec: number, pxPerBar: number, cb: PerfUICallbacks): TemplateResult {
   const bars = Math.ceil(durationSec / barSec);
+  // Click = seek; drag on empty ruler space = set the A–B loop. The drag only
+  // engages past a small threshold, and once it has, the trailing click is
+  // suppressed so a loop-set never doubles as a seek.
+  let dragged = false;
+  const onClick = (e: MouseEvent) => {
+    if (dragged) { dragged = false; return; }
+    if ((e.target as HTMLElement).closest('.perf-loop-brace')) return;
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    cb.onSeek?.(((e.clientX - rect.left) / pxPerBar) * barSec);
+  };
+  const onDown = (down: PointerEvent) => {
+    if ((down.target as HTMLElement).closest('.perf-loop-brace')) return;
+    const track = down.currentTarget as HTMLElement;
+    const rect = track.getBoundingClientRect();
+    const startBar = pxToBar(down.clientX - rect.left, pxPerBar);
+    const move = (e: PointerEvent) => {
+      if (Math.abs(e.clientX - down.clientX) < 4 && !dragged) return;
+      dragged = true;
+      const b = pxToBar(e.clientX - rect.left, pxPerBar);
+      const region = clampBarRegion(Math.min(startBar, b), Math.max(startBar, b), bars);
+      if (region.end > region.start) cb.onSetLoop(true, region.start, region.end);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
   return html`<div class="perf-row perf-ruler">${labelTemplate('bars')}<div
       class="perf-track"
       style="width:${bars * pxPerBar}px"
+      @click=${onClick}
+      @pointerdown=${onDown}
     >${Array.from({ length: bars }, (_, b) => html`<span
       class="perf-bar-mark"
       style="left:${b * pxPerBar}px"

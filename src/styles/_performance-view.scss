@@ -5,11 +5,31 @@
   font-family: ui-monospace, Menlo, Consolas, monospace;
   font-size: 12px;
 
+  // ── The ONE scroll surface (Arrange round) ───────────────────────────────
+  // The ruler and every row scroll together; the rows used to each own an
+  // overflow-x and desynced on a long song. Labels are sticky-left, the ruler
+  // sticky-top, and the playhead lives in the scrolled content so it needs no
+  // scroll compensation.
+  .perf-scroller {
+    position: relative;
+    overflow: auto;
+    max-height: calc(100vh - 150px);
+    .perf-row { width: max-content; min-width: 100%; }
+    .perf-row.perf-ruler { position: sticky; top: 0; z-index: 4; }
+    .perf-label { position: sticky; left: 0; z-index: 3; }
+    .perf-auto-header { position: sticky; left: 0; z-index: 2; background: #171717; width: max-content; }
+    .perf-auto-lane { width: max-content; min-width: 100%; overflow: visible; }
+    .perf-auto-lane .perf-auto-lane-header {
+      position: sticky; left: 0; z-index: 2; background: #171717; width: max-content;
+      padding-right: 8px;
+    }
+  }
+
   .perf-playhead {
-    // top/left are set every frame by rafPlayhead against the real ruler-track
-    // rect; these defaults just keep it hidden until playback positions it.
-    position: absolute; top: 0; bottom: 0; width: 2px; left: 0; display: none;
-    background: #ffd166; pointer-events: none;
+    // left/height are set every frame by rafPlayhead in scroller-content
+    // coordinates; these defaults just keep it hidden until playback positions it.
+    position: absolute; top: 0; height: 100%; width: 2px; left: 0; display: none;
+    background: #ffd166; pointer-events: none; z-index: 5;
     box-shadow: 0 0 4px rgba(255, 209, 102, 0.5);
   }
 
@@ -52,7 +72,7 @@
     }
     .perf-lane-ctrls .mix-vu-host { height: 18px; width: 5px; }
   }
-  .perf-track  { position: relative; height: 100%; overflow-x: auto; }
+  .perf-track  { position: relative; height: 100%; }
   // The ruler is a guide, not a scroller; its own scrollbar would otherwise
   // appear when the A–B loop brace handle (right:-4px) overhangs the content.
   .perf-ruler .perf-track { overflow: hidden; }
@@ -131,7 +151,7 @@
     .perf-brush-bar { display: flex; gap: 4px; }
   }
   .perf-auto-lane {
-    padding-left: 120px; overflow-x: auto; border-bottom: 1px solid #1c1c1c;
+    padding-left: 120px; border-bottom: 1px solid #1c1c1c;
     &.missing { opacity: 0.5; }
     .perf-auto-lane-header {
       display: flex; gap: 6px; align-items: center; font-size: 11px; color: #aaa; padding: 2px 0;

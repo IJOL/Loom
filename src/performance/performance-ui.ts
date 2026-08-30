@@ -48,6 +48,8 @@ export interface PerfUICallbacks {
   loopStartBar: number;
   loopEndBar: number;
   onSetLoop: (enabled: boolean, startBar: number, endBar: number) => void;
+  /** Ruler click: move the playhead to the clicked seconds. */
+  onSeek?: (sec: number) => void;
   onMoveBand: (laneId: string, index: number, newAtSec: number) => void;
   onResizeBand: (laneId: string, index: number, edge: 'start' | 'end', newSec: number) => void;
   onDeleteBand: (laneId: string, index: number) => void;
@@ -109,13 +111,17 @@ function viewTemplate(state: ArrangementState, cb: PerfUICallbacks): TemplateRes
   // patches rows instead of shifting every band's identity.
   // Single "+ Automation" control; the chosen param's prefix routes it into a
   // lane section or the master section (arrangement-ops.routeParamId).
-  return html`${toolbarTemplate(state, cb)}${rulerTemplate(dur, barSec, cb.pxPerBar, cb)}${buildAutomationHeader(autoDeps)}${repeat(
+  // ONE scroll surface: the ruler and every row scroll together inside
+  // .perf-scroller (sticky ruler on top, sticky labels on the left). The rows
+  // used to each own an overflow-x, which desynced on a long song. The toolbar
+  // stays outside — it is chrome, not timeline.
+  return html`${toolbarTemplate(state, cb)}<div class="perf-scroller">${rulerTemplate(dur, barSec, cb.pxPerBar, cb)}${buildAutomationHeader(autoDeps)}${repeat(
     state.lanes,
     (lane) => lane.laneId,
     (lane) => html`${clipBandTemplate(lane, dur, barSec, cb.pxPerBar, cb)}${lane.automation.map((curve) => buildAutomationLane(curve, autoDeps))}`,
   )}${state.globalAutomation.length > 0
     ? html`<div class="perf-row perf-master-header">${labelTemplate('MASTER')}</div>${state.globalAutomation.map((curve) => buildAutomationLane(curve, autoDeps))}`
-    : nothing}<div class="perf-playhead" id="perf-playhead"></div>`;
+    : nothing}<div class="perf-playhead" id="perf-playhead"></div></div>`;
 }
 
 export function renderPerformanceView(host: HTMLElement, state: ArrangementState, cb: PerfUICallbacks): void {
