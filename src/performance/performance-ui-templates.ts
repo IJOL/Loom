@@ -81,9 +81,15 @@ export function toolbarTemplate(state: ArrangementState, cb: PerfUICallbacks): T
 // ── Empty state ────────────────────────────────────────────────────────────
 
 export function emptyTemplate(cb: PerfUICallbacks): TemplateResult {
-  return html`<div class="perf-empty">
-      <p>No recording. Set a <b>length</b> above to start drawing automation,</p>
-      <p>or arm <b>REC</b>, go back to Session, launch clips and move knobs.</p>
+  // The primary gesture IS the interface: an empty song invites loops. The
+  // whole empty state is a live drop target (attachPerfDrop listens on the
+  // host); the record button ships disabled until the capture round.
+  return html`<div class="perf-empty"><div class="perf-empty-drop perf-dropzone">
+        <p class="perf-empty-big">Drop audio loops to start</p>
+        <p>each loop becomes a lane, fitted to the session tempo</p>
+        <p class="perf-empty-rec"><button disabled title="Record a loop — coming in the capture round">● Record a loop</button></p>
+      </div>
+      <p>…or arm <b>REC</b>, go back to Session, launch clips and move knobs.</p>
       <button class="perf-empty-back" @click=${cb.onGoToSession}>Back to Session</button></div>`;
 }
 

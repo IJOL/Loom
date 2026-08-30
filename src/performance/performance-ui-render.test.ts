@@ -146,6 +146,11 @@ describe('renderPerformanceView', () => {
     expect(host.querySelector('.perf-ruler')).toBeNull();
     expect(host.querySelector('#perf-playhead')).toBeNull();
 
+    // The empty state INVITES the primary gesture (drop loops); the record
+    // button ships disabled until the capture round.
+    expect(host.querySelector('.perf-empty-big')!.textContent).toContain('Drop audio loops');
+    expect((host.querySelector('.perf-empty-rec button') as HTMLButtonElement).disabled).toBe(true);
+
     const back = host.querySelector('.perf-empty-back') as HTMLButtonElement;
     expect(back.textContent).toBe('Back to Session');
     back.dispatchEvent(new MouseEvent('click', { bubbles: true }));

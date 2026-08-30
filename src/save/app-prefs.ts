@@ -21,9 +21,16 @@ export interface AppPrefs {
    *  is the user saying they would rather have the newest state than the last
    *  known-good one. */
   autosave: boolean;
+  /** Arrange-view zoom (px per bar). View state is machine-local — a shared
+   *  project must not carry someone else's zoom. */
+  arrangePxPerBar: number;
+  /** Arrange-view horizontal scroll (px). Same reasoning. */
+  arrangeScrollLeft: number;
 }
 
-export const DEFAULT_APP_PREFS: AppPrefs = { autosave: false };
+export const DEFAULT_APP_PREFS: AppPrefs = {
+  autosave: false, arrangePxPerBar: 80, arrangeScrollLeft: 0,
+};
 
 export function appPrefs(): AppPrefs {
   try {
@@ -35,6 +42,10 @@ export function appPrefs(): AppPrefs {
       // hand back `undefined` for a flag the code then treats as false-ish by
       // accident. Anything that is not a boolean falls back to the default.
       autosave: typeof parsed.autosave === 'boolean' ? parsed.autosave : DEFAULT_APP_PREFS.autosave,
+      arrangePxPerBar: typeof parsed.arrangePxPerBar === 'number' && parsed.arrangePxPerBar >= 16
+        ? parsed.arrangePxPerBar : DEFAULT_APP_PREFS.arrangePxPerBar,
+      arrangeScrollLeft: typeof parsed.arrangeScrollLeft === 'number' && parsed.arrangeScrollLeft >= 0
+        ? parsed.arrangeScrollLeft : DEFAULT_APP_PREFS.arrangeScrollLeft,
     };
   } catch {
     // Private browsing, a full quota, a corrupt value: a preference is never

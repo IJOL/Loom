@@ -52,6 +52,7 @@ import { sampleStore } from '../samples/store-singleton';
 import { arrangementPlayhead } from '../performance/arrangement-runtime';
 import { newBandId } from '../performance/performance';
 import { clipLoopSec } from '../core/launch-timing';
+import { appPrefs, setAppPrefs } from '../save/app-prefs';
 import { ticksPerBar } from '../core/meter';
 
 export interface PerformanceFeatureDeps {
@@ -187,7 +188,8 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   const restoreArr = (s: ArrangementState) => { setArrangement(s); };
   /** Snapshot before a discrete arrangement edit. */
   const commitArrUndo = () => arrHistory.commit(snapArr());
-  let pxPerBar = 80;
+  // View state is machine-local (app-prefs), never in the save file.
+  let pxPerBar = appPrefs().arrangePxPerBar;
   let brush: AutoBrush = 'line';
   /** The selected band ids — runtime state, never persisted (spec §1). */
   const bandSelection = new Set<string>();
@@ -388,6 +390,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
   let gesturesDetach: (() => void) | null = null;
   let actionsDetach: (() => void) | null = null;
   let dropDetach: (() => void) | null = null;
+  let scrollWired = false;
 
   /** Copied bands, offsets relative to the earliest — plain data, fresh ids on
    *  paste. Runtime state, never persisted. */
@@ -506,6 +509,18 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       },
       refresh: refreshPerformanceView,
     });
+    // Restore the remembered horizontal scroll ONCE per app run, then keep the
+    // pref fresh (debounced) as the user scrolls.
+    const scroller = host.querySelector('.perf-scroller') as HTMLElement | null;
+    if (scroller && !scrollWired) {
+      scrollWired = true;
+      scroller.scrollLeft = appPrefs().arrangeScrollLeft;
+      let t = 0;
+      scroller.addEventListener('scroll', () => {
+        window.clearTimeout(t);
+        t = window.setTimeout(() => setAppPrefs({ arrangeScrollLeft: scroller.scrollLeft }), 300);
+      });
+    }
     actionsDetach ??= attachPerfActions(host, {
       isActive: () => mode === 'performance',
       getSelection: () => bandSelection,
@@ -552,7 +567,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       getBrush: () => brush,
       setBrush: (b) => { brush = b; },
       onSetLengthBars: (bars) => { beforeEdit(); setArrangementLengthBars(arrangement, bars, seq.meter); refreshPerformanceView(); },
-      onZoom: (px) => { pxPerBar = px; scheduleZoomRefresh(); },
+      onZoom: (px) => { pxPerBar = px; setAppPrefs({ arrangePxPerBar: px }); scheduleZoomRefresh(); },
       onAddCurve: (paramId) => addCurve(paramId),
       onRemoveCurve: (paramId) => { beforeEdit(); removeAutomationCurve(arrangement, paramId, laneIds()); refreshPerformanceView(); },
       onEdited: () => { onPerformanceEdited?.(); },
