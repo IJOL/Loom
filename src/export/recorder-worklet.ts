@@ -39,9 +39,13 @@ class LoomSceneRecorder extends AudioWorkletProcessor {
     const blockStart = currentTime;
     const blockEnd = blockStart + n / sr;
     if (blockEnd > this._startTime && blockStart < this._endTime) {
+      // The 1e-6 guards absorb float representation error (0.25 - 0.2 is a
+      // hair under 0.05), so a window edge that lands EXACTLY on a sample
+      // keeps that sample instead of losing it to ceil/floor. A bar-quantized
+      // capture (loop-capture) cuts on such edges every time.
       let from = 0, to = n;
-      if (blockStart < this._startTime) from = Math.ceil((this._startTime - blockStart) * sr);
-      if (blockEnd > this._endTime) to = Math.floor((this._endTime - blockStart) * sr);
+      if (blockStart < this._startTime) from = Math.ceil((this._startTime - blockStart) * sr - 1e-6);
+      if (blockEnd > this._endTime) to = Math.floor((this._endTime - blockStart) * sr + 1e-6);
       if (to > from) {
         this._left.push(inL.slice(from, to));
         this._right.push(inR.slice(from, to));
