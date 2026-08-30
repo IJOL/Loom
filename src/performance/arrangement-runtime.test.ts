@@ -43,6 +43,53 @@ describe('ArrangementPlayState lifecycle', () => {
   });
 });
 
+describe('tickArrangement — muted bands', () => {
+  it('a muted band neither launches nor schedules its own stop', () => {
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'l1', 'cA', 0.0);
+    closePendingClipEvent(s, 'l1', 0.03);
+    appendClipEvent(s, 'l1', 'cB', 0.05);
+    closePendingClipEvent(s, 'l1', 0.08);
+    s.lanes[0].clipEvents[0].muted = true;   // A muted, B stays live
+
+    const ps = createArrangementPlayState();
+    startArrangement(ps, 100);
+    const launches: string[] = [];
+    const stops: number[] = [];
+    tickArrangement({
+      ps, state: s, nowCtx: 100, lookaheadSec: 0.12, bpm: 120,
+      onLaunchClip: (_l, clipId) => launches.push(clipId),
+      onStopLane: (_l, atCtx) => stops.push(atCtx),
+      applyAutomation: () => {},
+    });
+    expect(launches).toEqual(['cB']);
+    // exactly ONE stop — B's own; nothing fired for muted A's edge
+    expect(stops).toEqual([100.08]);
+  });
+
+  it('a live band followed CONTIGUOUSLY by a muted one still gets its stop', () => {
+    const s = emptyArrangementState(120);
+    appendClipEvent(s, 'l1', 'cA', 0.0);
+    closePendingClipEvent(s, 'l1', 0.04);
+    appendClipEvent(s, 'l1', 'cB', 0.04);  // contiguous
+    closePendingClipEvent(s, 'l1', 0.08);
+    s.lanes[0].clipEvents[1].muted = true; // B muted → it will NOT supersede A
+
+    const ps = createArrangementPlayState();
+    startArrangement(ps, 100);
+    const stops: number[] = [];
+    tickArrangement({
+      ps, state: s, nowCtx: 100, lookaheadSec: 0.12, bpm: 120,
+      onLaunchClip: () => {},
+      onStopLane: (_l, atCtx) => stops.push(atCtx),
+      applyAutomation: () => {},
+    });
+    // A's stop must fire (the contiguity skip only applies when the next band
+    // actually launches) — otherwise A keeps looping under the muted B forever.
+    expect(stops).toContain(100.04);
+  });
+});
+
 describe('tickArrangement', () => {
   it('emits launchClip when an event falls inside the lookahead window', () => {
     const s = emptyArrangementState(120);

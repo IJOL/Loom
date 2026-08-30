@@ -63,7 +63,7 @@ function anchorLanesAt(
     }
     ps.nextEventIdxPerLane.set(lane.laneId, idx);
     ps.nextStopIdxPerLane.set(lane.laneId, stopIdx);
-    if (active) onLaunchClip(lane.laneId, active.clipId, relaunchAtCtx);
+    if (active && !active.muted) onLaunchClip(lane.laneId, active.clipId, relaunchAtCtx);
   }
 }
 
@@ -128,7 +128,9 @@ export function tickArrangement(args: TickArrangementArgs): void {
     let i = ps.nextEventIdxPerLane.get(lane.laneId) ?? 0;
     while (i < lane.clipEvents.length && lane.clipEvents[i].atSec < tMax) {
       const ev = lane.clipEvents[i];
-      onLaunchClip(lane.laneId, ev.clipId, ps.startedAtCtx + ev.atSec);
+      // A muted band exists but never fires — the gate lives HERE, not in the
+      // paint, so it holds for every launch path (tick, seek, loop wrap).
+      if (!ev.muted) onLaunchClip(lane.laneId, ev.clipId, ps.startedAtCtx + ev.atSec);
       i++;
     }
     ps.nextEventIdxPerLane.set(lane.laneId, i);
@@ -142,8 +144,12 @@ export function tickArrangement(args: TickArrangementArgs): void {
       const ev = lane.clipEvents[j];
       if (!Number.isFinite(ev.untilSec) || ev.untilSec >= tMax) break;
       const next = lane.clipEvents[j + 1];
-      const contiguous = next != null && next.atSec <= ev.untilSec + CONTIGUOUS_EPS;
-      if (!contiguous) onStopLane(lane.laneId, ps.startedAtCtx + ev.untilSec);
+      // The contiguity skip only applies when the next band actually LAUNCHES —
+      // a muted successor supersedes nothing, so the stop must still fire or
+      // this band keeps looping under it forever. A muted band's own edge
+      // schedules no stop (it never launched).
+      const contiguous = next != null && !next.muted && next.atSec <= ev.untilSec + CONTIGUOUS_EPS;
+      if (!ev.muted && !contiguous) onStopLane(lane.laneId, ps.startedAtCtx + ev.untilSec);
       j++;
     }
     ps.nextStopIdxPerLane.set(lane.laneId, j);
