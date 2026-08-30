@@ -22,6 +22,17 @@ import {
 import { songBarSec } from '../core/song-position';
 import { peaksFor, paintWaveband, paintNoteband } from './band-render';
 
+export interface PerfCaptureCallbacks {
+  state: 'idle' | 'waiting' | 'recording' | 'finalizing';
+  source: 'master' | 'system' | 'mic';
+  monitor: boolean;
+  /** 1-based, for "recording at bar N…" and the ghost's landing spot. */
+  startBar: number;
+  onToggle(): void;
+  onSource(k: 'master' | 'system' | 'mic'): void;
+  onMonitor(): void;
+}
+
 export interface PerfUICallbacks {
   onPlay: () => void;
   onStop: () => void;
@@ -66,6 +77,9 @@ export interface PerfUICallbacks {
   /** Optional: build per-lane header controls (mute/solo + VU) for a lane row.
    *  Returns null when the lane isn't allocated (no strip). */
   buildLaneHeader?: (laneId: string) => HTMLElement | null;
+  /** Loop capture (● in the toolbar). Absent when no audio graph is wired —
+   *  the button doesn't render and the empty-state one stays disabled. */
+  capture?: PerfCaptureCallbacks;
 }
 
 type HostWithWheel = HTMLElement & { __wheelZoom?: EventListener };
@@ -131,7 +145,10 @@ function viewTemplate(state: ArrangementState, cb: PerfUICallbacks): TemplateRes
     : nothing}<div class="perf-row perf-droplane">${labelTemplate('＋ new lane')}<div
       class="perf-track"
       style="width:${totalBars * cb.pxPerBar}px"
-    ><div class="perf-dropzone">⇣ drop audio loops — each becomes an Audio lane, fitted to bars</div></div></div><div class="perf-playhead" id="perf-playhead"></div></div>`;
+    ><div class="perf-dropzone">⇣ drop audio loops — each becomes an Audio lane, fitted to bars</div>${cb.capture && cb.capture.state !== 'idle' ? html`<div
+      class=${'perf-capture-ghost ' + cb.capture.state}
+      style="left:${(cb.capture.startBar - 1) * cb.pxPerBar}px"
+    ></div>` : nothing}</div></div><div class="perf-playhead" id="perf-playhead"></div></div>`;
 }
 
 export function renderPerformanceView(host: HTMLElement, state: ArrangementState, cb: PerfUICallbacks): void {

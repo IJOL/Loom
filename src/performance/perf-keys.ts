@@ -16,6 +16,9 @@ export interface PerfActionDeps {
   splitBandsAt(ids: ReadonlySet<string>, sec: number): void;
   copyBands(ids: ReadonlySet<string>): void;
   pasteAtPlayhead(): void;
+  /** Escape: abort a loop capture in flight. Returns true when one WAS active
+   *  (the key is then consumed); false lets Escape keep its other meanings. */
+  cancelCapture?(): boolean;
 }
 
 function editingText(e: KeyboardEvent): boolean {
@@ -28,7 +31,9 @@ export function attachPerfActions(root: HTMLElement, deps: PerfActionDeps): () =
     if (!deps.isActive() || editingText(e)) return;
     const sel = deps.getSelection();
     const ctrl = e.ctrlKey || e.metaKey;
-    if ((e.key === 'Delete' || e.key === 'Backspace') && sel.size > 0) {
+    if (e.key === 'Escape' && deps.cancelCapture?.()) {
+      e.preventDefault();
+    } else if ((e.key === 'Delete' || e.key === 'Backspace') && sel.size > 0) {
       e.preventDefault(); deps.deleteBands(sel);
     } else if (ctrl && e.key.toLowerCase() === 'd' && sel.size > 0) {
       e.preventDefault(); deps.duplicateBands(sel);

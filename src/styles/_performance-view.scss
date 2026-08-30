@@ -208,3 +208,28 @@
 .performance-view .perf-lane-btn.launch-mute.active {
   background: #f0b429; color: #1a1a1a; border-color: #f0b429;
 }
+
+// ── Loop capture (●) ────────────────────────────────────────────────────────
+.performance-view .perf-capture-btn {
+  color: #e5484d; border-color: #e5484d; font-size: 13px; line-height: 1;
+  &.waiting { animation: perf-capture-blink 0.6s steps(1) infinite; }
+  &.recording, &.finalizing { background: #e5484d; color: #1a1a1a; }
+}
+.perf-empty-rec button.waiting { animation: perf-capture-blink 0.6s steps(1) infinite; }
+.perf-empty-rec button.recording, .perf-empty-rec button.finalizing {
+  background: #e5484d; color: #1a1a1a; border-color: #e5484d;
+}
+@keyframes perf-capture-blink { 50% { opacity: 0.25; } }
+.performance-view .perf-capture-source {
+  background: #242424; color: #ddd; border: 1px solid #3a3a3a; border-radius: 4px;
+  font-size: 11px; padding: 2px 4px; margin-left: 4px;
+}
+.performance-view .perf-capture-status {
+  margin-left: 6px; font-size: 11px; color: #8a8a8a;
+  &.rec { color: #e5484d; }
+}
+.performance-view .perf-capture-ghost {
+  position: absolute; top: 2px; bottom: 2px; width: 0;
+  background: rgba(229, 72, 77, 0.28); border: 1px solid rgba(229, 72, 77, 0.6);
+  border-radius: 4px; pointer-events: none;
+}

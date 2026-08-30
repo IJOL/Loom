@@ -43,7 +43,9 @@ import { moveEvent, resizeEvent, deleteEvent, clampMove } from '../performance/a
 import { findBand, setBandMuted, duplicateBand, splitBandAt } from '../performance/band-ops';
 import { attachPerfGestures } from '../performance/perf-gestures';
 import { attachPerfActions } from '../performance/perf-keys';
-import { attachPerfDrop } from '../performance/perf-ingest';
+import { attachPerfDrop, ingestDroppedFile, type PerfIngestDeps } from '../performance/perf-ingest';
+import { LoopCaptureController } from '../performance/loop-capture';
+import { createCaptureSessionFactory, takeToFile } from './loop-capture-wiring';
 import { getOrCreateLane } from '../performance/arrangement-ops';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
 import { buildSampleAsset, newSampleId } from '../samples/import';
@@ -83,6 +85,10 @@ export interface PerformanceFeatureDeps {
   /** Optional master meter tap — feeds the compact master VU in the Performance
    *  toolbar (the full master strip is hidden with the session root in Perf). */
   masterMeterAnalyser?: AnalyserNode;
+  /** audio-graph's masterComp.output — loop capture (and only that) records
+   *  from it. Optional: test fixtures build no audio graph, and without it the
+   *  ● button simply doesn't render. */
+  masterTap?: AudioNode;
   /** Optional #volume input — the Performance mini master fader proxies it. */
   volInput?: HTMLInputElement;
   /** Land a take curve whose knob is unmounted. Late-bound: automation-writes
@@ -137,6 +143,8 @@ export interface PerformanceFeature {
   arrangement: ArrangementState;
   arrangementPlayState: ArrangementPlayState;
   recHooks: RecHooks;
+  /** The ● loop capture — state readable by the UI; toggled from the toolbar. */
+  capture: LoopCaptureController;
   /** 'session', 'performance', or the id of a registered panel plugin. It is a
    *  string rather than a union because the host cannot know which panels
    *  exist until the plugins have loaded. */
@@ -270,6 +278,100 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     setTimeout(() => { t.classList.add('fade'); }, 1700);
     setTimeout(() => { t.remove(); }, 2200);
   };
+
+  // The ONE ingestion gate: dropped files and captured takes come through the
+  // same deps object, so a capture is a drop the app made for you — same lane
+  // builder, same undo shape, same persistence.
+  const ingestDeps: PerfIngestDeps = {
+    bpm: () => arrangement.bpm,
+    meter: () => seq.meter,
+    pxPerBar: () => pxPerBar,
+    importFile: async (file) => {
+      try {
+        const bytes = await file.arrayBuffer();
+        const buffer = await ctx.decodeAudioData(bytes.slice(0));
+        const asset = buildSampleAsset({
+          id: newSampleId(), name: file.name, mime: file.type || 'audio/wav',
+          bytes, buffer, createdAt: Date.now(),
+        });
+        sampleCache.put(asset.id, buffer);   // audible immediately
+        void sampleStore.put(asset);         // persisted for reload
+        return { sampleId: asset.id, durationSec: buffer.duration };
+      } catch (err) {
+        console.warn('[arrange-drop] decode failed for', file.name, err);
+        return null;
+      }
+    },
+    addLoopLane: (input) => {
+      // The session half: the stems door builds the Audio lane + the
+      // bar-fitted audioChannelClip (originalBpm IS the fit), undoably.
+      sessionHost.addStemLanes([input], { replace: false });
+      const lane = sessionHost.state.lanes[sessionHost.state.lanes.length - 1];
+      const clip = lane?.clips.find((c) => !!c);
+      return lane && clip ? { laneId: lane.id, clipId: clip.id } : null;
+    },
+    addBand: (laneId, clipId, atSec, durSec) => {
+      commitArrUndo();
+      const rec = getOrCreateLane(arrangement, laneId);
+      rec.clipEvents = [
+        ...rec.clipEvents,
+        { id: newBandId(), clipId, laneId, atSec, untilSec: atSec + durSec },
+      ].sort((a, b) => a.atSec - b.atSec); // the runtime pointers expect order
+      recomputeDurationSec(arrangement);
+    },
+    refresh: () => refreshPerformanceView(),
+  };
+
+  // Loop capture: ● in the Arrange toolbar. The controller is pure state; the
+  // session factory owns the audio graph half; delivery is a drop the app
+  // performs on itself through ingestDeps above.
+  let captureCount = 0;
+  const captureFactory = deps.masterTap ? createCaptureSessionFactory({
+    ctx,
+    masterTap: deps.masterTap,
+    getSource: () => appPrefs().captureSource,
+    getMonitor: () => appPrefs().captureMonitor,
+  }) : null;
+  const capture = new LoopCaptureController({
+    now: () => ctx.currentTime,
+    barSec: () => songBarSec(arrangement.bpm, seq.meter),
+    anchorCtx: () => arrangementPlayState.startedAtCtx,
+    isPlaying: () => arrangementPlayState.isPlaying,
+    startTransport: () => { playback.begin(); },
+    openSession: (onDone) => {
+      if (!captureFactory) return Promise.reject(new Error('no audio graph'));
+      return captureFactory(onDone);
+    },
+    deliver: (take, startSongSec) => {
+      const file = takeToFile(take, ++captureCount);
+      void (async () => {
+        const imported = await ingestDeps.importFile(file);
+        if (imported) ingestDroppedFile(ingestDeps, { name: file.name, ...imported }, startSongSec);
+      })();
+    },
+    onState: () => { refreshPerformanceView(); ensureCaptureRaf(); },
+    onError: (m) => flashToast(m),
+  });
+
+  // A small RAF that runs only while a capture is in flight: promotes
+  // waiting→recording at the bar, and lets the view layer update the live
+  // bar count + ghost band without a lit re-render (refresh REMOUNTS).
+  let captureRaf = 0;
+  let onCaptureFrame: () => void = () => {};
+  const captureRafTick = () => {
+    captureRaf = 0;
+    if (capture.getState() === 'idle') return;
+    const before = capture.getState();
+    capture.pump();
+    // pump's own state flip already refreshed the view via onState.
+    if (capture.getState() === before) onCaptureFrame();
+    captureRaf = requestAnimationFrame(captureRafTick);
+  };
+  function ensureCaptureRaf(): void {
+    if (captureRaf === 0 && capture.getState() !== 'idle') {
+      captureRaf = requestAnimationFrame(captureRafTick);
+    }
+  }
 
   const beforeEdit = () => commitArrUndo();
 
@@ -470,45 +572,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       moveBands: moveBandsBy,
       refresh: refreshPerformanceView,
     });
-    dropDetach ??= attachPerfDrop(host, {
-      bpm: () => arrangement.bpm,
-      meter: () => seq.meter,
-      pxPerBar: () => pxPerBar,
-      importFile: async (file) => {
-        try {
-          const bytes = await file.arrayBuffer();
-          const buffer = await ctx.decodeAudioData(bytes.slice(0));
-          const asset = buildSampleAsset({
-            id: newSampleId(), name: file.name, mime: file.type || 'audio/wav',
-            bytes, buffer, createdAt: Date.now(),
-          });
-          sampleCache.put(asset.id, buffer);   // audible immediately
-          void sampleStore.put(asset);         // persisted for reload
-          return { sampleId: asset.id, durationSec: buffer.duration };
-        } catch (err) {
-          console.warn('[arrange-drop] decode failed for', file.name, err);
-          return null;
-        }
-      },
-      addLoopLane: (input) => {
-        // The session half: the stems door builds the Audio lane + the
-        // bar-fitted audioChannelClip (originalBpm IS the fit), undoably.
-        sessionHost.addStemLanes([input], { replace: false });
-        const lane = sessionHost.state.lanes[sessionHost.state.lanes.length - 1];
-        const clip = lane?.clips.find((c) => !!c);
-        return lane && clip ? { laneId: lane.id, clipId: clip.id } : null;
-      },
-      addBand: (laneId, clipId, atSec, durSec) => {
-        commitArrUndo();
-        const rec = getOrCreateLane(arrangement, laneId);
-        rec.clipEvents = [
-          ...rec.clipEvents,
-          { id: newBandId(), clipId, laneId, atSec, untilSec: atSec + durSec },
-        ].sort((a, b) => a.atSec - b.atSec); // the runtime pointers expect order
-        recomputeDurationSec(arrangement);
-      },
-      refresh: refreshPerformanceView,
-    });
+    dropDetach ??= attachPerfDrop(host, ingestDeps);
     // Restore the remembered horizontal scroll ONCE per app run, then keep the
     // pref fresh (debounced) as the user scrolls.
     const scroller = host.querySelector('.perf-scroller') as HTMLElement | null;
@@ -552,6 +616,12 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
       splitBandsAt: (ids, sec) => editSelectedBands(ids, (evs, id) => splitBandAt(evs, id, sec, arrangement.bpm)),
       copyBands,
       pasteAtPlayhead,
+      cancelCapture: () => {
+        const s = capture.getState();
+        const active = s === 'waiting' || s === 'recording';
+        if (active) capture.cancel();
+        return active;
+      },
     });
     // Tear down the previous toolbar's VU meter(s) before renderPerformanceView
     // rebuilds them (each render constructs fresh meters and lit swaps the old
@@ -623,8 +693,33 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
           })
         : null,
       buildLaneHeader,
+      capture: captureFactory ? {
+        state: capture.getState(),
+        source: appPrefs().captureSource,
+        monitor: appPrefs().captureMonitor,
+        startBar: Math.floor(capture.info().startSongSec / songBarSec(arrangement.bpm, seq.meter)) + 1,
+        onToggle: () => { void capture.toggle(); },
+        onSource: (k) => { setAppPrefs({ captureSource: k }); refreshPerformanceView(); },
+        onMonitor: () => { setAppPrefs({ captureMonitor: !appPrefs().captureMonitor }); refreshPerformanceView(); },
+      } : undefined,
     });
   }
+
+  // Per-frame capture visuals: the live bar count and the ghost band growing
+  // toward the playhead. Direct DOM writes — a lit re-render mid-gesture
+  // REMOUNTS, and this runs every frame while recording.
+  onCaptureFrame = () => {
+    const host = document.getElementById('performance-view-root');
+    if (!host) return;
+    const inf = capture.info();
+    const count = host.querySelector('.perf-capture-count');
+    if (count) count.textContent = String(inf.barsElapsed);
+    const ghost = host.querySelector('.perf-capture-ghost') as HTMLElement | null;
+    if (ghost) {
+      const px = (playheadSec() - inf.startSongSec) / songBarSec(arrangement.bpm, seq.meter) * pxPerBar;
+      ghost.style.width = `${Math.max(0, px)}px`;
+    }
+  };
 
   function setMode(requested: string) {
     // A save made with a panel plugin installed names a mode this build may
@@ -671,6 +766,13 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
     // nothing sounds" and an instrument you can actually perform with.
     const isPanel = (m: string) => panelViews.ids.includes(m);
     const enginesChanged = !isPanel(mode) && !isPanel(next);
+    // Leaving Performance: a capture behaves per its own contract. When the
+    // engines are about to stop, that IS a transport stop for the capture
+    // (finalize at the last whole bar, or cancel); moving to a panel keeps
+    // the transport running, so only a countdown (waiting) is aborted.
+    if (mode === 'performance') {
+      if (enginesChanged) capture.onTransportStop(); else capture.onViewLeft();
+    }
     if (enginesChanged) {
       if (seq.isPlaying()) seq.stop();
       if (arrangementPlayState.isPlaying) stopArrangement(arrangementPlayState);
@@ -865,6 +967,10 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
 
   function onStop(): boolean {
     if (mode === 'performance') {
+      // Before the transport halts: keep the whole bars a running capture
+      // already played (or cancel it if none completed). The window post must
+      // land while the context clock still means something.
+      capture.onTransportStop();
       stopArrangement(arrangementPlayState);
       return true;
     }
@@ -876,6 +982,7 @@ export function createPerformanceFeature(deps: PerformanceFeatureDeps): Performa
 
   return {
     rec, arrangement, arrangementPlayState, recHooks,
+    capture,
     getMode: () => mode,
     setMode,
     setArrangement,

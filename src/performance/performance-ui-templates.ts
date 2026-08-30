@@ -75,7 +75,35 @@ export function toolbarTemplate(state: ArrangementState, cb: PerfUICallbacks): T
         title="Loop end (bar)"
         .value=${live(String(cb.loopEndBar))}
         @change=${commitLoop}
-      ></span> · <span class="perf-readout">${bars} bars · ${state.bpm} BPM</span>${cb.buildMaster?.() ?? nothing}</div>`;
+      ></span>${captureTemplate(cb)} · <span class="perf-readout">${bars} bars · ${state.bpm} BPM</span>${cb.buildMaster?.() ?? nothing}</div>`;
+}
+
+// ── Loop capture (●) ───────────────────────────────────────────────────────
+
+/** The ● looper controls: record toggle, sticky source, 🎧 for external
+ *  sources, and the waiting/recording status chip. Nothing renders without
+ *  cb.capture (test fixtures, no audio graph). The live bar count inside
+ *  `.perf-capture-count` is written per frame by the feature's capture RAF —
+ *  never re-rendered from here while a pointer might be down. */
+function captureTemplate(cb: PerfUICallbacks): TemplateResult | typeof nothing {
+  const cap = cb.capture;
+  if (!cap) return nothing;
+  return html` · <button
+      class=${'rnd perf-capture-btn ' + cap.state}
+      title=${cap.state === 'idle' ? 'Record a loop (starts next bar)' : 'Stop at the end of this bar'}
+      @click=${() => cap.onToggle()}
+    >●</button><select
+      class="perf-capture-source"
+      title="Capture source"
+      .value=${cap.source}
+      @change=${(e: Event) => cap.onSource((e.currentTarget as HTMLSelectElement).value as 'master' | 'system' | 'mic')}
+    ><option value="master">Master</option><option value="system">System</option><option value="mic">Mic</option></select>${cap.source !== 'master' ? html`<button
+      class=${'rnd perf-capture-monitor' + (cap.monitor ? ' primary' : '')}
+      title="Monitor the capture source"
+      @click=${() => cap.onMonitor()}
+    >🎧</button>` : nothing}${cap.state === 'waiting' ? html`<span
+      class="perf-capture-status">recording at bar ${cap.startBar}…</span>` : nothing}${cap.state === 'recording' || cap.state === 'finalizing' ? html`<span
+      class="perf-capture-status rec">● <span class="perf-capture-count">0</span> bars</span>` : nothing}`;
 }
 
 // ── Empty state ────────────────────────────────────────────────────────────
@@ -83,11 +111,17 @@ export function toolbarTemplate(state: ArrangementState, cb: PerfUICallbacks): T
 export function emptyTemplate(cb: PerfUICallbacks): TemplateResult {
   // The primary gesture IS the interface: an empty song invites loops. The
   // whole empty state is a live drop target (attachPerfDrop listens on the
-  // host); the record button ships disabled until the capture round.
+  // host); the record button is the other way in — enabled whenever the
+  // capture wiring exists (it doesn't in fixtures without an audio graph).
   return html`<div class="perf-empty"><div class="perf-empty-drop perf-dropzone">
         <p class="perf-empty-big">Drop audio loops to start</p>
         <p>each loop becomes a lane, fitted to the session tempo</p>
-        <p class="perf-empty-rec"><button disabled title="Record a loop — coming in the capture round">● Record a loop</button></p>
+        <p class="perf-empty-rec"><button
+          ?disabled=${!cb.capture}
+          class=${cb.capture?.state ?? ''}
+          title="Record a loop (starts next bar)"
+          @click=${() => cb.capture?.onToggle()}
+        >● Record a loop</button></p>
       </div>
       <p>…or arm <b>REC</b>, go back to Session, launch clips and move knobs.</p>
       <button class="perf-empty-back" @click=${cb.onGoToSession}>Back to Session</button></div>`;

@@ -245,6 +245,57 @@ describe('renderPerformanceView', () => {
     expect(host.querySelector('.perf-auto-header .perf-brush-bar')).toBeTruthy();
   });
 
+  const makeCapture = (over: Partial<NonNullable<PerfUICallbacks['capture']>> = {}) => ({
+    state: 'idle' as const, source: 'master' as const, monitor: false, startBar: 1,
+    onToggle: vi.fn(), onSource: vi.fn(), onMonitor: vi.fn(),
+    ...over,
+  });
+
+  it('toolbar shows the capture button and reflects the recording state', () => {
+    const host = document.createElement('div');
+    const cap = makeCapture({ state: 'recording' });
+    renderPerformanceView(host, makeState(), makeCb({ capture: cap } as never));
+    const btn = host.querySelector('.perf-capture-btn') as HTMLButtonElement;
+    expect(btn.classList.contains('recording')).toBe(true);
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(cap.onToggle).toHaveBeenCalledTimes(1);
+    const sel = host.querySelector('.perf-capture-source') as HTMLSelectElement;
+    expect(sel.value).toBe('master');
+    // master source is already audible — no 🎧
+    expect(host.querySelector('.perf-capture-monitor')).toBeNull();
+  });
+
+  it('external sources show the 🎧 monitor toggle; waiting shows the start bar', () => {
+    const host = document.createElement('div');
+    const cap = makeCapture({ state: 'waiting', source: 'mic', startBar: 3 });
+    renderPerformanceView(host, makeState(), makeCb({ capture: cap } as never));
+    expect(host.querySelector('.perf-capture-monitor')).toBeTruthy();
+    expect(host.querySelector('.perf-capture-status')!.textContent).toContain('bar 3');
+  });
+
+  it('empty state record button is ENABLED and triggers the capture toggle', () => {
+    const host = document.createElement('div');
+    const cap = makeCapture();
+    renderPerformanceView(host, makeState({ durationSec: 0, lanes: [] }), makeCb({ capture: cap } as never));
+    const btn = host.querySelector('.perf-empty-rec button') as HTMLButtonElement;
+    expect(btn.disabled).toBe(false);
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(cap.onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('the droplane row carries the ghost while capture is active', () => {
+    const host = document.createElement('div');
+    const cap = makeCapture({ state: 'waiting', startBar: 2 });
+    renderPerformanceView(host, makeState(), makeCb({ capture: cap } as never));
+    const ghost = host.querySelector('.perf-droplane .perf-capture-ghost') as HTMLElement;
+    expect(ghost).toBeTruthy();
+    expect(ghost.style.left).toBe('80px'); // (startBar 2 → bar index 1) * 80px
+    // …and none when idle
+    const host2 = document.createElement('div');
+    renderPerformanceView(host2, makeState(), makeCb({ capture: makeCapture() } as never));
+    expect(host2.querySelector('.perf-capture-ghost')).toBeNull();
+  });
+
   it('switches the brush and highlights the active button', () => {
     const host = document.createElement('div');
     const cb = makeCb();

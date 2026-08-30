@@ -652,6 +652,8 @@ const performanceFeature = createPerformanceFeature({
   // The full master strip is hidden with the session root in Performance mode;
   // these feed the compact master (VU + #volume-proxy fader) in the perf toolbar.
   masterMeterAnalyser, volInput,
+  // The same node the ⏱ live take records — loop capture's master source.
+  masterTap: masterComp.output,
   // Arrangement reached the end (song mode): halt the engine + reset the Play
   // button so the next Play restarts from the top.
   onArrangementEnd: () => { _origStop(); setPlaying(playBtn, false); },
