@@ -1,4 +1,4 @@
-import type { ArrangementState } from './performance';
+import type { ArrangementLaneRec, ArrangementState } from './performance';
 import { AUTOMATION_SUB_RES } from '../core/pattern';
 import { stepsPerSec } from './performance';
 import { sampleAutomationAt } from './arrangement-ops';
@@ -43,6 +43,31 @@ export function stopArrangement(ps: ArrangementPlayState): void {
 /** Point every lane's launch/stop pointers at `atSec` (skipping events already
  *  finished by then) and relaunch the clip spanning `atSec` at `relaunchAtCtx`.
  *  Shared by the A-B loop wrap and the loop-start seek (startArrangementAt). */
+/** One lane's half of anchorLanesAt: point its launch/stop pointers at `atSec`
+ *  and relaunch the band spanning it. Exported on its own for the un-solo path,
+ *  which re-anchors exactly the lanes that just came back to the arrangement. */
+export function anchorLaneAt(
+  ps: ArrangementPlayState,
+  lane: ArrangementLaneRec,
+  atSec: number,
+  relaunchAtCtx: number,
+  onLaunchClip: (laneId: string, clipId: string, atCtx: number) => void,
+): void {
+  let idx = 0;
+  let stopIdx = 0;
+  let active: typeof lane.clipEvents[number] | undefined;
+  for (let i = 0; i < lane.clipEvents.length; i++) {
+    const ev = lane.clipEvents[i];
+    // A clip spanning atSec (starts before, ends after) keeps sounding → relaunch.
+    if (ev.atSec < atSec && atSec < ev.untilSec) active = ev;
+    if (ev.atSec < atSec) idx = i + 1;
+    if (Number.isFinite(ev.untilSec) && ev.untilSec <= atSec) stopIdx = i + 1;
+  }
+  ps.nextEventIdxPerLane.set(lane.laneId, idx);
+  ps.nextStopIdxPerLane.set(lane.laneId, stopIdx);
+  if (active && !active.muted) onLaunchClip(lane.laneId, active.clipId, relaunchAtCtx);
+}
+
 function anchorLanesAt(
   ps: ArrangementPlayState,
   state: ArrangementState,
@@ -50,21 +75,7 @@ function anchorLanesAt(
   relaunchAtCtx: number,
   onLaunchClip: (laneId: string, clipId: string, atCtx: number) => void,
 ): void {
-  for (const lane of state.lanes) {
-    let idx = 0;
-    let stopIdx = 0;
-    let active: typeof lane.clipEvents[number] | undefined;
-    for (let i = 0; i < lane.clipEvents.length; i++) {
-      const ev = lane.clipEvents[i];
-      // A clip spanning atSec (starts before, ends after) keeps sounding → relaunch.
-      if (ev.atSec < atSec && atSec < ev.untilSec) active = ev;
-      if (ev.atSec < atSec) idx = i + 1;
-      if (Number.isFinite(ev.untilSec) && ev.untilSec <= atSec) stopIdx = i + 1;
-    }
-    ps.nextEventIdxPerLane.set(lane.laneId, idx);
-    ps.nextStopIdxPerLane.set(lane.laneId, stopIdx);
-    if (active && !active.muted) onLaunchClip(lane.laneId, active.clipId, relaunchAtCtx);
-  }
+  for (const lane of state.lanes) anchorLaneAt(ps, lane, atSec, relaunchAtCtx, onLaunchClip);
 }
 
 /** Start playback with the playhead seeked to `startSec` (e.g. the A of an
@@ -89,8 +100,11 @@ export function overrideLane(ps: ArrangementPlayState, laneId: string): void {
   ps.laneOverridden.set(laneId, true);
 }
 
-export function backToArrangement(ps: ArrangementPlayState): void {
-  ps.laneOverridden.clear();
+/** Clear one lane's override (the un-solo/un-mute path), or every override
+ *  when no lane is named (the original whole-take reset). */
+export function backToArrangement(ps: ArrangementPlayState, laneId?: string): void {
+  if (laneId !== undefined) ps.laneOverridden.delete(laneId);
+  else ps.laneOverridden.clear();
 }
 
 export function isLaneOverridden(ps: ArrangementPlayState, laneId: string): boolean {

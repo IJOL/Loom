@@ -22,6 +22,7 @@ import type { ArrangementState } from '../performance/performance';
 import { arrangementLoopWindowSec } from '../performance/arrangement-ops';
 import {
   startArrangementAt, stopArrangement, tickArrangement, arrangementPlayhead,
+  overrideLane, backToArrangement, isLaneOverridden, anchorLaneAt,
   type ArrangementPlayState,
 } from '../performance/arrangement-runtime';
 import { launchClipAtTime, stopLane, stopAll, type RecHooks } from '../session/session-runtime';
@@ -62,6 +63,13 @@ export interface ArrangementPlayback {
   begin(): void;
   /** One look-ahead frame. The caller ticks this ONLY in Performance mode. */
   tick(nowCtx: number, lookaheadSec: number): void;
+  /** Launch-mute one lane: the arrangement stops driving it (launches AND
+   *  automation), and what already sounds leaves at the next bar. */
+  setLaunchMute(laneId: string, on: boolean): void;
+  /** Launch-solo: every OTHER arrangement lane is launch-muted. null clears. */
+  setLaunchSolo(laneId: string | null): void;
+  /** What the lane headers paint. */
+  getLaunchState(): { solo: string | null; muted: ReadonlySet<string> };
 }
 
 export function createArrangementPlayback(deps: ArrangementPlaybackDeps): ArrangementPlayback {
@@ -154,6 +162,60 @@ export function createArrangementPlayback(deps: ArrangementPlaybackDeps): Arrang
     playheadRaf = animating ? requestAnimationFrame(rafPlayhead) : 0;
   }
 
+  // ---- Launch-solo / launch-mute -------------------------------------------
+  // The gate is the dormant per-lane override in the runtime: an overridden lane
+  // receives no launches and no automation from the take. Sounding audio leaves
+  // musically — a bar-quantized stop through the SAME queuedStop door a scene
+  // launch uses — and a freed lane is re-anchored into the band under the
+  // playhead, exactly the way a seek relaunches.
+  const launchMuted = new Set<string>();
+  let launchSolo: string | null = null;
+
+  function overrideTargets(): Set<string> {
+    const t = new Set(launchMuted);
+    if (launchSolo !== null) {
+      for (const l of arrangement.lanes) if (l.laneId !== launchSolo) t.add(l.laneId);
+    }
+    return t;
+  }
+
+  function applyLaunchGate() {
+    const targets = overrideTargets();
+    const barSec = songBarSec(arrangement.bpm, seq.meter);
+    const tNow = arrangementPlayhead(ps, ctx.currentTime);
+    const stopAtCtx = ps.startedAtCtx + Math.ceil(tNow / barSec) * barSec;
+    for (const laneId of targets) {
+      if (isLaneOverridden(ps, laneId)) continue;
+      overrideLane(ps, laneId);
+      if (!ps.isPlaying) continue;
+      const lp = sessionHost.laneStates.get(laneId);
+      if (lp) { lp.queued = null; lp.queuedStop = stopAtCtx; }
+    }
+    for (const laneId of [...ps.laneOverridden.keys()]) {
+      if (targets.has(laneId)) continue;
+      backToArrangement(ps, laneId);
+      const lp = sessionHost.laneStates.get(laneId);
+      if (lp) lp.queuedStop = null;
+      if (!ps.isPlaying) continue;
+      const lane = arrangement.lanes.find((l) => l.laneId === laneId);
+      if (lane) anchorLaneAt(ps, lane, tNow, ctx.currentTime, onLaunchClip);
+    }
+  }
+
+  function setLaunchMute(laneId: string, on: boolean) {
+    if (on) launchMuted.add(laneId); else launchMuted.delete(laneId);
+    applyLaunchGate();
+  }
+
+  function setLaunchSolo(laneId: string | null) {
+    launchSolo = laneId;
+    applyLaunchGate();
+  }
+
+  function getLaunchState() {
+    return { solo: launchSolo, muted: new Set(launchMuted) };
+  }
+
   function begin() {
     // With an active A-B loop, Play starts at A (the marked point); otherwise at
     // the top.
@@ -174,5 +236,5 @@ export function createArrangementPlayback(deps: ArrangementPlaybackDeps): Arrang
     if (playheadRaf === 0) playheadRaf = requestAnimationFrame(rafPlayhead);
   }
 
-  return { begin, tick };
+  return { begin, tick, setLaunchMute, setLaunchSolo, getLaunchState };
 }
