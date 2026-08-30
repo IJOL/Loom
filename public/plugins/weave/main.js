@@ -326,15 +326,36 @@ function poolEditor(laneId, ctx, repaint) {
     });
     wrap.appendChild(item);
   });
-  wrap.appendChild(picker(
-    "weave-pool-add",
-    `Add a loop to what ${laneId} plays`,
-    loops,
-    "",
-    (id) => {
-      write([...ids, id]);
-    }
-  ));
+  const shelves = [...new Set(loops.map((l) => l.group ?? "Other"))];
+  const remembered = poolShelf.get(laneId);
+  const shelf = remembered !== void 0 && shelves.includes(remembered) ? remembered : shelves[0] ?? "";
+  const shelfPick = el2("select", "weave-pool-shelf");
+  shelfPick.setAttribute("aria-label", `Which shelf ${laneId} adds loops from`);
+  for (const s of shelves) {
+    const o = el2("option", void 0, s);
+    o.value = s;
+    shelfPick.appendChild(o);
+  }
+  shelfPick.value = shelf;
+  const addHost = el2("span", "weave-pool-add-host");
+  const paintAdd = (forShelf) => {
+    const subset = loops.filter((l) => (l.group ?? "Other") === forShelf).map(({ id, name }) => ({ id, name }));
+    addHost.replaceChildren(picker(
+      "weave-pool-add",
+      `Add a loop to what ${laneId} plays`,
+      subset,
+      "",
+      (id) => {
+        write([...ids, id]);
+      }
+    ));
+  };
+  paintAdd(shelf);
+  shelfPick.addEventListener("change", () => {
+    poolShelf.set(laneId, shelfPick.value);
+    paintAdd(shelfPick.value);
+  });
+  wrap.append(shelfPick, addHost);
   return wrap;
 }
 function weaveCell(laneId, ctx, loops, onChanged) {
@@ -526,6 +547,7 @@ function noteStrip(laneId, ctx) {
   return { el: cv, draw };
 }
 var openSlot = /* @__PURE__ */ new Map();
+var poolShelf = /* @__PURE__ */ new Map();
 function buildLaneRow(lane, ctx, engines) {
   const row = el2("div", "weave-lane");
   const meter = Loom.controls.levelMeter();

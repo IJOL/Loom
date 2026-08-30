@@ -293,7 +293,10 @@
   &:hover { color: var(--amber); }
 }
 
-.weave-pool-add {
+// The shelf select (WHERE to add from) and the loop select (WHAT) dress alike:
+// they are the two halves of one add control.
+.weave-pool-add,
+.weave-pool-shelf {
   background: var(--surface-2);
   color: var(--text);
   border: 1px solid var(--border);
@@ -302,6 +305,10 @@
   font-size: 10px;
   max-width: 12ch;
 }
+
+// The shelf names run to "Drums · liquid-dnb"; the loop select keeps the short
+// cap so the line stays readable, the shelf gets the room its names need.
+.weave-pool-shelf { max-width: 18ch; }
 
 // ── lanes ──────────────────────────────────────────────────────────────────
 .weave-lanes { display: flex; flex-direction: column; gap: 5px; }

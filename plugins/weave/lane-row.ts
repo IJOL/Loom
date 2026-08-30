@@ -227,10 +227,46 @@ function poolEditor(
     wrap.appendChild(item);
   });
 
-  // Adding goes through the same picker the cell's slots use, so a list can
-  // only ever name material this lane is actually offered.
-  wrap.appendChild(picker('weave-pool-add', `Add a loop to what ${laneId} plays`,
-    loops, '', (id) => { write([...ids, id]); }));
+  // Adding used to be ONE select over the whole wide list — every style times
+  // every kind, hundreds of entries — which is not a choice, it is a search.
+  // Same cure the step rack's destination picker got: WHERE first (a shelf —
+  // this lane's clips, chords, or one kind·style of the library), then WHAT,
+  // and the second select only ever holds that one shelf's loops. The shelf
+  // strings are the groups the wide list already carries, so no second
+  // taxonomy exists to drift from the first.
+  const shelves = [...new Set(loops.map((l) => l.group ?? 'Other'))];
+  const remembered = poolShelf.get(laneId);
+  const shelf = remembered !== undefined && shelves.includes(remembered)
+    ? remembered
+    : shelves[0] ?? '';
+
+  const shelfPick = el('select', 'weave-pool-shelf') as HTMLSelectElement;
+  shelfPick.setAttribute('aria-label', `Which shelf ${laneId} adds loops from`);
+  for (const s of shelves) {
+    const o = el('option', undefined, s) as HTMLOptionElement;
+    o.value = s;
+    shelfPick.appendChild(o);
+  }
+  shelfPick.value = shelf;
+
+  // Refilled in place rather than repainting the editor: a repaint would also
+  // rebuild the select the pointer is on, and picking a shelf must not cost
+  // the click that was about to pick a loop.
+  const addHost = el('span', 'weave-pool-add-host');
+  const paintAdd = (forShelf: string) => {
+    // Group stripped: one shelf needs no optgroup heading repeating its name.
+    const subset = loops.filter((l) => (l.group ?? 'Other') === forShelf)
+      .map(({ id, name }) => ({ id, name }));
+    addHost.replaceChildren(picker('weave-pool-add', `Add a loop to what ${laneId} plays`,
+      subset, '', (id) => { write([...ids, id]); }));
+  };
+  paintAdd(shelf);
+  shelfPick.addEventListener('change', () => {
+    poolShelf.set(laneId, shelfPick.value);
+    paintAdd(shelfPick.value);
+  });
+
+  wrap.append(shelfPick, addHost);
   return wrap;
 }
 
@@ -547,6 +583,13 @@ function noteStrip(
  *  1's dropdown, which reads exactly as "it did not take". Reported as "no lo
  *  pone y salta a layer 1", for the preset AND for the engine. */
 const openSlot = new Map<string, number>();
+
+/** Which SHELF a lane's PLAYS-list add picker is on. Module state for the same
+ *  reason `openSlot` is: every add to the list ends in a repaint of the pool
+ *  editor, and a local would reset the filter to the first shelf at exactly
+ *  the moment the user is adding several loops from the same style. A view
+ *  preference — never saved, survives the panel remounting. */
+const poolShelf = new Map<string, string>();
 
 export function buildLaneRow(
   lane: { id: string; name: string; engineId: string; presetId?: string },

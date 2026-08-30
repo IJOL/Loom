@@ -506,7 +506,7 @@
         },
         {
           "id": "filter2.resonance",
-          "label": "Res",
+          "label": "Resonance",
           "kind": "continuous",
           "min": 0,
           "max": 1,
