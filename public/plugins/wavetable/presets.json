@@ -492,6 +492,89 @@
         "amp.sustain": 0.85,
         "amp.release": 0.12
       }
+    },
+    {
+      "name": "PAD Spectral Drift",
+      "gm": [88, 89],
+      "params": {
+        "osc.waveA": 5,
+        "osc.waveB": 7,
+        "osc.morph": 0.5,
+        "osc.detune": 6,
+        "osc.spectral": 1,
+        "osc.spectralAmt": 0.35,
+        "filter.cutoff": 0.7,
+        "filter.resonance": 0.15,
+        "amp.attack": 0.6,
+        "amp.decay": 0.8,
+        "amp.sustain": 0.8,
+        "amp.release": 1.4
+      },
+      "modulators": [
+        {
+          "id": "lfo-warp",
+          "kind": "lfo",
+          "enabled": true,
+          "connections": [{ "id": "c-warp", "paramId": "osc.spectralAmt", "depth": 0.35 }],
+          "rateHz": 0.18,
+          "waveform": "sine",
+          "bipolar": true,
+          "syncToBpm": false,
+          "syncBars": 0.25,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared"
+        }
+      ]
+    },
+    {
+      "name": "KEYS Random Bells",
+      "gm": [9, 14],
+      "params": {
+        "osc.waveA": 6,
+        "osc.waveB": 0,
+        "osc.morph": 0.3,
+        "osc.detune": 2,
+        "osc.spectral": 3,
+        "osc.spectralAmt": 0.8,
+        "filter.cutoff": 0.85,
+        "filter.resonance": 0.1,
+        "amp.attack": 0.003,
+        "amp.decay": 1.1,
+        "amp.sustain": 0.12,
+        "amp.release": 0.9
+      }
+    },
+    {
+      "name": "LEAD Stretched Metal",
+      "gm": [84, 87],
+      "params": {
+        "osc.waveA": 2,
+        "osc.waveB": 3,
+        "osc.morph": 0.4,
+        "osc.detune": 9,
+        "osc.spectral": 0,
+        "osc.spectralAmt": 0.45,
+        "filter.cutoff": 0.75,
+        "filter.resonance": 0.3,
+        "amp.attack": 0.01,
+        "amp.decay": 0.35,
+        "amp.sustain": 0.65,
+        "amp.release": 0.25
+      },
+      "modulators": [
+        {
+          "id": "adsr-warp",
+          "kind": "adsr",
+          "enabled": true,
+          "connections": [{ "id": "c-warp", "paramId": "osc.spectralAmt", "depth": 0.4 }],
+          "attackSec": 0.005,
+          "decaySec": 0.5,
+          "sustain": 0.1,
+          "releaseSec": 0.3,
+          "scope": "per-voice"
+        }
+      ]
     }
   ]
 }

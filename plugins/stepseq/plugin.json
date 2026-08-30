@@ -1,0 +1,24 @@
+{
+  "id": "stepseq",
+  "name": "Steps",
+  "version": "1.0.0",
+  "loomApi": 1,
+  "author": "Loom",
+  "dsp": "dsp.js",
+  "main": "main.js",
+  "components": [
+    {
+      "kind": "modulator",
+      "id": "stepseq",
+      "name": "Steps",
+      "params": [
+        { "id": "rate",    "label": "Rate",  "kind": "continuous", "min": 0.5, "max": 32, "default": 8, "unit": "Hz" },
+        { "id": "steps",   "label": "Steps", "kind": "continuous", "min": 2,   "max": 16, "default": 8 },
+        { "id": "glide",   "label": "Glide", "kind": "continuous", "min": 0,   "max": 1,  "default": 0 },
+        { "id": "bipolar", "label": "Polarity", "kind": "discrete", "min": 0,  "max": 1,  "default": 0,
+          "options": [{ "value": "unipolar", "label": "Unipolar" }, { "value": "bipolar", "label": "Bipolar" }] }
+      ],
+      "modulator": { "driver": "time", "scopes": ["shared", "per-voice"], "idPrefix": "seq" }
+    }
+  ]
+}

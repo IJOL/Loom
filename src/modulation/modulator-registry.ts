@@ -8,6 +8,14 @@ import type { ModulatorState, ModulatorScope, ModulatorVoice } from './types';
 import type { EngineParamSpec } from '../engines/engine-params';
 import type { PanelCtx } from './mod-ui-shared';
 
+/** The read/write surface a component's own DOM config gets over the numeric
+ *  bag. Deliberately the WHOLE api: a plugin's compiled main.js needs nothing
+ *  of ours to build an editor — elements plus these two calls. */
+export interface ModulatorConfigApi {
+  get(key: string, def: number): number;
+  set(key: string, value: number): void;
+}
+
 export interface ModulatorComponent {
   id: string;
   name: string;
@@ -28,6 +36,13 @@ export interface ModulatorComponent {
   /** Optional hand-built config row, for a panel the generic grid cannot
    *  express. The LFO has one by legacy, not by rule. */
   configTemplate?(mod: ModulatorState, ctx: PanelCtx): TemplateResult;
+  /** Optional hand-built DOM config — the route a PLUGIN takes for an editor
+   *  the generic grid cannot express (a step sequencer's bars): its compiled
+   *  main.js cannot import our bundled lit-html, but it can build elements.
+   *  Mounted ONCE per (lane, modulator) and reused across repaints, so a
+   *  pointer mid-drag never loses the element it is holding. Wins over
+   *  configTemplate and the generic grid when present. */
+  configMount?(root: HTMLElement, api: ModulatorConfigApi): void;
   createVoice(
     ctx: AudioContext,
     opts: { state: ModulatorState; bpm: () => number },

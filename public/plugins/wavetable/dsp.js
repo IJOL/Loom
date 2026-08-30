@@ -347,6 +347,71 @@ function getWaveTables() {
   if (!cache) cache = WAVETABLES.map(synth);
   return cache;
 }
+var SPECTRAL_MODES = ["Stretch", "Smear", "Low-pass", "Random"];
+var SPECTRAL_STEPS = 32;
+function hash01(n) {
+  let h = (n ^ 2654435769) >>> 0;
+  h = Math.imul(h ^ h >>> 16, 73244475) >>> 0;
+  h = Math.imul(h ^ h >>> 16, 73244475) >>> 0;
+  return ((h ^ h >>> 16) >>> 0) / 4294967295;
+}
+function warpSpec(src, mode, amt, waveIdx) {
+  const real = new Float32Array(HARMONICS);
+  const imag = new Float32Array(HARMONICS);
+  if (mode === 0) {
+    const f = 1 + amt;
+    for (let k = 1; k < HARMONICS; k++) {
+      const kk = Math.round(k * f);
+      if (kk < HARMONICS) {
+        real[kk] += src.real[k];
+        imag[kk] += src.imag[k];
+      }
+    }
+  } else if (mode === 1) {
+    const w = Math.max(1, Math.round(amt * 6));
+    for (let k = 1; k < HARMONICS; k++) {
+      let r = 0;
+      let i2 = 0;
+      let cnt = 0;
+      for (let j = Math.max(1, k - w); j <= Math.min(HARMONICS - 1, k + w); j++) {
+        r += src.real[j];
+        i2 += src.imag[j];
+        cnt++;
+      }
+      real[k] = r / cnt;
+      imag[k] = i2 / cnt;
+    }
+  } else if (mode === 2) {
+    const kc = 1 + (HARMONICS - 1) * Math.pow(1 - amt, 2);
+    for (let k = 1; k < HARMONICS; k++) {
+      const g = k <= kc ? 1 : Math.exp(-(k - kc) / 2);
+      real[k] = src.real[k] * g;
+      imag[k] = src.imag[k] * g;
+    }
+  } else {
+    for (let k = 1; k < HARMONICS; k++) {
+      const g = 1 - amt + amt * 1.5 * hash01(k * 31 + waveIdx * 977);
+      real[k] = src.real[k] * g;
+      imag[k] = src.imag[k] * g;
+    }
+  }
+  return { name: src.name, real, imag };
+}
+var warped = /* @__PURE__ */ new Map();
+function getWarpedTable(waveIdx, mode, step) {
+  const tables = getWaveTables();
+  const wi = Math.max(0, Math.min(tables.length - 1, Math.round(waveIdx)));
+  const s = Math.max(0, Math.min(SPECTRAL_STEPS, Math.round(step)));
+  if (s === 0) return tables[wi];
+  const m = Math.max(0, Math.min(SPECTRAL_MODES.length - 1, Math.round(mode)));
+  const key = wi << 16 | m << 8 | s;
+  const hit = warped.get(key);
+  if (hit) return hit;
+  if (warped.size > 96) warped.clear();
+  const t = synth(warpSpec(WAVETABLES[wi], m, s / SPECTRAL_STEPS, wi));
+  warped.set(key, t);
+  return t;
+}
 
 // plugins/wavetable/dsp.ts
 var MOD_DETUNE_CENTS = 50;
@@ -362,8 +427,13 @@ var WavetableRenderer = class {
     const tables = getWaveTables();
     const ai = Math.max(0, Math.min(tables.length - 1, Math.round(param(p, "osc.waveA", 2))));
     const bi = Math.max(0, Math.min(tables.length - 1, Math.round(param(p, "osc.waveB", 3))));
-    this.tA = tables[ai];
-    this.tB = tables[bi];
+    this.waveA = ai;
+    this.waveB = bi;
+    this.specMode = param(p, "osc.spectral", 0);
+    this.spectralBase = clamp01(param(p, "osc.spectralAmt", 0));
+    this.specStep = Math.round(this.spectralBase * SPECTRAL_STEPS);
+    this.tA = getWarpedTable(ai, this.specMode, this.specStep);
+    this.tB = getWarpedTable(bi, this.specMode, this.specStep);
     this.morphBase = param(p, "osc.morph", 0);
     this.detuneBase = param(p, "osc.detune", 0);
     this.f0 = midiToFreq(note.midi);
@@ -381,6 +451,15 @@ var WavetableRenderer = class {
   }
   tA;
   tB;
+  // Spectral warp: the MODE is structural (frozen at trigger); the AMOUNT is
+  // live and quantised to SPECTRAL_STEPS, so moving it swaps precomputed
+  // tables (cached in wavetable-data) — phase carries across the swap.
+  waveA;
+  waveB;
+  specMode;
+  spectralBase;
+  sSpectral = -1;
+  specStep;
   phA = 0;
   phB = 0;
   f0;
@@ -437,6 +516,7 @@ var WavetableRenderer = class {
   setLiveValues(values, index) {
     this.live = values;
     this.sMorph = slotOf(index, "osc.morph");
+    this.sSpectral = slotOf(index, "osc.spectralAmt");
     this.sDetune = slotOf(index, "osc.detune");
     this.sCutoff = slotOf(index, "filter.cutoff");
     this.sRes = slotOf(index, "filter.resonance");
@@ -451,6 +531,14 @@ var WavetableRenderer = class {
     const detuneKnob = L && this.sDetune >= 0 ? L[this.sDetune] : this.detuneBase;
     const cutoffKnob = L && this.sCutoff >= 0 ? L[this.sCutoff] : this.cutoffBase;
     const qKnob = L && this.sRes >= 0 ? clamp01(L[this.sRes]) : this.qBase;
+    const spectralKnob = L && this.sSpectral >= 0 ? clamp01(L[this.sSpectral]) : this.spectralBase;
+    const spectralEff = mo?.[this.sSpectral] ? clamp01(spectralKnob + mo[this.sSpectral]) : spectralKnob;
+    const step = Math.round(spectralEff * SPECTRAL_STEPS);
+    if (step !== this.specStep) {
+      this.specStep = step;
+      this.tA = getWarpedTable(this.waveA, this.specMode, step);
+      this.tB = getWarpedTable(this.waveB, this.specMode, step);
+    }
     const morph = mo?.[this.sMorph] ? clamp01(morphKnob + mo[this.sMorph]) : morphKnob;
     const gA = Math.cos(morph * Math.PI * 0.5);
     const gB = Math.sin(morph * Math.PI * 0.5);

@@ -71,6 +71,31 @@ function buildControl(mod: ModulatorState, ctx: PanelCtx, spec: EngineParamSpec)
   return knob.el;
 }
 
+/** The config row for a component that brings its own DOM builder
+ *  (`configMount`) — a plugin's custom editor. Mounted once through the same
+ *  ControlCache the knobs use, so the ELEMENT survives repaints; lit-html only
+ *  re-slots the cached node. The api closes over `mod`, whose object identity
+ *  the host keeps stable across renders. */
+export function pluginConfigTemplate(
+  comp: ModulatorComponent, mod: ModulatorState, ctx: PanelCtx,
+): TemplateResult {
+  const { deps, cache } = ctx;
+  const id = `${deps.laneId}.mod.${mod.id}.__mount`;
+  const { el } = cache.get(id, () => {
+    const root = document.createElement('div');
+    root.className = 'mod-card-config mod-plugin-config';
+    comp.configMount!(root, {
+      get: (key, def) => mod.params?.[key] ?? def,
+      set: (key, v) => {
+        (mod.params ??= {})[key] = v;
+        sync(deps);   // push to the live engine — without this the worklet never hears it
+      },
+    });
+    return { el: root };
+  });
+  return html`${el}`;
+}
+
 /** Built from `comp.params` — empty when the component declares none, which
  *  keeps a component with a hand-built `configTemplate` (LFO, ADSR) from ever
  *  reaching this path (see configRowFor in modulation-ui.ts). */

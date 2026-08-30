@@ -22,7 +22,7 @@ import { registerRenderer } from '../audio-dsp/renderer-registry';
 import { registerModulatorKernel } from '../audio-dsp/modulator-kernels';
 import { getCachedPresets } from '../presets/preset-loader';
 import { registerEngineCapabilities, unregisterEngineCapabilities, __resetCapabilities } from '../plugins/capabilities';
-import { registerModulator, unregisterModulator, type ModulatorComponent } from '../modulation/modulator-registry';
+import { registerModulator, unregisterModulator, getModulator, type ModulatorComponent } from '../modulation/modulator-registry';
 import { registerPlugin, unregisterPlugin } from '../plugins/registry';
 import type { ModulatorState } from '../modulation/types';
 
@@ -257,6 +257,17 @@ export function installMainThreadLoomApi(): void {
       registerModulatorKernel: (kernel: { id: string; valueAt(m: ModLiteLike, t: number, origin: number): number }) =>
         registerModulatorKernel(kernel),
       registerFx: (id: string, create: FxFactory) => registerFxFactory(id, create),
+      // A modulator's custom config editor arrives the same two-halves way an
+      // fx factory does: the component from the manifest, the function from
+      // main.js. plugin-host imports main.js AFTER adopting components, so the
+      // component is always there to patch; an id nothing declared is a
+      // manifest/typo bug and must fail the plugin (rollback + load report),
+      // never install a mount under an undeclared name.
+      registerModulatorUI: (id: string, mount: ModulatorComponent['configMount']) => {
+        const c = getModulator(id);
+        if (!c) throw new Error(`registerModulatorUI: no modulator component '${id}' is adopted`);
+        c.configMount = mount;
+      },
       // A panel component declares itself in the manifest and delivers its
       // mount function here, exactly as an fx declares itself and delivers its
       // factory — a function cannot travel as JSON.

@@ -43,6 +43,51 @@ beforeEach(() => {
   document.body.appendChild(container);
 });
 
+// A component that brings its own DOM config — the shape a PLUGIN modulator
+// with a custom editor (the step sequencer) takes: no lit-html, just a root
+// element and a tiny read/write api over the numeric bag.
+const seqStub: ModulatorComponent = {
+  id: 'seq', name: 'Seq', driver: 'time', scopes: ['shared'], idPrefix: 'seq',
+  defaultState: (id): ModulatorState => ({
+    id, kind: 'seq', enabled: true, connections: [], scope: 'shared', params: { rate: 4 },
+  }),
+  createVoice: (): ModulatorVoice => ({
+    output: {} as AudioNode, trigger: () => {}, release: () => {}, dispose: () => {}, currentValue: () => 0,
+  }),
+  configMount: (root, api) => {
+    root.classList.add('seq-ui');
+    const b = document.createElement('button');
+    b.title = 'bump';
+    b.addEventListener('click', () => api.set('step0', api.get('step0', 0) + 1));
+    root.appendChild(b);
+  },
+};
+registerModulator(seqStub);
+
+describe('plugin config mount', () => {
+  it("mounts the component's own DOM instead of the generic grid", () => {
+    const host = makeHost([seqStub.defaultState('seq1')]);
+    renderModulatorsPanel(container, makeDeps(host));
+    expect(container.querySelector('.mod-card.mod-seq .seq-ui')).not.toBeNull();
+    expect(container.querySelector('.mod-card.mod-seq .mod-generic-config')).toBeNull();
+  });
+
+  it('api.set writes the bag and reaches the live engine; the root survives a repaint', () => {
+    const mod = seqStub.defaultState('seq1');
+    const host = makeHost([mod]);
+    const deps = makeDeps(host);
+    renderModulatorsPanel(container, deps);
+    const root1 = container.querySelector('.seq-ui');
+    (byTitle(container, 'button', 'bump') as HTMLButtonElement).click();
+    expect(mod.params?.step0).toBe(1);
+    expect(deps.onLiveEdit).toHaveBeenCalled();
+    // A repaint must hand back the SAME mounted element — remounting mid-drag
+    // is the exact failure the weave panel already taught us about.
+    renderModulatorsPanel(container, deps);
+    expect(container.querySelector('.seq-ui')).toBe(root1);
+  });
+});
+
 describe('modulators panel', () => {
   it('renders one card per modulator in the host', () => {
     const host = makeHost([makeDefaultLFO('lfo1'), makeDefaultADSR('adsr1')]);

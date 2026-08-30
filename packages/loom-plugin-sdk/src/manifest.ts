@@ -886,6 +886,20 @@ export interface LoomApi {
    *  for anything else is refused rather than registered under a name nothing
    *  declared. */
   registerFx(id: string, create: import('./fx').FxFactory): void;
+  /** Hand the host the function that builds a modulator's own config editor —
+   *  the route for an editor the host's generic knob grid cannot express (a
+   *  step sequencer's bars). Same two-halves arrival an fx has. The id must
+   *  match a `kind: 'modulator'` component in this plugin's manifest; the
+   *  mount runs once per (lane, modulator instance) and the element survives
+   *  repaints. `api` reads and writes the instance's numeric param bag — the
+   *  same bag the dsp kernel's `valueAt` receives as `m.params`. */
+  registerModulatorUI(
+    id: string,
+    mount: (root: HTMLElement, api: {
+      get(key: string, def: number): number;
+      set(key: string, value: number): void;
+    }) => void,
+  ): void;
   /** Hand the host the function that fills a panel's DOM zone. Same two-halves
    *  arrival an fx has, for the same reason: a function cannot be JSON. The id
    *  must match a `kind: 'panel'` component in this plugin's manifest. */

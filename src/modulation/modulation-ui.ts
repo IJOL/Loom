@@ -15,7 +15,7 @@ import { html, type TemplateResult } from 'lit-html';
 import type { ModulatorState } from './types';
 import { mountPanel } from '../core/lit-panel';
 import { getModulator, listModulators } from './modulator-registry';
-import { genericModConfigTemplate } from './generic-mod-config';
+import { genericModConfigTemplate, pluginConfigTemplate } from './generic-mod-config';
 import { routingTemplate } from './mod-routing-templates';
 import { type PanelCtx, type ModulationUIDeps, sync, edit } from './mod-ui-shared';
 
@@ -76,6 +76,7 @@ function panelTemplate(ctx: PanelCtx): TemplateResult {
 function configRowFor(mod: ModulatorState, ctx: PanelCtx): TemplateResult {
   const comp = getModulator(mod.kind);
   if (!comp) return html`<div class="mod-card-config">unknown modulator: ${mod.kind}</div>`;
+  if (comp.configMount) return pluginConfigTemplate(comp, mod, ctx);
   if (comp.configTemplate) return comp.configTemplate(mod, ctx);
   return genericModConfigTemplate(comp, mod, ctx);
 }

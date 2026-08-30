@@ -200,4 +200,22 @@ describe('the main-thread Loom API', () => {
     __resetPluginEngines();
     expect(getPlugin('fx', 'wah')).toBeUndefined();
   });
+
+  it('registerModulatorUI attaches a config mount to the adopted modulator', () => {
+    // Same two-halves arrival an fx factory has: the manifest is adopted
+    // first, main.js delivers the function after — plugin-host imports main.js
+    // below adoptComponents, so the component is always there to patch.
+    adoptComponents([modulatorManifest]);
+    const mount = (): void => {};
+    (globalThis as unknown as { Loom: { registerModulatorUI(id: string, m: typeof mount): void } })
+      .Loom.registerModulatorUI('sh', mount);
+    expect(getModulator('sh')?.configMount).toBe(mount);
+  });
+
+  it('registerModulatorUI for an id no manifest declared refuses loudly', () => {
+    // A typo'd id must fail the PLUGIN (rollback + load report), never install
+    // a mount under a name nothing declared.
+    expect(() => (globalThis as unknown as { Loom: { registerModulatorUI(id: string, m: () => void): void } })
+      .Loom.registerModulatorUI('nope', () => {})).toThrow(/nope/);
+  });
 });

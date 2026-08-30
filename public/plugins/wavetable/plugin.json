@@ -109,6 +109,42 @@
           "group": "osc"
         },
         {
+          "id": "osc.spectral",
+          "label": "Warp",
+          "kind": "discrete",
+          "min": 0,
+          "max": 3,
+          "default": 0,
+          "group": "osc",
+          "options": [
+            {
+              "value": "0",
+              "label": "Stretch"
+            },
+            {
+              "value": "1",
+              "label": "Smear"
+            },
+            {
+              "value": "2",
+              "label": "Low-pass"
+            },
+            {
+              "value": "3",
+              "label": "Random"
+            }
+          ]
+        },
+        {
+          "id": "osc.spectralAmt",
+          "label": "Spectral",
+          "kind": "continuous",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "group": "osc"
+        },
+        {
           "id": "osc.detune",
           "label": "Detune",
           "kind": "continuous",
