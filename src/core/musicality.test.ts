@@ -42,6 +42,49 @@ describe('musicality core', () => {
     for (const s of SCALE_CATALOG) expect(scaleIntervals(s.id).length).toBeGreaterThan(0);
   });
 
+  // --- the five scales the Scales & Chords round added ---
+  describe('extended scale catalog', () => {
+    it('carries harmonic minor, melodic minor, spanish, pentMajor and hemiPent', () => {
+      const ids = SCALE_CATALOG.map((s) => s.id);
+      for (const id of ['harmonicMinor', 'melodicMinor', 'spanish', 'pentMajor', 'hemiPent']) {
+        expect(ids).toContain(id);
+      }
+    });
+
+    it('harmonic minor raises the 7th over natural minor', () => {
+      expect(scaleIntervals('harmonicMinor')).toEqual([0, 2, 3, 5, 7, 8, 11]);
+    });
+
+    it('melodic minor (ascending) raises the 6th and 7th', () => {
+      expect(scaleIntervals('melodicMinor')).toEqual([0, 2, 3, 5, 7, 9, 11]);
+    });
+
+    it('spanish is phrygian dominant (major 3rd over phrygian)', () => {
+      expect(scaleIntervals('spanish')).toEqual([0, 1, 4, 5, 7, 8, 10]);
+    });
+
+    it('pentMajor is the major scale minus its 4th and 7th', () => {
+      expect(scaleIntervals('pentMajor')).toEqual([0, 2, 4, 7, 9]);
+    });
+
+    it('hemiPent is hirajoshi, a hemitonic five-note scale', () => {
+      expect(scaleIntervals('hemiPent')).toEqual([0, 2, 3, 7, 8]);
+    });
+
+    it('the new scales round-trip through midiToScaleDegree like the old ones', () => {
+      const octaveBase = 36;
+      const cases = ['harmonicMinor', 'melodicMinor', 'spanish', 'pentMajor', 'hemiPent'] as const;
+      const testMidis = [36, 38, 42, 48, 53, 60, 65, 72];
+      for (const scale of cases) {
+        for (const m of testMidis) {
+          const deg = midiToScaleDegree(m, 0, scale, octaveBase);
+          const rebuilt = scaleDegreeToMidi(deg, octaveBase, 0, scale);
+          expect(rebuilt).toBe(snapToScale(m, 0, scale));
+        }
+      }
+    });
+  });
+
   // --- midiToScaleDegree ---
   describe('midiToScaleDegree', () => {
     it('round-trips: scaleDegreeToMidi(midiToScaleDegree(m)) === snapToScale(m) for C minor, octaveBase 36', () => {

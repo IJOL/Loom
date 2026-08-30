@@ -64,23 +64,27 @@ const TONIC_WEIGHT = 3;
 const FIFTH_WEIGHT = 2;
 const DEGREE_WEIGHT = 1;
 
-/** Every scale worth answering with — the six seven-note modes, and nothing
- *  else. Two are excluded, at opposite extremes and for the same reason: a
- *  scale that cannot lose is not an answer.
+/** Every scale worth answering with — the SEVEN-NOTE scales, and nothing
+ *  else. The two extremes are excluded for the same reason: a scale that
+ *  cannot lose is not an answer.
  *
  *  `chromatic` contains every note, so it matches everything and says nothing.
  *
- *  `pentMinor` is five of minor's seven. Anything that fits minor fits it too,
- *  and it scores HIGHER for asking less — measured: a full minor scale over its
- *  own tonic came back "pentatonic minor" every time. It is a palette to write
- *  with, not a diagnosis, and answering it would only ever be minor with two
- *  notes hidden.
+ *  A pentatonic is a subset of a seven-note scale. Anything that fits the
+ *  parent fits it too, and it scores HIGHER for asking less — measured: a full
+ *  minor scale over its own tonic came back "pentatonic minor" every time. It
+ *  is a palette to write with, not a diagnosis, and answering one would only
+ *  ever be the parent with notes hidden.
  *
- *  What is left is six templates of equal size, so no candidate can win on
- *  shape alone — only on where its tonic sits. */
+ *  Filtered BY SIZE, not by name: this started as `!== 'chromatic' &&
+ *  !== 'pentMinor'`, and the Scales & Chords round added two more pentatonics
+ *  that sailed straight through the name check — detectKey answered 'hemiPent'
+ *  for plain minor. Equal-size templates are the invariant the cosine needs
+ *  (no candidate can win on shape alone, only on where its tonic sits), so the
+ *  filter states it.  */
 const CANDIDATE_SCALES: ScaleId[] = SCALE_CATALOG
   .map((s) => s.id)
-  .filter((id) => id !== 'chromatic' && id !== 'pentMinor');
+  .filter((id) => scaleIntervals(id).length === 7);
 
 /** A scale's shape, rooted at C. Rotated per key when it is compared. */
 function template(scale: ScaleId): Float32Array {

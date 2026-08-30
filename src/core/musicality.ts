@@ -5,7 +5,8 @@
 
 export type ScaleId =
   | 'minor' | 'major' | 'pentMinor' | 'phrygian' | 'dorian' | 'chromatic'
-  | 'lydian' | 'mixolydian';
+  | 'lydian' | 'mixolydian'
+  | 'harmonicMinor' | 'melodicMinor' | 'spanish' | 'pentMajor' | 'hemiPent';
 // Style ids are the genre keys of the pattern library, verbatim, so a lookup is
 // `patterns[style]` with no translation table to drift. The five original ids
 // were combined styles ("Acid / Techno", "Lo-fi / Ambient"); the library splits
@@ -31,6 +32,17 @@ const INTERVALS: Record<ScaleId, number[]> = {
   phrygian:   [0, 1, 3, 5, 7, 8, 10],
   pentMinor:  [0, 3, 5, 7, 10],
   chromatic:  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+  // Off the ladder on purpose: none of these differs from a mode by one
+  // flattened degree, so Darkness never drifts INTO them — sceneScale leaves a
+  // session parked here exactly where it is, the same deal the pentatonics get.
+  harmonicMinor: [0, 2, 3, 5, 7, 8, 11],
+  melodicMinor:  [0, 2, 3, 5, 7, 9, 11], // ascending form; classical descent is just minor
+  spanish:       [0, 1, 4, 5, 7, 8, 10], // phrygian dominant — phrygian with a major 3rd
+  pentMajor:     [0, 2, 4, 7, 9],
+  // Reason's "Hemi Pentatonic" names a hemitonic five-note scale without saying
+  // which; we take hirajoshi, the canonical one. If your ear says Reason's is
+  // the in/sakura scale ([0,1,5,7,8]), this line is the whole difference.
+  hemiPent:      [0, 2, 3, 7, 8],
 };
 
 export interface ScaleEntry { id: ScaleId; label: string; mood: string; hint: string; }
@@ -42,6 +54,11 @@ export const SCALE_CATALOG: ScaleEntry[] = [
   { id: 'mixolydian', label: 'mixolydian',       mood: '🌇 Warm / bluesy',               hint: 'major with a flat 7th; funk, house, dub' },
   { id: 'phrygian',   label: 'phrygian',         mood: '🔥 Mysterious / hypnotic',       hint: 'dark acid, EBM' },
   { id: 'dorian',     label: 'dorian',           mood: '🌊 Groovy / swung',              hint: 'house & funk' },
+  { id: 'harmonicMinor', label: 'harmonic minor', mood: '🕌 Dramatic / exotic',          hint: 'minor with a raised 7th; neoclassical, psytrance' },
+  { id: 'melodicMinor',  label: 'melodic minor',  mood: '🎷 Smooth / jazzy',             hint: 'minor with raised 6th & 7th; jazz colour' },
+  { id: 'spanish',       label: 'spanish',        mood: '💃 Flamenco / andalusian',      hint: 'phrygian dominant; flamenco, surf, metal' },
+  { id: 'pentMajor',     label: 'pentatonic major', mood: '🌻 Safe & sunny',             hint: 'major minus the tense notes; folk, country' },
+  { id: 'hemiPent',      label: 'hemi pentatonic', mood: '🏮 Sparse / eastern',          hint: 'hirajoshi; koto-like, cinematic' },
   { id: 'chromatic',  label: 'chromatic',        mood: '🎛️ Anything goes (no net)',      hint: 'any note; no safety net' },
 ];
 

@@ -62,6 +62,20 @@ describe('detectKey', () => {
     expect(detectKey(p).scale).not.toBe('chromatic');
   });
 
+  it('never answers a pentatonic — a subset scores higher by asking less', () => {
+    // The pentMinor lesson, as a principle instead of a name: hemiPent is five
+    // of minor's seven and pentMajor five of major's, so either would beat its
+    // parent on any profile the parent fits. The catalog will keep growing;
+    // the detector must keep answering with full-size scales only.
+    const minor = detectKey(profileFromNotes(leaningOn(0, MINOR), BAR));
+    const major = detectKey(profileFromNotes(leaningOn(0, MAJOR), BAR));
+    for (const r of [minor, major]) {
+      for (const c of [r, ...r.alternatives.slice(0, 5)]) {
+        expect(['pentMinor', 'pentMajor', 'hemiPent']).not.toContain(c.scale);
+      }
+    }
+  });
+
   it('is not sure about twelve notes weighted equally', () => {
     // Real music leans somewhere. A flat profile leans nowhere, and the honest
     // answer is a low number rather than a confident wrong one.
