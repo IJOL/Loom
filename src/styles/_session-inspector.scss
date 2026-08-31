@@ -568,6 +568,20 @@
   }
 }
 
+/* The drawable curve control (modulator editors; later mod-remap and
+ * automation). The svg scales with its host row; points are amber like every
+ * other active control. */
+.curve-control {
+  flex: 1 1 160px;
+  min-width: 160px;
+
+  svg { display: block; width: 100%; height: 56px; }
+  .curve-path { fill: none; stroke: var(--amber); stroke-width: 2; }
+  .curve-point { fill: var(--surface-3); stroke: var(--amber); cursor: grab; }
+  .curve-bend { fill: transparent; cursor: ns-resize; }
+  .curve-grid { stroke: var(--border); stroke-width: 1; opacity: .5; }
+}
+
 /* Compact buttons inside note-FX cards (add/remove/enable) — the
  * `.mod-card-row button` rule does not reach `.notefx-card-row`. */
 .notefx-panel .mod-panel-header button,
