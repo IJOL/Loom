@@ -2950,7 +2950,7 @@ uvicorn app:app --port 8765
 <p>Switch between the two views using the <strong>Session / Performance</strong> toggle in the transport bar (<code>#mode-toggle</code>). Switching stops playback. See <a href="#02-transport">Transport</a> for the full transport layout.</p>
 <p><img src="images/performance-view.png" alt="Performance view — timeline with clip bands and automation curves"></p>
 <hr>
-<h2 id="10-performance-and-arrangement--four-ways-to-fill-the-arrangement">Four ways to fill the arrangement</h2>
+<h2 id="10-performance-and-arrangement--five-ways-to-fill-the-arrangement">Five ways to fill the arrangement</h2>
 <p>The arrangement starts empty — and an empty arrangement invites its primary gesture: <strong>drop audio loops on it</strong>.</p>
 <h3 id="10-performance-and-arrangement--1-drop-audio-loops-the-primary-gesture">1. Drop audio loops (the primary gesture)</h3>
 <p>Drag audio files (WAV, MP3, FLAC, OGG, M4A, AIFF) from your file manager anywhere onto the Performance view — the big <strong>&quot;Drop audio loops to start&quot;</strong> invitation when the timeline is empty, or the <strong>＋ new lane</strong> strip at the bottom once it has content. Each file becomes:</p>
@@ -2960,7 +2960,23 @@ uvicorn app:app --port 8765
 <li>a <strong>band</strong> on the timeline at the bar you dropped it, showing the loop&#39;s <strong>waveform</strong> with tick marks where it repeats.</li>
 </ul>
 <p>Dropping several files at once creates one lane per file, all starting at the drop bar. Nothing about this is a parallel world: the dropped loop is an <strong>ordinary session clip on an ordinary Audio lane</strong> — it appears in the Session grid too, launches from there like any clip, and saves in the session file with its sample in the project&#39;s sample store.</p>
-<h3 id="10-performance-and-arrangement--2-copy-to-performance">2. Copy to Performance</h3>
+<h3 id="10-performance-and-arrangement--2-record-a-loop-">2. Record a loop (●)</h3>
+<p>The other way in is to <strong>record</strong> a loop instead of dropping one. The <strong>●</strong> button — in the Performance toolbar, and on the big invitation when the timeline is empty — is a bar-quantized looper:</p>
+<ol>
+<li>Press <strong>●</strong>. Recording is armed for the <strong>next bar boundary</strong> — the button blinks and the toolbar shows <em>recording at bar N…</em>. If the transport is stopped, it starts playing first.</li>
+<li>When the bar arrives, recording begins. The button turns solid red with a live bar count, and a red ghost band grows on the <strong>＋ new lane</strong> strip where the take will land.</li>
+<li>Press <strong>●</strong> again. Recording continues to the <strong>end of the current bar</strong> and stops there — the cut is sample-exact, so the loop is always a whole number of bars with no tail.</li>
+<li>The take lands exactly like a dropped file: a new <strong>Audio lane</strong>, a clip at the session tempo, and a band at the bar where recording <strong>started</strong>. Undo removes it like any drop.</li>
+</ol>
+<p>What it records is chosen by the <strong>source selector</strong> next to ●:</p>
+<ul>
+<li><strong>Master</strong> (the default) — resamples Loom&#39;s own output: everything you hear becomes the loop. No permissions needed.</li>
+<li><strong>System</strong> — records the computer&#39;s audio via the browser&#39;s screen-share picker (tick <strong>share audio</strong> — a browser tab, a different app, anything).</li>
+<li><strong>Mic</strong> — records the microphone, unprocessed (no echo cancellation or noise suppression — it is music, not a call).</li>
+</ul>
+<p>For the external sources a <strong>🎧 monitor</strong> toggle appears; it is <strong>off by default</strong> — turn it on to hear what you are recording through Loom (mind the feedback loop with a live microphone on speakers).</p>
+<p>Escape hatches: <strong>Esc</strong> cancels a countdown or a recording outright; pressing <strong>⏹ Stop</strong> while recording keeps the whole bars already played and drops the partial one (if no bar has completed, the take is discarded); switching views cancels a countdown but lets a running recording finish and land.</p>
+<h3 id="10-performance-and-arrangement--3-copy-to-performance">3. Copy to Performance</h3>
 <p>The fastest route from a working session to a playable song is the <strong>⤉ Copy-to-Performance</strong> button (<code>#copy-to-performance</code>) in the session bar of the header — now an icon-only button with the tooltip &quot;Copy the scenes to the Performance timeline&quot;. Clicking it calls <code>arrangementFromSession</code>, which walks your scenes in order and lays them out as a linear song:</p>
 <ul>
 <li>Each scene becomes one section.</li>
@@ -2968,7 +2984,7 @@ uvicorn app:app --port 8765
 <li>Every lane that has a clip assigned for that scene gets a timeline band covering the section.</li>
 </ul>
 <p>After the layout is computed, Loom switches you to Performance automatically. <strong>This one is not undoable</strong> — it overwrites whatever arrangement was there, so copy before you start editing bands by hand, not after.</p>
-<h3 id="10-performance-and-arrangement--3-record-a-take-live">3. Record a take live</h3>
+<h3 id="10-performance-and-arrangement--4-record-a-take-live">4. Record a take live</h3>
 <p>You can record the arrangement in real time while you play.</p>
 <p>Recording is driven by the unified <strong>REC</strong> control in the session bar, which has three modes selectable beside the <strong>● REC</strong> button: <strong>🎛 take</strong> (the default — captures knob moves + clip launches into a performance take, described below), <strong>⏱ live</strong> (records real-time audio to a WAV file), and <strong>⚡ offline</strong> (renders the current scene to WAV offline, faster than real time). The steps below assume <strong>🎛 take</strong> is selected.</p>
 <ol>
@@ -2978,7 +2994,7 @@ uvicorn app:app --port 8765
 <li>Press Stop. Loom finalises the take: any still-open clip events are clamped to the stop time, durations are computed, and the recorded content appears in the Performance view as timeline bands and automation curves.</li>
 </ol>
 <p>If you arm REC and then switch to Performance mode before pressing Play, the arm is cleared automatically (a toast notification appears) because Performance mode drives playback from the arrangement directly rather than from the live session.</p>
-<h3 id="10-performance-and-arrangement--4-midi-import">4. MIDI import</h3>
+<h3 id="10-performance-and-arrangement--5-midi-import">5. MIDI import</h3>
 <p>When you import a Standard MIDI File via <strong>File ▸ Import MIDI…</strong> (see <a href="#08-midi-and-samples">MIDI &amp; Samples</a>), Loom calls the same <code>arrangementFromSession</code> logic after building the session. Because an imported MIDI file produces a single scene whose clips span the full song, the arrangement comes out as one long section per lane — the complete track laid out linearly from bar 1.</p>
 <hr>
 <h2 id="10-performance-and-arrangement--the-timeline">The timeline</h2>
