@@ -58,3 +58,23 @@ describe('curve-lfo kernel', () => {
     expect(k.valueAt(m({ rate: 1, bipolar: 1 }), 0.5, 0)).toBeCloseTo(0, 5); // midpoint 0.5 -> 0
   });
 });
+
+describe('curve-env kernel', () => {
+  const m = (extra: Record<string, number>) =>
+    ({ id: 'cenv1', kind: 'curve-env', enabled: true, params: { ...ramp(0), ...extra } });
+
+  it('one-shot: runs the curve over duration, then holds the final value', () => {
+    const k = kernels.get('curve-env')!;
+    const at = (t: number) => k.valueAt(m({ duration: 2, mode: 0 }), t, 1); // voice started at t=1
+    expect(at(1)).toBeCloseTo(1, 5);       // start of the note = start of curve
+    expect(at(2)).toBeCloseTo(0.5, 5);     // halfway through 2s
+    expect(at(5)).toBeCloseTo(at(3.0), 5); // past the end: clamped at final y
+    expect(at(5)).toBeCloseTo(0, 5);
+  });
+
+  it('loop: wraps while the voice sounds', () => {
+    const k = kernels.get('curve-env')!;
+    const at = (t: number) => k.valueAt(m({ duration: 2, mode: 1 }), t, 1);
+    expect(at(4)).toBeCloseTo(at(2), 5);   // one full period later, same value
+  });
+});

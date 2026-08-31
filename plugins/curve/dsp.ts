@@ -43,5 +43,18 @@ Loom.registerModulatorKernel({
   },
 });
 
+Loom.registerModulatorKernel({
+  id: 'curve-env',
+  valueAt(m, t, origin) {
+    const p = m.params;
+    const dur = Math.max(0.02, p?.duration ?? 1);
+    const raw = (t - origin) / dur;
+    const pos = (p?.mode ?? 0) !== 0
+      ? raw - Math.floor(raw)               // loop while the voice sounds
+      : Math.max(0, Math.min(1, raw));      // one-shot: clamp at the final y
+    return evalCurve(p, pos);
+  },
+});
+
 // A module, not a global script — same reason as stepseq's dsp.ts.
 export {};
