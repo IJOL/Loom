@@ -15,6 +15,7 @@ import { createKnob } from '../core/knob';
 import { createPad2d } from '../core/controls/pad2d';
 import { createQueueControl } from '../core/controls/queue-control';
 import { createStepsControl } from '../core/controls/steps-control';
+import { createCurveControl } from '../core/controls/curve-control';
 import { createLoopRing } from '../core/controls/loop-ring';
 import { createMeterColumn } from '../core/controls/meter-column';
 import { createDescriptorEngine } from '../engines/descriptor-engine';
@@ -298,6 +299,7 @@ export function installMainThreadLoomApi(): void {
         pad2d: createPad2d,
         queue: createQueueControl,
         steps: createStepsControl,
+        curve: createCurveControl,
         loopRing: createLoopRing,
         levelMeter: createMeterColumn,
       },

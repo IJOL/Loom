@@ -953,6 +953,18 @@ export interface LoomApi {
       values: number[]; label?: string;
       onChange(index: number, value: number): void;
     }): { el: HTMLElement; set(values: number[]): void };
+    /** A drawable point/segment curve — drag points, double-click to add or
+     *  remove one, drag a segment's midpoint to bend it. The same editor the
+     *  host will use for remap and automation curves, so a plugin's envelope
+     *  cannot feel different from the app's own. Coordinates are 0..1 both
+     *  axes; `c` bends the segment leaving that point (-1..+1, 0 = linear). */
+    curve(opts: {
+      points: Array<{ x: number; y: number; c: number }>;
+      onChange(points: Array<{ x: number; y: number; c: number }>): void;
+      label: string;
+      /** Snap divisions; omit for free placement. */
+      grid?: { x: number; y: number };
+    }): { el: HTMLElement; set(points: Array<{ x: number; y: number; c: number }>): void };
     /** The countdown ring, the same one the master strip carries. It keeps no
      *  clock of its own — whoever mounts it calls `set` from a frame loop it
      *  already has, so a panel does not grow a second timer that can disagree

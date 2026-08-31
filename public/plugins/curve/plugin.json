@@ -1,0 +1,94 @@
+{
+  "id": "curve",
+  "name": "Curve",
+  "version": "1.0.0",
+  "loomApi": 1,
+  "author": "Loom",
+  "dsp": "dsp.js",
+  "main": "main.js",
+  "components": [
+    {
+      "kind": "modulator",
+      "id": "curve-lfo",
+      "name": "Curve LFO",
+      "params": [
+        {
+          "id": "rate",
+          "label": "Rate",
+          "kind": "continuous",
+          "min": 0.05,
+          "max": 32,
+          "default": 1,
+          "unit": "Hz"
+        },
+        {
+          "id": "bipolar",
+          "label": "Polarity",
+          "kind": "discrete",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "options": [
+            {
+              "value": "unipolar",
+              "label": "Unipolar"
+            },
+            {
+              "value": "bipolar",
+              "label": "Bipolar"
+            }
+          ]
+        }
+      ],
+      "modulator": {
+        "driver": "time",
+        "scopes": [
+          "shared",
+          "per-voice"
+        ],
+        "idPrefix": "crv"
+      }
+    },
+    {
+      "kind": "modulator",
+      "id": "curve-env",
+      "name": "Curve Env",
+      "params": [
+        {
+          "id": "duration",
+          "label": "Time",
+          "kind": "continuous",
+          "min": 0.02,
+          "max": 20,
+          "default": 1,
+          "unit": "s"
+        },
+        {
+          "id": "mode",
+          "label": "Mode",
+          "kind": "discrete",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "options": [
+            {
+              "value": "oneshot",
+              "label": "One-shot"
+            },
+            {
+              "value": "loop",
+              "label": "Loop"
+            }
+          ]
+        }
+      ],
+      "modulator": {
+        "driver": "time",
+        "scopes": [
+          "per-voice"
+        ],
+        "idPrefix": "cenv"
+      }
+    }
+  ]
+}
