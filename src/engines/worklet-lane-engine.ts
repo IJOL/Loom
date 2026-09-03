@@ -131,6 +131,7 @@ export class WorkletLaneEngine implements SynthEngine {
   readonly params: EngineParamSpec[];
   readonly groups?: EngineParamGroup[];
   private readonly presetsKey: string;
+  private readonly defaultModulators: ModulatorState[];
   private modHost: ModulationHostImpl;
   // Current scalar param state as a dot-id ParamBag, seeded from the spec
   // defaults. setBaseValue mirrors here and posts the same dot-id to the worklet.
@@ -166,6 +167,12 @@ export class WorkletLaneEngine implements SynthEngine {
     this.params = cfg.params;
     this.groups = cfg.groups;
     this.presetsKey = cfg.presetsKey;
+    // Kept beyond construction because applyPreset needs it: a preset that
+    // carries no `modulators` restores THIS rig, not whatever the previous
+    // preset left running. ModulationHostImpl hands out live references, so the
+    // pristine copy has to be ours.
+    this.defaultModulators = (cfg.modulators ?? [])
+      .map((m) => ({ ...m, connections: m.connections.map((c) => ({ ...c })) }));
     this.modHost = new ModulationHostImpl(cfg.modulators ?? []);
     // ONE vocabulary for every engine: a modulation connection targets a param's
     // own dot-id. Subtractive used to be translated into flat SubParams field
@@ -360,19 +367,32 @@ export class WorkletLaneEngine implements SynthEngine {
   applyPreset(name: string): void {
     const preset = this.presets.find((p) => p.name === name);
     if (!preset) return;
+    const named = preset.params as Record<string, number>;
+    // A preset is a FULL patch, so every declared param the preset does NOT
+    // name returns to its spec default first. Writing only the named ones —
+    // the old behaviour — meant anything the bank leaves unnamed (westcoast
+    // names 13 of its 24 on average) survived from the previous preset, the
+    // dice, or a hand on a knob, and walking the preset dropdown accumulated
+    // osc.ring/detune residue until the whole bank sounded broken. Strip
+    // params stay: level/pan/sends are the desk, not the patch. `output.trim`
+    // is undeclared but preset-carried (fm ships 0.65..2.0), so it resets too.
+    for (const p of this.params) {
+      if (!isStripParamId(p.id) && !(p.id in named)) this.setBaseValue(p.id, p.default);
+    }
+    if (!('output.trim' in named)) this.setBaseValue('output.trim', 1);
     // A preset's keys ARE the engine's param ids. There is no per-engine
     // translation left: the last bank that needed one (TB-303's flat 'cutoff',
     // 'envMod', …) was rewritten to dot-ids when it became a plugin.
-    for (const [id, val] of Object.entries(preset.params as Record<string, number>)) {
+    for (const [id, val] of Object.entries(named)) {
       if (typeof val !== 'number') continue;
       this.setBaseValue(id, val);
     }
-    // A preset brings its own modulators or it brings none — no engine gets its
-    // set derived here. Subtractive used to, because its bank predated the
-    // unified envelope model and carried no `modulators`; the derivation is now
-    // baked into plugins/subtractive/presets.json, which is where a preset's
-    // data belongs. That was the last comparison by engine id on the audio path.
-    if (preset.modulators) this.modHost.deserialize(preset.modulators);
+    // Same rule for the rig: the preset's own modulators, or the engine's
+    // default set — never the previous preset's LFO still running on the new
+    // sound. (No engine gets a set DERIVED here: subtractive used to, because
+    // its bank predated the unified envelope model; that derivation is baked
+    // into plugins/subtractive/presets.json now, where a preset's data belongs.)
+    this.modHost.deserialize(preset.modulators ?? this.defaultModulators);
     this.postMods();
   }
 
