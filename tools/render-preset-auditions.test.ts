@@ -102,7 +102,7 @@ const slug = (name: string): string => name.toLowerCase().replace(/[^a-z0-9]+/g,
 /** The numbers that flag a calculation running away: hard clipping, a
  *  noise-like spectrum (hf → 2 for white noise, ~0 for a low sine), and a tail
  *  that refuses to decay after the last release. */
-function measure(buf: Float32Array): Omit<AuditionEntry, 'engine' | 'name' | 'file'> {
+function measure(buf: Float32Array): Omit<AuditionEntry, 'engine' | 'name' | 'file' | 'variant'> {
   let peak = 0, sum = 0, diffSum = 0, clipped = 0, tailSum = 0;
   for (let i = 0; i < buf.length; i++) {
     const x = buf[i];
@@ -132,7 +132,9 @@ const entries: AuditionEntry[] = [];
 async function throughMaster(buf: Float32Array, sr: number): Promise<Float32Array> {
   const ctx = new OfflineAudioContext(1, buf.length, sr);
   const ab = ctx.createBuffer(1, buf.length, sr);
-  ab.copyToChannel(buf, 0);
+  // Fresh copies at the two DOM boundaries: lib.dom's copyToChannel/curve want
+  // Float32Array<ArrayBuffer>, and a bare Float32Array types as ArrayBufferLike.
+  ab.copyToChannel(new Float32Array(buf), 0);
   const src = ctx.createBufferSource();
   src.buffer = ab;
   const air = ctx.createBiquadFilter();
@@ -141,7 +143,7 @@ async function throughMaster(buf: Float32Array, sr: number): Promise<Float32Arra
   comp.threshold.value = -2; comp.ratio.value = 20;
   comp.attack.value = 0.002; comp.release.value = 0.1; comp.knee.value = 0;
   const clip = ctx.createWaveShaper();
-  clip.curve = makeMasterSoftClipCurve();
+  clip.curve = new Float32Array(makeMasterSoftClipCurve());
   clip.oversample = '4x';
   src.connect(air).connect(comp).connect(clip).connect(ctx.destination);
   src.start();
