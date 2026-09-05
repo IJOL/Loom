@@ -23,6 +23,11 @@ function paramError(p: unknown, i: number): string | null {
     if (!isNum(p[k])) return `params[${i}].${k} must be a number`;
   }
   if (p.group !== undefined && !isStr(p.group)) return `params[${i}].group must be a string when present`;
+  // A zero or negative step would make knob.ts's Math.round(v/step)*step
+  // divide by zero or walk backwards — data this wrong must not load.
+  if (p.step !== undefined && (!isNum(p.step) || p.step <= 0)) {
+    return `params[${i}].step must be a positive number when present`;
+  }
   return null;
 }
 

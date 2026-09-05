@@ -521,3 +521,22 @@ describe('buildEngineParamGrid — a control whose options depend on another par
     expect(buttonsUnder('Type').length).toBe(3);
   });
 });
+
+describe('spec.step — the knob quantum a manifest declares', () => {
+  // A voice count is an integer; the grid's default step of (max-min)/200 let
+  // the poly.voices knob write 0.945 into a real save. A spec that declares
+  // `step: 1` must land every write on a whole number.
+  it('quantizes knob writes to multiples of the declared step', () => {
+    const parent = document.createElement('div');
+    const { ctx: c, reg } = idKeyedCtx();
+    const voices = {
+      id: 'poly.voices', label: 'Voices', kind: 'continuous',
+      min: 1, max: 64, default: 10, step: 1,
+    } as EngineParamSpec;
+    const engine = stubEngine([voices]);
+    buildEngineParamGrid(engine, c, parent);
+    const knob = reg.get('L.poly.voices')!;
+    knob.setValue(7.4);
+    expect(engine.getBaseValue('poly.voices')).toBe(7);
+  });
+});

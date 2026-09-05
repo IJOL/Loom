@@ -64,7 +64,7 @@
             { "value": "6", "label": "Harmonics" }, { "value": "7", "label": "Odd Harmonics" }
           ] },
         { "id": "unison.spread", "label": "Spread",   "kind": "continuous", "min": 0,     "max": 50, "default": 10, "unit": "¢", "group": "unison" },
-        { "id": "poly.voices",  "label": "Voices",    "kind": "continuous", "min": 1,     "max": 64, "default": 24, "group": "poly" }
+        { "id": "poly.voices",  "label": "Voices",    "kind": "continuous", "min": 1,     "max": 64, "default": 10, "step": 1, "group": "poly" }
       ],
       "groups": [
         { "id": "op1",  "title": "OP 1", "row": 0, "color": "var(--knob-cyan)" },

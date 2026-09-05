@@ -128,7 +128,9 @@ function buildControl(
     // Flat drags stay unquantised: knob.ts rounds to `Math.round(v/step)*step`
     // from ZERO rather than from `min`, so a step over a wide range (the
     // sampler's 20..20000 cutoff) would snap the low end below its own minimum.
-    step: flat ? undefined : (spec.max - spec.min) / 200,
+    // A spec-declared step wins everywhere INCLUDING flat: it is the param's
+    // own quantum (an integer voice count), not a drag-feel default.
+    step: spec.step ?? (flat ? undefined : (spec.max - spec.min) / 200),
     value: engine.getBaseValue(spec.id),
     defaultValue: spec.default,
     size: opts.knobSize,

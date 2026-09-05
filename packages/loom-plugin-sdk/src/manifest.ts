@@ -26,6 +26,10 @@ export interface EngineParamSpec {
   max: number;
   default: number;
   unit?: string;
+  /** Knob quantum: a positive step lands every knob write on a multiple —
+   *  `1` makes an integer count (poly.voices). Absent ⇒ the grid's default
+   *  fine step of (max−min)/200. Continuous params only. */
+  step?: number;
   options?: { value: string; label: string }[];
   /** Layout group this param belongs to — an id from the component's own
    *  `groups` table. Absent ⇒ the param renders in the leading ungrouped row,

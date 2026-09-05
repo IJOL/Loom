@@ -272,3 +272,26 @@ describe('what the manifest refuses today (pinned before WEAVE widens it)', () =
     expect(res.ok === false && res.error).toMatch(/kind must be continuous\|discrete/);
   });
 });
+
+describe('param step (knob quantum)', () => {
+  const withStep = (step: unknown) => ({
+    id: 'p', name: 'P', version: '1.0.0', loomApi: 1, main: 'main.js',
+    components: [{
+      kind: 'engine', id: 'e', name: 'E', polyphony: 'poly',
+      capabilities: { clipContent: 'notes', shortLabel: 'e', outputTrim: 1 },
+      params: [{ id: 'poly.voices', label: 'Voices', kind: 'continuous', min: 1, max: 64, default: 10, step }],
+    }],
+  });
+
+  it('accepts a positive numeric step', () => {
+    expect(validatePluginManifest(withStep(1)).ok).toBe(true);
+  });
+
+  // A zero or negative step would make knob.ts's Math.round(v/step)*step
+  // divide by zero or walk backwards — data this wrong must not load.
+  it('rejects a step that is zero, negative, or not a number', () => {
+    expect(validatePluginManifest(withStep(0)).ok).toBe(false);
+    expect(validatePluginManifest(withStep(-1)).ok).toBe(false);
+    expect(validatePluginManifest(withStep('1')).ok).toBe(false);
+  });
+});
