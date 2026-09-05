@@ -30,10 +30,10 @@ function makeDeps(): ClipAutoDeps {
 }
 
 /** Mounts the panel, adds one lane and unfolds its draw row. */
-function mountWithOpenRow() {
+function mountWithOpenRow(lengthBars = 1) {
   const host = document.createElement('div');
   document.body.appendChild(host);
-  const clip = { id: 'c1', lengthBars: 1, notes: [] } as unknown as SessionClip;
+  const clip = { id: 'c1', lengthBars, notes: [] } as unknown as SessionClip;
   renderClipAutomationLanes(host, clip, makeDeps());
 
   const add = [...host.querySelectorAll('button')]
@@ -82,20 +82,19 @@ describe('the painter has two modes', () => {
     setMode(host, 'lfo');
   });
 
-  it('writes into the envelope when Apply is pressed', () => {
+  it('Apply writes the steps back over a lane painted by hand', () => {
     const { host, clip } = mountWithOpenRow();
     setMode(host, 'steps');
     const env = clip.envelopes![0];
-
-    // Draw something that is NOT what the lane already holds. Both the default
-    // steps and a fresh lane sit at 0.5, so applying straight away writes the
-    // same values back and proves nothing.
     (([...host.querySelectorAll('.clip-auto-steps button')]
       .find((b) => b.textContent?.includes('↗')) as HTMLButtonElement)).click();
+    const ramp = [...env.values];
 
-    const before = [...env.values];
+    // The steps land as you draw them, so Apply's job is the re-write: a lane
+    // someone has since painted over by hand goes back to the row's steps.
+    env.values.fill(0.5);
     (host.querySelector('.clip-auto-steps-apply') as HTMLButtonElement).click();
-    expect(env.values).not.toEqual(before);
+    expect(env.values).toEqual(ramp);
     setMode(host, 'lfo');
   });
 
@@ -140,5 +139,91 @@ describe('the painter has two modes', () => {
     count.value = '16';
     count.dispatchEvent(new Event('change'));
     setMode(host, 'lfo');
+  });
+});
+
+// One mode at a time. Picking Steps used to leave the LFO's wave in the lane —
+// still drawn, still sounding — with an unapplied grid of sixteen bars beneath
+// it, so what you saw was both and what you heard was the wave. Now the mode
+// you pick is what the lane holds, the moment you pick it and every time you
+// touch a bar; and the grid is the lane's own grid, one step per 16th.
+describe('the mode you pick is the curve the lane holds', () => {
+  beforeEach(() => {
+    stubCanvas();
+    document.body.replaceChildren();
+  });
+
+  const SUB = 16;   // AUTOMATION_SUB_RES: sub-samples per 16th step
+  /** True when every sub-sample of every step equals that step's first one —
+   *  the shape a HOLD step curve has and a sine never does. */
+  const heldPerStep = (v: number[]) => {
+    for (let s = 0; s * SUB < v.length; s++) {
+      for (let k = 1; k < SUB && s * SUB + k < v.length; k++) {
+        if (v[s * SUB + k] !== v[s * SUB]) return false;
+      }
+    }
+    return true;
+  };
+  const paintWave = (host: HTMLElement) => {
+    const shape = host.querySelector('.clip-auto-lfo-shape') as HTMLSelectElement;
+    shape.value = 'sine';
+    shape.dispatchEvent(new Event('change'));
+  };
+
+  it('offers one step per 16th of the lane: 16 for one bar, 32 for two', () => {
+    const one = mountWithOpenRow(1);
+    setMode(one.host, 'steps');
+    expect(one.host.querySelectorAll('.step-bar')).toHaveLength(16);
+    setMode(one.host, 'lfo');
+    document.body.replaceChildren();
+
+    const two = mountWithOpenRow(2);
+    setMode(two.host, 'steps');
+    expect(two.host.querySelectorAll('.step-bar')).toHaveLength(32);
+    setMode(two.host, 'lfo');
+  });
+
+  it('choosing Steps writes the steps into the lane at once, replacing the wave', () => {
+    const { host, clip } = mountWithOpenRow();
+    paintWave(host);
+    const env = clip.envelopes![0];
+    expect(heldPerStep(env.values)).toBe(false);   // the sine is in the lane
+
+    setMode(host, 'steps');
+    expect(heldPerStep(env.values)).toBe(true);    // and now the steps are
+    setMode(host, 'lfo');
+  });
+
+  it('a shape shortcut lands in the lane without Apply', () => {
+    const { host, clip } = mountWithOpenRow();
+    setMode(host, 'steps');
+    (([...host.querySelectorAll('.clip-auto-steps button')]
+      .find((b) => b.textContent?.includes('↗')) as HTMLButtonElement)).click();
+    const v = clip.envelopes![0].values;
+    expect(v[v.length - 1]).toBeGreaterThan(v[0]);
+    setMode(host, 'lfo');
+  });
+
+  it('a dragged bar lands in the lane without Apply', () => {
+    const { host, clip } = mountWithOpenRow();
+    setMode(host, 'steps');
+    const grid = host.querySelector('.steps-control') as HTMLElement;
+    grid.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width: 160, height: 100, right: 160, bottom: 100, x: 0, y: 0, toJSON: () => ({}) });
+    // Column 0, at the very top: the first step goes to (nearly) 1.
+    grid.dispatchEvent(new MouseEvent('pointerdown', { clientX: 5, clientY: 1, bubbles: true }));
+    const v = clip.envelopes![0].values;
+    expect(v[0]).toBeGreaterThan(0.9);
+    expect(v[SUB - 1]).toBeGreaterThan(0.9);        // the whole first 16th
+    setMode(host, 'lfo');
+  });
+
+  it('choosing LFO again draws the wave back over the steps', () => {
+    const { host, clip } = mountWithOpenRow();
+    setMode(host, 'steps');
+    const env = clip.envelopes![0];
+    expect(heldPerStep(env.values)).toBe(true);
+    setMode(host, 'lfo');
+    expect(heldPerStep(env.values)).toBe(false);
   });
 });

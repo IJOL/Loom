@@ -29,7 +29,7 @@ import { mountPanel, type PanelHandle } from '../core/lit-panel';
 import { withUndo, type HistoryDeps } from '../save/history-wiring';
 import { createAutoStrip, type AutoStrip } from './clip-auto-strip';
 import { paintRegion } from './clip-auto-region';
-import { stepRowTemplate } from './clip-automation-step-row';
+import { stepRowTemplate, paintStepsInto } from './clip-automation-step-row';
 import { formatNum, snapLaneToSteps, type AutoBrush } from '../automation/automation-painter';
 import {
   fillLfo, LFO_SHAPES, DEFAULT_LFO_FILL, LFO_MIN_CYCLES,
@@ -242,6 +242,15 @@ function modeRowTemplate(
       <select class="clip-auto-mode" title="How this row draws"
               @change=${(e: Event) => {
                 rowMode = (e.currentTarget as HTMLSelectElement).value as 'lfo' | 'steps';
+                // The mode you pick is the curve the lane holds — from this
+                // moment, not from the next slider move. Before this the LFO's
+                // wave stayed in the lane (drawn AND sounding) under a grid of
+                // bars that had not been applied yet: two curves on screen and
+                // the wrong one in the ear.
+                const paint = () => rowMode === 'steps'
+                  ? paintStepsInto(h, clip, env, strip)
+                  : paintLfoInto(h, clip, env, strip);
+                if (h.deps.historyDeps) withUndo(h.deps.historyDeps, paint); else paint();
                 h.rerender();
               }}>
         <option value="lfo" ?selected=${rowMode === 'lfo'}>LFO</option>
@@ -272,7 +281,9 @@ function lfoRegion(clip: SessionClip, meter: TimeSignature, env: ClipEnvelope): 
  *  Every control repaints immediately: `fillLfo` overwrites the whole region, so
  *  repainting is idempotent and a drag cannot accumulate drift. The gesture
  *  bracket collapses a whole drag into one undo step, exactly like a knob. */
-function lfoRowTemplate(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: AutoStrip): TemplateResult {
+/** What the LFO row knows about the lane it paints: the region, the bar in
+ *  sub-samples, and the cycle count clamped to what that region can hold. */
+function lfoGeometry(h: Panel, clip: SessionClip, env: ClipEnvelope) {
   const subResPerBar = stepsPerBar(h.deps.meter) * AUTOMATION_SUB_RES;
   const { from, to } = lfoRegion(clip, h.deps.meter, env);
   const regionSubs = to - from;
@@ -284,24 +295,34 @@ function lfoRowTemplate(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: A
   // Read live, never captured: a handler runs BEFORE the re-render, so a value
   // frozen at template time would paint the count the user just replaced.
   const cycles = () => clampCyclesInRegion(lfoState.cycles, regionSubs, subResPerBar, stepSubRes);
+  return { subResPerBar, from, to, regionSubs, stepSubRes, maxCycles, cycles };
+}
 
-  const paint = () => {
-    // The wave's bar is the SESSION's bar: drawn against a fixed 16-step bar the
-    // curve went out of phase with the lane's own grid lines, which already come
-    // from the meter.
-    fillLfo(env.values, from, to, subResPerBar, {
-      ...DEFAULT_LFO_FILL,
-      shape: lfoState.shape,
-      cyclesPerBar: cyclesToCyclesPerBar(cycles(), regionSubs, subResPerBar),
-      depth: lfoState.depth,
-      center: lfoState.center,
-      phase: lfoState.phase,
-      originSub: from,
-      stepSubRes,
-    });
-    if (env.stepped) snapLaneToSteps({ values: env.values });
-    strip.draw();
-  };
+/** Write the LFO's wave into the lane. Shared by the row's own controls and by
+ *  the mode picker, which paints the wave back the moment LFO is chosen. */
+function paintLfoInto(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: AutoStrip): void {
+  const { subResPerBar, from, to, regionSubs, stepSubRes, cycles } = lfoGeometry(h, clip, env);
+  // The wave's bar is the SESSION's bar: drawn against a fixed 16-step bar the
+  // curve went out of phase with the lane's own grid lines, which already come
+  // from the meter.
+  fillLfo(env.values, from, to, subResPerBar, {
+    ...DEFAULT_LFO_FILL,
+    shape: lfoState.shape,
+    cyclesPerBar: cyclesToCyclesPerBar(cycles(), regionSubs, subResPerBar),
+    depth: lfoState.depth,
+    center: lfoState.center,
+    phase: lfoState.phase,
+    originSub: from,
+    stepSubRes,
+  });
+  if (env.stepped) snapLaneToSteps({ values: env.values });
+  strip.draw();
+}
+
+function lfoRowTemplate(h: Panel, clip: SessionClip, env: ClipEnvelope, strip: AutoStrip): TemplateResult {
+  const { maxCycles, cycles } = lfoGeometry(h, clip, env);
+
+  const paint = () => paintLfoInto(h, clip, env, strip);
   const repaint = () => {
     if (h.deps.historyDeps) withUndo(h.deps.historyDeps, paint); else paint();
     h.rerender();
