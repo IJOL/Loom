@@ -142,7 +142,6 @@ export function createAutomationWrites(deps: AutomationWritesDeps): AutomationWr
     seq,
     automationRegistry,
     getLaneStates: () => sessionHost.laneStates,
-    ctx,
     // Lets the rAF loop read each lane's live modulation offsets for the knob rings.
     getEngineForLane: (laneId) => getLaneEngineInstance(laneId) ?? undefined,
     // An envelope on a lane whose editor is closed has no knob to drive, so it

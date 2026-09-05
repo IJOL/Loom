@@ -615,7 +615,8 @@ const onEngineChangeUndoable = (laneId: string, newId: string) => {
 
 
 // onStep still fires for bass/drum/melody cell highlighting; the continuous
-// automation engine runs separately via rAF (see startAutomationTick).
+// automation engine rides the sequencer's Worker tick (see startAutomationTick),
+// with only its knob-ring paint on rAF.
 
 // ── Performance view feature ──────────────────────────────────────────────
 // REC button is wired by the Performance feature (legacy automation.wireRecButton

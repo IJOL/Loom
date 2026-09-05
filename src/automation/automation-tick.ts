@@ -9,7 +9,6 @@ export interface AutomationTickDeps {
   seq: Sequencer;
   automationRegistry: Map<string, KnobHandle>;
   getLaneStates: () => Map<string, LanePlayState>;
-  ctx: AudioContext;
   /** Resolve a lane's live engine so the modulation overlay can read the REAL
    *  modulation the worklet reports (engine.getLiveModOffset). Optional — when
    *  absent the rings just stay cleared. */
@@ -27,8 +26,6 @@ export interface AutomationTickDeps {
    *  once per frame, and only when an unmounted envelope needs to land. */
   getTargetRanges?: () => ReadonlyMap<string, { min: number; max: number }>;
 }
-
-let autoTickRunning = false;
 
 /** Vestigial Classic accessors — the global automation lanes are gone (their
  *  authoring moved to Performance view). Kept as stubs so the surviving
@@ -57,29 +54,48 @@ function applyModulationRings(deps: AutomationTickDeps): void {
   }
 }
 
-/** The rAF loop. Two distinct overlays on the registered knobs:
- *  - modulation rings (amber arc) follow the worklet's live offsets EVERY frame;
- *  - per-clip automation envelopes move the knob VALUE while playing. */
-export function startAutomationTick(deps: AutomationTickDeps): void {
-  if (autoTickRunning) return;
-  autoTickRunning = true;
-  const { seq, automationRegistry, getLaneStates, ctx } = deps;
+/** Two distinct overlays on the registered knobs, on two different clocks:
+ *  - modulation rings (amber arc) follow the worklet's live offsets on a rAF
+ *    loop — they are paint, and paint may stop when nobody can see it;
+ *  - per-clip automation envelopes move the knob VALUE (or the audio object
+ *    directly when no knob is mounted) on the SEQUENCER's tick. That clock is a
+ *    Worker, so it keeps running in a hidden tab; rAF does not, and when the
+ *    envelopes rode it every automated knob froze at its last value the moment
+ *    the window lost focus and jumped when it came back — while the notes,
+ *    scheduled off the Worker, played on.
+ *  Returns a stop function that detaches both. */
+export function startAutomationTick(deps: AutomationTickDeps): () => void {
+  const { seq, automationRegistry, getLaneStates } = deps;
+  let running = true;
 
-  const tick = () => {
-    if (!autoTickRunning) return;
-    requestAnimationFrame(tick);
-    applyModulationRings(deps);          // modulation overlay — always (free LFO runs when stopped)
-    if (!seq.isPlaying()) return;
+  const landEnvelopes = (now: number) => {
     let ranges: ReadonlyMap<string, { min: number; max: number }> | undefined;
     const landing = {
       registry: automationRegistry,
       applyUnmounted: deps.applyUnmounted,
-      // Memoised for the frame: built lazily so a frame with no unmounted
+      // Memoised for the tick: built lazily so a tick with no unmounted
       // envelope costs nothing, then reused by every later value in it.
       getTargetRanges: () => (ranges ??= deps.getTargetRanges?.() ?? new Map()),
     };
-    tickSessionEnvelopes(getLaneStates(), ctx.currentTime, seq.bpm, seq.meter,
+    tickSessionEnvelopes(getLaneStates(), now, seq.bpm, seq.meter,
       (paramId, normalised) => landAutomationValue(landing, paramId, normalised));
   };
-  requestAnimationFrame(tick);
+  const previous = seq.onTick;
+  const onTick = (now: number) => {
+    previous?.(now);
+    if (running && seq.isPlaying()) landEnvelopes(now);
+  };
+  seq.onTick = onTick;
+
+  const paintRings = () => {
+    if (!running) return;
+    requestAnimationFrame(paintRings);
+    applyModulationRings(deps);          // always: a free LFO runs when stopped
+  };
+  requestAnimationFrame(paintRings);
+
+  return () => {
+    running = false;
+    if (seq.onTick === onTick) seq.onTick = previous;
+  };
 }

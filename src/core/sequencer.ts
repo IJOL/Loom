@@ -48,6 +48,15 @@ export class Sequencer {
    *  lookaheadSec). The session host owns per-lane scheduling. */
   sessionTick?: (now: number, lookahead: number) => void;
 
+  /** Fired after sessionTick on every scheduler tick with the audio clock's
+   *  `currentTime`, while playing. This is the SAME Worker-driven clock that
+   *  keeps notes flowing in a hidden tab, and it exists so anything that must
+   *  keep up with playback — the clip-envelope automation player — can ride it
+   *  instead of requestAnimationFrame, which the browser stops dead when the
+   *  tab is hidden or the window covered. Owned by the automation tick
+   *  (automation/automation-tick.ts); a second rider chains the previous one. */
+  onTick?: (now: number) => void;
+
   /** Diagnostics seam (perf-monitor). Called once per tick ONLY when set:
    *  (lagMs = gap since previous tick minus the nominal 25ms; tickDurMs =
    *  wall-clock duration of the sessionTick call). Unset in normal operation,
@@ -131,6 +140,7 @@ export class Sequencer {
     // Session mode: host owns per-lane scheduling via sessionTick → tickSession.
     if (this.sessionTick) this.sessionTick(this.ctx.currentTime, LOOKAHEAD_SEC);
     if (stats) stats(lagMs, performance.now() - t0);
+    this.onTick?.(this.ctx.currentTime);
   };
 
   /** Drive runTick from a Web Worker timer so playback survives the window being
