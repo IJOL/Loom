@@ -19,6 +19,9 @@ export * from './dsp/sync-osc';
 export * from './dsp/ladder';
 export * from './dsp/filter';
 export * from './dsp/unison';
+// The wavetable ARITHMETIC — synthesise a table from a spec, read it, morph two
+// of them as an Osc the unison stack can hold. The tables stay in the plugins.
+export * from './dsp/wavetable';
 export * from './dsp/fold';
 export * from './dsp/comb';
 export * from './dsp/filter-stack';   // re-exports ./filter-kinds

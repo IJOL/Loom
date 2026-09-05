@@ -37,6 +37,23 @@
           ] },
         { "id": "osc2.pw",     "label": "Osc2 PW",   "kind": "continuous", "min": 0.05, "max": 0.95, "default": 0.5, "group": "osc2" },
         { "id": "osc2.sync",   "label": "Osc2 Sync", "kind": "continuous", "min": 1, "max": 8, "default": 2, "group": "osc2" },
+        { "id": "osc3.level",  "label": "Osc3 Lvl",  "kind": "continuous", "min": 0, "max": 1, "default": 0, "group": "osc3" },
+        { "id": "osc3.detune", "label": "Osc3 Det",  "kind": "continuous", "min": -50, "max": 50, "default": 0, "unit": "¢", "group": "osc3" },
+        { "id": "osc3.waveA",  "label": "Wave A",    "kind": "discrete", "min": 0, "max": 7, "default": 2, "group": "osc3",
+          "options": [
+            { "value": "sine",     "label": "Sin" },   { "value": "triangle", "label": "Tri" },
+            { "value": "sawtooth", "label": "Saw" },   { "value": "square",   "label": "Sqr" },
+            { "value": "pwm25",    "label": "PWM" },   { "value": "organ",    "label": "Organ" },
+            { "value": "brass",    "label": "Brass" }, { "value": "vocal",    "label": "Vocal" }
+          ] },
+        { "id": "osc3.waveB",  "label": "Wave B",    "kind": "discrete", "min": 0, "max": 7, "default": 3, "group": "osc3",
+          "options": [
+            { "value": "sine",     "label": "Sin" },   { "value": "triangle", "label": "Tri" },
+            { "value": "sawtooth", "label": "Saw" },   { "value": "square",   "label": "Sqr" },
+            { "value": "pwm25",    "label": "PWM" },   { "value": "organ",    "label": "Organ" },
+            { "value": "brass",    "label": "Brass" }, { "value": "vocal",    "label": "Vocal" }
+          ] },
+        { "id": "osc3.morph",  "label": "Morph",     "kind": "continuous", "min": 0, "max": 1, "default": 0, "group": "osc3" },
 
         { "id": "ring.level",  "label": "Ring",      "kind": "continuous", "min": 0, "max": 1, "default": 0, "group": "ring" },
         { "id": "sub.level",   "label": "Sub Lvl",   "kind": "continuous", "min": 0, "max": 1, "default": 0.3, "group": "sub" },
@@ -172,6 +189,7 @@
       "groups": [
         { "id": "osc1",    "title": "OSC 1",    "row": 0, "color": "var(--knob-cyan)" },
         { "id": "osc2",    "title": "OSC 2",    "row": 0, "color": "var(--knob-yellow)" },
+        { "id": "osc3",    "title": "OSC 3",    "row": 1, "color": "var(--knob-teal)" },
         { "id": "ring",    "title": "RING",     "row": 1, "color": "var(--knob-red)" },
         { "id": "sub",     "title": "SUB",      "row": 1, "color": "var(--knob-blue)" },
         { "id": "noise",   "title": "NOISE",    "row": 1, "color": "var(--knob-purple)" },

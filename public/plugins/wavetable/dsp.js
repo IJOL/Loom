@@ -216,6 +216,34 @@ var UNISON_MODES = [
 ];
 var TWO_PI2 = Math.PI * 2;
 
+// packages/loom-plugin-sdk/src/dsp/wavetable.ts
+function synthWaveTable(spec, n = 2048) {
+  const out = new Float32Array(n);
+  const { imag, real } = spec;
+  for (let i = 0; i < n; i++) {
+    const ph = i / n * 2 * Math.PI;
+    let s = 0;
+    for (let k = 1; k < imag.length; k++) {
+      s += imag[k] * Math.sin(k * ph);
+      if (real && real[k]) s += real[k] * Math.cos(k * ph);
+    }
+    out[i] = s;
+  }
+  let pk = 0;
+  for (let i = 0; i < n; i++) pk = Math.max(pk, Math.abs(out[i]));
+  if (pk > 1e-9) for (let i = 0; i < n; i++) out[i] /= pk;
+  return out;
+}
+function sampleTable(tab, phase) {
+  const n = tab.length;
+  const x = phase * n;
+  let i = Math.floor(x);
+  const f = x - i;
+  if (i >= n) i -= n;
+  const j = i + 1 === n ? 0 : i + 1;
+  return tab[i] * (1 - f) + tab[j] * f;
+}
+
 // packages/loom-plugin-sdk/src/dsp/filter-kinds.ts
 var FILTER_MODES = [
   { value: "dig", label: "DIG", taps: ["lp", "hp", "bp", "notch"] },
@@ -326,22 +354,7 @@ var WAVETABLES = [
   makeBrass(),
   makeVocal()
 ];
-function synth(spec) {
-  const out = new Float32Array(N);
-  for (let n = 0; n < N; n++) {
-    const ph = n / N * 2 * Math.PI;
-    let s = 0;
-    for (let k = 1; k < spec.imag.length; k++) {
-      s += (spec.imag[k] ?? 0) * Math.sin(k * ph);
-      if (spec.real[k]) s += spec.real[k] * Math.cos(k * ph);
-    }
-    out[n] = s;
-  }
-  let pk = 0;
-  for (const v of out) pk = Math.max(pk, Math.abs(v));
-  if (pk > 1e-9) for (let n = 0; n < N; n++) out[n] /= pk;
-  return out;
-}
+var synth = (spec) => synthWaveTable(spec, N);
 var cache = null;
 function getWaveTables() {
   if (!cache) cache = WAVETABLES.map(synth);
@@ -415,12 +428,6 @@ function getWarpedTable(waveIdx, mode, step) {
 
 // plugins/wavetable/dsp.ts
 var MOD_DETUNE_CENTS = 50;
-function sampleTable(tab, phase) {
-  const x = phase * tab.length;
-  const i = Math.floor(x);
-  const f = x - i;
-  return tab[i % tab.length] * (1 - f) + tab[(i + 1) % tab.length] * f;
-}
 var WavetableRenderer = class {
   constructor(note, p, sr) {
     this.sr = sr;

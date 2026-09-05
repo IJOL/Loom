@@ -314,6 +314,28 @@ describe('Subtractive continuous params', () => {
     }
     expect(brightness(withTurn, AFTER, END)).toBeGreaterThan(brightness(withTurn, 0, HALF) * 2);
   });
+
+  // Osc3 (the wavetable stack) ships at level 0, so the FIRST thing a hand does
+  // to it is bring it in on a note already sounding. That gate must be live,
+  // not a trigger-time decision about whether the oscillator exists.
+  it('bringing Osc3 in from its default of 0 reaches the sounding note', () => {
+    const quiet: ParamBag = { ...BASE, 'osc1.level': 0.2, 'osc2.level': 0, 'osc3.waveA': 2, 'osc3.waveB': 3 };
+    const buf = renderWithTurn('subtractive', quiet, SECONDS, 0.5, { 'osc3.level': 0.9 });
+    const ctl = renderWithTurn('subtractive', quiet, SECONDS, null, null);
+    const rms = (b: number[]) => {
+      let s = 0;
+      for (let i = AFTER; i < END; i++) s += b[i] * b[i];
+      return Math.sqrt(s / (END - AFTER));
+    };
+    expect(rms(buf)).toBeGreaterThan(rms(ctl) * 1.5);
+  });
+
+  it('Osc3 WAVES are structural: swapping a table mid-note changes nothing', () => {
+    const on: ParamBag = { ...BASE, 'osc3.level': 0.8, 'osc3.waveA': 0, 'osc3.waveB': 3 };
+    const withTurn = renderWithTurn('subtractive', on, SECONDS, 0.5, { 'osc3.waveA': 6 });
+    const control = renderWithTurn('subtractive', on, SECONDS, null, null);
+    expect(withTurn).toEqual(control);
+  });
 });
 
 // One row per engine: a continuous param that AUDIBLY moves, and the direction

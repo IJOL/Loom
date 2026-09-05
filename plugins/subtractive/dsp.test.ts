@@ -839,3 +839,87 @@ describe('the second filter', () => {
     expect(rms(window(moving))).toBeLessThan(rms(window(still)) * 0.85);
   });
 });
+
+describe('Osc3 — the wavetable stack', () => {
+  // Osc3 alone through a wide-open, unresonant filter: the wave under test is
+  // the only thing in the mix, and nothing reshapes it on the way out.
+  const ALONE: ParamBag = {
+    ...DEFAULTS, 'osc1.level': 0, 'osc2.level': 0, 'sub.level': 0,
+    'filter.cutoff': 1, 'filter.resonance': 0, 'filter.envAmount': 0, 'filter.keyTrack': 0,
+    'amp.attack': 0.001, 'amp.sustain': 1,
+    'osc3.level': 1, 'osc3.waveA': 0, 'osc3.waveB': 3, 'osc3.morph': 0, 'osc3.detune': 0,
+  };
+  const render = (params: ParamBag, seconds = 0.3, midi = 57): number[] => {
+    const v = new SubtractiveVoiceRenderer(note({ midi, durationSec: seconds + 1 }), params, SR);
+    const b: number[] = [];
+    for (let i = 0; i < SR * seconds; i++) b.push(v.renderSample(i / SR));
+    return b;
+  };
+  /** Sign changes after the attack has settled — a pitch meter with no FFT. */
+  const zeroCrossings = (b: number[]) => {
+    let n = 0;
+    for (let i = Math.floor(SR * 0.05) + 1; i < b.length; i++) if ((b[i] >= 0) !== (b[i - 1] >= 0)) n++;
+    return n;
+  };
+  /** Zero crossings per second of the rendered fundamental. */
+  const measuredHz = (params: ParamBag) => zeroCrossings(render(params, 1.0)) / 2 / 0.95;
+  const brightness = (b: number[]) => {
+    let d = 0, e = 0;
+    for (let i = 1; i < b.length; i++) { const df = b[i] - b[i - 1]; d += df * df; e += b[i] * b[i]; }
+    return e > 1e-12 ? d / e : 0;
+  };
+
+  it('at level 0 — the default — the voice renders exactly as it did without Osc3', () => {
+    // DEFAULTS names no osc3.* at all; asking for level 0 with the wildest
+    // tables must be the same voice, sample for sample.
+    const a = render(DEFAULTS);
+    const b = render({ ...DEFAULTS, 'osc3.level': 0, 'osc3.waveA': 7, 'osc3.waveB': 6, 'osc3.morph': 1 });
+    expect(b).toEqual(a);
+  });
+
+  it('the level is a level: four times the knob is four times the sound', () => {
+    const loud = rms(render(ALONE));
+    const quiet = rms(render({ ...ALONE, 'osc3.level': 0.25 }));
+    expect(loud / quiet).toBeGreaterThan(3.5);
+    expect(loud / quiet).toBeLessThan(4.5);
+  });
+
+  it('tracks the note: a sine table at A3 comes out at A3', () => {
+    const f = midiToFreqLocal(57);
+    expect(measuredHz(ALONE) / f).toBeGreaterThan(0.98);
+    expect(measuredHz(ALONE) / f).toBeLessThan(1.02);
+  });
+
+  it('detune is in CENTS: +50 ¢ raises the pitch by 2.9 %, not by an interval', () => {
+    const ratio = measuredHz({ ...ALONE, 'osc3.detune': 50 }) / measuredHz(ALONE);
+    expect(ratio).toBeGreaterThan(1.02);
+    expect(ratio).toBeLessThan(1.04);
+  });
+
+  it('master tune moves Osc3 with the rest of the voice — once, not twice', () => {
+    const ratio = measuredHz({ ...ALONE, 'master.tune': 12 }) / measuredHz(ALONE);
+    expect(ratio).toBeGreaterThan(1.97);
+    expect(ratio).toBeLessThan(2.03);
+  });
+
+  it('morph 1 is the other table: a square is brighter than a sine', () => {
+    const sine = brightness(render(ALONE));
+    const square = brightness(render({ ...ALONE, 'osc3.morph': 1 }));
+    expect(square).toBeGreaterThan(sine * 3);
+  });
+
+  it('rides the unison stack: a 5-copy spread beats where a single copy holds steady', () => {
+    // A detuned stack's envelope wobbles at the beat rate; one copy does not.
+    // Compare the spread of short-window RMS across the render.
+    const wobble = (params: ParamBag) => {
+      const b = render(params, 1.0);
+      const win = Math.floor(SR * 0.02);
+      const levels: number[] = [];
+      for (let s = Math.floor(SR * 0.1); s + win < b.length; s += win) levels.push(rms(b.slice(s, s + win)));
+      return (Math.max(...levels) - Math.min(...levels)) / Math.max(...levels);
+    };
+    const one = wobble(ALONE);
+    const five = wobble({ ...ALONE, 'master.unison': 5, 'master.detune': 30 });
+    expect(five).toBeGreaterThan(one * 3);
+  });
+});

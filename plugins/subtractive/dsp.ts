@@ -1,15 +1,17 @@
 // plugins/subtractive/dsp.ts
-// Per-sample subtractive voice renderer: two unison-stacked oscillators + ring +
-// sub + noise → drive → two filter blocks with a routing between them → amp.
+// Per-sample subtractive voice renderer: three unison-stacked oscillators (two
+// analogue-style, one wavetable) + ring + sub + noise → drive → two filter
+// blocks with a routing between them → amp.
 // Pure — no Web Audio. Sample rate is injected.
 
 import {
   param, slotOf, midiToFreq, clamp01, velGain01,
-  SineOsc, WhiteNoise, UnisonStack, driftDepthFor, Svf, FilterStack, trackedCutoff, Adsr,
+  SineOsc, WhiteNoise, UnisonStack, WavetableOsc, driftDepthFor, Svf, FilterStack, trackedCutoff, Adsr,
 } from '@loom/plugin-sdk';
 import type {
   NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets, ModEnvSpec,
 } from '@loom/plugin-sdk';
+import { waveTableAt } from './wavetable-data';
 
 /** Flat per-voice subtractive parameter snapshot, in the dot-id vocabulary of
  *  this engine's own manifest with waves as indices. It stays INSIDE the plugin:
@@ -24,6 +26,8 @@ export interface SubParams {
   osc1Pw: number; osc1Sync: number;                          // pulse width 0.05..0.95 (square only)
   osc2Wave: number; osc2Level: number; osc2Detune: number;
   osc2Pw: number; osc2Sync: number;
+  osc3WaveA: number; osc3WaveB: number;                      // wavetable indices (read at trigger)
+  osc3Morph: number; osc3Level: number; osc3Detune: number;  // morph 0..1 A→B, level 0..1, detune cents
   ringLevel: number;        // 0..1 level of the osc1 × osc2 product in the mix
   subLevel: number;
   noiseLevel: number; noiseColor: number;                    // color 0..1
@@ -68,6 +72,11 @@ export function subParamsInto(b: ParamBag, out: SubParams): SubParams {
   out.osc2Wave = param(b, 'osc2.wave', 1);
   out.osc2Level = param(b, 'osc2.level', 0.4);
   out.osc2Detune = param(b, 'osc2.detune', 7);
+  out.osc3WaveA = param(b, 'osc3.waveA', 2);
+  out.osc3WaveB = param(b, 'osc3.waveB', 3);
+  out.osc3Morph = param(b, 'osc3.morph', 0);
+  out.osc3Level = param(b, 'osc3.level', 0);
+  out.osc3Detune = param(b, 'osc3.detune', 0);
   out.ringLevel = param(b, 'ring.level', 0);
   out.subLevel = param(b, 'sub.level', 0.3);
   out.noiseLevel = param(b, 'noise.level', 0);
@@ -137,6 +146,9 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   // osc1/osc2 are UNISON STACKS: N detuned copies each (N=1 by default, which is
   // one oscillator at unity gain — exactly what they were before).
   private osc1: UnisonStack; private osc2: UnisonStack;
+  /** osc3 is the same stack around a WAVETABLE oscillator: N copies of two
+   *  tables crossfaded by a morph, with the same spread, drift and mode. */
+  private osc3: UnisonStack;
   /** How far this note's drift can pull the pitch — a fraction of its frequency,
    *  fixed at trigger because it depends only on the note. */
   private driftDepth: number;
@@ -166,6 +178,9 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
   private sOsc2Detune = -1;
   private sOsc2Pw = -1;
   private sOsc2Sync = -1;
+  private sOsc3Level = -1;
+  private sOsc3Morph = -1;
+  private sOsc3Detune = -1;
   private sRingLevel = -1;
   private sSubLevel = -1;
   private sNoiseLevel = -1;
@@ -244,6 +259,12 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     // a click, so it is a trigger-time decision like the filter kind.
     this.osc1 = new UnisonStack(p.osc1Wave, p.unisonVoices, sampleRate, p.unisonMode);
     this.osc2 = new UnisonStack(p.osc2Wave, p.unisonVoices, sampleRate, p.unisonMode);
+    // Which two tables osc3 morphs between is structural too: swapping a table
+    // under a running phase is a step in the waveform. Chosen here, once — the
+    // morph between them is the continuous control, and it stays live.
+    const tA = waveTableAt(p.osc3WaveA);
+    const tB = waveTableAt(p.osc3WaveB);
+    this.osc3 = new UnisonStack((sr) => new WavetableOsc(tA, tB, sr), p.unisonVoices, sampleRate, p.unisonMode);
     this.driftDepth = driftDepthFor(baseFreq);
     this.sub = new SineOsc(sampleRate);
     this.noiseLp = new Svf(sampleRate);
@@ -310,6 +331,9 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     this.sOsc2Detune = slotOf(index, 'osc2.detune');
     this.sOsc2Pw = slotOf(index, 'osc2.pw');
     this.sOsc2Sync = slotOf(index, 'osc2.sync');
+    this.sOsc3Level = slotOf(index, 'osc3.level');
+    this.sOsc3Morph = slotOf(index, 'osc3.morph');
+    this.sOsc3Detune = slotOf(index, 'osc3.detune');
     this.sRingLevel = slotOf(index, 'ring.level');
     this.sSubLevel = slotOf(index, 'sub.level');
     this.sNoiseLevel = slotOf(index, 'noise.level');
@@ -427,6 +451,18 @@ export class SubtractiveVoiceRenderer implements VoiceRenderer {
     const o1 = this.osc1.update(f, pw1, det1, spread, driftAmt);
     const o2 = this.osc2.update(f, pw2, det2, spread, driftAmt);
     let mix = o1 * osc1Level + o2 * osc2Level + this.sub.update(f * 0.5) * subLevel;
+    // osc3: the same pitch as osc1/osc2 (`f` already carries master tune), its
+    // own cents detune, and the shared spread and drift. Level, morph and
+    // detune are all live. Skipped entirely at level 0, the default: the stack's
+    // phases simply do not advance, which is what keeps a lane that never
+    // touched Osc3 rendering exactly as it did before Osc3 existed.
+    const osc3Level = mo?.[this.sOsc3Level] ? clamp01((L && this.sOsc3Level >= 0 ? L[this.sOsc3Level] : p.osc3Level) + mo[this.sOsc3Level]) : (L && this.sOsc3Level >= 0 ? L[this.sOsc3Level] : p.osc3Level);
+    if (osc3Level > 0) {
+      const morph3 = mo?.[this.sOsc3Morph] ? clamp01((L && this.sOsc3Morph >= 0 ? L[this.sOsc3Morph] : p.osc3Morph) + mo[this.sOsc3Morph]) : (L && this.sOsc3Morph >= 0 ? L[this.sOsc3Morph] : p.osc3Morph);
+      const det3 = mo?.[this.sOsc3Detune] ? (L && this.sOsc3Detune >= 0 ? L[this.sOsc3Detune] : p.osc3Detune) + mo[this.sOsc3Detune] * MOD_DETUNE_CENTS : (L && this.sOsc3Detune >= 0 ? L[this.sOsc3Detune] : p.osc3Detune);
+      // The stack's second argument is the MORPH here (WavetableOsc reads it so).
+      mix += this.osc3.update(f, morph3, det3, spread, driftAmt) * osc3Level;
+    }
     // Ring modulation: the PRODUCT of the two oscillators, mixed in as its own
     // source. Multiplying the raw outputs (not the level-scaled ones) is what
     // makes Ring independent: with osc1/osc2 at 0 you hear the ring alone, which

@@ -409,6 +409,63 @@ var UnisonStack = class {
   }
 };
 
+// packages/loom-plugin-sdk/src/dsp/wavetable.ts
+function synthWaveTable(spec2, n = 2048) {
+  const out = new Float32Array(n);
+  const { imag, real } = spec2;
+  for (let i = 0; i < n; i++) {
+    const ph = i / n * 2 * Math.PI;
+    let s = 0;
+    for (let k = 1; k < imag.length; k++) {
+      s += imag[k] * Math.sin(k * ph);
+      if (real && real[k]) s += real[k] * Math.cos(k * ph);
+    }
+    out[i] = s;
+  }
+  let pk = 0;
+  for (let i = 0; i < n; i++) pk = Math.max(pk, Math.abs(out[i]));
+  if (pk > 1e-9) for (let i = 0; i < n; i++) out[i] /= pk;
+  return out;
+}
+function sampleTable(tab, phase) {
+  const n = tab.length;
+  const x = phase * n;
+  let i = Math.floor(x);
+  const f = x - i;
+  if (i >= n) i -= n;
+  const j = i + 1 === n ? 0 : i + 1;
+  return tab[i] * (1 - f) + tab[j] * f;
+}
+var WavetableOsc = class {
+  constructor(tA, tB, sr) {
+    this.tA = tA;
+    this.tB = tB;
+    this.sr = sr;
+  }
+  phase = 0;
+  /** The crossfade gains, recomputed only when the morph moves: two
+   *  transcendentals per sample per copy is a real cost for a constant. */
+  gainA = 1;
+  gainB = 0;
+  morphRaw = 0;
+  /** One sample. The second argument is the MORPH — 0 is table A alone, 1 is
+   *  table B alone — not a pulse width: the same licence SyncOsc takes with
+   *  its ratio, and what lets a UnisonStack carry it without a second path. */
+  update(freq, morph = 0) {
+    if (morph !== this.morphRaw) {
+      this.morphRaw = morph;
+      const m = morph < 0 ? 0 : morph > 1 ? 1 : morph;
+      this.gainA = Math.cos(m * Math.PI * 0.5);
+      this.gainB = Math.sin(m * Math.PI * 0.5);
+    }
+    const ph = this.phase;
+    const v = this.gainB === 0 ? sampleTable(this.tA, ph) * this.gainA : sampleTable(this.tA, ph) * this.gainA + sampleTable(this.tB, ph) * this.gainB;
+    this.phase += freq / this.sr;
+    if (this.phase >= 1) this.phase -= Math.floor(this.phase);
+    return v;
+  }
+};
+
 // packages/loom-plugin-sdk/src/dsp/comb.ts
 var MIN_TUNE_HZ = 30;
 var CombFilter = class {
@@ -558,6 +615,56 @@ var FilterStack = class {
 // packages/loom-plugin-sdk/src/dsp/pattern.ts
 var GOLDEN_PATTERN = (Math.sqrt(5) - 1) / 2;
 
+// plugins/subtractive/wavetable-data.ts
+var HARMONICS = 64;
+var spec = (fill) => {
+  const imag = new Float32Array(HARMONICS);
+  fill(imag);
+  return imag;
+};
+var SPECS = [
+  spec((im) => {
+    im[1] = 1;
+  }),
+  spec((im) => {
+    for (let k = 1; k < HARMONICS; k += 2) im[k] = 8 / (Math.PI * Math.PI * k * k) * ((k - 1) / 2 % 2 === 0 ? 1 : -1);
+  }),
+  spec((im) => {
+    for (let k = 1; k < HARMONICS; k++) im[k] = 2 / (Math.PI * k) * (k % 2 === 0 ? 1 : -1);
+  }),
+  spec((im) => {
+    for (let k = 1; k < HARMONICS; k += 2) im[k] = 4 / (Math.PI * k);
+  }),
+  spec((im) => {
+    for (let k = 1; k < HARMONICS; k++) im[k] = 2 / (Math.PI * k) * Math.sin(Math.PI * k * 0.25);
+  }),
+  spec((im) => {
+    im[1] = 1;
+    im[2] = 0.8;
+    im[3] = 0.6;
+    im[4] = 0.4;
+    im[8] = 0.3;
+  }),
+  spec((im) => {
+    for (let k = 1; k < 20; k++) im[k] = 1 / Math.pow(k, 0.7);
+  }),
+  spec((im) => {
+    im[1] = 1;
+    im[2] = 0.7;
+    im[3] = 0.5;
+    im[4] = 0.9;
+    im[5] = 0.6;
+    im[6] = 0.3;
+    im[7] = 0.4;
+    im[10] = 0.25;
+    im[12] = 0.2;
+  })
+];
+var WAVE_TABLES = SPECS.map((imag) => synthWaveTable({ imag }));
+function waveTableAt(idx) {
+  return WAVE_TABLES[Math.max(0, Math.min(WAVE_TABLES.length - 1, Math.round(idx)))];
+}
+
 // plugins/subtractive/dsp.ts
 var NO_SLOTS = new Float64Array(0);
 function subParamsInto(b, out) {
@@ -576,6 +683,11 @@ function subParamsInto(b, out) {
   out.osc2Wave = param(b, "osc2.wave", 1);
   out.osc2Level = param(b, "osc2.level", 0.4);
   out.osc2Detune = param(b, "osc2.detune", 7);
+  out.osc3WaveA = param(b, "osc3.waveA", 2);
+  out.osc3WaveB = param(b, "osc3.waveB", 3);
+  out.osc3Morph = param(b, "osc3.morph", 0);
+  out.osc3Level = param(b, "osc3.level", 0);
+  out.osc3Detune = param(b, "osc3.detune", 0);
   out.ringLevel = param(b, "ring.level", 0);
   out.subLevel = param(b, "sub.level", 0.3);
   out.noiseLevel = param(b, "noise.level", 0);
@@ -628,6 +740,9 @@ var SubtractiveVoiceRenderer = class {
   // one oscillator at unity gain — exactly what they were before).
   osc1;
   osc2;
+  /** osc3 is the same stack around a WAVETABLE oscillator: N copies of two
+   *  tables crossfaded by a morph, with the same spread, drift and mode. */
+  osc3;
   /** How far this note's drift can pull the pitch — a fraction of its frequency,
    *  fixed at trigger because it depends only on the note. */
   driftDepth;
@@ -660,6 +775,9 @@ var SubtractiveVoiceRenderer = class {
   sOsc2Detune = -1;
   sOsc2Pw = -1;
   sOsc2Sync = -1;
+  sOsc3Level = -1;
+  sOsc3Morph = -1;
+  sOsc3Detune = -1;
   sRingLevel = -1;
   sSubLevel = -1;
   sNoiseLevel = -1;
@@ -741,6 +859,9 @@ var SubtractiveVoiceRenderer = class {
     const baseFreq = this.noteHz * Math.pow(2, p.masterTune / 12);
     this.osc1 = new UnisonStack(p.osc1Wave, p.unisonVoices, sampleRate, p.unisonMode);
     this.osc2 = new UnisonStack(p.osc2Wave, p.unisonVoices, sampleRate, p.unisonMode);
+    const tA = waveTableAt(p.osc3WaveA);
+    const tB = waveTableAt(p.osc3WaveB);
+    this.osc3 = new UnisonStack((sr) => new WavetableOsc(tA, tB, sr), p.unisonVoices, sampleRate, p.unisonMode);
     this.driftDepth = driftDepthFor(baseFreq);
     this.sub = new SineOsc(sampleRate);
     this.noiseLp = new Svf(sampleRate);
@@ -812,6 +933,9 @@ var SubtractiveVoiceRenderer = class {
     this.sOsc2Detune = slotOf(index, "osc2.detune");
     this.sOsc2Pw = slotOf(index, "osc2.pw");
     this.sOsc2Sync = slotOf(index, "osc2.sync");
+    this.sOsc3Level = slotOf(index, "osc3.level");
+    this.sOsc3Morph = slotOf(index, "osc3.morph");
+    this.sOsc3Detune = slotOf(index, "osc3.detune");
     this.sRingLevel = slotOf(index, "ring.level");
     this.sSubLevel = slotOf(index, "sub.level");
     this.sNoiseLevel = slotOf(index, "noise.level");
@@ -900,6 +1024,12 @@ var SubtractiveVoiceRenderer = class {
     const o1 = this.osc1.update(f, pw1, det1, spread, driftAmt);
     const o2 = this.osc2.update(f, pw2, det2, spread, driftAmt);
     let mix = o1 * osc1Level + o2 * osc2Level + this.sub.update(f * 0.5) * subLevel;
+    const osc3Level = mo?.[this.sOsc3Level] ? clamp01((L && this.sOsc3Level >= 0 ? L[this.sOsc3Level] : p.osc3Level) + mo[this.sOsc3Level]) : L && this.sOsc3Level >= 0 ? L[this.sOsc3Level] : p.osc3Level;
+    if (osc3Level > 0) {
+      const morph3 = mo?.[this.sOsc3Morph] ? clamp01((L && this.sOsc3Morph >= 0 ? L[this.sOsc3Morph] : p.osc3Morph) + mo[this.sOsc3Morph]) : L && this.sOsc3Morph >= 0 ? L[this.sOsc3Morph] : p.osc3Morph;
+      const det3 = mo?.[this.sOsc3Detune] ? (L && this.sOsc3Detune >= 0 ? L[this.sOsc3Detune] : p.osc3Detune) + mo[this.sOsc3Detune] * MOD_DETUNE_CENTS : L && this.sOsc3Detune >= 0 ? L[this.sOsc3Detune] : p.osc3Detune;
+      mix += this.osc3.update(f, morph3, det3, spread, driftAmt) * osc3Level;
+    }
     if (ringLevel > 0) mix += o1 * o2 * ringLevel;
     if (noiseLevel > 0) {
       const noiseColor = mo?.[this.sNoiseColor] ? clamp01((L && this.sNoiseColor >= 0 ? L[this.sNoiseColor] : p.noiseColor) + mo[this.sNoiseColor]) : L && this.sNoiseColor >= 0 ? L[this.sNoiseColor] : p.noiseColor;

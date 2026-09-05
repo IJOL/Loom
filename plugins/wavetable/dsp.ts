@@ -4,21 +4,13 @@
 // Ported from src/engines/wavetable.ts WavetableVoice.
 //
 // Pure: no Web Audio / worklet globals. Sample rate injected via constructor.
-import { param, slotOf, Svf, Adsr, ModEnvHost, midiToFreq, clamp01, velGain01 } from '@loom/plugin-sdk';
+import { param, slotOf, Svf, Adsr, ModEnvHost, midiToFreq, clamp01, velGain01, sampleTable } from '@loom/plugin-sdk';
 import type {
   NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets, ModEnvSpec,
 } from '@loom/plugin-sdk';
 import { getWaveTables, getWarpedTable, SPECTRAL_STEPS } from './wavetable-data';
 // Detune modulation span: depth 1 (bipolar) sweeps ±50 cents, matching the knob.
 const MOD_DETUNE_CENTS = 50;
-
-/** Linear interpolation inside a single-cycle table. `phase` is 0..1. */
-function sampleTable(tab: Float32Array, phase: number): number {
-  const x = phase * tab.length;
-  const i = Math.floor(x);
-  const f = x - i;
-  return tab[i % tab.length] * (1 - f) + tab[(i + 1) % tab.length] * f;
-}
 
 export class WavetableRenderer implements VoiceRenderer {
   private tA: Float32Array;

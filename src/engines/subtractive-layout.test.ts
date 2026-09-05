@@ -11,12 +11,13 @@ const SUB_PARAM_SPECS = manifest.components[0].params as unknown as EngineParamS
 const SUB_PARAM_GROUPS = manifest.components[0].groups as unknown as EngineParamGroup[];
 
 describe('the subtractive page, from data', () => {
-  // The two oscillators share a line; the three MIXER SOURCES they feed — ring
-  // (OSC 1 × OSC 2), sub and noise — share the next.
-  it('puts the two oscillators on one row and the three mixer sources on the next', () => {
+  // The two analogue oscillators share a line. The wavetable OSC 3 leads the
+  // next, ahead of the three MIXER SOURCES — ring (OSC 1 × OSC 2), sub and
+  // noise — so its five controls do not stretch the first row to fifteen.
+  it('puts the two oscillators on one row, and OSC 3 with the mixer sources on the next', () => {
     const rows = resolveParamRows(SUB_PARAM_SPECS, SUB_PARAM_GROUPS);
     expect(rows[0].sections.map((s) => s.title)).toEqual(['OSC 1', 'OSC 2']);
-    expect(rows[1].sections.map((s) => s.title)).toEqual(['RING', 'SUB', 'NOISE']);
+    expect(rows[1].sections.map((s) => s.title)).toEqual(['OSC 3', 'RING', 'SUB', 'NOISE']);
   });
 
   // A filter block per row: seven controls each, two of them radio strips, and a
@@ -24,7 +25,7 @@ describe('the subtractive page, from data', () => {
   it('gives each filter, MASTER and POLY a row of its own', () => {
     const rows = resolveParamRows(SUB_PARAM_SPECS, SUB_PARAM_GROUPS);
     expect(rows.map((r) => r.sections.map((s) => s.title))).toEqual([
-      ['OSC 1', 'OSC 2'], ['RING', 'SUB', 'NOISE'],
+      ['OSC 1', 'OSC 2'], ['OSC 3', 'RING', 'SUB', 'NOISE'],
       ['FILTER A'], ['FILTER B'], ['MASTER'], ['POLY'],
     ]);
   });
@@ -34,6 +35,7 @@ describe('the subtractive page, from data', () => {
     const byTitle = new Map(rows.flatMap((r) => r.sections).map((s) => [s.title, s.color]));
     expect(byTitle.get('OSC 1')).toBe('var(--knob-cyan)');
     expect(byTitle.get('OSC 2')).toBe('var(--knob-yellow)');
+    expect(byTitle.get('OSC 3')).toBe('var(--knob-teal)');
     expect(byTitle.get('RING')).toBe('var(--knob-red)');
     expect(byTitle.get('SUB')).toBe('var(--knob-blue)');
     expect(byTitle.get('NOISE')).toBe('var(--knob-purple)');

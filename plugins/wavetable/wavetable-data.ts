@@ -13,6 +13,8 @@
 // (Previously this duplicated the generators in src/engines/wavetable-tables.ts;
 //  that file was merged here so the spec lives in one place.)
 
+import { synthWaveTable } from '@loom/plugin-sdk';
+
 const N = 2048;
 const HARMONICS = 64;
 
@@ -113,27 +115,10 @@ export const WAVETABLES: WaveTableDef[] = [
   makeVocal(),
 ];
 
-/**
- * Synthesise one single-cycle Float32Array from the Fourier imag/real coefficients.
- * sum_k imag[k]*sin(2π k n/N) + real[k]*cos(2π k n/N), peak-normalised to ±1.
- */
-function synth(spec: WaveTableDef): Float32Array {
-  const out = new Float32Array(N);
-  for (let n = 0; n < N; n++) {
-    const ph = (n / N) * 2 * Math.PI;
-    let s = 0;
-    for (let k = 1; k < spec.imag.length; k++) {
-      s += (spec.imag[k] ?? 0) * Math.sin(k * ph);
-      if (spec.real[k]) s += spec.real[k] * Math.cos(k * ph);
-    }
-    out[n] = s;
-  }
-  // Peak-normalise so ±1 output is consistent across all tables.
-  let pk = 0;
-  for (const v of out) pk = Math.max(pk, Math.abs(v));
-  if (pk > 1e-9) for (let n = 0; n < N; n++) out[n] /= pk;
-  return out;
-}
+/** Synthesise one single-cycle table from the Fourier imag/real coefficients,
+ *  peak-normalised to ±1. The arithmetic is the SDK's; the reference renders
+ *  pin its output, so this is exactly what it was when it lived here. */
+const synth = (spec: WaveTableDef): Float32Array => synthWaveTable(spec, N);
 
 let cache: Float32Array[] | null = null;
 

@@ -9334,6 +9334,329 @@
           ]
         }
       ]
+    },
+    {
+      "name": "BASS Wavetable Growl",
+      "gm": [
+        38,
+        39
+      ],
+      "params": {
+        "master.tune": 0,
+        "osc1.wave": 0,
+        "osc1.level": 0.45,
+        "osc1.detune": 0,
+        "osc2.wave": 1,
+        "osc2.level": 0.2,
+        "osc2.detune": 0,
+        "osc3.waveA": 5,
+        "osc3.waveB": 6,
+        "osc3.morph": 0.3,
+        "osc3.level": 0.7,
+        "osc3.detune": 0,
+        "sub.level": 0.45,
+        "noise.level": 0,
+        "filter.cutoff": 0.4,
+        "filter.resonance": 0.3,
+        "filter.envAmount": 0.5,
+        "filter.keyTrack": 0.2,
+        "filter.drive": 0.2,
+        "filter.attack": 0.005,
+        "filter.decay": 0.25,
+        "filter.sustain": 0.3,
+        "filter.release": 0.3,
+        "amp.attack": 0.005,
+        "amp.decay": 0.3,
+        "amp.sustain": 0.6,
+        "amp.release": 0.25,
+        "amp.builtinEnv": 0,
+        "filter.builtinEnv": 0
+      },
+      "modulators": [
+        {
+          "id": "adsr-amp",
+          "kind": "adsr",
+          "enabled": true,
+          "connections": [
+            {
+              "id": "c-amp",
+              "paramId": "amp",
+              "depth": 1
+            }
+          ],
+          "attackSec": 0.005,
+          "decaySec": 0.3,
+          "sustain": 0.6,
+          "releaseSec": 0.25,
+          "scope": "per-voice"
+        },
+        {
+          "id": "adsr-filter",
+          "kind": "adsr",
+          "enabled": true,
+          "connections": [
+            {
+              "id": "c-filter",
+              "paramId": "filter.env",
+              "depth": 1
+            }
+          ],
+          "attackSec": 0.005,
+          "decaySec": 0.25,
+          "sustain": 0.3,
+          "releaseSec": 0.3,
+          "scope": "per-voice"
+        },
+        {
+          "id": "lfo1",
+          "kind": "lfo",
+          "enabled": true,
+          "connections": [],
+          "rateHz": 4,
+          "waveform": "sine",
+          "bipolar": true,
+          "syncToBpm": false,
+          "syncBars": 0.25,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared"
+        },
+        {
+          "id": "lfo2",
+          "kind": "lfo",
+          "enabled": true,
+          "connections": [],
+          "rateHz": 2,
+          "waveform": "triangle",
+          "bipolar": true,
+          "syncToBpm": false,
+          "syncBars": 0.25,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared"
+        }
+      ]
+    },
+    {
+      "name": "LEAD Wavetable Morph",
+      "gm": [
+        81,
+        82
+      ],
+      "params": {
+        "master.tune": 0,
+        "master.unison": 3,
+        "master.detune": 18,
+        "osc1.wave": 0,
+        "osc1.level": 0.3,
+        "osc1.detune": -8,
+        "osc2.wave": 0,
+        "osc2.level": 0.3,
+        "osc2.detune": 8,
+        "osc3.waveA": 2,
+        "osc3.waveB": 7,
+        "osc3.morph": 0.5,
+        "osc3.level": 0.6,
+        "osc3.detune": 0,
+        "sub.level": 0.1,
+        "noise.level": 0,
+        "filter.cutoff": 0.65,
+        "filter.resonance": 0.2,
+        "filter.envAmount": 0.3,
+        "filter.keyTrack": 0.5,
+        "filter.drive": 0.05,
+        "filter.attack": 0.01,
+        "filter.decay": 0.4,
+        "filter.sustain": 0.6,
+        "filter.release": 0.4,
+        "amp.attack": 0.01,
+        "amp.decay": 0.3,
+        "amp.sustain": 0.8,
+        "amp.release": 0.35,
+        "amp.builtinEnv": 0,
+        "filter.builtinEnv": 0
+      },
+      "modulators": [
+        {
+          "id": "adsr-amp",
+          "kind": "adsr",
+          "enabled": true,
+          "connections": [
+            {
+              "id": "c-amp",
+              "paramId": "amp",
+              "depth": 1
+            }
+          ],
+          "attackSec": 0.01,
+          "decaySec": 0.3,
+          "sustain": 0.8,
+          "releaseSec": 0.35,
+          "scope": "per-voice"
+        },
+        {
+          "id": "adsr-filter",
+          "kind": "adsr",
+          "enabled": true,
+          "connections": [
+            {
+              "id": "c-filter",
+              "paramId": "filter.env",
+              "depth": 1
+            }
+          ],
+          "attackSec": 0.01,
+          "decaySec": 0.4,
+          "sustain": 0.6,
+          "releaseSec": 0.4,
+          "scope": "per-voice"
+        },
+        {
+          "id": "lfo1",
+          "kind": "lfo",
+          "enabled": true,
+          "connections": [
+            {
+              "id": "c-morph",
+              "paramId": "osc3.morph",
+              "depth": 0.5
+            }
+          ],
+          "rateHz": 0.3,
+          "waveform": "sine",
+          "bipolar": true,
+          "syncToBpm": false,
+          "syncBars": 0.25,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared"
+        },
+        {
+          "id": "lfo2",
+          "kind": "lfo",
+          "enabled": true,
+          "connections": [],
+          "rateHz": 2,
+          "waveform": "triangle",
+          "bipolar": true,
+          "syncToBpm": false,
+          "syncBars": 0.25,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared"
+        }
+      ]
+    },
+    {
+      "name": "PAD Wavetable Glass",
+      "gm": [
+        88,
+        89
+      ],
+      "params": {
+        "master.tune": 0,
+        "master.unison": 2,
+        "master.detune": 12,
+        "osc1.wave": 2,
+        "osc1.level": 0.25,
+        "osc1.detune": 0,
+        "osc2.wave": 3,
+        "osc2.level": 0.2,
+        "osc2.detune": 5,
+        "osc3.waveA": 1,
+        "osc3.waveB": 5,
+        "osc3.morph": 0.4,
+        "osc3.level": 0.5,
+        "osc3.detune": 6,
+        "sub.level": 0.15,
+        "noise.level": 0,
+        "filter.cutoff": 0.5,
+        "filter.resonance": 0.15,
+        "filter.envAmount": 0.2,
+        "filter.keyTrack": 0.3,
+        "filter.drive": 0,
+        "filter.attack": 0.8,
+        "filter.decay": 1,
+        "filter.sustain": 0.5,
+        "filter.release": 1,
+        "amp.attack": 0.6,
+        "amp.decay": 0.5,
+        "amp.sustain": 0.8,
+        "amp.release": 1.2,
+        "amp.builtinEnv": 0,
+        "filter.builtinEnv": 0,
+        "output.trim": 0.25
+      },
+      "modulators": [
+        {
+          "id": "adsr-amp",
+          "kind": "adsr",
+          "enabled": true,
+          "connections": [
+            {
+              "id": "c-amp",
+              "paramId": "amp",
+              "depth": 1
+            }
+          ],
+          "attackSec": 0.6,
+          "decaySec": 0.5,
+          "sustain": 0.8,
+          "releaseSec": 1.2,
+          "scope": "per-voice"
+        },
+        {
+          "id": "adsr-filter",
+          "kind": "adsr",
+          "enabled": true,
+          "connections": [
+            {
+              "id": "c-filter",
+              "paramId": "filter.env",
+              "depth": 1
+            }
+          ],
+          "attackSec": 0.8,
+          "decaySec": 1,
+          "sustain": 0.5,
+          "releaseSec": 1,
+          "scope": "per-voice"
+        },
+        {
+          "id": "lfo1",
+          "kind": "lfo",
+          "enabled": true,
+          "connections": [],
+          "rateHz": 4,
+          "waveform": "sine",
+          "bipolar": true,
+          "syncToBpm": false,
+          "syncBars": 0.25,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared"
+        },
+        {
+          "id": "lfo2",
+          "kind": "lfo",
+          "enabled": true,
+          "connections": [
+            {
+              "id": "c-morph",
+              "paramId": "osc3.morph",
+              "depth": 0.4
+            }
+          ],
+          "rateHz": 0.15,
+          "waveform": "triangle",
+          "bipolar": true,
+          "syncToBpm": false,
+          "syncBars": 0.25,
+          "syncSubdiv": "straight",
+          "trigger": "free",
+          "scope": "shared"
+        }
+      ]
     }
   ]
 }
