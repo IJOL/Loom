@@ -584,6 +584,7 @@ var WestcoastRenderer = class {
     const cycle2 = Math.round(param(p, "contour.cycle", 0)) >= 1;
     this.contour = new AdContour(atk, dec, amount, cmode, cycle2, this.holdEnd);
     this.levelBase = param(p, "amp.level", 0.8);
+    this.trimBase = param(p, "output.trim", 1);
     this.ampTrim = velGain01(note.velocity, note.accent);
     this.accentMul = accentMul;
   }
@@ -648,6 +649,10 @@ var WestcoastRenderer = class {
   /** The synthetic tremolo target. Not a declared param — the index appends it,
    *  which is what those three synthetic slots are for. */
   sAmpGain = -1;
+  /** Per-preset output.trim: undeclared but live (the host seeds it), same
+   *  contract as fm/karplus. Snapshot fallback for standalone renders. */
+  sTrim = -1;
+  trimBase = 1;
   // Cached expensive conversions, refreshed only when their raw input moves.
   pitchRaw = NaN;
   freqEffCache = 0;
@@ -683,6 +688,7 @@ var WestcoastRenderer = class {
     this.sLpgRes = slotOf(index, "lpg.resonance");
     this.sLevel = slotOf(index, "amp.level");
     this.sAmpGain = slotOf(index, "amp.gain");
+    this.sTrim = slotOf(index, "output.trim");
   }
   renderSample(t, moIn) {
     if (t < this.begin) return 0;
@@ -745,7 +751,8 @@ var WestcoastRenderer = class {
     const vca = this.vcaMode ? contourVal : 1;
     const levelKnobRaw = L && this.sLevel >= 0 ? L[this.sLevel] : this.levelBase;
     const levelKnob = mo?.[this.sLevel] ? Math.max(0, levelKnobRaw + mo[this.sLevel]) : levelKnobRaw;
-    let out = this.filter.lp * vca * levelKnob * this.ampTrim;
+    const trim = L && this.sTrim >= 0 ? L[this.sTrim] : this.trimBase;
+    let out = this.filter.lp * vca * levelKnob * this.ampTrim * trim;
     if (mo?.[this.sAmpGain]) out *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
     if (this.contour.isDone) {
       this.done = true;

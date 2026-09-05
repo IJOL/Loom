@@ -309,3 +309,22 @@ describe('WestcoastRenderer: modulation offsets reach every live param', () => {
     expect(mag(up, 440)).toBeGreaterThan(mag(up, 220) * 4);
   });
 });
+
+describe('output.trim — the per-preset gain-staging lever', () => {
+  // Westcoast was the one poly engine that IGNORED params['output.trim']: the
+  // 2026-09-05 recalibration measured its hot presets pinned at the lane clip
+  // ceiling however far the trim was pulled, because the number never reached
+  // the voice. Same contract as fm/karplus/subtractive: a pure output gain.
+  it('scales the rendered voice linearly', () => {
+    const n = note({ midi: 50, durationSec: 0.5 });
+    const full = render({ ...P, 'output.trim': 1 }, n, 0.5);
+    const quarter = render({ ...P, 'output.trim': 0.25 }, n, 0.5);
+    const rms = (xs: Float32Array) => {
+      let s = 0;
+      for (let i = 0; i < xs.length; i++) s += xs[i] * xs[i];
+      return Math.sqrt(s / xs.length);
+    };
+    expect(rms(full)).toBeGreaterThan(0);
+    expect(rms(full) / rms(quarter)).toBeCloseTo(4, 1);
+  });
+});

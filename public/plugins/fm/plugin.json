@@ -396,7 +396,8 @@
           "kind": "continuous",
           "min": 1,
           "max": 64,
-          "default": 24,
+          "default": 10,
+          "step": 1,
           "group": "poly"
         }
       ],

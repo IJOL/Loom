@@ -197,6 +197,10 @@ export class WestcoastRenderer implements VoiceRenderer {
   /** The synthetic tremolo target. Not a declared param — the index appends it,
    *  which is what those three synthetic slots are for. */
   private sAmpGain = -1;
+  /** Per-preset output.trim: undeclared but live (the host seeds it), same
+   *  contract as fm/karplus. Snapshot fallback for standalone renders. */
+  private sTrim = -1;
+  private trimBase = 1;
   // Cached expensive conversions, refreshed only when their raw input moves.
   private pitchRaw = NaN;
   private freqEffCache = 0;
@@ -272,8 +276,11 @@ export class WestcoastRenderer implements VoiceRenderer {
 
     // Amp — level is LIVE; the velocity gain is frozen at trigger. No engine
     // trim here: it is a manifest capability (`outputTrim`) the host multiplies
-    // in, together with its synth category gain.
+    // in, together with its synth category gain. The per-PRESET balance
+    // (params['output.trim']) IS the plugin's, though — this engine was the one
+    // poly voice that ignored it, which left its bank uncalibratable.
     this.levelBase = param(p, 'amp.level', 0.8);
+    this.trimBase = param(p, 'output.trim', 1);
     // accentMul above is this engine's TIMBRE multiplier — fold drive and cutoff
     // env — and it stays out of here. The amp punch is the shared one, as the
     // legacy WestVoice had it: an accent drives the folder harder, it does not
@@ -313,6 +320,7 @@ export class WestcoastRenderer implements VoiceRenderer {
     this.sLpgRes = slotOf(index, 'lpg.resonance');
     this.sLevel = slotOf(index, 'amp.level');
     this.sAmpGain = slotOf(index, 'amp.gain');
+    this.sTrim = slotOf(index, 'output.trim');
   }
 
   renderSample(t: number, moIn?: VoiceModOffsets): number {
@@ -417,10 +425,11 @@ export class WestcoastRenderer implements VoiceRenderer {
     // VCA: contour drives gain in gate/both mode; in lp-only mode, VCA is fixed 1
     const vca = this.vcaMode ? contourVal : 1;
 
-    // --- Output (amp.level live, amp.gain tremolo) ---
+    // --- Output (amp.level live + modulated, amp.gain tremolo, output.trim live) ---
     const levelKnobRaw = L && this.sLevel >= 0 ? L[this.sLevel] : this.levelBase;
     const levelKnob = mo?.[this.sLevel] ? Math.max(0, levelKnobRaw + mo[this.sLevel]) : levelKnobRaw;
-    let out = this.filter.lp * vca * levelKnob * this.ampTrim;
+    const trim = L && this.sTrim >= 0 ? L[this.sTrim] : this.trimBase;
+    let out = this.filter.lp * vca * levelKnob * this.ampTrim * trim;
     if (mo?.[this.sAmpGain]) out *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
 
     // Mark done:
