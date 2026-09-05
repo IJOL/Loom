@@ -1,5 +1,6 @@
 import type { NoteSpec, ParamBag, VoiceRenderer, VoiceModOffsets } from './types';
 import { createRenderer } from './renderer-registry';
+import { POLY_VOICE_HEADROOM, laneSoftClip } from './gain-staging';
 import type { ModulationRuntime, ModLite, PhaseOrigin } from './modulation-runtime';
 import { buildParamIndex, type ParamIndex } from './param-index';
 import { SlotSmoother } from './slot-smoother';
@@ -403,6 +404,11 @@ export class VoiceManager {
       out += s.v.renderSample(t, mo) * this.outputTrim * steal;
       if (s.v.done) this.slots.splice(i, 1);
     }
-    return out;
+    // Lane staging (gain-staging.ts owns both numbers): per-voice headroom
+    // moves the operating point down, and the lane soft clip is the one stage
+    // that treats a PILEUP differently from a note — voices used to sum raw,
+    // and eight westcoast voices measured raw RMS 1.03, leaving the master
+    // limiter grinding the whole lane into noise.
+    return laneSoftClip(out * POLY_VOICE_HEADROOM);
   }
 }

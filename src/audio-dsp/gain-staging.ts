@@ -46,3 +46,35 @@ export const CATEGORY_GAIN = {
 export const SAMPLE_OUTPUT_TRIM = 0.7; // headroom so a full-scale sample stays < 0 dBFS
 export const SAMPLE_HEADROOM = 0.8;    // per-voice sample headroom (was the inline 0.8 in resolveSpawn)
 
+/** Melodic per-voice headroom, applied to the lane's summed output in
+ *  VoiceManager (live worklet and offline kernel share that path). Voices used
+ *  to sum RAW: a real westcoast patch at 8 voices measured raw RMS 1.03 —
+ *  sustained overload — and the master limiter ground the whole lane into
+ *  noise (2026-09-05 repro). 0.5 (−6 dB) moves the melodic operating point
+ *  down; it also settles the standing "the bank rides the master knee" issue,
+ *  since every melodic bank ran hot against MASTER_SOFTCLIP_KNEE. Relative
+ *  balance between engines/presets is untouched — they all scale together. */
+export const POLY_VOICE_HEADROOM = 0.5;
+
+/** Where the LANE soft clip stops being transparent. Deliberately ABOVE the
+ *  master's 0.8 knee: a single voice must reach the master untouched, and only
+ *  a pileup — several voices summing past this — saturates, inside its own
+ *  lane, instead of driving the master stage into continuous grinding. */
+export const LANE_SOFTCLIP_KNEE = 0.9;
+
+/** The absolute lane ceiling. Kept strictly under 1 — the same contract the
+ *  master curve keeps with its ~0.95 — so even a float-saturated tanh cannot
+ *  land the lane's output ON full scale. */
+const LANE_SOFTCLIP_CEIL = 0.98;
+
+/** The only stage that treats a pileup differently from a note: identity below
+ *  the knee, then a tanh that maps everything above — any overshoot included —
+ *  into (knee, ceil), so the lane's output stays under ±1. Slope is 1 at the
+ *  knee (tanh′(0) = 1), so there is no corner to hear. */
+export function laneSoftClip(x: number): number {
+  const ax = Math.abs(x);
+  if (ax <= LANE_SOFTCLIP_KNEE) return x;
+  const span = LANE_SOFTCLIP_CEIL - LANE_SOFTCLIP_KNEE;
+  return Math.sign(x) * (LANE_SOFTCLIP_KNEE + span * Math.tanh((ax - LANE_SOFTCLIP_KNEE) / span));
+}
+
