@@ -4,6 +4,7 @@ var slotOf = (ix, id) => ix.slot[id] ?? -1;
 
 // packages/loom-plugin-sdk/src/dsp/util.ts
 var midiToFreq = (m) => 440 * Math.pow(2, (m - 69) / 12);
+var clamp01 = (v) => v < 0 ? 0 : v > 1 ? 1 : v;
 
 // packages/loom-plugin-sdk/src/dsp/velocity.ts
 var ACCENT_PUNCH = 1.1;
@@ -399,8 +400,10 @@ var KarplusRenderer = class {
     const L = this.live;
     const levelKnob = L && this.sLevel >= 0 ? L[this.sLevel] : this.levelBase;
     const trim = L && this.sTrim >= 0 ? L[this.sTrim] : this.trimBase;
-    const damping = L && this.sDamping >= 0 ? L[this.sDamping] : this.dampingBase;
-    const brightness = L && this.sBrightness >= 0 ? L[this.sBrightness] : this.brightnessBase;
+    const dampKnob = L && this.sDamping >= 0 ? L[this.sDamping] : this.dampingBase;
+    const damping = mo?.[this.sDamping] ? clamp01(dampKnob + mo[this.sDamping]) : dampKnob;
+    const brightKnob = L && this.sBrightness >= 0 ? L[this.sBrightness] : this.brightnessBase;
+    const brightness = mo?.[this.sBrightness] ? clamp01(brightKnob + mo[this.sBrightness]) : brightKnob;
     if (damping !== this.dampRaw) {
       this.dampRaw = damping;
       for (let u = 0; u < this.loops.length; u++) {

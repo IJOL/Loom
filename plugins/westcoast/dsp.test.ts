@@ -18,6 +18,7 @@ import { WestcoastRenderer } from './dsp';
 import type { NoteSpec, ParamBag } from '@loom/plugin-sdk';
 import { ACCENT_PUNCH } from '../../src/core/velocity-gain';
 import { rms as rmsOf, spectralCentroid } from '../../test/dsp-asserts';
+import { buildParamIndex } from '../../src/audio-dsp/param-index';
 
 const SR = 48000;
 
@@ -226,5 +227,85 @@ describe('unison stack on the main oscillator', () => {
     let d = 0;
     for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
     expect(d).toBe(0);
+  });
+});
+
+// MODULATION REACH. A modulator's offsets travel in `moIn`, addressed by the
+// lane's ParamIndex — the same slots setLiveValues resolved. Eight params were
+// live (a hand or an automation envelope moved them) and yet ignored `moIn`:
+// the LFO bars moved on screen and not one sample changed. Every continuous,
+// non-structural param the renderer reads live must also read its offset.
+describe('WestcoastRenderer: modulation offsets reach every live param', () => {
+  const IDS = [
+    'master.tune', 'osc.detune', 'osc.ratio', 'osc.ring', 'osc.subLevel',
+    'osc.spread', 'timbre.symmetry', 'amp.level',
+    'osc.fmIndex', 'timbre.fold', 'lpg.cutoff', 'lpg.resonance',
+  ];
+  const index = buildParamIndex(IDS);
+  // ring/sub/spread audible: a sub voice exists, the stack has two oscs.
+  const bag: ParamBag = {
+    ...P, 'osc.ring': 0.3, 'osc.subDiv': 1, 'osc.subLevel': 0.3,
+    'osc.unison': 2, 'osc.spread': 10, 'osc.fmIndex': 0.3,
+  };
+
+  const renderMod = (target: string | null, amount: number): Float32Array => {
+    const v = new WestcoastRenderer(note({ midi: 57, durationSec: 0.4 }), bag, SR);
+    const live = new Float64Array(index.length);
+    for (const id of IDS) live[index.slot[id]] = bag[id] as number;
+    v.setLiveValues(live, index);
+    const mo = new Float64Array(index.length);
+    if (target) mo[index.slot[target]] = amount;
+    const out = new Float32Array(Math.floor(SR * 0.4));
+    for (let i = 0; i < out.length; i++) out[i] = v.renderSample(i / SR, target ? mo : undefined);
+    return out;
+  };
+  const maxDiff = (a: Float32Array, b: Float32Array): number => {
+    let d = 0;
+    for (let i = 0; i < a.length; i++) d = Math.max(d, Math.abs(a[i] - b[i]));
+    return d;
+  };
+
+  for (const id of IDS) {
+    it(`${id}: an offset changes the rendered sound`, () => {
+      const dry = renderMod(null, 0);
+      const wet = renderMod(id, 0.5);
+      // Deterministic renderer: identical input ⇒ identical output, so ANY
+      // difference is the offset arriving. Relative to the dry peak so a quiet
+      // patch cannot pass on rounding noise.
+      let peak = 0;
+      for (let i = 0; i < dry.length; i++) peak = Math.max(peak, Math.abs(dry[i]));
+      expect(maxDiff(wet, dry)).toBeGreaterThan(peak * 0.01);
+    });
+  }
+
+  it('master.tune offset is in semitones: +1 offset ⇒ one octave up, pitch tracks the mod', () => {
+    // 220 Hz note; a full-scale +1 offset spans MOD_TUNE_SEMIS = 12 (as Subtractive).
+    const mag = (xs: Float32Array, freqHz: number): number => {
+      let re = 0, im = 0;
+      const w = (2 * Math.PI * freqHz) / SR;
+      for (let i = 0; i < xs.length; i++) { re += xs[i] * Math.cos(w * i); im += xs[i] * Math.sin(w * i); }
+      return Math.hypot(re, im);
+    };
+    // A bare sine — no FM, ring, sub or fold — so the fundamental is the only
+    // line in the spectrum and "which bin is louder" reads the pitch.
+    const clean: ParamBag = {
+      ...bag, 'osc.fmIndex': 0, 'osc.ring': 0, 'osc.subDiv': 0, 'timbre.fold': 0,
+      'osc.unison': 1, 'osc.spread': 0, 'lpg.cutoff': 1, 'contour.mode': 1,
+    };
+    const renderClean = (amount: number): Float32Array => {
+      const v = new WestcoastRenderer(note({ midi: 57, durationSec: 0.4 }), clean, SR);
+      const live = new Float64Array(index.length);
+      for (const id of IDS) live[index.slot[id]] = clean[id] as number;
+      v.setLiveValues(live, index);
+      const mo = new Float64Array(index.length);
+      mo[index.slot['master.tune']] = amount;
+      const out = new Float32Array(Math.floor(SR * 0.4));
+      for (let i = 0; i < out.length; i++) out[i] = v.renderSample(i / SR, amount ? mo : undefined);
+      return out;
+    };
+    const dry = renderClean(0);
+    const up = renderClean(1);
+    expect(mag(dry, 220)).toBeGreaterThan(mag(dry, 440) * 4);
+    expect(mag(up, 440)).toBeGreaterThan(mag(up, 220) * 4);
   });
 });

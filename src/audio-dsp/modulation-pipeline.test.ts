@@ -96,6 +96,10 @@ const CASES: Array<{ id: string; params: ParamBag; mod: Record<string, number>; 
   // and the filter audibly chokes the note: envDiff ≈ 1.0 against the 0.05 bar.
   { id: 'tb303',       params: { 'filter.cutoff': 0.3, 'env.amount': 0 }, mod: { 'filter.cutoff': 0.6 } },
   { id: 'westcoast',   params: { 'lpg.cutoff': 0.3, 'lpg.mode': 2 }, mod: { 'lpg.cutoff': 0.6 } },
+  // A second Westcoast row on a param OUTSIDE the LPG. Eight of its live params
+  // resolved a slot and never read the offset — an LFO on them moved the bars
+  // on screen and nothing else. `lpg.cutoff` alone could not see that.
+  { id: 'westcoast',   params: { 'lpg.cutoff': 0.6, 'lpg.mode': 2, 'amp.level': 0.5 }, mod: { 'amp.level': 0.5 } },
 ];
 
 describe('modulation pipeline (objective, per engine)', () => {

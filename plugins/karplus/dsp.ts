@@ -16,7 +16,7 @@
 // feedback gain move live, so an extreme brightness sweep can drift the pitch
 // by a fraction of a sample — an accepted trade-off of a real analogue-style
 // tone control living inside the resonator, not a bug.
-import { param, slotOf, midiToFreq, velGain01, ModEnvHost, UNISON_MODES, unisonGain } from '@loom/plugin-sdk';
+import { param, slotOf, midiToFreq, velGain01, clamp01, ModEnvHost, UNISON_MODES, unisonGain } from '@loom/plugin-sdk';
 import type {
   NoteSpec, ParamBag, ParamIndex, VoiceRenderer, VoiceModOffsets, ModEnvSpec,
 } from '@loom/plugin-sdk';
@@ -252,8 +252,15 @@ export class KarplusRenderer implements VoiceRenderer {
     const L = this.live;
     const levelKnob = L && this.sLevel >= 0 ? L[this.sLevel] : this.levelBase;
     const trim = L && this.sTrim >= 0 ? L[this.sTrim] : this.trimBase;
-    const damping = L && this.sDamping >= 0 ? L[this.sDamping] : this.dampingBase;
-    const brightness = L && this.sBrightness >= 0 ? L[this.sBrightness] : this.brightnessBase;
+    // A modulator's offset (LFO / ADSR, in `mo`) rides on top of the knob, the
+    // same way every other engine does it. Both are 0..1 params, so the sum is
+    // clamped to the range the loop maths was designed for: a brightness below
+    // -0.19 would flip the sign of the one-pole loop coefficient, and a
+    // negative coefficient is a filter that grows instead of settling.
+    const dampKnob = L && this.sDamping >= 0 ? L[this.sDamping] : this.dampingBase;
+    const damping = mo?.[this.sDamping] ? clamp01(dampKnob + mo[this.sDamping]) : dampKnob;
+    const brightKnob = L && this.sBrightness >= 0 ? L[this.sBrightness] : this.brightnessBase;
+    const brightness = mo?.[this.sBrightness] ? clamp01(brightKnob + mo[this.sBrightness]) : brightKnob;
 
     // Cached: gFromDamping (pow+exp+log) only re-runs when damping actually
     // moves — per string, because T60 compensation depends on each one's pitch.

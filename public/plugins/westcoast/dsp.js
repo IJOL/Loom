@@ -458,6 +458,8 @@ function cutoffHz(norm) {
   return Math.min(18e3, 60 * Math.pow(220, norm));
 }
 var CUTOFF_ENV_SCALE = 3;
+var MOD_TUNE_SEMIS = 12;
+var MOD_DETUNE_CENTS = 50;
 var AdContour = class {
   constructor(atk, dec, amount, cmode, cycle2, holdEnd) {
     this.atk = atk;
@@ -687,9 +689,12 @@ var WestcoastRenderer = class {
     const gate = t <= this.holdEnd ? 1 : 0;
     const mo = this.modEnv.active ? this.modEnv.combine(t, gate, moIn) : moIn;
     const L = this.live;
-    const tuneKnob = L && this.sTune >= 0 ? L[this.sTune] : this.tuneBase;
-    const detuneKnob = L && this.sDetune >= 0 ? L[this.sDetune] : this.detuneBase;
-    const ratioKnob = L && this.sRatio >= 0 ? L[this.sRatio] : this.ratioBase;
+    const tuneKnobRaw = L && this.sTune >= 0 ? L[this.sTune] : this.tuneBase;
+    const tuneKnob = mo?.[this.sTune] ? tuneKnobRaw + mo[this.sTune] * MOD_TUNE_SEMIS : tuneKnobRaw;
+    const detuneKnobRaw = L && this.sDetune >= 0 ? L[this.sDetune] : this.detuneBase;
+    const detuneKnob = mo?.[this.sDetune] ? detuneKnobRaw + mo[this.sDetune] * MOD_DETUNE_CENTS : detuneKnobRaw;
+    const ratioKnobRaw = L && this.sRatio >= 0 ? L[this.sRatio] : this.ratioBase;
+    const ratioKnob = mo?.[this.sRatio] ? ratioKnobRaw * Math.pow(2, mo[this.sRatio]) : ratioKnobRaw;
     const pitchCents = tuneKnob * 100 + detuneKnob;
     if (pitchCents !== this.pitchRaw) {
       this.pitchRaw = pitchCents;
@@ -704,13 +709,17 @@ var WestcoastRenderer = class {
     const fmDepthHz = fmIndexEff * fmFactor;
     const modSample = this.mod.update(modFreq);
     const mainFreq = freq + modSample * fmDepthHz;
-    const spreadKnob = L && this.sSpread >= 0 ? L[this.sSpread] : this.spreadBase;
+    const spreadKnobRaw = L && this.sSpread >= 0 ? L[this.sSpread] : this.spreadBase;
+    const spreadKnob = mo?.[this.sSpread] ? Math.max(0, spreadKnobRaw + mo[this.sSpread] * MOD_DETUNE_CENTS) : spreadKnobRaw;
     const mainSample = this.main.update(mainFreq, 0.5, 0, spreadKnob, 0);
-    const ringKnob = L && this.sRing >= 0 ? L[this.sRing] : this.ringBase;
+    const ringKnobRaw = L && this.sRing >= 0 ? L[this.sRing] : this.ringBase;
+    const ringKnob = mo?.[this.sRing] ? clamp01(ringKnobRaw + mo[this.sRing]) : ringKnobRaw;
     const ringSample = mainSample * modSample * ringKnob;
-    const subLevelKnob = L && this.sSubLevel >= 0 ? L[this.sSubLevel] : this.subLevelBase;
+    const subLevelKnobRaw = L && this.sSubLevel >= 0 ? L[this.sSubLevel] : this.subLevelBase;
+    const subLevelKnob = mo?.[this.sSubLevel] ? clamp01(subLevelKnobRaw + mo[this.sSubLevel]) : subLevelKnobRaw;
     const subSample = this.subDiv > 0 ? this.sub.update(subFreq) * subLevelKnob : 0;
-    const symmetryKnob = L && this.sSymmetry >= 0 ? L[this.sSymmetry] : this.symmetryBase;
+    const symmetryKnobRaw = L && this.sSymmetry >= 0 ? L[this.sSymmetry] : this.symmetryBase;
+    const symmetryKnob = mo?.[this.sSymmetry] ? Math.max(-1, Math.min(1, symmetryKnobRaw + mo[this.sSymmetry])) : symmetryKnobRaw;
     const mixRaw = mainSample * this.mainGain + ringSample + subSample + symmetryKnob * 0.5;
     const foldKnob = L && this.sFold >= 0 ? L[this.sFold] : this.foldBase;
     const foldEff = mo?.[this.sFold] ? clamp01(foldKnob + mo[this.sFold]) : foldKnob;
@@ -734,7 +743,8 @@ var WestcoastRenderer = class {
     const dynamicCutoff = cutoffBaseHz + contourVal * cutoffEnvScale;
     this.filter.update(folded, dynamicCutoff, lpgRes);
     const vca = this.vcaMode ? contourVal : 1;
-    const levelKnob = L && this.sLevel >= 0 ? L[this.sLevel] : this.levelBase;
+    const levelKnobRaw = L && this.sLevel >= 0 ? L[this.sLevel] : this.levelBase;
+    const levelKnob = mo?.[this.sLevel] ? Math.max(0, levelKnobRaw + mo[this.sLevel]) : levelKnobRaw;
     let out = this.filter.lp * vca * levelKnob * this.ampTrim;
     if (mo?.[this.sAmpGain]) out *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
     if (this.contour.isDone) {

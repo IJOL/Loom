@@ -35,6 +35,11 @@ function cutoffHz(norm: number): number {
 // Multiplier on base cutoff for the contour's filter sweep.
 const CUTOFF_ENV_SCALE = 3;
 
+// Modulation scaling for the params whose range is not 0..1 — a full-scale
+// offset (±1) spans this much. Same figures as Subtractive's pitch targets.
+const MOD_TUNE_SEMIS = 12;
+const MOD_DETUNE_CENTS = 50;
+
 /** Simple AD + optional sustain contour, clocked per-sample. Mirrors the
  *  ConstantSource automation schedule in the legacy WestVoice.trigger. */
 class AdContour {
@@ -323,9 +328,18 @@ export class WestcoastRenderer implements VoiceRenderer {
     // --- Pitch: master.tune + osc.detune, live, cached (pow is not a per-
     // sample cost while the knobs are settled). osc.ratio is live too, cheap
     // (a multiply), so it is read fresh each sample.
-    const tuneKnob = L && this.sTune >= 0 ? L[this.sTune] : this.tuneBase;
-    const detuneKnob = L && this.sDetune >= 0 ? L[this.sDetune] : this.detuneBase;
-    const ratioKnob = L && this.sRatio >= 0 ? L[this.sRatio] : this.ratioBase;
+    // Every live knob below also reads its modulator offset (`mo`, an LFO or an
+    // ADSR): eight of them resolved a slot and then ignored it, so the LFO bars
+    // moved on screen and the sound did not. Scaling per param, as Subtractive
+    // does: a full-scale offset is ±12 st on tune, ±50 ¢ on detune, one octave
+    // on the ratio (multiplicative — the knob is a ×), ±50 ¢ on the spread; the
+    // 0..1 and -1..1 params add and clamp.
+    const tuneKnobRaw = L && this.sTune >= 0 ? L[this.sTune] : this.tuneBase;
+    const tuneKnob = mo?.[this.sTune] ? tuneKnobRaw + mo[this.sTune] * MOD_TUNE_SEMIS : tuneKnobRaw;
+    const detuneKnobRaw = L && this.sDetune >= 0 ? L[this.sDetune] : this.detuneBase;
+    const detuneKnob = mo?.[this.sDetune] ? detuneKnobRaw + mo[this.sDetune] * MOD_DETUNE_CENTS : detuneKnobRaw;
+    const ratioKnobRaw = L && this.sRatio >= 0 ? L[this.sRatio] : this.ratioBase;
+    const ratioKnob = mo?.[this.sRatio] ? ratioKnobRaw * Math.pow(2, mo[this.sRatio]) : ratioKnobRaw;
     const pitchCents = tuneKnob * 100 + detuneKnob;
     if (pitchCents !== this.pitchRaw) {
       this.pitchRaw = pitchCents;
@@ -343,24 +357,29 @@ export class WestcoastRenderer implements VoiceRenderer {
     const fmDepthHz = fmIndexEff * fmFactor;
     const modSample = this.mod.update(modFreq);
     const mainFreq = freq + modSample * fmDepthHz;
-    const spreadKnob = L && this.sSpread >= 0 ? L[this.sSpread] : this.spreadBase;
+    const spreadKnobRaw = L && this.sSpread >= 0 ? L[this.sSpread] : this.spreadBase;
+    const spreadKnob = mo?.[this.sSpread] ? Math.max(0, spreadKnobRaw + mo[this.sSpread] * MOD_DETUNE_CENTS) : spreadKnobRaw;
     const mainSample = this.main.update(mainFreq, 0.5, 0, spreadKnob, 0);
 
     // Ring/AM: ringMod.gain = modSample, so ring = mainSample * modSample * ringAmt
     // In the original: mainOsc → ringMod (gain.value = 0 initially), modOsc → ringMod.gain
     // → ringGain (gain.value = ring param). So ring output = mainSample * modSample * ringAmt.
-    const ringKnob = L && this.sRing >= 0 ? L[this.sRing] : this.ringBase;
+    const ringKnobRaw = L && this.sRing >= 0 ? L[this.sRing] : this.ringBase;
+    const ringKnob = mo?.[this.sRing] ? clamp01(ringKnobRaw + mo[this.sRing]) : ringKnobRaw;
     const ringSample = mainSample * modSample * ringKnob;
 
     // Sub osc — subDiv (whether a sub voice exists at all) is structural/frozen;
     // subLevel is live. The oscillator always advances (even at level 0) so a
     // live level turn from 0 never has to resume from a frozen phase.
-    const subLevelKnob = L && this.sSubLevel >= 0 ? L[this.sSubLevel] : this.subLevelBase;
+    const subLevelKnobRaw = L && this.sSubLevel >= 0 ? L[this.sSubLevel] : this.subLevelBase;
+    const subLevelKnob = mo?.[this.sSubLevel] ? clamp01(subLevelKnobRaw + mo[this.sSubLevel]) : subLevelKnobRaw;
     const subSample = this.subDiv > 0 ? this.sub.update(subFreq) * subLevelKnob : 0;
 
     // Mix: mainGain*main + ringGain*ring + sub + bias
     // Original: mainGain=0.7, ringGain=ring param, subGain=subLevel
-    const symmetryKnob = L && this.sSymmetry >= 0 ? L[this.sSymmetry] : this.symmetryBase;
+    const symmetryKnobRaw = L && this.sSymmetry >= 0 ? L[this.sSymmetry] : this.symmetryBase;
+    // Symmetry is -1..1: clamp to that range, not 0..1.
+    const symmetryKnob = mo?.[this.sSymmetry] ? Math.max(-1, Math.min(1, symmetryKnobRaw + mo[this.sSymmetry])) : symmetryKnobRaw;
     const mixRaw = mainSample * this.mainGain + ringSample + subSample + symmetryKnob * 0.5;
 
     // --- Wavefolder (fold amount modulatable) ---
@@ -399,7 +418,8 @@ export class WestcoastRenderer implements VoiceRenderer {
     const vca = this.vcaMode ? contourVal : 1;
 
     // --- Output (amp.level live, amp.gain tremolo) ---
-    const levelKnob = L && this.sLevel >= 0 ? L[this.sLevel] : this.levelBase;
+    const levelKnobRaw = L && this.sLevel >= 0 ? L[this.sLevel] : this.levelBase;
+    const levelKnob = mo?.[this.sLevel] ? Math.max(0, levelKnobRaw + mo[this.sLevel]) : levelKnobRaw;
     let out = this.filter.lp * vca * levelKnob * this.ampTrim;
     if (mo?.[this.sAmpGain]) out *= Math.max(0, Math.min(2, 1 + mo[this.sAmpGain]));
 

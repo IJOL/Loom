@@ -19,6 +19,7 @@ import { KarplusRenderer } from './dsp';
 import manifest from './plugin.json';
 import { SR as FIXTURE_SR, note as fixtureNote, makeRenderer, hostTrim } from '../../test/engine-fixtures';
 import { CATEGORY_GAIN } from '../../src/audio-dsp/gain-staging';
+import { buildParamIndex } from '../../src/audio-dsp/param-index';
 import type { NoteSpec, ParamBag } from '@loom/plugin-sdk';
 
 const SR = 48000;
@@ -231,5 +232,59 @@ describe('unison strings', () => {
     let d = 0;
     for (let i = 0; i < a.length; i++) d += Math.abs(a[i] - b[i]);
     expect(d).toBe(0);
+  });
+});
+
+// MODULATION REACH. A modulator's offsets travel in `moIn`, addressed by the
+// lane's ParamIndex — the same slots setLiveValues resolved. The live bag is
+// what a hand or an automation envelope writes; `moIn` is what an LFO or an
+// ADSR writes. Both must move the note. Damping and brightness were live and
+// yet ignored `moIn` outright: the LFO bars moved on screen and not one sample
+// changed, which is what shipped as "the LFO does nothing on Karp".
+describe('KarplusRenderer: modulation offsets reach the string', () => {
+  const IDS = ['string.damping', 'string.brightness', 'amp.level'];
+  const index = buildParamIndex(IDS);
+  const bag: ParamBag = { ...P, 'string.damping': 0.3, 'string.brightness': 0.5 };
+
+  /** Same seeded pluck, with or without a constant offset on ONE slot. */
+  const renderMod = (target: string | null, amount: number): number[] => {
+    const v = new KarplusRenderer(note({ midi: 57, durationSec: 0.4 }), bag, SR, seeded(3));
+    const live = new Float64Array(index.length);
+    for (const id of IDS) live[index.slot[id]] = bag[id] as number;
+    v.setLiveValues(live, index);
+    const mo = new Float64Array(index.length);
+    if (target) mo[index.slot[target]] = amount;
+    const out: number[] = [];
+    for (let i = 0; i < SR * 0.4; i++) out.push(v.renderSample(i / SR, target ? mo : undefined));
+    return out;
+  };
+  const maxDiff = (a: number[], b: number[]): number => {
+    let d = 0;
+    for (let i = 0; i < a.length; i++) d = Math.max(d, Math.abs(a[i] - b[i]));
+    return d;
+  };
+
+  it('a positive damping offset mutes the ring: the tail is quieter than unmodulated', () => {
+    const dry = renderMod(null, 0);
+    const wet = renderMod('string.damping', 0.5);
+    expect(maxDiff(wet, dry)).toBeGreaterThan(0);
+    const tail = (b: number[]) => rms(b.slice(Math.floor(SR * 0.2)));
+    expect(tail(wet)).toBeLessThan(tail(dry) * 0.5);
+  });
+
+  it('a negative brightness offset darkens the ring: the tail is duller than unmodulated', () => {
+    const dry = renderMod(null, 0);
+    const wet = renderMod('string.brightness', -0.4);
+    expect(maxDiff(wet, dry)).toBeGreaterThan(0);
+    // A darker loop filter bleeds harmonics faster: less energy left in the tail.
+    const tail = (b: number[]) => rms(b.slice(Math.floor(SR * 0.2)));
+    expect(tail(wet)).toBeLessThan(tail(dry) * 0.8);
+  });
+
+  it('the offset is ADDITIVE on the live knob and clamped: a +1 offset at damping 0.3 equals damping 1', () => {
+    const full = renderMod('string.damping', 1);
+    const tail = (b: number[]) => rms(b.slice(Math.floor(SR * 0.2)));
+    // Damping 1 is a 0.12 s T60: by 200 ms the ring is essentially gone.
+    expect(tail(full)).toBeLessThan(tail(renderMod(null, 0)) * 0.05);
   });
 });
