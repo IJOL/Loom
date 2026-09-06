@@ -106,8 +106,8 @@ hit fires.)
 ## Voices, and what happens when you run out
 
 Every melodic engine has a **Voices** control: the most notes that lane will
-sound at once. The range is **1 to 64**, and the default is 32 on Subtractive,
-Wavetable, Karplus and West Coast, and 24 on FM.
+sound at once. The range is **1 to 64**, the knob lands on whole numbers only,
+and the default is **10** on every polyphonic engine.
 
 It is worth knowing that this is a real limit, because it did not use to be —
 the number was read as a mono switch, so anything above 1 meant "no limit at
@@ -121,6 +121,15 @@ everything on screen still looks right.
 out over 8 ms and only then let go, so there is no step in the waveform to hear.
 Notes that are already releasing do not count against the cap, so a fast run
 cannot steal the same voice twice and thin the part out.
+
+**Many voices at once no longer grind the master.** A lane's voices used to sum
+at full level, so eight sustained notes could push the lane far past full scale
+and park the master limiter in continuous distortion — the classic "any
+polyphony above minimum turns to noise". Each melodic lane now sums its voices
+with built-in headroom and saturates softly *inside the lane* when a pileup
+still exceeds it: one note reaches the master untouched, a stack merely
+thickens. If a lane sounds saturated, it is that lane's Voices, level or
+material — the rest of the mix stays clean.
 
 Set it by ear. Lower it on a lane you want to sound monophonic (1 is a genuine
 mono lane), and lower it on a dense pad if the mix is straining; leave it alone

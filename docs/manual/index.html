@@ -492,8 +492,8 @@ hit fires.)</p>
 <hr>
 <h2 id="04-engines--voices-and-what-happens-when-you-run-out">Voices, and what happens when you run out</h2>
 <p>Every melodic engine has a <strong>Voices</strong> control: the most notes that lane will
-sound at once. The range is <strong>1 to 64</strong>, and the default is 32 on Subtractive,
-Wavetable, Karplus and West Coast, and 24 on FM.</p>
+sound at once. The range is <strong>1 to 64</strong>, the knob lands on whole numbers only,
+and the default is <strong>10</strong> on every polyphonic engine.</p>
 <p>It is worth knowing that this is a real limit, because it did not use to be —
 the number was read as a mono switch, so anything above 1 meant &quot;no limit at
 all&quot;. A pad with a three-second release, played in 16ths, settles at around 28
@@ -505,6 +505,14 @@ everything on screen still looks right.</p>
 out over 8 ms and only then let go, so there is no step in the waveform to hear.
 Notes that are already releasing do not count against the cap, so a fast run
 cannot steal the same voice twice and thin the part out.</p>
+<p><strong>Many voices at once no longer grind the master.</strong> A lane&#39;s voices used to sum
+at full level, so eight sustained notes could push the lane far past full scale
+and park the master limiter in continuous distortion — the classic &quot;any
+polyphony above minimum turns to noise&quot;. Each melodic lane now sums its voices
+with built-in headroom and saturates softly <em>inside the lane</em> when a pileup
+still exceeds it: one note reaches the master untouched, a stack merely
+thickens. If a lane sounds saturated, it is that lane&#39;s Voices, level or
+material — the rest of the mix stays clean.</p>
 <p>Set it by ear. Lower it on a lane you want to sound monophonic (1 is a genuine
 mono lane), and lower it on a dense pad if the mix is straining; leave it alone
 otherwise. The TB-303 has no such control — it is monophonic by declaration, not
