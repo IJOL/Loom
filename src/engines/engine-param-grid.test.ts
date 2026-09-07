@@ -540,3 +540,19 @@ describe('spec.step — the knob quantum a manifest declares', () => {
     expect(engine.getBaseValue('poly.voices')).toBe(7);
   });
 });
+
+describe('spec.step and the value readout', () => {
+  // A whole-number step is a count, and a count has no decimals — with or
+  // without a declared unit. The Voices knob shipped as "10.00" in the manual.
+  it('a whole-number step reads without decimals, unit included', () => {
+    const host = document.createElement('div');
+    const voices = {
+      id: 'poly.voices', label: 'Voices', kind: 'continuous',
+      min: 1, max: 64, default: 10, step: 1,
+    } as EngineParamSpec;
+    const semis = { ...cont('osc.oct'), min: -2, max: 2, default: 1, step: 1, unit: 'st' } as EngineParamSpec;
+    buildEngineParamGrid(stubEngine([voices, semis]), ctx(), host);
+    const texts = [...host.querySelectorAll('.knob-value-text')].map((e) => e.textContent);
+    expect(texts).toEqual(['10', '1st']);
+  });
+});

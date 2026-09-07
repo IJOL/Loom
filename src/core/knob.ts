@@ -49,6 +49,18 @@ export interface KnobHandle {
   setModulationOffset: (offsetNorm: number) => void;
 }
 
+/** The default readout, and the one rule behind it: a knob whose step is a
+ *  positive whole number holds a COUNT — voices, bars, a divisor — and a count
+ *  has no decimals. Everything else keeps two. Exported so a caller that adds
+ *  a unit suffix formats the number the same way instead of re-deciding it.
+ *  (`step: 0` means "unquantised" to some specs; `Number.isInteger(0)` is
+ *  true, hence the `> 0`.) */
+export function formatKnobValue(v: number, step?: number): string {
+  return step !== undefined && step > 0 && Number.isInteger(step)
+    ? String(Math.round(v))
+    : v.toFixed(2);
+}
+
 export function createKnob(opts: KnobOpts): KnobHandle {
   const size = opts.size ?? 40;
   const cx = size / 2;
@@ -176,7 +188,7 @@ export function createKnob(opts: KnobOpts): KnobHandle {
     const angle = -135 + norm * 270;
     valArc.setAttribute('d', arcPath(cx, cy, trackR, -135, angle));
     ptr.setAttribute('transform', `rotate(${angle} ${cx} ${cy})`);
-    valDisp.textContent = opts.format ? opts.format(value) : value.toFixed(2);
+    valDisp.textContent = opts.format ? opts.format(value) : formatKnobValue(value, opts.step);
     wrap.setAttribute('data-value-norm', String(norm));
   }
 

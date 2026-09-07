@@ -37,7 +37,7 @@
 // tb303 knob was thrown away on save.
 
 import { html, render, nothing } from 'lit-html';
-import { createKnob } from '../core/knob';
+import { createKnob, formatKnobValue } from '../core/knob';
 import { createSelectControl } from '../core/select-control';
 import type { EngineParamSpec } from './engine-params';
 import { isStripParamId } from '../core/channel-strip-params';
@@ -120,17 +120,18 @@ function buildControl(
     return el;
   }
 
+  // Flat drags stay unquantised: knob.ts rounds to `Math.round(v/step)*step`
+  // from ZERO rather than from `min`, so a step over a wide range (the
+  // sampler's 20..20000 cutoff) would snap the low end below its own minimum.
+  // A spec-declared step wins everywhere INCLUDING flat: it is the param's
+  // own quantum (an integer voice count), not a drag-feel default.
+  const step = spec.step ?? (flat ? undefined : (spec.max - spec.min) / 200);
   const knob = createKnob({
     id: registryId,
     label: spec.label,
     min: spec.min,
     max: spec.max,
-    // Flat drags stay unquantised: knob.ts rounds to `Math.round(v/step)*step`
-    // from ZERO rather than from `min`, so a step over a wide range (the
-    // sampler's 20..20000 cutoff) would snap the low end below its own minimum.
-    // A spec-declared step wins everywhere INCLUDING flat: it is the param's
-    // own quantum (an integer voice count), not a drag-feel default.
-    step: spec.step ?? (flat ? undefined : (spec.max - spec.min) / 200),
+    step,
     value: engine.getBaseValue(spec.id),
     defaultValue: spec.default,
     size: opts.knobSize,
@@ -139,8 +140,10 @@ function buildControl(
       ? (v) => opts.formatter!(spec.id, v)
       // Flat knobs show a bare number: a drum-rack knob is 34px and a sampler
       // zone knob 30px, and both were approved without the declared unit
-      // suffix. The grouped grid, whose knobs are full size, paints it.
-      : (!flat && spec.unit ? (v) => `${v.toFixed(2)}${spec.unit}` : undefined),
+      // suffix. The grouped grid, whose knobs are full size, paints it — after
+      // the number itself, which follows the knob's own step rule (a count
+      // reads whole) so a unit never brings the decimals back.
+      : (!flat && spec.unit ? (v) => `${formatKnobValue(v, step)}${spec.unit}` : undefined),
     onChange: (v) => { commitParam(engine, ctx, spec.id, v); },
     ...(ctx.historyDeps ? attachKnobUndo(ctx.historyDeps) : {}),
   });
