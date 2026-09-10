@@ -101,12 +101,17 @@ export class Sequencer {
 
   isPlaying() { return this.playing; }
 
-  start() {
+  /** Start the clock. `startedAtSec` is the audio time the caller has ALREADY
+   *  queued its material at — a scene or clip launched into silence — so the
+   *  transport's zero is that instant by construction rather than a second
+   *  read of `currentTime` that can land a render quantum later. The bare ▶
+   *  passes nothing and the zero is now. */
+  start(startedAtSec: number = this.ctx.currentTime) {
     if (this.playing) return;
     if (this.ctx.state === 'suspended') void this.ctx.resume();
     this.playing = true;
     this.lastTickPerf = 0;
-    this.startedAtSec = this.ctx.currentTime;
+    this.startedAtSec = startedAtSec;
     this.playbackSeed = Math.floor(Math.random() * 0x7fffffff);
     // Notify BEFORE the first tick so a live-take captures from the true downbeat.
     this.onStart?.();

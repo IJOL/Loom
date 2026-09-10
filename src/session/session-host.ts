@@ -238,29 +238,34 @@ export class SessionHost {
     this.activeSceneIdx = sceneIdx;
     // The transport's zero is where the music's bar lines ARE — every later
     // single-clip launch measures from it (see nextBoundary) — and a scene
-    // launched out of silence is the thing that PUTS them there. So start the
-    // clock FIRST and launch against its own zero.
+    // launched out of silence is the thing that PUTS them there.
     //
-    // The other order was the bug: `startedAtSec` was still null when the
-    // launch read it, so the scene was queued on a grid counted from the
-    // AudioContext's zero — page load — while the transport began wherever the
-    // click landed. Stop one lane, press its clip again, and it entered 0.29 s
-    // inside the bar at 130 BPM: the same audible mis-entry the anchor was
-    // added to cure for clip-by-clip launching, arriving through the one door
-    // nobody had anchored.
+    // Two orders have been wrong here. Reading `seq.startedAtSec` before
+    // `seq.start()` had written it anchored the scene to a stale zero — null on
+    // the first run, the PREVIOUS run's after a Stop — so it was queued on a
+    // grid the transport then failed to start on: stop one lane, press its clip
+    // again, and it entered 0.29 s inside the bar at 130 BPM. Starting the
+    // clock FIRST and queuing second fixed that and lost the downbeat instead:
+    // the sequencer's synchronous first tick found an empty queue, promotion
+    // waited for the clock (>= 25 ms), and by then every note at tick 0 was
+    // behind tickLane's window — dropped, not late. Caught by
+    // scene-launch-downbeat.test.ts driving the real Sequencer.
+    //
+    // So: queue at `now`, THEN start the clock and hand it that same instant as
+    // its zero. Cold, `now` is the anchor, so nextBoundary answers it unchanged
+    // and the scene begins on the downbeat rather than up to a bar of dead air
+    // later; the first tick — still inside start() — promotes and schedules
+    // tick 0 at exactly `now`. Which is the order a single clip launched into
+    // silence has always used, and now with the zero made exact instead of
+    // re-read.
     const cold = !this.deps.seq.isPlaying();
-    if (cold) { this.deps.resetAutomationPosition?.(); this.deps.seq.start(); }
-    // Cold, `now` IS the anchor, so nextBoundary answers it unchanged and the
-    // scene starts on the transport's downbeat instead of up to a whole bar of
-    // dead air later — which is also what launching a single clip into silence
-    // has always done.
-    const zero = this.deps.seq.startedAtSec ?? this.deps.ctx.currentTime;
-    const now = cold ? zero : this.deps.ctx.currentTime;
-    const anchorSec = cold ? zero : (this.deps.seq.startedAtSec ?? 0);
+    const now = this.deps.ctx.currentTime;
+    const anchorSec = cold ? now : (this.deps.seq.startedAtSec ?? 0);
     this.glState = { anchorSec: now, lastIter: 0 };
     launchScene(this.laneStates, this.state, scene, sceneIdx, now,
       this.deps.seq.bpm, this.deps.seq.meter, anchorSec);
     this.markQueued(scene.name ?? `Scene ${sceneIdx + 1}`);
+    if (cold) { this.deps.resetAutomationPosition?.(); this.deps.seq.start(now); }
     this.renderWithMixer();
   }
 
