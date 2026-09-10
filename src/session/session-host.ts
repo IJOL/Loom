@@ -236,11 +236,31 @@ export class SessionHost {
     // weaving lane played, never what — every scene sounded the same on it.
     this.deps.onGridLaunch?.(null);
     this.activeSceneIdx = sceneIdx;
-    this.glState = { anchorSec: this.deps.ctx.currentTime, lastIter: 0 };
-    launchScene(this.laneStates, this.state, scene, sceneIdx, this.deps.ctx.currentTime,
-      this.deps.seq.bpm, this.deps.seq.meter, this.deps.seq.startedAtSec ?? 0);
+    // The transport's zero is where the music's bar lines ARE — every later
+    // single-clip launch measures from it (see nextBoundary) — and a scene
+    // launched out of silence is the thing that PUTS them there. So start the
+    // clock FIRST and launch against its own zero.
+    //
+    // The other order was the bug: `startedAtSec` was still null when the
+    // launch read it, so the scene was queued on a grid counted from the
+    // AudioContext's zero — page load — while the transport began wherever the
+    // click landed. Stop one lane, press its clip again, and it entered 0.29 s
+    // inside the bar at 130 BPM: the same audible mis-entry the anchor was
+    // added to cure for clip-by-clip launching, arriving through the one door
+    // nobody had anchored.
+    const cold = !this.deps.seq.isPlaying();
+    if (cold) { this.deps.resetAutomationPosition?.(); this.deps.seq.start(); }
+    // Cold, `now` IS the anchor, so nextBoundary answers it unchanged and the
+    // scene starts on the transport's downbeat instead of up to a whole bar of
+    // dead air later — which is also what launching a single clip into silence
+    // has always done.
+    const zero = this.deps.seq.startedAtSec ?? this.deps.ctx.currentTime;
+    const now = cold ? zero : this.deps.ctx.currentTime;
+    const anchorSec = cold ? zero : (this.deps.seq.startedAtSec ?? 0);
+    this.glState = { anchorSec: now, lastIter: 0 };
+    launchScene(this.laneStates, this.state, scene, sceneIdx, now,
+      this.deps.seq.bpm, this.deps.seq.meter, anchorSec);
     this.markQueued(scene.name ?? `Scene ${sceneIdx + 1}`);
-    if (!this.deps.seq.isPlaying()) { this.deps.resetAutomationPosition?.(); this.deps.seq.start(); }
     this.renderWithMixer();
   }
 
